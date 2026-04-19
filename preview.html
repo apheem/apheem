@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MJ Salon &amp; Spa — Elevate Your Beauty Experience</title>
+  <meta name="description" content="MJ Salon & Spa is a full service salon in Naples, Florida. From everyday hair care to wedding-ready looks, our expert stylists and luxurious treatments await you." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Slab:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+/* MJ Salon & Spa — remake
+   Palette pulled from mjsalonnaples.com:
+   primary  #A8736E   secondary #54595F
+   text     #7A7A7A   accent    #61CE70
+   plus the deeper brand tone #A76F69 used in gradients. */
+
+:root {
+  --primary: #a8736e;
+  --primary-deep: #a76f69;
+  --primary-dark: #8a5a55;
+  --primary-soft: #f3e4e1;
+  --primary-softer: #faf1ef;
+  --secondary: #54595f;
+  --text: #7a7a7a;
+  --ink: #3d3d3d;
+  --accent: #61ce70;
+  --bg: #ffffff;
+  --bg-alt: #fbf7f6;
+  --line: #eaddda;
+  --shadow: 0 20px 50px -24px rgba(167, 111, 105, 0.35);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-display: "Roboto Slab", Georgia, serif;
+  --font-sans: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+a { color: var(--primary-deep); text-decoration: none; transition: color .2s ease; }
+a:hover { color: var(--primary-dark); }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5em;
+}
+h1 { font-size: clamp(2.5rem, 5.5vw, 4.25rem); line-height: 1.05; font-weight: 400; }
+h1 em { font-style: italic; color: var(--primary-deep); font-weight: 400; }
+h2 { font-size: clamp(1.75rem, 3.2vw, 2.5rem); line-height: 1.15; }
+h3 { font-size: 1.25rem; line-height: 1.3; }
+
+.container {
+  width: min(1140px, 92%);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-deep);
+  margin: 0 0 0.75rem;
+}
+
+.section { padding: clamp(4rem, 8vw, 7rem) 0; }
+.section-head { max-width: 640px; margin: 0 auto 3rem; text-align: center; }
+.section-sub { color: var(--text); margin: 0; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: 0.95rem 1.75rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: transform .15s ease, background .2s ease, color .2s ease, border-color .2s ease;
+}
+.btn-primary {
+  background: var(--primary-deep);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--primary-dark); color: #fff; transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.btn-outline {
+  background: transparent;
+  color: var(--primary-deep);
+  border-color: var(--primary-deep);
+}
+.btn-outline:hover { background: var(--primary-deep); color: #fff; }
+.btn-block { width: 100%; }
+.btn-sm { padding: 0.65rem 1.25rem; font-size: 0.8rem; }
+
+.link-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: 1.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-deep);
+}
+.link-arrow span { transition: transform .2s ease; }
+.link-arrow:hover span { transform: translateX(4px); }
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--ink);
+}
+.brand:hover { color: var(--primary-deep); }
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-deep), var(--primary-dark));
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow);
+}
+.brand-name { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-title { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); font-weight: 500; }
+.brand-sub { font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary-deep); }
+
+.primary-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 2rem;
+}
+.primary-nav a {
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 500;
+  position: relative;
+}
+.primary-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -6px;
+  height: 2px;
+  background: var(--primary-deep);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s ease;
+}
+.primary-nav a:hover { color: var(--primary-deep); }
+.primary-nav a:hover::after { transform: scaleX(1); }
+
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  cursor: pointer;
+}
+.menu-toggle span {
+  display: block;
+  height: 2px;
+  background: var(--ink);
+  margin: 5px 0;
+  transition: transform .2s ease;
+}
+
+/* Hero */
+.hero {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: #fff;
+  background:
+    linear-gradient(266deg, var(--primary-deep) 48%, #fff 100%),
+    var(--primary-deep);
+  isolation: isolate;
+}
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255,255,255,0.35), transparent 50%),
+    radial-gradient(circle at 10% 90%, rgba(138, 90, 85, 0.45), transparent 55%);
+  z-index: -1;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 55%;
+  height: 140%;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.3), transparent 60%);
+  z-index: -1;
+}
+.hero-content {
+  padding: clamp(5rem, 10vw, 7rem) 0 6rem;
+  max-width: 760px;
+}
+.hero .eyebrow { color: #fff; opacity: 0.85; }
+.hero h1 { color: #fff; }
+.hero h1 em { color: #fff; opacity: 0.9; }
+.lede {
+  font-size: clamp(1rem, 1.15vw, 1.125rem);
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 560px;
+  margin: 1.25rem 0 2.25rem;
+}
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+.hero-scroll {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 38px;
+  border: 1.5px solid rgba(255,255,255,0.7);
+  border-radius: 14px;
+}
+.hero-scroll span {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 8px;
+  background: #fff;
+  border-radius: 2px;
+  animation: drip 1.8s infinite ease-in-out;
+}
+@keyframes drip {
+  0%   { opacity: 0; transform: translate(-50%, 0); }
+  40%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 14px); }
+}
+
+/* Services */
+.services { background: var(--bg-alt); }
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+.service-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2.25rem 2rem;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow);
+  border-color: var(--primary);
+}
+.service-card.featured {
+  background: linear-gradient(160deg, #fff 0%, var(--primary-softer) 100%);
+  border-color: var(--primary);
+}
+.service-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--primary-softer);
+  color: var(--primary-deep);
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.5rem;
+}
+.service-icon svg { width: 32px; height: 32px; }
+.service-card h3 { color: var(--ink); }
+.service-card p { margin: 0 0 1.25rem; }
+.service-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px dashed var(--line);
+  padding-top: 1rem;
+}
+.service-list li {
+  padding: 0.35rem 0;
+  font-size: 0.92rem;
+  color: var(--secondary);
+  position: relative;
+  padding-left: 1.25rem;
+}
+.service-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.9em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* About */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 4rem;
+  align-items: center;
+}
+.about-image {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, var(--primary-deep), var(--primary-dark)),
+    var(--primary);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.about-image-inner {
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: calc(var(--radius) - 4px);
+  display: grid;
+  place-items: center;
+}
+.about-image::before {
+  content: "MJ";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255,255,255,0.12);
+  font-family: var(--font-display);
+  font-size: clamp(10rem, 18vw, 18rem);
+  font-weight: 500;
+}
+.about-badge {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  padding: 0.6rem 1.1rem;
+  background: #fff;
+  color: var(--primary-deep);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.about-copy p { margin: 0 0 1.25rem; }
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 2rem 0;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.stat-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--primary-deep);
+  font-weight: 500;
+}
+.stat-num small { font-size: 1rem; margin-left: 2px; }
+.stat-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+/* Team */
+.team { background: var(--bg-alt); }
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+.team-card {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.team-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.team-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  margin: 0 auto 1.25rem;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--primary-softer), var(--primary-soft));
+  color: var(--primary-deep);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 500;
+  border: 2px solid #fff;
+  box-shadow: 0 6px 18px -8px rgba(167, 111, 105, 0.45);
+}
+.team-card h3 { margin-bottom: 0.15rem; }
+.team-card .role {
+  color: var(--primary-deep);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 0.75rem;
+  font-weight: 500;
+}
+.team-card p { margin: 0; font-size: 0.92rem; }
+
+/* Testimonial */
+.testimonial {
+  background: linear-gradient(266deg, var(--primary-deep) 48%, #fff 100%);
+  color: #fff;
+  padding: clamp(4rem, 7vw, 6rem) 0;
+}
+.testimonial-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+}
+.quote-mark {
+  font-family: var(--font-display);
+  font-size: 7rem;
+  line-height: 0.3;
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 1rem;
+}
+.testimonial blockquote {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  font-style: italic;
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.5;
+}
+.testimonial .cite {
+  margin: 0;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.8);
+}
+
+/* Book / contact */
+.book { background: var(--bg-alt); }
+.book-inner {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 4rem;
+  align-items: start;
+}
+.book-copy h2 { margin-bottom: 1rem; }
+.book-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
+  display: grid;
+  gap: 0.9rem;
+}
+.book-list li {
+  padding: 0.9rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+}
+.book-list strong {
+  display: inline-block;
+  min-width: 90px;
+  color: var(--primary-deep);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.book-form {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+.field { margin-bottom: 1rem; }
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.field label {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--secondary);
+  margin-bottom: 0.4rem;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: #fff;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(168, 115, 110, 0.18);
+}
+.form-success {
+  margin: 1rem 0 0;
+  padding: 0.8rem 1rem;
+  background: rgba(97, 206, 112, 0.12);
+  color: #2a7a3a;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+/* Footer */
+.site-footer {
+  background: var(--ink);
+  color: rgba(255,255,255,0.75);
+  padding: 4rem 0 1.5rem;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 2.5rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.footer-brand .brand-title { color: #fff; }
+.footer-brand .brand-sub { color: var(--primary); }
+.footer-about { margin: 1rem 0 0; font-size: 0.92rem; max-width: 340px; }
+.site-footer h4 {
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.site-footer a { color: rgba(255,255,255,0.75); }
+.site-footer a:hover { color: var(--primary); }
+.social { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.footer-bottom {
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+.footer-bottom p { margin: 0; }
+
+/* Responsive */
+@media (max-width: 860px) {
+  .primary-nav {
+    position: absolute;
+    top: 100%;
+    right: 4%;
+    left: 4%;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: var(--shadow);
+  }
+  .primary-nav.open { display: flex; }
+  .primary-nav a { padding: 0.6rem 0.5rem; }
+  .menu-toggle { display: block; margin-left: auto; }
+  .nav .btn { display: none; }
+  .about-grid, .book-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-bottom { justify-content: center; text-align: center; }
+}
+@media (max-width: 520px) {
+  .hero { min-height: 80vh; }
+  .field-row { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  .stat { display: flex; align-items: baseline; gap: 0.75rem; }
+  .stat-num { font-size: 1.5rem; }
+}
+
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a href="#top" class="brand" aria-label="MJ Salon and Spa home">
+        <span class="brand-mark">MJ</span>
+        <span class="brand-name">
+          <span class="brand-title">MJ Salon &amp; Spa</span>
+          <span class="brand-sub">Naples, Florida</span>
+        </span>
+      </a>
+      <nav class="primary-nav" aria-label="Primary">
+        <a href="#services">Services</a>
+        <a href="#about">About</a>
+        <a href="#team">Our Team</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a href="#book" class="btn btn-primary btn-sm">Book Now</a>
+      <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-overlay"></div>
+      <div class="container hero-content">
+        <p class="eyebrow">A Full Service Salon</p>
+        <h1>Elevate Your<br /><em>Beauty Experience</em></h1>
+        <p class="lede">
+          Indulge in elegance and sophistication. At MJ Salon &amp; Spa we
+          invite you to transform your look and embrace your true beauty.
+          Our expert stylists and luxurious treatments await you.
+        </p>
+        <div class="hero-actions">
+          <a href="#book" class="btn btn-primary">Book A Service</a>
+          <a href="#services" class="btn btn-ghost">Explore Services</a>
+        </div>
+      </div>
+      <div class="hero-scroll" aria-hidden="true">
+        <span></span>
+      </div>
+    </section>
+
+    <section id="services" class="section services">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">What We Offer</p>
+          <h2>Treatments crafted around you</h2>
+          <p class="section-sub">
+            From everyday styling to a full bridal transformation, every
+            service is tailored to bring out your most radiant self.
+          </p>
+        </header>
+
+        <div class="service-grid">
+          <article class="service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M24 6c-6 6-9 12-9 18a9 9 0 0 0 18 0c0-6-3-12-9-18z" />
+                <path d="M24 24v18" />
+                <path d="M18 42h12" />
+              </svg>
+            </div>
+            <h3>Luxury Hair</h3>
+            <p>
+              Precision cuts, rich color, balayage, smoothing treatments and
+              styling for every occasion — finished to perfection.
+            </p>
+            <ul class="service-list">
+              <li>Cut &amp; Blow-Dry</li>
+              <li>Color &amp; Highlights</li>
+              <li>Keratin &amp; Gloss</li>
+              <li>Bridal Styling</li>
+            </ul>
+            <a href="#book" class="link-arrow">View Services <span aria-hidden="true">&rarr;</span></a>
+          </article>
+
+          <article class="service-card featured">
+            <div class="service-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="24" cy="18" r="10" />
+                <path d="M10 42c2-7 8-11 14-11s12 4 14 11" />
+                <path d="M19 16l3 3 7-7" />
+              </svg>
+            </div>
+            <h3>Radiant Beauty</h3>
+            <p>
+              Makeup, lashes, brows and special-occasion looks designed to
+              highlight your features and hold from dawn to last dance.
+            </p>
+            <ul class="service-list">
+              <li>Signature Makeup</li>
+              <li>Lash Extensions</li>
+              <li>Brow Shaping</li>
+              <li>Wedding Packages</li>
+            </ul>
+            <a href="#book" class="link-arrow">View Services <span aria-hidden="true">&rarr;</span></a>
+          </article>
+
+          <article class="service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M24 6c6 4 10 10 10 17a10 10 0 0 1-20 0c0-7 4-13 10-17z" />
+                <path d="M18 24c2 3 4 4 6 4s4-1 6-4" />
+              </svg>
+            </div>
+            <h3>Blissful Skin</h3>
+            <p>
+              Custom facials, exfoliation and soothing spa therapies to
+              restore glow, balance and a calm, refreshed feeling.
+            </p>
+            <ul class="service-list">
+              <li>Signature Facials</li>
+              <li>Hydrating Treatments</li>
+              <li>Exfoliation &amp; Peels</li>
+              <li>Relaxation Rituals</li>
+            </ul>
+            <a href="#book" class="link-arrow">View Services <span aria-hidden="true">&rarr;</span></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section about">
+      <div class="container about-grid">
+        <div class="about-image" aria-hidden="true">
+          <div class="about-image-inner">
+            <span class="about-badge">Since 2016</span>
+          </div>
+        </div>
+        <div class="about-copy">
+          <p class="eyebrow">Who We Are</p>
+          <h2>A boutique salon rooted in Naples</h2>
+          <p>
+            MJ Salon &amp; Spa is a full service Salon in Naples, Florida
+            for the person who just wants their hair done — or the person
+            who needs to get ready for a wedding. Every guest is welcomed
+            with warmth, attention and a space designed to feel like an
+            escape.
+          </p>
+          <div class="stat-row">
+            <div class="stat">
+              <span class="stat-num">10<small>+</small></span>
+              <span class="stat-label">Years of craft</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num">25<small>+</small></span>
+              <span class="stat-label">Signature services</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num">5.0<small>&#9733;</small></span>
+              <span class="stat-label">Guest rating</span>
+            </div>
+          </div>
+          <a href="#contact" class="btn btn-outline">Visit the Studio</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="team" class="section team">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Meet the Artists</p>
+          <h2>Hands that shape your look</h2>
+        </header>
+        <div class="team-grid">
+          <article class="team-card">
+            <div class="team-avatar" aria-hidden="true"><span>MJ</span></div>
+            <h3>Maria J.</h3>
+            <p class="role">Founder &amp; Master Stylist</p>
+            <p>Color specialist with a gift for soft, lived-in blondes and bridal updos.</p>
+          </article>
+          <article class="team-card">
+            <div class="team-avatar" aria-hidden="true"><span>AS</span></div>
+            <h3>Ana S.</h3>
+            <p class="role">Senior Esthetician</p>
+            <p>Facialist focused on glowing, healthy skin for Florida sun and salt.</p>
+          </article>
+          <article class="team-card">
+            <div class="team-avatar" aria-hidden="true"><span>LC</span></div>
+            <h3>Lena C.</h3>
+            <p class="role">Makeup Artist</p>
+            <p>Bridal and editorial specialist with a light, luminous signature finish.</p>
+          </article>
+          <article class="team-card">
+            <div class="team-avatar" aria-hidden="true"><span>RV</span></div>
+            <h3>Rosa V.</h3>
+            <p class="role">Hair Stylist</p>
+            <p>Precision cuts, extensions and smoothing treatments for every texture.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section testimonial">
+      <div class="container testimonial-inner">
+        <span class="quote-mark" aria-hidden="true">&ldquo;</span>
+        <blockquote>
+          Walking into MJ Salon feels like stepping into a quiet retreat.
+          My color has never looked better and my bridal trial was
+          flawless — I left feeling like the best version of myself.
+        </blockquote>
+        <p class="cite">— Emily R., Naples</p>
+      </div>
+    </section>
+
+    <section id="book" class="section book">
+      <div class="container book-inner">
+        <div class="book-copy">
+          <p class="eyebrow">Ready to Glow?</p>
+          <h2>Book your next visit</h2>
+          <p>
+            Tell us what you have in mind and we'll match you with the
+            right artist and the perfect time slot.
+          </p>
+          <ul class="book-list">
+            <li><strong>Hours</strong> — Tue–Sat, 9am to 7pm</li>
+            <li><strong>Location</strong> — Naples, Florida</li>
+            <li><strong>Parking</strong> — Complimentary on site</li>
+          </ul>
+        </div>
+        <form class="book-form" id="contact" onsubmit="event.preventDefault(); this.querySelector('.form-success').hidden = false; this.reset();">
+          <div class="field">
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" required />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" name="phone" type="tel" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="service">Service</label>
+            <select id="service" name="service">
+              <option>Luxury Hair</option>
+              <option>Radiant Beauty</option>
+              <option>Blissful Skin</option>
+              <option>Bridal Package</option>
+              <option>Not sure — recommend something</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Tell us about the look you're after..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Request Appointment</button>
+          <p class="form-success" hidden>Thank you — we'll be in touch within one business day.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="brand footer-brand">
+          <span class="brand-mark">MJ</span>
+          <span class="brand-name">
+            <span class="brand-title">MJ Salon &amp; Spa</span>
+            <span class="brand-sub">Naples, Florida</span>
+          </span>
+        </div>
+        <p class="footer-about">
+          A full service salon in Naples, Florida for the person who just
+          wants their hair done or the person getting ready for a wedding.
+        </p>
+      </div>
+      <div>
+        <h4>Visit</h4>
+        <p>Naples, Florida<br />Tue–Sat · 9am–7pm</p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p>
+          <a href="tel:+12395550123">(239) 555-0123</a><br />
+          <a href="mailto:hello@mjsalonnaples.com">hello@mjsalonnaples.com</a>
+        </p>
+      </div>
+      <div>
+        <h4>Follow</h4>
+        <ul class="social">
+          <li><a href="#" aria-label="Instagram">Instagram</a></li>
+          <li><a href="#" aria-label="Facebook">Facebook</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2026 MJ Salon &amp; Spa. All rights reserved.</p>
+      <p><a href="#">Privacy Policy</a> · <a href="#">Terms &amp; Conditions</a></p>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.querySelector('.menu-toggle');
+    const nav = document.querySelector('.primary-nav');
+    toggle?.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+    document.querySelectorAll('.primary-nav a').forEach(a =>
+      a.addEventListener('click', () => {
+        nav.classList.remove('open');
+        toggle?.setAttribute('aria-expanded', 'false');
+      })
+    );
+  </script>
+</body>
+</html>
