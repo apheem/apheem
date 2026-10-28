@@ -1,6 +1,6 @@
 // Service worker: keeps a copy of the whole game on the device so it runs with no connection.
 // Bump VERSION whenever any file below changes; the next launch then picks up the new copy.
-const VERSION = 'glitch-defense-v1.0';
+const VERSION = 'glitch-defense-v2.0';
 const FILES = [
   './',
   'index.html',
