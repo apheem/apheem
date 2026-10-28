@@ -110,7 +110,7 @@ More cards are unlocked through meta progression.
 2. **Content** ✅: all 4 towers with upgrades and targeting modes, all non-boss enemy types, hand-built 10-wave mix.
 3. **Roguelite layer** ✅: 14 upgrade cards, Warden (wave 10) and Overlord (wave 20) bosses, 20-wave run.
 4. **Meta** ✅: Data, Lab unlock shop, run saved between waves (Continue), Normal/Hard/Nightmare, 3 maps.
-5. **Ship**: offline support, Home Screen icon, polish and balance, GitHub Pages.
+5. **Ship** ✅: offline support (service worker), Home Screen icon and manifest, bundled font, screen kept awake during waves. GitHub Pages is switched on after merging (see below).
 
 ## Code layout
 
@@ -126,4 +126,22 @@ The game lives in `docs/` so GitHub Pages can serve it as-is (no build step).
 | `docs/js/profile.js` | Data, Lab unlocks, wins, best run and the saved run |
 | `docs/js/main.js` | Main loop, touch input, screens and panels |
 
+| `docs/sw.js` | Service worker: caches every file so the game runs offline |
+| `docs/manifest.webmanifest` | Name, icon and full-screen settings for the Home Screen |
+| `docs/fonts/`, `docs/icons/` | Bundled Chakra Petch font (OFL) and app icons |
+
 To play locally: `cd docs && python3 -m http.server`, then open `http://localhost:8000`.
+
+## Publishing and installing
+
+1. Merge this branch into `main`.
+2. On GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, branch `main`, folder `/docs`, **Save**.
+3. After a minute or two the game is live at `https://apheem.github.io/apheem/`.
+4. On the iPhone: open that link in **Safari**, tap **Share → Add to Home Screen**, then launch it from the new icon.
+   It opens full screen, works with no connection after that first visit, and keeps your progress.
+
+## Releasing an update
+
+Change the files, then bump `VERSION` in `docs/sw.js` (for example `glitch-defense-v1.1`) and push to `main`.
+Phones pick up the new version the next time the game is opened with a connection, and use it from the launch after that.
+

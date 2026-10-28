@@ -555,6 +555,38 @@
     if (r.width > 0 && r.height > 0) renderer.resize(r.width, r.height, game, BOSS_BAR_SPACE);
   }
 
+  // ---- Phone niceties ----
+
+  // Keep the screen awake while a wave is running. Not every browser allows it, which is fine.
+  let wakeLock = null;
+  let wantAwake = false;
+  async function keepAwake(on) {
+    wantAwake = on;
+    try {
+      if (on && !wakeLock && navigator.wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => (wakeLock = null));
+      } else if (!on && wakeLock) {
+        await wakeLock.release();
+        wakeLock = null;
+      }
+    } catch (e) {
+      wakeLock = null;
+    }
+  }
+  setInterval(() => {
+    const on = running && !paused && game.state === 'playing' && !document.hidden;
+    if (on !== wantAwake || (on && !wakeLock)) keepAwake(on);
+  }, 1000);
+
+  // Stop Safari's pinch-zoom from grabbing the field mid-game.
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+  // Offline copy of the game (only where service workers are allowed: https or localhost).
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+
   // Handle for poking at a live run from the browser console or automated tests.
   GD.debug = { get game() { return game; } };
 
