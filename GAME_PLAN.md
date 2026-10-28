@@ -77,8 +77,23 @@ More cards are unlocked through meta progression.
 
 ## Build order
 
-1. **Playable prototype**: map, path, Pulse tower, Drones, waves, gold, win/lose.
+1. **Playable prototype** ✅: map, path, Pulse tower, Drones, 10 waves, gold, win/lose, pause, fast-forward.
 2. **Content**: all 4 towers with upgrades, all enemy types.
 3. **Roguelite layer**: upgrade cards, boss waves, 20-wave run.
 4. **Meta**: Data, unlock shop, save/load, fast-forward, difficulty tiers, 3 maps.
 5. **Ship**: offline support, Home Screen icon, polish and balance, GitHub Pages.
+
+## Code layout
+
+The game lives in `docs/` so GitHub Pages can serve it as-is (no build step).
+
+| File | Purpose |
+|---|---|
+| `docs/index.html` | Page markup: HUD, field, dock panels, overlays |
+| `docs/style.css` | Styles |
+| `docs/js/config.js` | All tunable data: map paths, tower tiers, enemy stats, wave recipe |
+| `docs/js/game.js` | Simulation only (no DOM), so it can run headless for balance tests |
+| `docs/js/render.js` | Canvas drawing and effects |
+| `docs/js/main.js` | Main loop, touch input, panels, best-run save |
+
+To play locally: `cd docs && python3 -m http.server`, then open `http://localhost:8000`.

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Glitch Defense</title>
+<meta name="theme-color" content="#0b0a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Glitch Defense">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }</style>
+</head>
+<body>
+<!-- GAME:START -->
+<div id="app">
+  <header class="hud">
+    <div class="stat core" id="stat-core"><span class="label">Core</span><span class="value" id="hud-hp">20</span></div>
+    <div class="stat gold"><span class="label">Gold</span><span class="value" id="hud-gold">120</span></div>
+    <div class="stat"><span class="label">Wave</span><span class="value" id="hud-wave">0/10</span></div>
+    <div class="spacer"></div>
+    <button class="btn icon-btn" id="btn-speed" type="button" aria-label="Game speed">1×</button>
+    <button class="btn icon-btn" id="btn-pause" type="button" aria-label="Pause">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" fill="currentColor"/></svg>
+    </button>
+  </header>
+
+  <main id="stage"><canvas id="field" aria-label="Game field"></canvas></main>
+
+  <footer class="dock">
+    <section class="panel" id="panel-idle">
+      <p class="hint" id="idle-hint">Tap an empty tile to build a tower.</p>
+      <button class="btn primary wave-btn" id="btn-wave" type="button">
+        <span class="main" id="wave-main">Start wave 1</span>
+        <span class="sub" id="wave-sub">7 drones</span>
+      </button>
+    </section>
+
+    <section class="panel" id="panel-build" hidden>
+      <div class="panel-head">
+        <span class="panel-title">Build</span>
+        <button class="close-btn" type="button" data-close aria-label="Close">×</button>
+      </div>
+      <div class="cards">
+        <button class="btn card" type="button" data-tower="pulse">
+          <canvas class="card-icon" width="56" height="56" data-icon="pulse"></canvas>
+          <span class="card-name">Pulse</span>
+          <span class="card-cost" id="cost-pulse">50</span>
+        </button>
+        <button class="btn card" type="button" disabled><canvas class="card-icon" width="56" height="56" data-icon="nova"></canvas><span class="card-name">Nova</span><span class="card-cost">Soon</span></button>
+        <button class="btn card" type="button" disabled><canvas class="card-icon" width="56" height="56" data-icon="cryo"></canvas><span class="card-name">Cryo</span><span class="card-cost">Soon</span></button>
+        <button class="btn card" type="button" disabled><canvas class="card-icon" width="56" height="56" data-icon="rail"></canvas><span class="card-name">Rail</span><span class="card-cost">Soon</span></button>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-tower" hidden>
+      <div class="panel-head">
+        <span class="panel-title" id="tower-title">Pulse · Tier I</span>
+        <button class="close-btn" type="button" data-close aria-label="Close">×</button>
+      </div>
+      <div class="tower-stats">
+        <div><span class="label">Damage</span><span class="value" id="ts-damage">4</span></div>
+        <div><span class="label">Shots/s</span><span class="value" id="ts-rate">2.5</span></div>
+        <div><span class="label">Range</span><span class="value" id="ts-range">2.2</span></div>
+      </div>
+      <div class="tower-actions">
+        <button class="btn primary" id="btn-upgrade" type="button">Upgrade · 60</button>
+        <button class="btn danger" id="btn-sell" type="button">Sell +35</button>
+      </div>
+    </section>
+  </footer>
+
+  <div class="overlay" id="overlay-title">
+    <h1 class="wordmark"><span class="glitch" data-text="GLITCH">GLITCH</span><span class="wordmark-sub">Defense</span></h1>
+    <p class="tagline">Viruses are tunnelling toward the Core. Hold it for 10 waves.</p>
+    <dl class="howto">
+      <div><dt>Build</dt><dd>Tap an empty tile, then pick a tower.</dd></div>
+      <div><dt>Upgrade</dt><dd>Tap a tower to upgrade or sell it.</dd></div>
+      <div><dt>Waves</dt><dd>Start each wave yourself. Calling one early pays +10 gold.</dd></div>
+    </dl>
+    <button class="btn primary big" id="btn-play" type="button">Play</button>
+    <p class="best" id="best-line" hidden></p>
+    <p class="version">Prototype · v0.1</p>
+  </div>
+
+  <div class="overlay" id="overlay-pause" hidden>
+    <h2 class="overlay-title">Paused</h2>
+    <div class="stack">
+      <button class="btn primary big" id="btn-resume" type="button">Resume</button>
+      <button class="btn" id="btn-restart" type="button">Restart run</button>
+      <button class="btn" id="btn-quit" type="button">Quit to title</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-end" hidden>
+    <h2 class="overlay-title" id="end-title">Core breached</h2>
+    <dl class="summary">
+      <div><dt>Wave</dt><dd id="end-wave">0/10</dd></div>
+      <div><dt>Destroyed</dt><dd id="end-kills">0</dd></div>
+      <div><dt>Core left</dt><dd id="end-hp">0</dd></div>
+    </dl>
+    <div class="stack">
+      <button class="btn primary big" id="btn-again" type="button">Play again</button>
+      <button class="btn" id="btn-title" type="button">Back to title</button>
+    </div>
+  </div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/game.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+<!-- GAME:END -->
+</body>
+</html>
