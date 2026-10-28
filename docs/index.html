@@ -41,6 +41,7 @@
   <footer class="dock">
     <section class="panel" id="panel-idle">
       <p class="hint" id="idle-hint">Tap an empty tile to build a tower.</p>
+      <div class="abilities" id="abilities" hidden></div>
       <button class="btn primary wave-btn" id="btn-wave" type="button">
         <span class="main" id="wave-main">Start wave 1</span>
         <span class="sub" id="wave-sub">7 drones</span>
@@ -52,32 +53,7 @@
         <span class="panel-title">Build</span>
         <button class="close-btn" type="button" data-close aria-label="Close">×</button>
       </div>
-      <div class="cards">
-        <button class="btn card" type="button" data-tower="pulse">
-          <canvas class="card-icon" width="56" height="56" data-icon="pulse"></canvas>
-          <span class="card-name">Pulse</span>
-          <span class="card-role">Rapid</span>
-          <span class="card-cost" id="cost-pulse">50</span>
-        </button>
-        <button class="btn card" type="button" data-tower="nova">
-          <canvas class="card-icon" width="56" height="56" data-icon="nova"></canvas>
-          <span class="card-name">Nova</span>
-          <span class="card-role">Splash</span>
-          <span class="card-cost" id="cost-nova">80</span>
-        </button>
-        <button class="btn card" type="button" data-tower="cryo">
-          <canvas class="card-icon" width="56" height="56" data-icon="cryo"></canvas>
-          <span class="card-name">Cryo</span>
-          <span class="card-role">Slow</span>
-          <span class="card-cost" id="cost-cryo">60</span>
-        </button>
-        <button class="btn card" type="button" data-tower="rail">
-          <canvas class="card-icon" width="56" height="56" data-icon="rail"></canvas>
-          <span class="card-name">Rail</span>
-          <span class="card-role">Sniper</span>
-          <span class="card-cost" id="cost-rail">110</span>
-        </button>
-      </div>
+      <div class="cards" id="build-cards"></div>
     </section>
 
     <section class="panel" id="panel-tower" hidden>
@@ -89,9 +65,9 @@
         </div>
       </div>
       <div class="tower-stats">
-        <div><span class="label" id="ts-label-0">Damage</span><span class="value" id="ts-value-0">4</span></div>
-        <div><span class="label" id="ts-label-1">Shots/s</span><span class="value" id="ts-value-1">2.5</span></div>
-        <div><span class="label" id="ts-label-2">Range</span><span class="value" id="ts-value-2">2.2</span></div>
+        <div id="ts-cell-0"><span class="label" id="ts-label-0">Damage</span><span class="value" id="ts-value-0">4</span></div>
+        <div id="ts-cell-1"><span class="label" id="ts-label-1">Shots/s</span><span class="value" id="ts-value-1">2.5</span></div>
+        <div id="ts-cell-2"><span class="label" id="ts-label-2">Range</span><span class="value" id="ts-value-2">2.2</span></div>
       </div>
       <div class="tower-actions">
         <button class="btn primary" id="btn-upgrade" type="button">Upgrade · 60</button>
@@ -102,12 +78,13 @@
 
   <div class="overlay" id="overlay-title">
     <h1 class="wordmark"><span class="glitch" data-text="GLITCH">GLITCH</span><span class="wordmark-sub">Defense</span></h1>
-    <p class="tagline">Viruses are tunnelling toward the Core. Hold it for 20 waves.</p>
+    <p class="tagline">Viruses are tunnelling toward the Core. Hold six sectors for 20 waves each.</p>
     <dl class="howto">
       <div><dt>Build</dt><dd>Tap an empty tile, then pick a tower.</dd></div>
       <div><dt>Upgrade</dt><dd>Tap a tower to upgrade or sell it.</dd></div>
       <div><dt>Waves</dt><dd>Start each wave yourself. Calling one early pays +10 gold.</dd></div>
       <div><dt>Cards</dt><dd>Every third wave, pick 1 of 3 upgrades for the rest of the run.</dd></div>
+      <div><dt>Lab</dt><dd>Spend Data on new towers, abilities, research and styles.</dd></div>
     </dl>
     <div class="stack">
       <button class="btn primary big continue" id="btn-continue" type="button" hidden>Continue<span class="btn-sub" id="continue-sub">Wave 1</span></button>
@@ -115,15 +92,19 @@
       <button class="btn" id="btn-lab" type="button">Lab · <span id="title-data">0</span> Data</button>
     </div>
     <p class="best" id="best-line" hidden></p>
-    <p class="version">Version 1.0</p>
+    <p class="version">Version 2.0</p>
   </div>
 
   <div class="overlay" id="overlay-setup" hidden>
-    <h2 class="overlay-title small">New run</h2>
+    <h2 class="overlay-title small">Campaign</h2>
     <section class="setup-group">
-      <span class="label">Map</span>
+      <span class="label">Sector</span>
       <div class="map-list" id="map-list"></div>
-      <p class="setup-note" id="map-blurb"></p>
+      <div class="sector-info">
+        <span class="sector-name" id="map-name"></span>
+        <p class="setup-note" id="map-blurb"></p>
+        <p class="setup-note twist" id="map-twist"></p>
+      </div>
     </section>
     <section class="setup-group">
       <span class="label">Difficulty</span>
@@ -144,7 +125,8 @@
       <h2 class="overlay-title small">Lab</h2>
       <span class="data-pill"><b id="lab-balance">0</b> Data</span>
     </div>
-    <p class="setup-note">Every run pays Data, win or lose. Unlocks are permanent.</p>
+    <div class="seg tabs" id="lab-tabs"></div>
+    <p class="setup-note" id="lab-note">Every run pays Data, win or lose. Unlocks are permanent.</p>
     <div class="lab-list" id="lab-list"></div>
     <div class="stack">
       <button class="btn" id="btn-lab-back" type="button">Back</button>

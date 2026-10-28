@@ -27,19 +27,37 @@
   let saveTimer = 0;
   let setupMap = profile.state.map;
   let setupDifficulty = profile.state.difficulty;
+  let aiming = null; // ability waiting for a tap on the field
+  let labTab = 'core';
+  let labBack = null; // screen to return to from the Lab
+
+  GD.applySkin(profile.state.skin);
 
   // ---- Game flow ----
 
   function useGame(g) {
     game = g;
     sel = null;
+    aiming = null;
     speed = 1;
     paused = false;
     endTimer = 0;
     acc = 0;
     saveTimer = 0;
     renderer.reset();
+    applyTheme();
+    buildAbilityButtons();
     resize();
+  }
+
+  // The page around the field takes on the sector's background color.
+  function applyTheme() {
+    const th = GD.themes[game.map.theme];
+    const root = document.documentElement.style;
+    root.setProperty('--bg', th.bg);
+    root.setProperty('--overlay', GD.rgba(th.bg, 0.86));
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = th.bg;
   }
 
   function startRun(mapId, difficulty) {
@@ -93,8 +111,12 @@
 
   // ---- Title, setup and Lab ----
 
+  function sectorLabel(map) {
+    return 'Sector ' + (GD.maps.indexOf(map) + 1) + ' · ' + map.name;
+  }
+
   function runLabel(r) {
-    return GD.maps.find((m) => m.id === r.map).name + ' · ' + GD.difficulties[r.difficulty].name;
+    return sectorLabel(GD.maps.find((m) => m.id === r.map) || GD.maps[0]) + ' · ' + GD.difficulties[r.difficulty].name;
   }
 
   function showTitle() {
@@ -119,23 +141,33 @@
   function renderSetup() {
     const maps = $('map-list');
     maps.textContent = '';
-    for (const m of GD.maps) {
+    GD.maps.forEach((m, i) => {
       const open = profile.mapUnlocked(m);
       const b = el('button', 'btn map-choice' + (m.id === setupMap ? ' selected' : ''));
       b.type = 'button';
       b.disabled = !open;
+      b.style.setProperty('--theme', GD.themes[m.theme].edge);
       const cv = el('canvas', 'map-thumb');
       cv.width = 54;
       cv.height = 84;
       drawMapThumb(cv, m, open);
-      b.append(cv, el('span', 'map-name', m.name), el('span', 'map-lock', open ? '' : m.cost + ' Data · Lab'));
+      const marks = el('span', 'clears');
+      for (const d of GD.difficultyOrder) {
+        const mark = el('i', profile.cleared(m.id, d) ? 'on' : '');
+        mark.title = GD.difficulties[d].name;
+        marks.appendChild(mark);
+      }
+      b.append(el('span', 'map-num', String(i + 1).padStart(2, '0')), cv, el('span', 'map-name', m.name), open ? marks : el('span', 'map-lock', 'Win ' + String(i).padStart(2, '0')));
       b.addEventListener('click', () => {
         setupMap = m.id;
         renderSetup();
       });
       maps.appendChild(b);
-    }
-    $('map-blurb').textContent = GD.maps.find((m) => m.id === setupMap).blurb;
+    });
+    const map = GD.maps.find((m) => m.id === setupMap);
+    $('map-name').textContent = sectorLabel(map);
+    $('map-blurb').textContent = map.blurb;
+    $('map-twist').textContent = map.twist + (map.data > 1 ? ' Pays ' + map.data + '× Data.' : '');
 
     const diffs = $('diff-list');
     diffs.textContent = '';
@@ -167,19 +199,43 @@
     return text;
   }
 
-  function showLab() {
+  const LAB_NOTES = {
+    core: 'Every run pays Data, win or lose. Unlocks are permanent.',
+    arsenal: 'New towers join the build menu. Abilities appear above the wave button during a run.',
+    research: 'Permanent upgrades for each tower, applied at the start of every run.',
+    cards: 'Each card joins the pool you draw from every third wave.',
+    style: 'Tower colors and plate shapes. Switch any time, even mid-run.',
+  };
+
+  function showLab(from) {
+    labBack = from;
     renderLab();
     showOverlay('overlay-lab');
   }
 
   function renderLab() {
     $('lab-balance').textContent = profile.state.data;
+    const tabs = $('lab-tabs');
+    tabs.textContent = '';
+    for (const tab of GD.labTabs) {
+      const b = el('button', 'seg-btn' + (tab.id === labTab ? ' selected' : ''), tab.name);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        labTab = tab.id;
+        renderLab();
+        $('overlay-lab').scrollTop = 0;
+      });
+      tabs.appendChild(b);
+    }
+    $('lab-note').textContent = LAB_NOTES[labTab];
+
     const list = $('lab-list');
     list.textContent = '';
-    for (const item of GD.lab) {
+    for (const item of GD.lab.filter((i) => i.tab === labTab)) {
       const lv = profile.level(item.id);
       const cost = profile.nextCost(item.id);
-      const row = el('div', 'lab-item');
+      const blocked = profile.blocked(item);
+      const row = el('div', 'lab-item' + (blocked ? ' blocked' : ''));
       const info = el('div', 'lab-info');
       const name = el('span', 'lab-name', item.name);
       if (item.levels.length > 1) {
@@ -187,16 +243,60 @@
         for (let i = 0; i < item.levels.length; i++) pips.appendChild(el('i', i < lv ? 'on' : ''));
         name.appendChild(pips);
       }
-      info.append(name, el('span', 'lab-text', item.text));
-      const buy = el('button', 'btn buy', cost === null ? 'Owned' : cost + ' Data');
-      buy.type = 'button';
-      buy.disabled = cost === null || profile.state.data < cost;
-      buy.addEventListener('click', () => {
-        if (profile.buy(item.id)) renderLab();
-      });
-      row.append(info, buy);
+      let text = item.text;
+      if (blocked) text += ' Unlock ' + GD.lab.find((i) => i.id === item.requires).name + ' first.';
+      else if (item.more && lv > 0 && cost !== null) text += ' ' + item.more;
+      info.append(name, el('span', 'lab-text', text));
+      row.append(labIcon(item), info, labButton(item, cost, blocked));
       list.appendChild(row);
     }
+  }
+
+  function labButton(item, cost, blocked) {
+    if (item.skin && profile.ownsSkin(item.skin)) {
+      const on = profile.state.skin === item.skin;
+      const b = el('button', 'btn buy equip' + (on ? ' on' : ''), on ? 'Equipped' : 'Equip');
+      b.type = 'button';
+      b.disabled = on;
+      b.addEventListener('click', () => {
+        profile.setSkin(item.skin);
+        GD.applySkin(item.skin);
+        drawIcons();
+        renderLab();
+      });
+      return b;
+    }
+    const b = el('button', 'btn buy', cost === null ? 'Owned' : blocked ? 'Locked' : cost + ' Data');
+    b.type = 'button';
+    b.disabled = cost === null || blocked || profile.state.data < cost;
+    b.addEventListener('click', () => {
+      if (profile.buy(item.id)) renderLab();
+    });
+    return b;
+  }
+
+  // Small picture beside a Lab item: the tower, ability glyph or color swatches.
+  function labIcon(item) {
+    const box = el('span', 'lab-icon');
+    if (item.skin) {
+      const skin = GD.skins[item.skin];
+      box.classList.add('swatches');
+      for (const t of ['pulse', 'nova', 'rail', 'laser']) {
+        const dot = el('i');
+        dot.style.background = skin.towers[t];
+        box.appendChild(dot);
+      }
+      return box;
+    }
+    const cv = el('canvas');
+    cv.width = 56;
+    cv.height = 56;
+    if (item.tower) cv.dataset.icon = item.tower;
+    else if (item.ability) cv.dataset.ability = item.ability;
+    else cv.dataset.glyph = item.tab === 'cards' ? 'card' : item.id;
+    drawIcon(cv);
+    box.appendChild(cv);
+    return box;
   }
 
   function el(tag, cls, text) {
@@ -206,8 +306,10 @@
     return e;
   }
 
+  // Sector preview in its theme colors.
   function drawMapThumb(cv, map, open) {
     const g = cv.getContext('2d');
+    const th = GD.themes[map.theme];
     const cols = GD.config.cols;
     const rows = GD.config.rows;
     const ts = Math.min(cv.width / cols, cv.height / rows);
@@ -215,18 +317,24 @@
     const oy = (cv.height - ts * rows) / 2;
     g.clearRect(0, 0, cv.width, cv.height);
     g.globalAlpha = open ? 1 : 0.35;
-    g.strokeStyle = GD.colors.magenta;
+    g.fillStyle = th.bg;
+    g.fillRect(ox, oy, ts * cols, ts * rows);
+    g.fillStyle = GD.rgba(th.tile, 0.12);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) g.fillRect(ox + c * ts + 0.5, oy + r * ts + 0.5, ts - 1, ts - 1);
+    g.strokeStyle = th.edge;
     g.lineWidth = ts * 0.55;
     g.lineJoin = 'miter';
     g.beginPath();
-    map.path.forEach(([c, r], i) => {
-      const x = ox + (c + 0.5) * ts;
-      const y = oy + (Math.max(0, r) + (r < 0 ? 0 : 0.5)) * ts;
-      if (i === 0) g.moveTo(x, y);
-      else g.lineTo(x, y);
-    });
+    for (const path of map.paths) {
+      path.forEach(([c, r], i) => {
+        const x = ox + (c + 0.5) * ts;
+        const y = oy + (Math.max(0, r) + (r < 0 ? 0 : 0.5)) * ts;
+        if (i === 0) g.moveTo(x, y);
+        else g.lineTo(x, y);
+      });
+    }
     g.stroke();
-    const [cc, cr] = map.path[map.path.length - 1];
+    const [cc, cr] = map.paths[0][map.paths[0].length - 1];
     g.fillStyle = GD.colors.cyan;
     g.beginPath();
     g.arc(ox + (cc + 0.5) * ts, oy + (cr + 0.5) * ts, ts * 0.6, 0, Math.PI * 2);
@@ -285,7 +393,7 @@
     const result = profile.finishRun(game);
     $('end-data').textContent = '+' + result.data + ' Data · ' + profile.state.data + ' total';
     $('end-unlock').hidden = !result.unlocked.length;
-    $('end-unlock').textContent = result.unlocked.map((n) => n + ' difficulty unlocked').join(' · ');
+    $('end-unlock').textContent = result.unlocked.join(' · ');
     showOverlay('overlay-end');
   }
 
@@ -330,6 +438,12 @@
   canvas.addEventListener('pointerdown', (e) => {
     if (!running || paused || game.offers.length || game.state !== 'playing') return;
     const rect = canvas.getBoundingClientRect();
+    if (aiming) {
+      const p = renderer.toField(e.clientX - rect.left, e.clientY - rect.top);
+      if (p.x >= 0 && p.y >= 0 && p.x <= game.cols && p.y <= game.rows) game.useAbility(aiming, p.x, p.y);
+      aiming = null;
+      return;
+    }
     const { c, r } = renderer.toTile(e.clientX - rect.left, e.clientY - rect.top);
     const tower = game.towerAt(c, r);
     if (tower) sel = sel && sel.tower === tower ? null : { tower };
@@ -340,12 +454,60 @@
 
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => (sel = null)));
 
-  document.querySelectorAll('[data-tower]').forEach((b) =>
+  // Build menu: one card per tower. Towers still locked in the Lab show up dimmed.
+  const cards = {};
+  for (const type of GD.towerOrder) {
+    const def = GD.towers[type];
+    const b = el('button', 'btn card');
+    b.type = 'button';
+    b.dataset.tower = type;
+    const cv = el('canvas', 'card-icon');
+    cv.width = 56;
+    cv.height = 56;
+    cv.dataset.icon = type;
+    const cost = el('span', 'card-cost', String(def.tiers[0].cost));
+    cost.id = 'cost-' + type;
+    b.append(cv, el('span', 'card-name', def.name), cost);
     b.addEventListener('click', () => {
       if (!sel || sel.tower) return;
-      if (game.build(b.dataset.tower, sel.c, sel.r)) sel = null;
-    })
-  );
+      if (game.build(type, sel.c, sel.r)) sel = null;
+    });
+    $('build-cards').appendChild(b);
+    cards[type] = b;
+  }
+
+  // Ability buttons for the abilities this run has, rebuilt whenever a run starts.
+  const abilityButtons = {};
+  function buildAbilityButtons() {
+    const row = $('abilities');
+    row.textContent = '';
+    for (const k in abilityButtons) delete abilityButtons[k];
+    for (const id of GD.abilityOrder) {
+      if (!game.abilities[id]) continue;
+      const def = GD.abilities[id];
+      const b = el('button', 'btn ability');
+      b.type = 'button';
+      b.style.setProperty('--edge', def.color);
+      b.style.setProperty('--tint', def.color);
+      const cv = el('canvas', 'ability-icon');
+      cv.width = 40;
+      cv.height = 40;
+      cv.dataset.ability = id;
+      drawIcon(cv);
+      const label = el('span', 'ability-label', def.short);
+      b.append(el('span', 'ability-fill'), cv, label);
+      b.addEventListener('click', () => {
+        if (!running || paused || game.state !== 'playing' || game.abilityCharge(id) < 1) return;
+        if (def.aim) {
+          aiming = aiming === id ? null : id;
+          sel = null;
+        } else game.useAbility(id);
+      });
+      row.appendChild(b);
+      abilityButtons[id] = { button: b, label };
+    }
+    row.hidden = !Object.keys(abilityButtons).length;
+  }
 
   $('btn-upgrade').addEventListener('click', () => sel && sel.tower && game.upgrade(sel.tower));
   $('btn-target').addEventListener('click', () => sel && sel.tower && game.cycleMode(sel.tower));
@@ -361,11 +523,11 @@
   $('btn-quit').addEventListener('click', toTitle);
   $('btn-continue').addEventListener('click', continueRun);
   $('btn-play').addEventListener('click', showSetup);
-  $('btn-lab').addEventListener('click', showLab);
+  $('btn-lab').addEventListener('click', () => showLab(showTitle));
   $('btn-start').addEventListener('click', () => startRun(setupMap, setupDifficulty));
   $('btn-setup-back').addEventListener('click', showTitle);
-  $('btn-setup-lab').addEventListener('click', showLab);
-  $('btn-lab-back').addEventListener('click', showTitle);
+  $('btn-setup-lab').addEventListener('click', () => showLab(showSetup));
+  $('btn-lab-back').addEventListener('click', () => (labBack || showTitle)());
   $('btn-again').addEventListener('click', restartRun);
   $('btn-title').addEventListener('click', toTitle);
   $('btn-reroll').addEventListener('click', () => {
@@ -391,8 +553,6 @@
   }
 
   const roman = ['I', 'II', 'III'];
-  const cards = {};
-  document.querySelectorAll('[data-tower]').forEach((b) => (cards[b.dataset.tower] = b));
 
   function updateUI() {
     set('hud-hp', 'textContent', String(game.hp));
@@ -406,14 +566,21 @@
     set('panel-build', 'hidden', mode !== 'build');
     set('panel-tower', 'hidden', mode !== 'tower');
 
-    if (mode === 'idle') updateWaveButton();
+    if (mode === 'idle') {
+      updateWaveButton();
+      updateAbilities();
+    }
     if (mode === 'build') {
       for (const type of GD.towerOrder) {
+        const open = game.available.includes(type);
         const cost = game.buildCost(type);
-        set('cost-' + type, 'textContent', String(cost));
-        cards[type].classList.toggle('poor', game.gold < cost);
+        set('cost-' + type, 'textContent', open ? String(cost) : 'Lab');
+        cards[type].classList.toggle('poor', open && game.gold < cost);
+        cards[type].classList.toggle('locked', !open);
+        cards[type].disabled = !open;
       }
     }
+    renderer.aim = !!aiming;
     if (mode === 'tower') updateTowerPanel(sel.tower);
     updateBossBar();
   }
@@ -458,10 +625,24 @@
     set('btn-wave', 'disabled', disabled);
 
     let hint = '';
-    if (game.towers.length === 0) hint = 'Tap an empty tile to build a tower.';
+    if (aiming) hint = 'Tap the field to aim the ' + GD.abilities[aiming].name + '.';
+    else if (game.towers.length === 0) hint = 'Tap an empty tile to build a tower.';
     else if (game.wave === 0) hint = 'Tap a tower to upgrade or sell it.';
     else if (preview && preview.newType && !game.spawnQueue.length) hint = 'Next up: ' + GD.enemies[preview.newType].intro;
     set('idle-hint', 'textContent', hint);
+  }
+
+  function updateAbilities() {
+    for (const [id, { button, label }] of Object.entries(abilityButtons)) {
+      const charge = game.abilityCharge(id);
+      const ready = charge >= 1 && game.state === 'playing';
+      button.style.setProperty('--p', charge.toFixed(3));
+      button.classList.toggle('ready', ready);
+      button.classList.toggle('aiming', aiming === id);
+      const text = ready ? GD.abilities[id].short : Math.ceil(game.abilities[id].cd) + 's';
+      if (label.textContent !== text) label.textContent = text;
+    }
+    if (aiming && (game.state !== 'playing' || game.abilityCharge(aiming) < 1)) aiming = null;
   }
 
   // "10 drones · 4 darts", largest groups first, at most three kinds.
@@ -474,23 +655,34 @@
 
   const STAT_LABELS = {
     damage: ['Damage', (v) => String(Math.round(v))],
+    dps: ['Damage/s', (v) => String(Math.round(v))],
     rate: ['Shots/s', (v) => (v < 1 ? v.toFixed(2) : v.toFixed(1))],
     range: ['Range', (v) => v.toFixed(1)],
     splash: ['Blast', (v) => v.toFixed(1)],
     slow: ['Slow', (v) => Math.round(v * 100) + '%'],
+    chains: ['Jumps', (v) => String(v)],
+    ramp: ['Full heat', (v) => '×' + v.toFixed(1)],
+    boost: ['Boost', (v) => '+' + Math.round(v * 100) + '%'],
+    linked: ['Boosting', (v) => String(v)],
+    income: ['Per wave', (v) => '+' + v],
+    earned: ['Mined', (v) => String(v)],
   };
 
   function updateTowerPanel(t) {
     const def = GD.towers[t.type];
-    const s = game.statsFor(t.type, t.tier);
-    const n = t.tier + 1 < def.tiers.length ? game.statsFor(t.type, t.tier + 1) : null;
-    set('tower-title', 'textContent', def.name + ' · Tier ' + roman[t.tier]);
-    def.stats.forEach((key, i) => {
+    // linked and earned belong to this tower, not its tier.
+    const s = Object.assign(game.towerStats(t), { linked: t.links ? t.links.length : 0, earned: t.earned || 0 });
+    const n = t.tier + 1 < def.tiers.length ? game.statsFor(t.type, t.tier + 1, t.boost) : null;
+    set('tower-title', 'textContent', def.name + ' · Tier ' + roman[t.tier] + (t.boost ? ' · +' + Math.round(t.boost * 100) + '%' : ''));
+    for (let i = 0; i < 3; i++) {
+      const key = def.stats[i];
+      set('ts-cell-' + i, 'hidden', !key);
+      if (!key) continue;
       const [label, fmt] = STAT_LABELS[key];
-      const next = n && fmt(n[key]) !== fmt(s[key]) ? '<span class="next">→' + fmt(n[key]) + '</span>' : '';
+      const next = n && n[key] !== undefined && fmt(n[key]) !== fmt(s[key]) ? '<span class="next">→' + fmt(n[key]) + '</span>' : '';
       set('ts-label-' + i, 'textContent', label);
       set('ts-value-' + i, 'innerHTML', fmt(s[key]) + next);
-    });
+    }
     set('btn-target', 'hidden', !t.mode);
     if (t.mode) set('btn-target', 'textContent', 'Target: ' + GD.targetModes[t.mode]);
     const cost = game.upgradeCost(t);
@@ -499,53 +691,136 @@
     set('btn-sell', 'textContent', 'Sell +' + game.sellValue(t));
   }
 
-  // ---- Card icons ----
+  // ---- Icons ----
+
+  // Draws the icon a canvas asks for: data-icon (tower), data-ability or data-glyph (other Lab items).
+  function drawIcon(cv) {
+    const g = cv.getContext('2d');
+    const k = cv.width / 28;
+    g.setTransform(k, 0, 0, k, 0, 0);
+    g.clearRect(0, 0, 28, 28);
+    g.lineWidth = 1.6;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    const line = (...pts) => {
+      g.beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+      g.stroke();
+    };
+    const ring = (x, y, r) => {
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      g.stroke();
+    };
+    const id = cv.dataset.icon || cv.dataset.ability || cv.dataset.glyph;
+    let color = GD.colors.cyan;
+    if (cv.dataset.icon) color = GD.towers[id].color;
+    else if (cv.dataset.ability) color = GD.abilities[id].color;
+    else if (id === 'gold' || id === 'miner') color = GD.colors.amber;
+    else if (id === 'card') color = '#a77bff';
+    g.strokeStyle = color;
+    g.fillStyle = color;
+    switch (id) {
+      case 'pulse':
+        g.strokeRect(4, 4, 20, 20);
+        ring(14, 14, 5);
+        g.fillRect(14, 12.8, 10, 2.4);
+        break;
+      case 'nova':
+        for (const r of [3, 7, 11]) ring(14, 14, r);
+        break;
+      case 'cryo':
+        for (let i = 0; i < 3; i++) {
+          const a = (i * Math.PI) / 3;
+          line([14 - Math.cos(a) * 11, 14 - Math.sin(a) * 11], [14 + Math.cos(a) * 11, 14 + Math.sin(a) * 11]);
+        }
+        break;
+      case 'rail':
+        ring(9, 19, 5);
+        line([12, 16], [25, 3]);
+        break;
+      case 'tesla':
+        line([16, 2], [8, 15], [15, 15], [11, 26], [21, 11], [14, 11], [18, 2]);
+        break;
+      case 'laser':
+        line([3, 24], [19, 8]);
+        g.beginPath();
+        g.moveTo(24, 3);
+        g.lineTo(25, 8);
+        g.lineTo(20, 7);
+        g.closePath();
+        g.fill();
+        ring(5, 22, 3);
+        break;
+      case 'amp':
+        g.beginPath();
+        g.moveTo(14, 8);
+        g.lineTo(18, 14);
+        g.lineTo(14, 20);
+        g.lineTo(10, 14);
+        g.closePath();
+        g.fill();
+        g.beginPath();
+        g.arc(14, 14, 10, -0.7, 0.7);
+        g.stroke();
+        g.beginPath();
+        g.arc(14, 14, 10, Math.PI - 0.7, Math.PI + 0.7);
+        g.stroke();
+        break;
+      case 'harvester':
+        g.beginPath();
+        for (let i = 0; i < 16; i++) {
+          const a = (i * Math.PI) / 8;
+          const r = i % 2 ? 8 : 11;
+          g.lineTo(14 + Math.cos(a) * r, 14 + Math.sin(a) * r);
+        }
+        g.closePath();
+        g.stroke();
+        ring(14, 14, 3.5);
+        break;
+      case 'strike':
+        ring(14, 14, 9);
+        line([14, 1], [14, 9]);
+        line([14, 19], [14, 27]);
+        line([1, 14], [9, 14]);
+        line([19, 14], [27, 14]);
+        break;
+      case 'stasis':
+        g.strokeRect(6, 6, 16, 16);
+        line([14, 2], [14, 26]);
+        line([2, 14], [26, 14]);
+        break;
+      case 'surge':
+        line([4, 20], [10, 14], [14, 18], [24, 8]);
+        line([18, 8], [24, 8], [24, 14]);
+        break;
+      case 'gold':
+      case 'miner':
+        ring(14, 14, 9);
+        line([14, 9], [14, 19]);
+        break;
+      case 'plating':
+        g.beginPath();
+        for (let i = 0; i < 6; i++) g.lineTo(14 + Math.cos((i * Math.PI) / 3) * 11, 14 + Math.sin((i * Math.PI) / 3) * 11);
+        g.closePath();
+        g.stroke();
+        break;
+      case 'reroll':
+        g.beginPath();
+        g.arc(14, 14, 9, 0.3, Math.PI * 1.7);
+        g.stroke();
+        line([20, 4], [22, 9], [17, 10]);
+        break;
+      case 'card':
+        g.strokeRect(7, 4, 14, 20);
+        line([11, 10], [17, 10]);
+        line([11, 14], [17, 14]);
+        break;
+    }
+  }
 
   function drawIcons() {
-    document.querySelectorAll('canvas[data-icon]').forEach((cv) => {
-      const g = cv.getContext('2d');
-      const k = cv.width / 28;
-      g.setTransform(k, 0, 0, k, 0, 0);
-      g.clearRect(0, 0, 28, 28);
-      const color = GD.towers[cv.dataset.icon].color;
-      g.lineWidth = 1.6;
-      g.strokeStyle = color;
-      g.fillStyle = color;
-      switch (cv.dataset.icon) {
-        case 'pulse':
-          g.strokeRect(4, 4, 20, 20);
-          g.beginPath();
-          g.arc(14, 14, 5, 0, Math.PI * 2);
-          g.stroke();
-          g.fillRect(14, 12.8, 10, 2.4);
-          break;
-        case 'nova':
-          for (const r of [3, 7, 11]) {
-            g.beginPath();
-            g.arc(14, 14, r, 0, Math.PI * 2);
-            g.stroke();
-          }
-          break;
-        case 'cryo':
-          for (let i = 0; i < 3; i++) {
-            const a = (i * Math.PI) / 3;
-            g.beginPath();
-            g.moveTo(14 - Math.cos(a) * 11, 14 - Math.sin(a) * 11);
-            g.lineTo(14 + Math.cos(a) * 11, 14 + Math.sin(a) * 11);
-            g.stroke();
-          }
-          break;
-        case 'rail':
-          g.beginPath();
-          g.arc(9, 19, 5, 0, Math.PI * 2);
-          g.stroke();
-          g.beginPath();
-          g.moveTo(12, 16);
-          g.lineTo(25, 3);
-          g.stroke();
-          break;
-      }
-    });
+    document.querySelectorAll('canvas[data-icon], canvas[data-ability], canvas[data-glyph]').forEach(drawIcon);
   }
 
   // ---- Boot ----
@@ -588,10 +863,11 @@
   }
 
   // Handle for poking at a live run from the browser console or automated tests.
-  GD.debug = { get game() { return game; } };
+  GD.debug = { get game() { return game; }, renderer };
 
   new ResizeObserver(resize).observe(stage);
   window.addEventListener('orientationchange', resize);
+  applyTheme();
   drawIcons();
   showTitle();
   resize();

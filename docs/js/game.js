@@ -3,9 +3,11 @@
 (function (GD) {
   const TILE = { EMPTY: 0, PATH: 1, CORE: 2 };
   GD.TILE = TILE;
+  const LASER_TICK = 0.1; // seconds between Laser damage ticks
 
   class Game {
-    // opts: map id, difficulty id, and Lab bonuses (bonusGold, bonusHp, unlockedCards, reroll).
+    // opts: map id, difficulty id, and Lab bonuses
+    // (bonusGold, bonusHp, unlockedCards, reroll, towers, research, abilities).
     constructor(opts) {
       opts = opts || {};
       const cfg = GD.config;
@@ -19,6 +21,7 @@
       this.enemySpeed = diff.speed * this.map.speedMul;
       this.unlockedCards = opts.unlockedCards || [];
       this.canReroll = !!opts.reroll;
+      this.available = (opts.towers || GD.baseTowers).filter((t) => GD.towers[t]);
       this.gold = cfg.startGold + (opts.bonusGold || 0);
       this.hp = cfg.coreHp + diff.coreHp + (opts.bonusHp || 0);
       this.maxHp = this.hp;
@@ -30,12 +33,18 @@
       this.enemies = [];
       this.bullets = [];
       this.spawnQueue = [];
+      this.spawned = 0; // enemies sent so far, used to take turns between lanes
       this.waveTime = 0;
       this.waveRemaining = {};
       this.seen = {}; // enemy types that have appeared in an earlier wave
       this.events = []; // drained by the renderer for effects and sounds
-      this.stats = { kills: 0, leaks: 0, wavesCleared: 0, bosses: 0 };
+      this.stats = { kills: 0, leaks: 0, wavesCleared: 0, bosses: 0, mined: 0 };
       this.mods = GD.newMods();
+      for (const [type, lv] of Object.entries(opts.research || {})) if (lv && GD.research[type]) GD.research[type].apply(this.mods, lv);
+      this.abilities = {}; // id -> { level, cd }
+      for (const [id, lv] of Object.entries(opts.abilities || {})) if (lv && GD.abilities[id]) this.abilities[id] = { level: lv, cd: 0 };
+      this.stasis = 0; // seconds left on Stasis Field
+      this.surge = 0; // seconds left on Power Surge
       this.cards = []; // ids of cards picked this run
       this.offers = []; // pending card choices: { ids, rerolled }
       this.buildGrid();
@@ -45,29 +54,30 @@
       this.grid = [];
       for (let r = 0; r < this.rows; r++) this.grid.push(new Array(this.cols).fill(TILE.EMPTY));
 
-      const pts = this.map.path.map(([c, r]) => ({ x: c + 0.5, y: r + 0.5 }));
-      this.pathPts = pts;
-      this.segLen = [];
-      this.cumLen = [0];
-      for (let i = 1; i < pts.length; i++) {
-        const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-        this.segLen.push(len);
-        this.cumLen.push(this.cumLen[i - 1] + len);
-      }
-      this.pathLen = this.cumLen[this.cumLen.length - 1];
-
-      const path = this.map.path;
-      for (let i = 1; i < path.length; i++) {
-        const [c0, r0] = path[i - 1];
-        const [c1, r1] = path[i];
-        const steps = Math.max(Math.abs(c1 - c0), Math.abs(r1 - r0));
-        for (let s = 0; s <= steps; s++) {
-          const c = c0 + Math.sign(c1 - c0) * s;
-          const r = r0 + Math.sign(r1 - r0) * s;
-          if (this.inBounds(c, r)) this.grid[r][c] = TILE.PATH;
+      this.lanes = this.map.paths.map((path) => {
+        const pts = path.map(([c, r]) => ({ x: c + 0.5, y: r + 0.5 }));
+        const segLen = [];
+        const cumLen = [0];
+        for (let i = 1; i < pts.length; i++) {
+          const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+          segLen.push(len);
+          cumLen.push(cumLen[i - 1] + len);
         }
-      }
-      const [cc, cr] = path[path.length - 1];
+        for (let i = 1; i < path.length; i++) {
+          const [c0, r0] = path[i - 1];
+          const [c1, r1] = path[i];
+          const steps = Math.max(Math.abs(c1 - c0), Math.abs(r1 - r0));
+          for (let s = 0; s <= steps; s++) {
+            const c = c0 + Math.sign(c1 - c0) * s;
+            const r = r0 + Math.sign(r1 - r0) * s;
+            if (this.inBounds(c, r)) this.grid[r][c] = TILE.PATH;
+          }
+        }
+        return { pts, segLen, cumLen, len: cumLen[cumLen.length - 1] };
+      });
+
+      const first = this.map.paths[0];
+      const [cc, cr] = first[first.length - 1];
       this.grid[cr][cc] = TILE.CORE;
       this.core = { c: cc, r: cr, x: cc + 0.5, y: cr + 0.5 };
     }
@@ -76,12 +86,13 @@
       return c >= 0 && r >= 0 && c < this.cols && r < this.rows;
     }
 
-    posAt(d) {
-      const pts = this.pathPts;
+    posAt(d, lane) {
+      const L = this.lanes[lane || 0];
+      const pts = L.pts;
       d = Math.max(0, d);
       for (let i = 1; i < pts.length; i++) {
-        if (d <= this.cumLen[i]) {
-          const t = (d - this.cumLen[i - 1]) / this.segLen[i - 1];
+        if (d <= L.cumLen[i]) {
+          const t = (d - L.cumLen[i - 1]) / L.segLen[i - 1];
           return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t };
         }
       }
@@ -109,30 +120,55 @@
     build(type, c, r) {
       const def = GD.towers[type];
       const cost = this.buildCost(type);
-      if (this.state !== 'playing' || !this.canBuild(c, r) || this.gold < cost) return null;
+      if (this.state !== 'playing' || !this.available.includes(type) || !this.canBuild(c, r) || this.gold < cost) return null;
       this.gold -= cost;
-      const tower = { type, tier: 0, c, r, x: c + 0.5, y: r + 0.5, cooldown: 0, angle: -Math.PI / 2, spent: cost, recoil: 0, mode: def.mode || null };
+      const tower = { type, tier: 0, c, r, x: c + 0.5, y: r + 0.5, cooldown: 0, angle: -Math.PI / 2, spent: cost, recoil: 0, mode: def.mode || null, boost: 0, earned: 0 };
       this.towers.push(tower);
+      this.relink();
       this.events.push({ type: 'build', tower: type, x: tower.x, y: tower.y, range: this.towerStats(tower).range });
       return tower;
     }
 
-    // Tier stats with this run's card modifiers applied.
-    statsFor(type, tier) {
+    // Tier stats with this run's modifiers applied. boost: an Amplifier's damage bonus.
+    statsFor(type, tier, boost) {
       const base = GD.towers[type].tiers[tier];
       const m = this.mods;
+      const dmg = m.damage[type] * (1 + (boost || 0));
       return {
-        damage: base.damage * m.damage[type],
-        rate: base.rate * m.rate[type],
-        range: base.range * m.range[type],
+        damage: (base.damage || 0) * dmg,
+        dps: (base.dps || 0) * dmg,
+        rate: (base.rate || 0) * m.rate[type],
+        range: (base.range || 0) * m.range[type],
         splash: (base.splash || 0) * m.splash,
         slow: base.slow ? Math.min(0.8, base.slow + m.slowAdd) : 0,
         slowTime: base.slowTime || 0,
+        chains: base.chains ? base.chains + m.chains : 0,
+        ramp: base.ramp || 0,
+        boost: base.boost ? base.boost + m.ampAdd : 0,
+        income: base.income ? Math.round(base.income * m.harvest) : 0,
       };
     }
 
     towerStats(t) {
-      return this.statsFor(t.type, t.tier);
+      return this.statsFor(t.type, t.tier, t.boost);
+    }
+
+    // Works out which towers each Amplifier boosts. Boosts don't stack: a tower takes the strongest.
+    relink() {
+      for (const t of this.towers) {
+        t.boost = 0;
+        if (GD.towers[t.type].kind === 'support') t.links = [];
+      }
+      for (const a of this.towers) {
+        if (GD.towers[a.type].kind !== 'support') continue;
+        const s = this.statsFor(a.type, a.tier);
+        for (const t of this.towers) {
+          if (t === a || !GD.isAttacker(t.type)) continue;
+          if ((t.x - a.x) ** 2 + (t.y - a.y) ** 2 > s.range * s.range + 1e-6) continue;
+          a.links.push(t);
+          t.boost = Math.max(t.boost, s.boost);
+        }
+      }
     }
 
     upgradeCost(t) {
@@ -146,6 +182,7 @@
       this.gold -= cost;
       t.spent += cost;
       t.tier++;
+      this.relink();
       this.events.push({ type: 'upgrade', tower: t.type, x: t.x, y: t.y, range: this.towerStats(t).range });
       return true;
     }
@@ -164,6 +201,7 @@
       if (this.state !== 'playing') return;
       this.gold += this.sellValue(t);
       this.towers.splice(this.towers.indexOf(t), 1);
+      this.relink();
       this.events.push({ type: 'sell', x: t.x, y: t.y });
     }
 
@@ -199,6 +237,39 @@
       return { wave: this.wave + 1, counts, newType, boss };
     }
 
+    // ---- Abilities ----
+
+    // 0 while recharging up to 1 when ready.
+    abilityCharge(id) {
+      const a = this.abilities[id];
+      if (!a) return 0;
+      const max = GD.abilities[id].cooldown[a.level - 1];
+      return 1 - a.cd / max;
+    }
+
+    // x, y: where to aim (only Orbital Strike uses it).
+    useAbility(id, x, y) {
+      const a = this.abilities[id];
+      if (!a || a.cd > 0 || this.state !== 'playing') return false;
+      const def = GD.abilities[id];
+      const lv = a.level - 1;
+      a.cd = def.cooldown[lv];
+      if (id === 'strike') {
+        const dmg = def.damage * GD.hpMul(Math.max(1, this.wave)) * this.enemyHp * def.power[lv];
+        this.events.push({ type: 'strike', x, y, radius: def.radius });
+        for (const e of this.enemies.slice()) {
+          if (!e.dead && (e.x - x) ** 2 + (e.y - y) ** 2 <= def.radius * def.radius) this.damage(e, e.boss ? dmg / 2 : dmg, 'strike');
+        }
+      } else if (id === 'stasis') {
+        this.stasis = def.duration[lv];
+        this.events.push({ type: 'stasis' });
+      } else if (id === 'surge') {
+        this.surge = def.duration[lv];
+        this.events.push({ type: 'surge' });
+      }
+      return true;
+    }
+
     // ---- Saving a run ----
 
     // A run can be saved whenever the field is clear (between waves).
@@ -208,7 +279,7 @@
 
     snapshot() {
       return {
-        v: 1,
+        v: 2,
         opts: this.opts,
         gold: this.gold,
         hp: this.hp,
@@ -219,7 +290,8 @@
         offers: this.offers.map((o) => ({ ids: o.ids.slice(), rerolled: o.rerolled })),
         seen: Object.assign({}, this.seen),
         stats: Object.assign({}, this.stats),
-        towers: this.towers.map((t) => ({ type: t.type, tier: t.tier, c: t.c, r: t.r, spent: t.spent, mode: t.mode, angle: t.angle })),
+        cooldowns: Object.fromEntries(Object.entries(this.abilities).map(([id, a]) => [id, a.cd])),
+        towers: this.towers.map((t) => ({ type: t.type, tier: t.tier, c: t.c, r: t.r, spent: t.spent, mode: t.mode, angle: t.angle, earned: t.earned })),
       };
     }
 
@@ -235,9 +307,12 @@
       g.offers = snap.offers.map((o) => ({ ids: o.ids.slice(), rerolled: o.rerolled }));
       g.seen = Object.assign({}, snap.seen);
       g.stats = Object.assign(g.stats, snap.stats);
+      for (const [id, cd] of Object.entries(snap.cooldowns || {})) if (g.abilities[id]) g.abilities[id].cd = cd;
       for (const t of snap.towers) {
-        g.towers.push({ type: t.type, tier: t.tier, c: t.c, r: t.r, x: t.c + 0.5, y: t.r + 0.5, cooldown: 0, angle: t.angle, spent: t.spent, recoil: 0, mode: t.mode });
+        if (!GD.towers[t.type]) continue;
+        g.towers.push({ type: t.type, tier: t.tier, c: t.c, r: t.r, x: t.c + 0.5, y: t.r + 0.5, cooldown: 0, angle: t.angle, spent: t.spent, recoil: 0, mode: t.mode, boost: 0, earned: t.earned || 0 });
       }
+      g.relink();
       return g;
     }
 
@@ -246,6 +321,9 @@
     update(dt) {
       if (this.state !== 'playing') return;
       this.time += dt;
+      for (const a of Object.values(this.abilities)) a.cd = Math.max(0, a.cd - dt);
+      this.stasis = Math.max(0, this.stasis - dt);
+      this.surge = Math.max(0, this.surge - dt);
 
       if (this.spawnQueue.length) {
         this.waveTime += dt;
@@ -260,9 +338,10 @@
           e.slowLeft -= dt;
           if (e.slowLeft <= 0) e.slow = 0;
         }
-        e.curSpeed = e.speed * (1 - e.slow);
+        e.curSpeed = e.speed * (1 - e.slow) * (this.stasis > 0 ? (e.boss ? 0.5 : 0) : 1);
         e.dist += e.curSpeed * dt;
-        const p = this.posAt(e.dist);
+        e.left = this.lanes[e.lane].len - e.dist;
+        const p = this.posAt(e.dist, e.lane);
         if (p.x !== e.x || p.y !== e.y) e.angle = Math.atan2(p.y - e.y, p.x - e.x);
         e.x = p.x;
         e.y = p.y;
@@ -271,14 +350,15 @@
           if (e.summonT <= 0) {
             e.summonT = e.summon.every;
             this.waveRemaining[e.wave] += e.summon.count;
-            for (let i = 0; i < e.summon.count; i++) this.spawn(e.summon.type, e.dist - 0.3 - i * 0.2, e.hpMul * 0.6, 0, e.wave);
+            for (let i = 0; i < e.summon.count; i++) this.spawn(e.summon.type, e.dist - 0.3 - i * 0.2, e.hpMul * 0.6, 0, e.wave, e.lane);
             this.events.push({ type: 'summon', x: e.x, y: e.y });
           }
         }
-        if (e.dist >= this.pathLen) this.leak(e);
+        if (e.left <= 0) this.leak(e);
       }
 
-      for (const t of this.towers) this.updateTower(t, dt);
+      const haste = this.surge > 0 ? GD.abilities.surge.rate : 1;
+      for (const t of this.towers) this.updateTower(t, dt, haste);
       this.updateBullets(dt);
 
       if (this.enemies.some((e) => e.dead)) this.enemies = this.enemies.filter((e) => !e.dead);
@@ -289,10 +369,12 @@
       }
     }
 
-    spawn(type, dist, hpMul, rewardBonus, wave) {
+    // lane: which lane to walk (by default enemies take turns between lanes).
+    spawn(type, dist, hpMul, rewardBonus, wave, lane) {
       const def = GD.enemies[type];
       const hp = Math.round(def.hp * hpMul * this.enemyHp);
-      const p = this.posAt(dist);
+      if (lane === undefined) lane = this.spawned++ % this.lanes.length;
+      const p = this.posAt(dist, lane);
       const e = {
         type,
         hp,
@@ -300,17 +382,19 @@
         hpMul,
         speed: def.speed * this.enemySpeed,
         curSpeed: def.speed * this.enemySpeed,
-        armor: def.armor || 0,
+        armor: (def.armor || 0) + (this.map.armor || 0),
         reward: def.reward + (rewardBonus || 0),
         damage: def.damage,
         size: def.size,
+        lane,
         dist,
+        left: this.lanes[lane].len - dist,
         x: p.x,
         y: p.y,
         angle: Math.PI / 2,
         slow: 0,
         slowLeft: 0,
-        slowResist: def.slowResist || 0,
+        slowResist: Math.min(0.9, (def.slowResist || 0) + (this.map.slowResist || 0)),
         boss: !!def.boss,
         summon: def.summon || null,
         summonT: def.summon ? def.summon.every : 0,
@@ -347,7 +431,7 @@
       if (split) {
         // Children count toward the parent's wave so the wave isn't "clear" until they're gone too.
         this.waveRemaining[e.wave] += split.count;
-        for (let i = 0; i < split.count; i++) this.spawn(split.type, e.dist - i * 0.25, e.hpMul, 0, e.wave);
+        for (let i = 0; i < split.count; i++) this.spawn(split.type, e.dist - i * 0.25, e.hpMul, 0, e.wave, e.lane);
       }
       if (tower === 'nova' && this.mods.chain) {
         // Chain Reaction: a small blast that can't set off further chains.
@@ -365,9 +449,17 @@
       if (this.waveRemaining[e.wave] === 0 && this.state === 'playing') {
         const m = this.mods;
         const interest = m.interest ? Math.min(40, Math.floor(this.gold * m.interest)) : 0;
-        const bonus = GD.waveClearBonus(e.wave) + interest;
+        const bonus = Math.round(GD.waveClearBonus(e.wave) * m.clearBonus) + interest;
         this.gold += bonus;
         if (m.repair) this.hp = Math.min(this.maxHp, this.hp + m.repair);
+        for (const t of this.towers) {
+          if (GD.towers[t.type].kind !== 'econ') continue;
+          const amount = this.towerStats(t).income;
+          this.gold += amount;
+          t.earned += amount;
+          this.stats.mined += amount;
+          this.events.push({ type: 'mine', tower: t.type, x: t.x, y: t.y, amount });
+        }
         this.stats.wavesCleared++;
         this.events.push({ type: 'waveClear', wave: e.wave, bonus });
         if (GD.cardWaves.includes(e.wave)) this.offers.push({ ids: this.rollCards(), rerolled: false });
@@ -379,7 +471,9 @@
     // Three different cards, weighted toward towers the player has built.
     rollCards() {
       const owned = new Set(this.towers.map((t) => t.type));
-      let pool = GD.cards.filter((c) => (c.repeat || !this.cards.includes(c.id)) && (!c.locked || this.unlockedCards.includes(c.id)));
+      let pool = GD.cards.filter(
+        (c) => (c.repeat || !this.cards.includes(c.id)) && (!c.locked || this.unlockedCards.includes(c.id)) && (!c.tower || this.available.includes(c.tower))
+      );
       const picks = [];
       while (picks.length < 3 && pool.length) {
         const weights = pool.map((c) => (c.tower ? (owned.has(c.tower) ? 3 : 1) : 2));
@@ -407,6 +501,7 @@
       card.apply(this.mods, this);
       this.cards.push(id);
       this.offers.shift();
+      this.relink();
       this.events.push({ type: 'card', id });
       return true;
     }
@@ -415,12 +510,14 @@
       if (e.dead) return;
       if (e.slow > 0 && this.mods.brittle) amount *= 1 + this.mods.brittle;
       if (e.boss && tower === 'rail' && this.mods.overcharge) amount *= 2;
-      const armor = tower && this.mods.ignoreArmor[tower] ? 0 : e.armor;
+      const def = GD.towers[tower];
+      const armor = (def && def.ignoreArmor) || this.mods.ignoreArmor[tower] ? 0 : e.armor;
       e.hp -= Math.max(1, amount - armor);
       e.hitFlash = 1;
       if (e.hp <= 0) this.kill(e, tower);
     }
 
+    // first = closest to the Core, last = furthest from it, strong = most HP.
     pickTarget(t, range) {
       const r2 = range * range;
       let best = null;
@@ -430,16 +527,20 @@
         const dy = e.y - t.y;
         if (dx * dx + dy * dy > r2) continue;
         if (!best) best = e;
-        else if (t.mode === 'last' ? e.dist < best.dist : t.mode === 'strong' ? e.hp > best.hp || (e.hp === best.hp && e.dist > best.dist) : e.dist > best.dist) best = e;
+        else if (t.mode === 'last' ? e.left > best.left : t.mode === 'strong' ? e.hp > best.hp || (e.hp === best.hp && e.left < best.left) : e.left < best.left) best = e;
       }
       return best;
     }
 
-    updateTower(t, dt) {
+    // haste: fire-rate multiplier from Power Surge.
+    updateTower(t, dt, haste) {
       const def = GD.towers[t.type];
-      const s = def.tiers[t.tier];
-      t.cooldown = Math.max(0, t.cooldown - dt);
+      if (!GD.isAttacker(t.type)) return;
+      const s = this.towerStats(t);
+      t.cooldown = Math.max(0, t.cooldown - dt * haste);
       t.recoil = Math.max(0, t.recoil - dt * 6);
+
+      if (def.kind === 'laser') return this.updateLaser(t, s, dt * haste);
 
       if (def.kind === 'aura') {
         if (t.cooldown > 0) return;
@@ -464,9 +565,11 @@
       if (t.cooldown > 0) return;
       t.cooldown = 1 / s.rate;
       t.recoil = 1;
-      const muzzle = def.kind === 'beam' ? 0.42 : 0.32;
+      const muzzle = def.kind === 'beam' ? 0.42 : def.kind === 'chain' ? 0.1 : 0.32;
       const mx = t.x + Math.cos(t.angle) * muzzle;
       const my = t.y + Math.sin(t.angle) * muzzle;
+
+      if (def.kind === 'chain') return this.zap(t, target, s, mx, my);
 
       if (def.kind === 'beam') {
         if (!this.mods.pierce) {
@@ -489,12 +592,66 @@
       if (def.kind === 'splash') {
         // Lead the target: aim where it will be when the shell lands.
         const flight = Math.hypot(tx - mx, ty - my) / def.bulletSpeed;
-        const p = this.posAt(target.dist + target.curSpeed * flight);
+        const p = this.posAt(target.dist + target.curSpeed * flight, target.lane);
         tx = p.x;
         ty = p.y;
       }
       this.bullets.push({ tower: t.type, kind: def.kind, x: mx, y: my, target, tx, ty, damage: s.damage, splash: s.splash, speed: def.bulletSpeed, done: false });
       this.events.push({ type: 'shoot', tower: t.type, x: mx, y: my, angle: t.angle });
+    }
+
+    // Tesla: hits the target, then jumps to the nearest enemy not hit yet, losing a little damage each jump.
+    zap(t, first, s, mx, my) {
+      const def = GD.towers[t.type];
+      const hit = [first];
+      const pts = [{ x: mx, y: my }, { x: first.x, y: first.y }];
+      let cur = first;
+      let dmg = s.damage;
+      this.damage(first, dmg, t.type);
+      const j2 = def.jump * def.jump;
+      for (let i = 0; i < s.chains; i++) {
+        let next = null;
+        let nd = j2;
+        for (const e of this.enemies) {
+          if (e.dead || hit.includes(e)) continue;
+          const d = (e.x - cur.x) ** 2 + (e.y - cur.y) ** 2;
+          if (d <= nd) {
+            nd = d;
+            next = e;
+          }
+        }
+        if (!next) break;
+        dmg *= def.falloff;
+        hit.push(next);
+        pts.push({ x: next.x, y: next.y });
+        this.damage(next, dmg, t.type);
+        cur = next;
+      }
+      this.events.push({ type: 'zap', tower: t.type, pts });
+    }
+
+    // Laser: holds a beam on one target and heats up while it stays on it.
+    // Switching targets keeps half the heat. t.target and t.heat are read by the renderer.
+    updateLaser(t, s, dt) {
+      const r2 = s.range * s.range;
+      let e = t.target;
+      if (!e || e.dead || (e.x - t.x) ** 2 + (e.y - t.y) ** 2 > r2) {
+        e = this.pickTarget(t, s.range);
+        if (t.target && e !== t.target) t.heat *= 0.5;
+        t.target = e;
+      }
+      if (!e) {
+        t.heat = Math.max(0, (t.heat || 0) - dt);
+        return;
+      }
+      t.angle = Math.atan2(e.y - t.y, e.x - t.x);
+      t.heat = Math.min(1, (t.heat || 0) + (dt * this.mods.heatRate) / GD.towers.laser.rampTime);
+      t.tick = (t.tick || 0) + dt;
+      const mult = 1 + (s.ramp - 1) * t.heat;
+      while (t.tick >= LASER_TICK && !e.dead) {
+        t.tick -= LASER_TICK;
+        this.damage(e, s.dps * mult * LASER_TICK, t.type);
+      }
     }
 
     updateBullets(dt) {

@@ -12,10 +12,11 @@ A neon sci-fi tower defense game for phones that runs offline once loaded.
 | Theme | Defend a glowing Core from glitchy drones and viruses |
 | Target device | iPhone (Safari, Add to Home Screen), portrait |
 | Hosting | GitHub Pages from this repo's `/docs` folder |
-| Towers (v1) | 4 towers with 3 upgrade tiers each |
-| Extras (v1) | Fast-forward (1×/2×/3×), permanent unlocks between runs |
+| Towers | 8 towers with 3 upgrade tiers each; 4 from the start, 4 unlocked in the Lab |
+| Extras | Fast-forward (1×/2×/3×), permanent unlocks between runs, abilities during a run |
 | Difficulty | Normal → Hard → Nightmare (each unlocked by winning the previous) |
-| Maps | 3 handmade maps; 1 at start, 2 unlocked with Data |
+| Levels | Campaign of 6 sectors, each with its own map, look and twist; winning one opens the next |
+| Looks | Each sector has its own palette, tile texture and ambient effect; tower skins in the Lab |
 
 ## Core loop
 
@@ -33,8 +34,35 @@ A neon sci-fi tower defense game for phones that runs offline once loaded.
 | Nova | Splash | Good against swarms, slow fire rate |
 | Cryo | Slow | Slows enemies in range, low damage |
 | Rail | Sniper | Long range, high damage, very slow fire rate |
+| Tesla (Lab) | Chain | Lightning jumps to 3–5 nearby enemies, losing 15% each jump |
+| Laser (Lab) | Burn | Holds a beam on one target and heats up to 3–3.5× damage; ignores armor |
+| Amplifier (Lab) | Support | Doesn't shoot; boosts the damage of every tower touching it by 15–35% (boosts don't stack) |
+| Harvester (Lab) | Economy | Doesn't shoot; mines 16 / 30 / 50 gold every time a wave is cleared |
 
 Each tower has 3 upgrade tiers. Selling refunds 70% of what you spent.
+
+## Sectors
+
+| # | Sector | Look | Twist | Data |
+|---|---|---|---|---|
+| 1 | Circuit | Neon grid, circuit traces, scan line | None | 1× |
+| 2 | Spiral | Synthwave sunset, scan lines | Enemies 10% faster | 1.1× |
+| 3 | Express | Green data stream, code rain | Short route | 1.2× |
+| 4 | Cold Storage | Ice blue, frost cracks, snow | Slows 40% weaker, enemies 10% slower, 10% more HP | 1.3× |
+| 5 | Foundry | Molten orange, riveted plates, embers | Every enemy +1 armor | 1.4× |
+| 6 | Nexus | The Void, starfield | Two lanes; enemies take turns (25% less HP) | 1.5× |
+
+Express and Spiral stay open for anyone who bought them in version 1.
+
+## Abilities
+
+Bought and upgraded in the Lab (3 levels). They sit above the wave button and recharge during the run.
+
+| Ability | Effect | Recharge |
+|---|---|---|
+| Orbital Strike | Tap, then tap the field: blasts a small area (bosses take half). Damage grows with the wave | 40 / 34 / 28 s |
+| Stasis Field | Freezes every enemy for 2.5 / 3.5 / 4.5 s; bosses are only slowed | 55 / 50 / 45 s |
+| Power Surge | All towers fire 60% faster for 6 / 8 / 10 s | 50 / 45 / 40 s |
 
 ## Enemies
 
@@ -68,6 +96,12 @@ After waves 3, 6, 9, 12, 15 and 18, pick 1 of 3 random cards. Cards for towers y
 | Bulk Order | Towers and upgrades 15% cheaper |
 | Nano Repair | Repair 1 Core HP after each wave |
 | Reinforced Core | +5 max Core HP and repair 5 (can repeat) |
+| Arc Flash | Tesla jumps to 2 more enemies |
+| Focusing Lens | Lasers heat up twice as fast |
+| Resonance | Amplifiers boost 15% more |
+| Compound Yield | Harvesters mine 50% more |
+
+Tower cards only come up when that tower is unlocked.
 
 More cards are unlocked through meta progression.
 
@@ -80,17 +114,20 @@ More cards are unlocked through meta progression.
 
 ## Meta progression
 
-- Each run pays **Data**: 2 per wave cleared, 10 per boss destroyed, 25 for a win. Hard pays 1.5×, Nightmare 2×.
-- The **Lab** spends Data on permanent unlocks:
+- Each run pays **Data**: 2 per wave cleared, 10 per boss destroyed, 25 for a win, times the sector's multiplier. Hard pays 1.5×, Nightmare 2×.
+- The **Lab** spends Data on permanent unlocks, in five tabs:
 
-| Unlock | Cost | Effect |
-|---|---|---|
-| Seed Funding (3 levels) | 20 / 40 / 80 | +25 starting gold per level |
-| Core Plating (3 levels) | 25 / 50 / 100 | +3 Core HP per level |
-| Reroll | 60 | Reroll each card offer once |
-| Map: Express | 40 | Short, open route |
-| Map: Spiral | 80 | Long coil, faster enemies |
-| 5 new cards | 30 each | Tracer Rounds, Chain Reaction, Supercooled, Overcharge, Scrap Value |
+| Tab | Unlock | Cost | Effect |
+|---|---|---|---|
+| Core | Seed Funding (3 levels) | 20 / 40 / 80 | +25 starting gold per level |
+| Core | Core Plating (3 levels) | 25 / 50 / 100 | +3 Core HP per level |
+| Core | Reroll | 60 | Reroll each card offer once |
+| Core | Data Miner (3 levels) | 60 / 120 / 200 | +10% Data per run per level |
+| Arsenal | Harvester / Tesla / Laser / Amplifier | 40 / 60 / 80 / 100 | Adds the tower to the build menu |
+| Arsenal | 3 abilities (3 levels each) | 50 / 70 / 110 | Unlock, then faster recharge and more power |
+| Research | One per tower (3 levels) | 40 / 80 / 140 | +8% damage and +4% range per level (Cryo: slow and range, Amplifier: boost, Harvester: income) |
+| Cards | 7 new cards | 30 each | Tracer Rounds, Chain Reaction, Supercooled, Overcharge, Superconductor, Scrap Value, Overflow |
+| Style | Vapor / Toxic / Redline skins | 60 / 80 / 100 | New tower colors and plate shapes (hexagon, round, diamond); switch any time |
 
 - **Difficulty:** Hard (+20% enemy HP) unlocks after a Normal win; Nightmare (+40% HP, +8% speed, 5 less Core HP) after a Hard win.
 - The run in progress is saved whenever the field is clear, so closing the app keeps it. "Continue" on the title screen picks it up from the last cleared wave.
@@ -111,6 +148,7 @@ More cards are unlocked through meta progression.
 3. **Roguelite layer** ✅: 14 upgrade cards, Warden (wave 10) and Overlord (wave 20) bosses, 20-wave run.
 4. **Meta** ✅: Data, Lab unlock shop, run saved between waves (Continue), Normal/Hard/Nightmare, 3 maps.
 5. **Ship** ✅: offline support (service worker), Home Screen icon and manifest, bundled font, screen kept awake during waves. GitHub Pages is switched on after merging (see below).
+6. **Version 2** ✅: 6-sector campaign with themed looks, Tesla, Laser, Amplifier and Harvester, abilities, research, skins, a tabbed Lab and 6 new cards. Also fixed upgrade cards that boost damage, fire rate, range, blast radius or slow: before this they only changed the numbers on the tower panel. Enemy HP now grows a little faster after wave 9 so runs stay about as hard as before.
 
 ## Code layout
 
@@ -120,12 +158,11 @@ The game lives in `docs/` so GitHub Pages can serve it as-is (no build step).
 |---|---|
 | `docs/index.html` | Page markup: HUD, field, dock panels, overlays |
 | `docs/style.css` | Styles |
-| `docs/js/config.js` | All tunable data: map paths, tower tiers, enemy stats, wave recipe |
+| `docs/js/config.js` | All tunable data: sectors, themes, towers, skins, abilities, enemies, waves, cards, Lab |
 | `docs/js/game.js` | Simulation only (no DOM), so it can run headless for balance tests |
 | `docs/js/render.js` | Canvas drawing and effects |
 | `docs/js/profile.js` | Data, Lab unlocks, wins, best run and the saved run |
 | `docs/js/main.js` | Main loop, touch input, screens and panels |
-
 | `docs/sw.js` | Service worker: caches every file so the game runs offline |
 | `docs/manifest.webmanifest` | Name, icon and full-screen settings for the Home Screen |
 | `docs/fonts/`, `docs/icons/` | Bundled Chakra Petch font (OFL) and app icons |
