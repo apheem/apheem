@@ -29,7 +29,13 @@
     </button>
   </header>
 
-  <main id="stage"><canvas id="field" aria-label="Game field"></canvas></main>
+  <main id="stage">
+    <canvas id="field" aria-label="Game field"></canvas>
+    <div class="boss-bar" id="boss-bar" hidden>
+      <span class="boss-name" id="boss-name">Warden</span>
+      <div class="boss-track"><div class="boss-fill" id="boss-fill"></div></div>
+    </div>
+  </main>
 
   <footer class="dock">
     <section class="panel" id="panel-idle">
@@ -95,19 +101,30 @@
 
   <div class="overlay" id="overlay-title">
     <h1 class="wordmark"><span class="glitch" data-text="GLITCH">GLITCH</span><span class="wordmark-sub">Defense</span></h1>
-    <p class="tagline">Viruses are tunnelling toward the Core. Hold it for 10 waves.</p>
+    <p class="tagline">Viruses are tunnelling toward the Core. Hold it for 20 waves.</p>
     <dl class="howto">
       <div><dt>Build</dt><dd>Tap an empty tile, then pick a tower.</dd></div>
       <div><dt>Upgrade</dt><dd>Tap a tower to upgrade or sell it.</dd></div>
       <div><dt>Waves</dt><dd>Start each wave yourself. Calling one early pays +10 gold.</dd></div>
+      <div><dt>Cards</dt><dd>Every third wave, pick 1 of 3 upgrades for the rest of the run.</dd></div>
     </dl>
     <button class="btn primary big" id="btn-play" type="button">Play</button>
     <p class="best" id="best-line" hidden></p>
-    <p class="version">Prototype · v0.2</p>
+    <p class="version">Prototype · v0.3</p>
+  </div>
+
+  <div class="overlay" id="overlay-cards" hidden>
+    <p class="eyebrow" id="cards-eyebrow">Wave 3 cleared</p>
+    <h2 class="overlay-title small">Choose an upgrade</h2>
+    <div class="choices" id="card-choices"></div>
   </div>
 
   <div class="overlay" id="overlay-pause" hidden>
     <h2 class="overlay-title">Paused</h2>
+    <div class="owned" id="owned" hidden>
+      <span class="label">Upgrades this run</span>
+      <p id="owned-list"></p>
+    </div>
     <div class="stack">
       <button class="btn primary big" id="btn-resume" type="button">Resume</button>
       <button class="btn" id="btn-restart" type="button">Restart run</button>

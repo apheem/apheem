@@ -51,15 +51,17 @@
       this.time = 0;
     }
 
-    resize(w, h, game) {
+    // reserve: pixels kept free under the grid (for the boss health bar).
+    resize(w, h, game, reserve) {
+      reserve = reserve || 0;
       this.dpr = Math.min(window.devicePixelRatio || 1, 3);
       this.w = w;
       this.h = h;
       this.canvas.width = Math.round(w * this.dpr);
       this.canvas.height = Math.round(h * this.dpr);
-      this.ts = Math.max(8, Math.floor(Math.min(w / game.cols, h / game.rows)));
+      this.ts = Math.max(8, Math.floor(Math.min(w / game.cols, (h - reserve) / game.rows)));
       this.ox = Math.floor((w - this.ts * game.cols) / 2);
-      this.oy = Math.floor((h - this.ts * game.rows) / 2);
+      this.oy = Math.floor((h - reserve - this.ts * game.rows) / 2);
       this.buildBackground(game);
     }
 
@@ -182,12 +184,17 @@
             this.rings.push({ x: ev.x, y: ev.y, r0: ev.range, r1: ev.range, life: 1.1, max: 1.1, color, dashed: true });
             this.spark(ev.x, ev.y, 8, color, 2, 0.4);
             break;
+          case 'summon':
+            this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 0.8, life: 0.4, max: 0.4, color: C.magenta });
+            this.spark(ev.x, ev.y, 6, C.magenta, 2, 0.4);
+            break;
           case 'sell':
             this.spark(ev.x, ev.y, 10, C.amber, 2, 0.5);
             break;
           case 'waveStart': {
             let sub = ev.wave === game.totalWaves ? 'FINAL WAVE' : '';
             if (ev.newType) sub = 'NEW · ' + GD.enemies[ev.newType].name.toUpperCase();
+            if (ev.boss) sub = 'BOSS · ' + GD.enemies[ev.boss].name.toUpperCase();
             this.banner = { text: 'WAVE ' + ev.wave, sub, life: 1.8, max: 1.8 };
             break;
           }
@@ -496,6 +503,26 @@
           ctx.lineTo(s * 0.12, s * 1.1);
           ctx.closePath();
           break;
+        case 'warden':
+          // Octagon with a notch cut on each side.
+          for (let i = 0; i < 16; i++) {
+            const a = rot * 0.3 + (i * Math.PI) / 8;
+            const r = i % 2 ? s * 0.82 : s;
+            if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+            else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          }
+          ctx.closePath();
+          break;
+        case 'overlord':
+          // Spiked crown that slowly turns.
+          for (let i = 0; i < 20; i++) {
+            const a = rot * 0.25 + (i * Math.PI) / 10;
+            const r = i % 2 ? s * 0.68 : s * 1.08;
+            if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+            else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          }
+          ctx.closePath();
+          break;
         case 'shard':
           ctx.moveTo(s, 0);
           ctx.lineTo(-s * 0.8, -s * 0.9);
@@ -570,7 +597,19 @@
         ctx.restore();
       }
 
-      if (e.hp < e.maxHp && e.type !== 'swarm') {
+      if (e.boss) {
+        ctx.save();
+        ctx.strokeStyle = rgba(C.magenta, 0.55);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([ts * 0.12, ts * 0.08]);
+        ctx.lineDashOffset = -this.time * ts * 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, s * 1.35, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (e.hp < e.maxHp && e.type !== 'swarm' && !e.boss) {
         const bw = ts * (e.type === 'brick' ? 0.75 : 0.6);
         const bh = Math.max(2, ts * 0.06);
         const bx = x - bw / 2;

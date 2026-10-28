@@ -50,17 +50,33 @@ Each tower has 3 upgrade tiers. Selling refunds 70% of what you spent.
 
 ## Upgrade cards
 
-After waves 3, 6, 9, 12, 15 and 18, pick 1 of 3 random cards. Example pool:
+After waves 3, 6, 9, 12, 15 and 18, pick 1 of 3 random cards. Cards for towers you own come up more often.
 
-- Overclock: Pulse towers fire 25% faster
-- Chain Reaction: Nova kills cause a small explosion
-- Brittle: slowed enemies take +25% damage
-- Interest: gain 10% of banked gold after each wave
-- Long Barrel: Rail range +30%
-- Reinforced Core: +5 Core HP
-- Discount: towers cost 15% less
+| Card | Effect |
+|---|---|
+| Overclock | Pulse fires 30% faster |
+| Hollow Points | Pulse ignores armor |
+| Shrapnel | Nova damage +35% |
+| Wide Blast | Nova blast radius +35% |
+| Deep Freeze | Cryo slows 15% more |
+| Brittle | Slowed enemies take 25% more damage |
+| Long Barrel | Rail range +25%, fires 20% faster |
+| Piercing Rail | Rail beams hit everything in their line |
+| Optics | All towers +12% range |
+| Interest | +10% of banked gold after each wave (max 40) |
+| Bounty | +1 gold per kill |
+| Bulk Order | Towers and upgrades 15% cheaper |
+| Nano Repair | Repair 1 Core HP after each wave |
+| Reinforced Core | +5 max Core HP and repair 5 (can repeat) |
 
 More cards are unlocked through meta progression.
+
+## Bosses
+
+| Boss | Wave | Trait |
+|---|---|---|
+| Warden | 10 | Armored, half effect from slows, drops 2 Shards every 4 s, costs 10 Core HP if it gets through |
+| Overlord | 20 | Heavier armor, mostly ignores slows, drops 4 swarmers every 3.5 s, ends the run if it gets through |
 
 ## Meta progression
 
@@ -80,7 +96,7 @@ More cards are unlocked through meta progression.
 
 1. **Playable prototype** ✅: map, path, Pulse tower, Drones, 10 waves, gold, win/lose, pause, fast-forward.
 2. **Content** ✅: all 4 towers with upgrades and targeting modes, all non-boss enemy types, hand-built 10-wave mix.
-3. **Roguelite layer**: upgrade cards, boss waves, 20-wave run.
+3. **Roguelite layer** ✅: 14 upgrade cards, Warden (wave 10) and Overlord (wave 20) bosses, 20-wave run.
 4. **Meta**: Data, unlock shop, save/load, fast-forward, difficulty tiers, 3 maps.
 5. **Ship**: offline support, Home Screen icon, polish and balance, GitHub Pages.
 

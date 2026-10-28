@@ -9,6 +9,7 @@
   const $ = (id) => document.getElementById(id);
   const STEP = 1 / 60;
   const BEST_KEY = 'glitch-defense.best';
+  const BOSS_BAR_SPACE = 18;
 
   const canvas = $('field');
   const stage = $('stage');
@@ -90,7 +91,51 @@
   }
 
   function showOverlay(id) {
-    for (const o of ['overlay-title', 'overlay-pause', 'overlay-end']) $(o).hidden = o !== id;
+    for (const o of ['overlay-title', 'overlay-pause', 'overlay-cards', 'overlay-end']) $(o).hidden = o !== id;
+    if (id === 'overlay-pause') showOwned();
+  }
+
+  // ---- Upgrade cards ----
+
+  function cardTag(card) {
+    if (card.tower) return { label: GD.towers[card.tower].name, color: GD.towers[card.tower].color };
+    return card.kind === 'econ' ? { label: 'Economy', color: GD.colors.amber } : { label: 'Core', color: GD.colors.cyan };
+  }
+
+  function showCards() {
+    const offer = game.offers[0];
+    const cleared = GD.cardWaves.filter((w) => w <= game.wave)[game.cards.length] || game.wave;
+    $('cards-eyebrow').textContent = 'Wave ' + cleared + ' cleared';
+    const box = $('card-choices');
+    box.textContent = '';
+    for (const id of offer) {
+      const card = GD.cards.find((c) => c.id === id);
+      const tag = cardTag(card);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn choice';
+      b.style.setProperty('--edge', tag.color);
+      b.style.setProperty('--tag', tag.color);
+      for (const [cls, text] of [['choice-tag', tag.label], ['choice-name', card.name], ['choice-text', card.text]]) {
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text;
+        b.appendChild(span);
+      }
+      b.addEventListener('click', () => {
+        game.pickCard(id);
+        showOverlay(null);
+      });
+      box.appendChild(b);
+    }
+    sel = null;
+    showOverlay('overlay-cards');
+  }
+
+  function showOwned() {
+    const names = game.cards.map((id) => GD.cards.find((c) => c.id === id).name);
+    $('owned').hidden = names.length === 0;
+    $('owned-list').textContent = names.join(' · ');
   }
 
   function showEnd() {
@@ -111,7 +156,8 @@
     requestAnimationFrame(frame);
     const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0;
     last = ts;
-    const live = running && !paused;
+    if (running && !paused && game.offers.length && $('overlay-cards').hidden) showCards();
+    const live = running && !paused && !game.offers.length;
 
     if (live && game.state === 'playing') {
       acc += dt * speed;
@@ -138,7 +184,7 @@
   // ---- Input ----
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (!running || paused || game.state !== 'playing') return;
+    if (!running || paused || game.offers.length || game.state !== 'playing') return;
     const rect = canvas.getBoundingClientRect();
     const { c, r } = renderer.toTile(e.clientX - rect.left, e.clientY - rect.top);
     const tower = game.towerAt(c, r);
@@ -187,6 +233,7 @@
     const el = $(id);
     if (prop === 'hidden' || prop === 'disabled') el[prop] = value;
     else if (prop === 'class') el.className = value;
+    else if (prop === 'style') el.style.cssText = value;
     else el[prop] = value;
   }
 
@@ -209,12 +256,21 @@
     if (mode === 'idle') updateWaveButton();
     if (mode === 'build') {
       for (const type of GD.towerOrder) {
-        const cost = GD.towers[type].tiers[0].cost;
+        const cost = game.buildCost(type);
         set('cost-' + type, 'textContent', String(cost));
         cards[type].classList.toggle('poor', game.gold < cost);
       }
     }
     if (mode === 'tower') updateTowerPanel(sel.tower);
+    updateBossBar();
+  }
+
+  function updateBossBar() {
+    const boss = game.enemies.find((e) => e.boss && !e.dead);
+    set('boss-bar', 'hidden', !boss);
+    if (!boss) return;
+    set('boss-name', 'textContent', GD.enemies[boss.type].name);
+    set('boss-fill', 'style', 'width:' + Math.max(0, (boss.hp / boss.maxHp) * 100).toFixed(1) + '%');
   }
 
   function updateWaveButton() {
@@ -257,13 +313,14 @@
 
   // "10 drones · 4 darts", largest groups first, at most three kinds.
   function describeWave(preview) {
-    const parts = Object.entries(preview.counts).sort((a, b) => b[1] - a[1]);
-    const text = parts.slice(0, 3).map(([type, n]) => n + ' ' + (n === 1 ? GD.enemies[type].name.toLowerCase() : GD.enemies[type].plural));
-    return text.join(' · ') + (parts.length > 3 ? ' · more' : '');
+    const parts = Object.entries(preview.counts).filter(([type]) => type !== preview.boss).sort((a, b) => b[1] - a[1]);
+    const text = parts.slice(0, preview.boss ? 2 : 3).map(([type, n]) => n + ' ' + (n === 1 ? GD.enemies[type].name.toLowerCase() : GD.enemies[type].plural));
+    if (preview.boss) text.unshift('Boss: ' + GD.enemies[preview.boss].name);
+    return text.join(' · ') + (parts.length > (preview.boss ? 2 : 3) ? ' · more' : '');
   }
 
   const STAT_LABELS = {
-    damage: ['Damage', (v) => String(v)],
+    damage: ['Damage', (v) => String(Math.round(v))],
     rate: ['Shots/s', (v) => (v < 1 ? v.toFixed(2) : v.toFixed(1))],
     range: ['Range', (v) => v.toFixed(1)],
     splash: ['Blast', (v) => v.toFixed(1)],
@@ -272,12 +329,12 @@
 
   function updateTowerPanel(t) {
     const def = GD.towers[t.type];
-    const s = def.tiers[t.tier];
-    const n = def.tiers[t.tier + 1];
+    const s = game.statsFor(t.type, t.tier);
+    const n = t.tier + 1 < def.tiers.length ? game.statsFor(t.type, t.tier + 1) : null;
     set('tower-title', 'textContent', def.name + ' · Tier ' + roman[t.tier]);
     def.stats.forEach((key, i) => {
       const [label, fmt] = STAT_LABELS[key];
-      const next = n && n[key] !== s[key] ? '<span class="next">→' + fmt(n[key]) + '</span>' : '';
+      const next = n && fmt(n[key]) !== fmt(s[key]) ? '<span class="next">→' + fmt(n[key]) + '</span>' : '';
       set('ts-label-' + i, 'textContent', label);
       set('ts-value-' + i, 'innerHTML', fmt(s[key]) + next);
     });
@@ -342,7 +399,7 @@
 
   function resize() {
     const r = stage.getBoundingClientRect();
-    if (r.width > 0 && r.height > 0) renderer.resize(r.width, r.height, game);
+    if (r.width > 0 && r.height > 0) renderer.resize(r.width, r.height, game, BOSS_BAR_SPACE);
   }
 
   // Handle for poking at a live run from the browser console or automated tests.

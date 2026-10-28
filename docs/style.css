@@ -176,6 +176,42 @@ body {
   touch-action: none;
 }
 
+/* ---- Boss bar ---- */
+
+.boss-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.boss-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--magenta);
+}
+
+.boss-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 61, 139, 0.18);
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+
+.boss-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--magenta);
+  transition: width 0.15s linear;
+}
+
 /* ---- Dock ---- */
 
 .dock {
@@ -505,6 +541,74 @@ body {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--dim);
+}
+
+/* ---- Upgrade cards ---- */
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.overlay-title.small { font-size: 28px; }
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.choice {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px 18px;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  --cut: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+.choice-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tag);
+}
+
+.choice-name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.choice-text {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--dim);
+}
+
+.owned {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+}
+
+.owned p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
 }
 
 @media (prefers-reduced-motion: reduce) {

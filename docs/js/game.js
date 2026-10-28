@@ -26,6 +26,9 @@
       this.seen = {}; // enemy types that have appeared in an earlier wave
       this.events = []; // drained by the renderer for effects and sounds
       this.stats = { kills: 0, leaks: 0 };
+      this.mods = GD.newMods();
+      this.cards = []; // ids of cards picked this run
+      this.offers = []; // pending card choices, each a list of card ids
       this.buildGrid();
     }
 
@@ -86,24 +89,46 @@
       return this.inBounds(c, r) && this.grid[r][c] === TILE.EMPTY && !this.towerAt(c, r);
     }
 
+    price(cost) {
+      return Math.round(cost * (1 - this.mods.discount));
+    }
+
+    buildCost(type) {
+      return this.price(GD.towers[type].tiers[0].cost);
+    }
+
     build(type, c, r) {
       const def = GD.towers[type];
-      const cost = def.tiers[0].cost;
+      const cost = this.buildCost(type);
       if (this.state !== 'playing' || !this.canBuild(c, r) || this.gold < cost) return null;
       this.gold -= cost;
       const tower = { type, tier: 0, c, r, x: c + 0.5, y: r + 0.5, cooldown: 0, angle: -Math.PI / 2, spent: cost, recoil: 0, mode: def.mode || null };
       this.towers.push(tower);
-      this.events.push({ type: 'build', tower: type, x: tower.x, y: tower.y, range: def.tiers[0].range });
+      this.events.push({ type: 'build', tower: type, x: tower.x, y: tower.y, range: this.towerStats(tower).range });
       return tower;
     }
 
+    // Tier stats with this run's card modifiers applied.
+    statsFor(type, tier) {
+      const base = GD.towers[type].tiers[tier];
+      const m = this.mods;
+      return {
+        damage: base.damage * m.damage[type],
+        rate: base.rate * m.rate[type],
+        range: base.range * m.range[type],
+        splash: (base.splash || 0) * m.splash,
+        slow: base.slow ? Math.min(0.8, base.slow + m.slowAdd) : 0,
+        slowTime: base.slowTime || 0,
+      };
+    }
+
     towerStats(t) {
-      return GD.towers[t.type].tiers[t.tier];
+      return this.statsFor(t.type, t.tier);
     }
 
     upgradeCost(t) {
       const tiers = GD.towers[t.type].tiers;
-      return t.tier < tiers.length - 1 ? tiers[t.tier + 1].cost : null;
+      return t.tier < tiers.length - 1 ? this.price(tiers[t.tier + 1].cost) : null;
     }
 
     upgrade(t) {
@@ -146,7 +171,7 @@
       this.waveTime = 0;
       this.waveRemaining[this.wave] = this.spawnQueue.length;
       for (const s of this.spawnQueue) this.seen[s.type] = true;
-      this.events.push({ type: 'waveStart', wave: this.wave, newType: preview.newType });
+      this.events.push({ type: 'waveStart', wave: this.wave, newType: preview.newType, boss: preview.boss });
       if (early) {
         this.gold += GD.config.earlyCallBonus;
         this.events.push({ type: 'earlyBonus', amount: GD.config.earlyCallBonus });
@@ -161,7 +186,8 @@
       for (const [type, count] of GD.waves[this.wave]) counts[type] = (counts[type] || 0) + count;
       const types = Object.keys(counts);
       const newType = this.wave > 0 ? types.find((t) => !this.seen[t] && GD.enemies[t].intro) || null : null;
-      return { wave: this.wave + 1, counts, newType };
+      const boss = types.find((t) => GD.enemies[t].boss) || null;
+      return { wave: this.wave + 1, counts, newType, boss };
     }
 
     // ---- Simulation ----
@@ -178,7 +204,7 @@
         }
       }
 
-      for (const e of this.enemies) {
+      for (const e of this.enemies.slice()) {
         if (e.slowLeft > 0) {
           e.slowLeft -= dt;
           if (e.slowLeft <= 0) e.slow = 0;
@@ -189,6 +215,15 @@
         if (p.x !== e.x || p.y !== e.y) e.angle = Math.atan2(p.y - e.y, p.x - e.x);
         e.x = p.x;
         e.y = p.y;
+        if (e.summon && !e.dead) {
+          e.summonT -= dt;
+          if (e.summonT <= 0) {
+            e.summonT = e.summon.every;
+            this.waveRemaining[e.wave] += e.summon.count;
+            for (let i = 0; i < e.summon.count; i++) this.spawn(e.summon.type, e.dist - 0.3 - i * 0.2, e.hpMul * 0.6, 0, e.wave);
+            this.events.push({ type: 'summon', x: e.x, y: e.y });
+          }
+        }
         if (e.dist >= this.pathLen) this.leak(e);
       }
 
@@ -224,6 +259,10 @@
         angle: Math.PI / 2,
         slow: 0,
         slowLeft: 0,
+        slowResist: def.slowResist || 0,
+        boss: !!def.boss,
+        summon: def.summon || null,
+        summonT: def.summon ? def.summon.every : 0,
         wave,
         dead: false,
         seed: Math.random() * 1000,
@@ -241,6 +280,7 @@
       this.enemyGone(e);
       if (this.hp <= 0 && this.state === 'playing') {
         this.state = 'lost';
+        this.offers = [];
         this.events.push({ type: 'lost' });
       }
     }
@@ -248,8 +288,9 @@
     kill(e) {
       e.dead = true;
       this.stats.kills++;
-      this.gold += e.reward;
-      this.events.push({ type: 'kill', x: e.x, y: e.y, reward: e.reward, enemy: e.type });
+      const reward = e.reward + this.mods.bounty;
+      this.gold += reward;
+      this.events.push({ type: 'kill', x: e.x, y: e.y, reward, enemy: e.type });
       const split = GD.enemies[e.type].split;
       if (split) {
         // Children count toward the parent's wave so the wave isn't "clear" until they're gone too.
@@ -262,15 +303,50 @@
     enemyGone(e) {
       this.waveRemaining[e.wave]--;
       if (this.waveRemaining[e.wave] === 0 && this.state === 'playing') {
-        const bonus = GD.waveClearBonus(e.wave);
+        const m = this.mods;
+        const interest = m.interest ? Math.min(40, Math.floor(this.gold * m.interest)) : 0;
+        const bonus = GD.waveClearBonus(e.wave) + interest;
         this.gold += bonus;
+        if (m.repair) this.hp = Math.min(this.maxHp, this.hp + m.repair);
         this.events.push({ type: 'waveClear', wave: e.wave, bonus });
+        if (GD.cardWaves.includes(e.wave)) this.offers.push(this.rollCards());
       }
     }
 
-    damage(e, amount) {
+    // ---- Upgrade cards ----
+
+    // Three different cards, weighted toward towers the player has built.
+    rollCards() {
+      const owned = new Set(this.towers.map((t) => t.type));
+      let pool = GD.cards.filter((c) => c.repeat || !this.cards.includes(c.id));
+      const picks = [];
+      while (picks.length < 3 && pool.length) {
+        const weights = pool.map((c) => (c.tower ? (owned.has(c.tower) ? 3 : 1) : 2));
+        let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+        let i = 0;
+        while (roll >= weights[i]) roll -= weights[i++];
+        picks.push(pool[i].id);
+        pool = pool.filter((_, j) => j !== i);
+      }
+      return picks;
+    }
+
+    pickCard(id) {
+      const offer = this.offers[0];
+      if (!offer || !offer.includes(id)) return false;
+      const card = GD.cards.find((c) => c.id === id);
+      card.apply(this.mods, this);
+      this.cards.push(id);
+      this.offers.shift();
+      this.events.push({ type: 'card', id });
+      return true;
+    }
+
+    damage(e, amount, tower) {
       if (e.dead) return;
-      e.hp -= Math.max(1, amount - e.armor);
+      if (e.slow > 0 && this.mods.brittle) amount *= 1 + this.mods.brittle;
+      const armor = tower && this.mods.ignoreArmor[tower] ? 0 : e.armor;
+      e.hp -= Math.max(1, amount - armor);
       e.hitFlash = 1;
       if (e.hp <= 0) this.kill(e);
     }
@@ -303,9 +379,10 @@
         t.cooldown = 1 / s.rate;
         t.recoil = 1;
         for (const e of inRange) {
-          if (s.slow >= e.slow || e.slowLeft <= 0) e.slow = s.slow;
+          const slow = s.slow * (1 - e.slowResist);
+          if (slow >= e.slow || e.slowLeft <= 0) e.slow = slow;
           e.slowLeft = Math.max(e.slowLeft, s.slowTime);
-          this.damage(e, s.damage);
+          this.damage(e, s.damage, t.type);
         }
         this.events.push({ type: 'pulse', tower: t.type, x: t.x, y: t.y, range: s.range });
         return;
@@ -322,8 +399,18 @@
       const my = t.y + Math.sin(t.angle) * muzzle;
 
       if (def.kind === 'beam') {
-        this.events.push({ type: 'beam', tower: t.type, x: mx, y: my, x2: target.x, y2: target.y });
-        this.damage(target, s.damage);
+        if (!this.mods.pierce) {
+          this.events.push({ type: 'beam', tower: t.type, x: mx, y: my, x2: target.x, y2: target.y });
+          this.damage(target, s.damage, t.type);
+          return;
+        }
+        // Piercing: the beam runs to the edge of range and hits everything close to the line.
+        const ex = t.x + Math.cos(t.angle) * s.range;
+        const ey = t.y + Math.sin(t.angle) * s.range;
+        this.events.push({ type: 'beam', tower: t.type, x: mx, y: my, x2: ex, y2: ey });
+        for (const e of this.enemies.slice()) {
+          if (!e.dead && distToSegment(e.x, e.y, mx, my, ex, ey) <= e.size + 0.12) this.damage(e, s.damage, t.type);
+        }
         return;
       }
 
@@ -336,7 +423,7 @@
         tx = p.x;
         ty = p.y;
       }
-      this.bullets.push({ tower: t.type, kind: def.kind, x: mx, y: my, target, tx, ty, damage: s.damage, splash: s.splash || 0, speed: def.bulletSpeed, done: false });
+      this.bullets.push({ tower: t.type, kind: def.kind, x: mx, y: my, target, tx, ty, damage: s.damage, splash: s.splash, speed: def.bulletSpeed, done: false });
       this.events.push({ type: 'shoot', tower: t.type, x: mx, y: my, angle: t.angle });
     }
 
@@ -361,7 +448,7 @@
         if (b.kind === 'splash') this.explode(b);
         else if (!b.target.dead) {
           this.events.push({ type: 'hit', tower: b.tower, x: b.target.x, y: b.target.y });
-          this.damage(b.target, b.damage);
+          this.damage(b.target, b.damage, b.tower);
         } else this.events.push({ type: 'fizzle', x: b.tx, y: b.ty });
       }
       if (this.bullets.some((b) => b.done)) this.bullets = this.bullets.filter((b) => !b.done);
@@ -372,9 +459,17 @@
       this.events.push({ type: 'explode', tower: b.tower, x: b.tx, y: b.ty, radius: b.splash });
       // Snapshot: splitter shards spawned by this blast shouldn't take the same hit.
       for (const e of this.enemies.slice()) {
-        if (!e.dead && (e.x - b.tx) ** 2 + (e.y - b.ty) ** 2 <= r2) this.damage(e, b.damage);
+        if (!e.dead && (e.x - b.tx) ** 2 + (e.y - b.ty) ** 2 <= r2) this.damage(e, b.damage, b.tower);
       }
     }
+  }
+
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   }
 
   GD.Game = Game;
