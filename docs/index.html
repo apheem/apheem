@@ -49,23 +49,42 @@
         <button class="btn card" type="button" data-tower="pulse">
           <canvas class="card-icon" width="56" height="56" data-icon="pulse"></canvas>
           <span class="card-name">Pulse</span>
+          <span class="card-role">Rapid</span>
           <span class="card-cost" id="cost-pulse">50</span>
         </button>
-        <button class="btn card" type="button" disabled><canvas class="card-icon" width="56" height="56" data-icon="nova"></canvas><span class="card-name">Nova</span><span class="card-cost">Soon</span></button>
-        <button class="btn card" type="button" disabled><canvas class="card-icon" width="56" height="56" data-icon="cryo"></canvas><span class="card-name">Cryo</span><span class="card-cost">Soon</span></button>
-        <button class="btn card" type="button" disabled><canvas class="card-icon" width="56" height="56" data-icon="rail"></canvas><span class="card-name">Rail</span><span class="card-cost">Soon</span></button>
+        <button class="btn card" type="button" data-tower="nova">
+          <canvas class="card-icon" width="56" height="56" data-icon="nova"></canvas>
+          <span class="card-name">Nova</span>
+          <span class="card-role">Splash</span>
+          <span class="card-cost" id="cost-nova">80</span>
+        </button>
+        <button class="btn card" type="button" data-tower="cryo">
+          <canvas class="card-icon" width="56" height="56" data-icon="cryo"></canvas>
+          <span class="card-name">Cryo</span>
+          <span class="card-role">Slow</span>
+          <span class="card-cost" id="cost-cryo">60</span>
+        </button>
+        <button class="btn card" type="button" data-tower="rail">
+          <canvas class="card-icon" width="56" height="56" data-icon="rail"></canvas>
+          <span class="card-name">Rail</span>
+          <span class="card-role">Sniper</span>
+          <span class="card-cost" id="cost-rail">110</span>
+        </button>
       </div>
     </section>
 
     <section class="panel" id="panel-tower" hidden>
       <div class="panel-head">
         <span class="panel-title" id="tower-title">Pulse · Tier I</span>
-        <button class="close-btn" type="button" data-close aria-label="Close">×</button>
+        <div class="head-actions">
+          <button class="chip" id="btn-target" type="button" aria-label="Change targeting">Target: First</button>
+          <button class="close-btn" type="button" data-close aria-label="Close">×</button>
+        </div>
       </div>
       <div class="tower-stats">
-        <div><span class="label">Damage</span><span class="value" id="ts-damage">4</span></div>
-        <div><span class="label">Shots/s</span><span class="value" id="ts-rate">2.5</span></div>
-        <div><span class="label">Range</span><span class="value" id="ts-range">2.2</span></div>
+        <div><span class="label" id="ts-label-0">Damage</span><span class="value" id="ts-value-0">4</span></div>
+        <div><span class="label" id="ts-label-1">Shots/s</span><span class="value" id="ts-value-1">2.5</span></div>
+        <div><span class="label" id="ts-label-2">Range</span><span class="value" id="ts-value-2">2.2</span></div>
       </div>
       <div class="tower-actions">
         <button class="btn primary" id="btn-upgrade" type="button">Upgrade · 60</button>
@@ -84,7 +103,7 @@
     </dl>
     <button class="btn primary big" id="btn-play" type="button">Play</button>
     <p class="best" id="best-line" hidden></p>
-    <p class="version">Prototype · v0.1</p>
+    <p class="version">Prototype · v0.2</p>
   </div>
 
   <div class="overlay" id="overlay-pause" hidden>

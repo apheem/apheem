@@ -42,9 +42,10 @@ Each tower has 3 upgrade tiers. Selling refunds 70% of what you spent.
 |---|---|
 | Drone | Basic |
 | Dart | Fast, fragile |
-| Brick | Slow, lots of HP |
+| Brick | Slow, lots of HP, armor (each hit loses 3 damage) |
 | Swarm | Comes in tight groups of small units |
 | Splitter | Splits into 2 smaller enemies on death |
+| Shard | Small fast piece left behind by a Splitter |
 | Boss (waves 10 and 20) | Huge HP, resists slow |
 
 ## Upgrade cards
@@ -78,7 +79,7 @@ More cards are unlocked through meta progression.
 ## Build order
 
 1. **Playable prototype** ✅: map, path, Pulse tower, Drones, 10 waves, gold, win/lose, pause, fast-forward.
-2. **Content**: all 4 towers with upgrades, all enemy types.
+2. **Content** ✅: all 4 towers with upgrades and targeting modes, all non-boss enemy types, hand-built 10-wave mix.
 3. **Roguelite layer**: upgrade cards, boss waves, 20-wave run.
 4. **Meta**: Data, unlock shop, save/load, fast-forward, difficulty tiers, 3 maps.
 5. **Ship**: offline support, Home Screen icon, polish and balance, GitHub Pages.

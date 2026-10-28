@@ -158,6 +158,7 @@
   );
 
   $('btn-upgrade').addEventListener('click', () => sel && sel.tower && game.upgrade(sel.tower));
+  $('btn-target').addEventListener('click', () => sel && sel.tower && game.cycleMode(sel.tower));
   $('btn-sell').addEventListener('click', () => {
     if (sel && sel.tower) game.sell(sel.tower);
     sel = null;
@@ -190,6 +191,8 @@
   }
 
   const roman = ['I', 'II', 'III'];
+  const cards = {};
+  document.querySelectorAll('[data-tower]').forEach((b) => (cards[b.dataset.tower] = b));
 
   function updateUI() {
     set('hud-hp', 'textContent', String(game.hp));
@@ -205,10 +208,11 @@
 
     if (mode === 'idle') updateWaveButton();
     if (mode === 'build') {
-      const cost = GD.towers.pulse.tiers[0].cost;
-      set('cost-pulse', 'textContent', String(cost));
-      const card = document.querySelector('[data-tower="pulse"]');
-      card.classList.toggle('poor', game.gold < cost);
+      for (const type of GD.towerOrder) {
+        const cost = GD.towers[type].tiers[0].cost;
+        set('cost-' + type, 'textContent', String(cost));
+        cards[type].classList.toggle('poor', game.gold < cost);
+      }
     }
     if (mode === 'tower') updateTowerPanel(sel.tower);
   }
@@ -233,11 +237,11 @@
       disabled = true;
     } else if (game.enemies.length) {
       main = 'Call wave ' + preview.wave + ' early';
-      sub = '+' + GD.config.earlyCallBonus + ' gold · ' + preview.count + ' drones';
+      sub = '+' + GD.config.earlyCallBonus + ' gold · ' + describeWave(preview);
       cls += ' early';
     } else {
       main = 'Start wave ' + preview.wave;
-      sub = preview.count + ' drones';
+      sub = describeWave(preview);
     }
     set('wave-main', 'textContent', main);
     set('wave-sub', 'textContent', sub);
@@ -247,20 +251,38 @@
     let hint = '';
     if (game.towers.length === 0) hint = 'Tap an empty tile to build a tower.';
     else if (game.wave === 0) hint = 'Tap a tower to upgrade or sell it.';
+    else if (preview && preview.newType && !game.spawnQueue.length) hint = 'Next up: ' + GD.enemies[preview.newType].intro;
     set('idle-hint', 'textContent', hint);
   }
+
+  // "10 drones · 4 darts", largest groups first, at most three kinds.
+  function describeWave(preview) {
+    const parts = Object.entries(preview.counts).sort((a, b) => b[1] - a[1]);
+    const text = parts.slice(0, 3).map(([type, n]) => n + ' ' + (n === 1 ? GD.enemies[type].name.toLowerCase() : GD.enemies[type].plural));
+    return text.join(' · ') + (parts.length > 3 ? ' · more' : '');
+  }
+
+  const STAT_LABELS = {
+    damage: ['Damage', (v) => String(v)],
+    rate: ['Shots/s', (v) => (v < 1 ? v.toFixed(2) : v.toFixed(1))],
+    range: ['Range', (v) => v.toFixed(1)],
+    splash: ['Blast', (v) => v.toFixed(1)],
+    slow: ['Slow', (v) => Math.round(v * 100) + '%'],
+  };
 
   function updateTowerPanel(t) {
     const def = GD.towers[t.type];
     const s = def.tiers[t.tier];
     const n = def.tiers[t.tier + 1];
-    const stat = (cur, next, fmt) => fmt(cur) + (n && next !== cur ? '<span class="next">→' + fmt(next) + '</span>' : '');
-    const int = (v) => String(v);
-    const one = (v) => v.toFixed(1);
     set('tower-title', 'textContent', def.name + ' · Tier ' + roman[t.tier]);
-    set('ts-damage', 'innerHTML', stat(s.damage, n && n.damage, int));
-    set('ts-rate', 'innerHTML', stat(s.rate, n && n.rate, one));
-    set('ts-range', 'innerHTML', stat(s.range, n && n.range, one));
+    def.stats.forEach((key, i) => {
+      const [label, fmt] = STAT_LABELS[key];
+      const next = n && n[key] !== s[key] ? '<span class="next">→' + fmt(n[key]) + '</span>' : '';
+      set('ts-label-' + i, 'textContent', label);
+      set('ts-value-' + i, 'innerHTML', fmt(s[key]) + next);
+    });
+    set('btn-target', 'hidden', !t.mode);
+    if (t.mode) set('btn-target', 'textContent', 'Target: ' + GD.targetModes[t.mode]);
     const cost = game.upgradeCost(t);
     set('btn-upgrade', 'textContent', cost === null ? 'Max tier' : 'Upgrade · ' + cost);
     set('btn-upgrade', 'disabled', cost === null || game.gold < cost);
@@ -270,15 +292,15 @@
   // ---- Card icons ----
 
   function drawIcons() {
-    const C = GD.colors;
     document.querySelectorAll('canvas[data-icon]').forEach((cv) => {
       const g = cv.getContext('2d');
       const k = cv.width / 28;
       g.setTransform(k, 0, 0, k, 0, 0);
       g.clearRect(0, 0, 28, 28);
+      const color = GD.towers[cv.dataset.icon].color;
       g.lineWidth = 1.6;
-      g.strokeStyle = C.cyan;
-      g.fillStyle = C.cyan;
+      g.strokeStyle = color;
+      g.fillStyle = color;
       switch (cv.dataset.icon) {
         case 'pulse':
           g.strokeRect(4, 4, 20, 20);
@@ -322,6 +344,9 @@
     const r = stage.getBoundingClientRect();
     if (r.width > 0 && r.height > 0) renderer.resize(r.width, r.height, game);
   }
+
+  // Handle for poking at a live run from the browser console or automated tests.
+  GD.debug = { get game() { return game; } };
 
   new ResizeObserver(resize).observe(stage);
   window.addEventListener('orientationchange', resize);

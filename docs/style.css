@@ -238,6 +238,29 @@ body {
   text-transform: uppercase;
 }
 
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(141, 136, 189, 0.45);
+  border-radius: 16px;
+  background: none;
+  color: var(--text);
+  font: 600 11px/1 var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.chip:active { background: rgba(141, 136, 189, 0.18); }
+.chip:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
 .close-btn {
   width: 44px;
   height: 36px;
@@ -258,19 +281,17 @@ body {
 
 .card {
   flex-direction: column;
-  gap: 3px;
-  min-height: 84px;
+  gap: 2px;
+  min-height: 88px;
   padding: 6px 4px;
   text-transform: none;
   letter-spacing: 0.04em;
 }
 
 .card-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
-
-.card:disabled .card-icon { opacity: 0.35; }
 
 .card-name {
   font-size: 13px;
@@ -278,7 +299,13 @@ body {
   color: var(--text);
 }
 
-.card:disabled .card-name { color: var(--dim); }
+.card-role {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
 
 .card-cost {
   font-size: 13px;
@@ -288,7 +315,6 @@ body {
 }
 
 .card.poor .card-cost { color: var(--magenta); }
-.card:disabled .card-cost { color: var(--dim); font-weight: 500; }
 
 .tower-stats {
   display: grid;
@@ -490,5 +516,5 @@ body {
   .overlay { gap: 14px; }
   .howto dd { font-size: 13px; }
   .dock { height: 152px; }
-  .card { min-height: 76px; }
+  .card { min-height: 80px; }
 }

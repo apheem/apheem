@@ -14,7 +14,7 @@
       this.hp = cfg.coreHp;
       this.maxHp = cfg.coreHp;
       this.wave = 0;
-      this.totalWaves = cfg.totalWaves;
+      this.totalWaves = GD.waves.length;
       this.state = 'playing'; // playing | won | lost
       this.time = 0;
       this.towers = [];
@@ -23,6 +23,7 @@
       this.spawnQueue = [];
       this.waveTime = 0;
       this.waveRemaining = {};
+      this.seen = {}; // enemy types that have appeared in an earlier wave
       this.events = []; // drained by the renderer for effects and sounds
       this.stats = { kills: 0, leaks: 0 };
       this.buildGrid();
@@ -65,6 +66,7 @@
 
     posAt(d) {
       const pts = this.pathPts;
+      d = Math.max(0, d);
       for (let i = 1; i < pts.length; i++) {
         if (d <= this.cumLen[i]) {
           const t = (d - this.cumLen[i - 1]) / this.segLen[i - 1];
@@ -89,9 +91,9 @@
       const cost = def.tiers[0].cost;
       if (this.state !== 'playing' || !this.canBuild(c, r) || this.gold < cost) return null;
       this.gold -= cost;
-      const tower = { type, tier: 0, c, r, x: c + 0.5, y: r + 0.5, cooldown: 0, angle: -Math.PI / 2, spent: cost, recoil: 0 };
+      const tower = { type, tier: 0, c, r, x: c + 0.5, y: r + 0.5, cooldown: 0, angle: -Math.PI / 2, spent: cost, recoil: 0, mode: def.mode || null };
       this.towers.push(tower);
-      this.events.push({ type: 'build', x: tower.x, y: tower.y });
+      this.events.push({ type: 'build', tower: type, x: tower.x, y: tower.y, range: def.tiers[0].range });
       return tower;
     }
 
@@ -110,8 +112,14 @@
       this.gold -= cost;
       t.spent += cost;
       t.tier++;
-      this.events.push({ type: 'upgrade', x: t.x, y: t.y });
+      this.events.push({ type: 'upgrade', tower: t.type, x: t.x, y: t.y, range: this.towerStats(t).range });
       return true;
+    }
+
+    cycleMode(t) {
+      if (!t.mode) return;
+      const modes = Object.keys(GD.targetModes);
+      t.mode = modes[(modes.indexOf(t.mode) + 1) % modes.length];
     }
 
     sellValue(t) {
@@ -132,11 +140,13 @@
     startNextWave() {
       if (!this.canStartWave()) return false;
       const early = this.enemies.length > 0;
+      const preview = this.nextWavePreview();
       this.wave++;
       this.spawnQueue = GD.makeWave(this.wave);
       this.waveTime = 0;
       this.waveRemaining[this.wave] = this.spawnQueue.length;
-      this.events.push({ type: 'waveStart', wave: this.wave });
+      for (const s of this.spawnQueue) this.seen[s.type] = true;
+      this.events.push({ type: 'waveStart', wave: this.wave, newType: preview.newType });
       if (early) {
         this.gold += GD.config.earlyCallBonus;
         this.events.push({ type: 'earlyBonus', amount: GD.config.earlyCallBonus });
@@ -144,9 +154,14 @@
       return true;
     }
 
+    // What the next wave holds: counts per enemy type, and the first type the player hasn't met yet.
     nextWavePreview() {
       if (this.wave >= this.totalWaves) return null;
-      return { wave: this.wave + 1, count: GD.makeWave(this.wave + 1).length };
+      const counts = {};
+      for (const [type, count] of GD.waves[this.wave]) counts[type] = (counts[type] || 0) + count;
+      const types = Object.keys(counts);
+      const newType = this.wave > 0 ? types.find((t) => !this.seen[t] && GD.enemies[t].intro) || null : null;
+      return { wave: this.wave + 1, counts, newType };
     }
 
     // ---- Simulation ----
@@ -157,12 +172,21 @@
 
       if (this.spawnQueue.length) {
         this.waveTime += dt;
-        while (this.spawnQueue.length && this.spawnQueue[0].t <= this.waveTime) this.spawn(this.spawnQueue.shift());
+        while (this.spawnQueue.length && this.spawnQueue[0].t <= this.waveTime) {
+          const s = this.spawnQueue.shift();
+          this.spawn(s.type, 0, s.hpMul, s.rewardBonus, this.wave);
+        }
       }
 
       for (const e of this.enemies) {
-        e.dist += e.speed * dt;
+        if (e.slowLeft > 0) {
+          e.slowLeft -= dt;
+          if (e.slowLeft <= 0) e.slow = 0;
+        }
+        e.curSpeed = e.speed * (1 - e.slow);
+        e.dist += e.curSpeed * dt;
         const p = this.posAt(e.dist);
+        if (p.x !== e.x || p.y !== e.y) e.angle = Math.atan2(p.y - e.y, p.x - e.x);
         e.x = p.x;
         e.y = p.y;
         if (e.dist >= this.pathLen) this.leak(e);
@@ -179,25 +203,33 @@
       }
     }
 
-    spawn(s) {
-      const def = GD.enemies[s.type];
-      const hp = Math.round(def.hp * s.hpMul);
-      const p = this.posAt(0);
-      this.enemies.push({
-        type: s.type,
+    spawn(type, dist, hpMul, rewardBonus, wave) {
+      const def = GD.enemies[type];
+      const hp = Math.round(def.hp * hpMul);
+      const p = this.posAt(dist);
+      const e = {
+        type,
         hp,
         maxHp: hp,
+        hpMul,
         speed: def.speed,
-        reward: def.reward + (s.rewardBonus || 0),
+        curSpeed: def.speed,
+        armor: def.armor || 0,
+        reward: def.reward + (rewardBonus || 0),
         damage: def.damage,
         size: def.size,
-        dist: 0,
+        dist,
         x: p.x,
         y: p.y,
-        wave: this.wave,
+        angle: Math.PI / 2,
+        slow: 0,
+        slowLeft: 0,
+        wave,
         dead: false,
         seed: Math.random() * 1000,
-      });
+      };
+      this.enemies.push(e);
+      return e;
     }
 
     leak(e) {
@@ -218,6 +250,12 @@
       this.stats.kills++;
       this.gold += e.reward;
       this.events.push({ type: 'kill', x: e.x, y: e.y, reward: e.reward, enemy: e.type });
+      const split = GD.enemies[e.type].split;
+      if (split) {
+        // Children count toward the parent's wave so the wave isn't "clear" until they're gone too.
+        this.waveRemaining[e.wave] += split.count;
+        for (let i = 0; i < split.count; i++) this.spawn(split.type, e.dist - i * 0.25, e.hpMul, 0, e.wave);
+      }
       this.enemyGone(e);
     }
 
@@ -230,63 +268,112 @@
       }
     }
 
-    updateTower(t, dt) {
-      const s = this.towerStats(t);
-      t.cooldown = Math.max(0, t.cooldown - dt);
-      t.recoil = Math.max(0, t.recoil - dt * 6);
+    damage(e, amount) {
+      if (e.dead) return;
+      e.hp -= Math.max(1, amount - e.armor);
+      e.hitFlash = 1;
+      if (e.hp <= 0) this.kill(e);
+    }
 
-      // Target the enemy furthest along the path that is in range.
-      const r2 = s.range * s.range;
-      let target = null;
+    pickTarget(t, range) {
+      const r2 = range * range;
+      let best = null;
       for (const e of this.enemies) {
         if (e.dead) continue;
         const dx = e.x - t.x;
         const dy = e.y - t.y;
-        if (dx * dx + dy * dy <= r2 && (!target || e.dist > target.dist)) target = e;
+        if (dx * dx + dy * dy > r2) continue;
+        if (!best) best = e;
+        else if (t.mode === 'last' ? e.dist < best.dist : t.mode === 'strong' ? e.hp > best.hp || (e.hp === best.hp && e.dist > best.dist) : e.dist > best.dist) best = e;
       }
-      if (!target) return;
+      return best;
+    }
 
+    updateTower(t, dt) {
+      const def = GD.towers[t.type];
+      const s = def.tiers[t.tier];
+      t.cooldown = Math.max(0, t.cooldown - dt);
+      t.recoil = Math.max(0, t.recoil - dt * 6);
+
+      if (def.kind === 'aura') {
+        if (t.cooldown > 0) return;
+        const r2 = s.range * s.range;
+        const inRange = this.enemies.filter((e) => !e.dead && (e.x - t.x) ** 2 + (e.y - t.y) ** 2 <= r2);
+        if (!inRange.length) return;
+        t.cooldown = 1 / s.rate;
+        t.recoil = 1;
+        for (const e of inRange) {
+          if (s.slow >= e.slow || e.slowLeft <= 0) e.slow = s.slow;
+          e.slowLeft = Math.max(e.slowLeft, s.slowTime);
+          this.damage(e, s.damage);
+        }
+        this.events.push({ type: 'pulse', tower: t.type, x: t.x, y: t.y, range: s.range });
+        return;
+      }
+
+      const target = this.pickTarget(t, s.range);
+      if (!target) return;
       t.angle = Math.atan2(target.y - t.y, target.x - t.x);
       if (t.cooldown > 0) return;
       t.cooldown = 1 / s.rate;
       t.recoil = 1;
-      const muzzle = 0.32;
-      const bx = t.x + Math.cos(t.angle) * muzzle;
-      const by = t.y + Math.sin(t.angle) * muzzle;
-      this.bullets.push({ x: bx, y: by, px: bx, py: by, target, tx: target.x, ty: target.y, damage: s.damage, speed: GD.towers[t.type].bulletSpeed, done: false });
-      this.events.push({ type: 'shoot', x: bx, y: by, angle: t.angle });
+      const muzzle = def.kind === 'beam' ? 0.42 : 0.32;
+      const mx = t.x + Math.cos(t.angle) * muzzle;
+      const my = t.y + Math.sin(t.angle) * muzzle;
+
+      if (def.kind === 'beam') {
+        this.events.push({ type: 'beam', tower: t.type, x: mx, y: my, x2: target.x, y2: target.y });
+        this.damage(target, s.damage);
+        return;
+      }
+
+      let tx = target.x;
+      let ty = target.y;
+      if (def.kind === 'splash') {
+        // Lead the target: aim where it will be when the shell lands.
+        const flight = Math.hypot(tx - mx, ty - my) / def.bulletSpeed;
+        const p = this.posAt(target.dist + target.curSpeed * flight);
+        tx = p.x;
+        ty = p.y;
+      }
+      this.bullets.push({ tower: t.type, kind: def.kind, x: mx, y: my, target, tx, ty, damage: s.damage, splash: s.splash || 0, speed: def.bulletSpeed, done: false });
+      this.events.push({ type: 'shoot', tower: t.type, x: mx, y: my, angle: t.angle });
     }
 
     updateBullets(dt) {
       for (const b of this.bullets) {
-        if (!b.target.dead) {
+        const homing = b.kind === 'bullet';
+        if (homing && !b.target.dead) {
           b.tx = b.target.x;
           b.ty = b.target.y;
         }
-        b.px = b.x;
-        b.py = b.y;
         const dx = b.tx - b.x;
         const dy = b.ty - b.y;
         const dist = Math.hypot(dx, dy);
         const step = b.speed * dt;
-        const reach = step + (b.target.dead ? 0 : b.target.size);
-        if (dist <= reach) {
-          b.done = true;
-          if (!b.target.dead) this.hit(b.target, b.damage);
-          else this.events.push({ type: 'fizzle', x: b.tx, y: b.ty });
-        } else {
+        const reach = step + (homing && !b.target.dead ? b.target.size : 0);
+        if (dist > reach) {
           b.x += (dx / dist) * step;
           b.y += (dy / dist) * step;
+          continue;
         }
+        b.done = true;
+        if (b.kind === 'splash') this.explode(b);
+        else if (!b.target.dead) {
+          this.events.push({ type: 'hit', tower: b.tower, x: b.target.x, y: b.target.y });
+          this.damage(b.target, b.damage);
+        } else this.events.push({ type: 'fizzle', x: b.tx, y: b.ty });
       }
       if (this.bullets.some((b) => b.done)) this.bullets = this.bullets.filter((b) => !b.done);
     }
 
-    hit(e, damage) {
-      e.hp -= damage;
-      e.hitFlash = 1;
-      this.events.push({ type: 'hit', x: e.x, y: e.y });
-      if (e.hp <= 0) this.kill(e);
+    explode(b) {
+      const r2 = b.splash * b.splash;
+      this.events.push({ type: 'explode', tower: b.tower, x: b.tx, y: b.ty, radius: b.splash });
+      // Snapshot: splitter shards spawned by this blast shouldn't take the same hit.
+      for (const e of this.enemies.slice()) {
+        if (!e.dead && (e.x - b.tx) ** 2 + (e.y - b.ty) ** 2 <= r2) this.damage(e, b.damage);
+      }
     }
   }
 

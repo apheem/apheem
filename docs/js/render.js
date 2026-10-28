@@ -7,14 +7,22 @@
     lane: '#16132d',
     laneEdge: 'rgba(255, 61, 139, 0.32)',
     cyan: '#3ef0ff',
-    cyanDim: '#17384d',
     magenta: '#ff3d8b',
     amber: '#ffc547',
+    ice: '#8fd3ff',
     text: '#ece9ff',
     plate: '#121433',
   };
   GD.colors = C;
   const FONT = '"Chakra Petch", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif';
+
+  function rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255) + ', ' + a + ')';
+  }
+  GD.rgba = rgba;
+
+  const towerColor = (type) => (GD.towers[type] ? GD.towers[type].color : C.cyan);
 
   class Renderer {
     constructor(canvas) {
@@ -34,6 +42,7 @@
     reset() {
       this.particles = [];
       this.rings = [];
+      this.beams = [];
       this.texts = [];
       this.banner = null;
       this.shake = 0;
@@ -135,17 +144,29 @@
 
     consume(game) {
       for (const ev of game.events) {
+        const color = towerColor(ev.tower);
         switch (ev.type) {
           case 'shoot':
-            this.spark(ev.x, ev.y, 2, C.cyan, 1.5, 0.15);
+            this.spark(ev.x, ev.y, 2, color, 1.5, 0.15);
             break;
           case 'hit':
-            this.spark(ev.x, ev.y, 3, C.cyan, 2.5, 0.25);
+            this.spark(ev.x, ev.y, 3, color, 2.5, 0.25);
+            break;
+          case 'beam':
+            this.beams.push({ x1: ev.x, y1: ev.y, x2: ev.x2, y2: ev.y2, life: 0.22, max: 0.22, color });
+            this.spark(ev.x2, ev.y2, 8, color, 3.5, 0.4);
+            break;
+          case 'explode':
+            this.rings.push({ x: ev.x, y: ev.y, r0: 0.15, r1: ev.radius, life: 0.3, max: 0.3, color, width: 3 });
+            this.spark(ev.x, ev.y, 14, color, 3, 0.45);
+            break;
+          case 'pulse':
+            this.rings.push({ x: ev.x, y: ev.y, r0: 0.3, r1: ev.range, life: 0.45, max: 0.45, color, width: 2 });
             break;
           case 'kill':
-            this.spark(ev.x, ev.y, 12, C.magenta, 3.5, 0.6);
-            this.spark(ev.x, ev.y, 5, C.cyan, 2.5, 0.5);
-            this.rings.push({ x: ev.x, y: ev.y, r0: 0.1, r1: 0.6, life: 0.35, max: 0.35, color: C.magenta });
+            this.spark(ev.x, ev.y, ev.enemy === 'swarm' ? 5 : 12, C.magenta, 3.5, 0.6);
+            this.spark(ev.x, ev.y, 4, C.cyan, 2.5, 0.5);
+            this.rings.push({ x: ev.x, y: ev.y, r0: 0.1, r1: ev.enemy === 'brick' ? 0.9 : 0.6, life: 0.35, max: 0.35, color: C.magenta });
             this.texts.push({ x: ev.x, y: ev.y - 0.2, text: '+' + ev.reward, life: 0.9, max: 0.9, color: C.amber });
             break;
           case 'leak':
@@ -156,15 +177,20 @@
             break;
           case 'build':
           case 'upgrade':
-            this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 0.9, life: 0.4, max: 0.4, color: C.cyan });
-            this.spark(ev.x, ev.y, 8, C.cyan, 2, 0.4);
+            this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 0.9, life: 0.4, max: 0.4, color });
+            // Show the tower's reach for a moment so the player sees what it covers.
+            this.rings.push({ x: ev.x, y: ev.y, r0: ev.range, r1: ev.range, life: 1.1, max: 1.1, color, dashed: true });
+            this.spark(ev.x, ev.y, 8, color, 2, 0.4);
             break;
           case 'sell':
             this.spark(ev.x, ev.y, 10, C.amber, 2, 0.5);
             break;
-          case 'waveStart':
-            this.banner = { text: 'WAVE ' + ev.wave, sub: ev.wave === game.totalWaves ? 'FINAL WAVE' : '', life: 1.6, max: 1.6 };
+          case 'waveStart': {
+            let sub = ev.wave === game.totalWaves ? 'FINAL WAVE' : '';
+            if (ev.newType) sub = 'NEW · ' + GD.enemies[ev.newType].name.toUpperCase();
+            this.banner = { text: 'WAVE ' + ev.wave, sub, life: 1.8, max: 1.8 };
             break;
+          }
           case 'waveClear':
             this.texts.push({ x: game.core.x, y: game.core.y - 0.8, text: 'WAVE ' + ev.wave + ' CLEAR +' + ev.bonus, life: 1.6, max: 1.6, color: C.amber, big: true });
             break;
@@ -174,7 +200,7 @@
         }
       }
       game.events.length = 0;
-      if (this.particles.length > 500) this.particles.splice(0, this.particles.length - 500);
+      if (this.particles.length > 600) this.particles.splice(0, this.particles.length - 600);
     }
 
     spark(x, y, n, color, speed, life) {
@@ -244,30 +270,24 @@
       if (!sel) return;
       const ctx = this.ctx;
       const ts = this.ts;
-      let c, r, range;
-      if (sel.tower) {
-        c = sel.tower.c;
-        r = sel.tower.r;
-        range = game.towerStats(sel.tower).range;
-      } else {
-        c = sel.c;
-        r = sel.r;
-        range = GD.towers.pulse.tiers[0].range;
-      }
-      const cx = this.X(c + 0.5);
-      const cy = this.Y(r + 0.5);
+      const t = sel.tower;
+      const c = t ? t.c : sel.c;
+      const r = t ? t.r : sel.r;
+      const color = t ? towerColor(t.type) : C.cyan;
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, range * ts, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(62, 240, 255, 0.06)';
-      ctx.fill();
-      ctx.setLineDash([6, 6]);
-      ctx.lineDashOffset = -this.time * 12;
-      ctx.strokeStyle = 'rgba(62, 240, 255, 0.55)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.strokeStyle = C.cyan;
+      if (t) {
+        ctx.beginPath();
+        ctx.arc(this.X(c + 0.5), this.Y(r + 0.5), game.towerStats(t).range * ts, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(color, 0.07);
+        ctx.fill();
+        ctx.setLineDash([6, 6]);
+        ctx.lineDashOffset = -this.time * 12;
+        ctx.strokeStyle = rgba(color, 0.6);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.strokeRect(this.X(c) + 1, this.Y(r) + 1, ts - 2, ts - 2);
       ctx.restore();
@@ -276,31 +296,39 @@
     drawTower(t, selected) {
       const ctx = this.ctx;
       const ts = this.ts;
-      const x = this.X(t.x);
-      const y = this.Y(t.y);
+      const color = towerColor(t.type);
       const s = ts * 0.72;
 
       ctx.save();
-      ctx.translate(x, y);
+      ctx.translate(this.X(t.x), this.Y(t.y));
       ctx.beginPath();
       ctx.roundRect(-s / 2, -s / 2, s, s, ts * 0.12);
       ctx.fillStyle = C.plate;
       ctx.fill();
-      ctx.strokeStyle = selected ? C.cyan : 'rgba(62, 240, 255, 0.45)';
+      ctx.strokeStyle = selected ? color : rgba(color, 0.45);
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
       // Tier pips along the bottom edge.
       const pip = ts * 0.07;
-      for (let i = 0; i <= t.tier; i++) {
-        ctx.fillStyle = C.cyan;
-        ctx.fillRect(-s / 2 + ts * 0.08 + i * pip * 1.8, s / 2 - ts * 0.12, pip, pip * 0.6);
-      }
+      ctx.fillStyle = color;
+      for (let i = 0; i <= t.tier; i++) ctx.fillRect(-s / 2 + ts * 0.08 + i * pip * 1.8, s / 2 - ts * 0.12, pip, pip * 0.6);
 
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      if (t.type === 'pulse') this.drawPulse(t, ts);
+      else if (t.type === 'nova') this.drawNova(t, ts);
+      else if (t.type === 'cryo') this.drawCryo(t, ts);
+      else if (t.type === 'rail') this.drawRail(t, ts);
+      ctx.restore();
+    }
+
+    drawPulse(t, ts) {
+      const ctx = this.ctx;
       if (t.tier >= 2) {
         ctx.save();
         ctx.rotate(this.time * 0.8);
-        ctx.strokeStyle = 'rgba(62, 240, 255, 0.5)';
+        ctx.globalAlpha = 0.5;
         ctx.lineWidth = 1.5;
         ctx.setLineDash([ts * 0.08, ts * 0.08]);
         ctx.beginPath();
@@ -308,48 +336,108 @@
         ctx.stroke();
         ctx.restore();
       }
-
       ctx.rotate(t.angle);
       const len = ts * (0.36 - t.recoil * 0.08);
       const bw = ts * 0.085;
-      ctx.fillStyle = C.cyan;
-      if (t.tier === 0) {
-        ctx.fillRect(0, -bw / 2, len, bw);
-      } else {
+      if (t.tier === 0) ctx.fillRect(0, -bw / 2, len, bw);
+      else {
         ctx.fillRect(0, -bw * 1.2, len, bw);
         ctx.fillRect(0, bw * 0.2, len, bw);
       }
+      this.hub(ts * 0.16, '#17384d');
+    }
+
+    drawNova(t, ts) {
+      const ctx = this.ctx;
+      ctx.rotate(t.angle);
+      const len = ts * (0.26 - t.recoil * 0.06);
+      ctx.fillRect(0, -ts * 0.08, len, ts * 0.16);
+      this.hub(ts * 0.18, '#2a1f4d');
+      // Higher tiers add an orbit ring, then charge cells circling on it.
+      if (t.tier >= 1) {
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, ts * 0.27, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (t.tier >= 2) {
+        for (let i = 0; i < 3; i++) {
+          const a = this.time * 2 + (i * Math.PI * 2) / 3;
+          ctx.beginPath();
+          ctx.arc(Math.cos(a) * ts * 0.27, Math.sin(a) * ts * 0.27, ts * 0.04, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    drawCryo(t, ts) {
+      const ctx = this.ctx;
+      const arms = 3 + t.tier;
+      const r = ts * (0.26 + t.recoil * 0.05);
+      ctx.rotate(this.time * 0.6);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(0, 0, ts * 0.16, 0, Math.PI * 2);
-      ctx.fillStyle = C.cyanDim;
+      for (let i = 0; i < arms; i++) {
+        const a = (i * Math.PI) / arms;
+        ctx.moveTo(-Math.cos(a) * r, -Math.sin(a) * r);
+        ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, ts * 0.08, 0, Math.PI * 2);
+      ctx.fillStyle = t.recoil > 0 ? '#ffffff' : C.plate;
       ctx.fill();
-      ctx.strokeStyle = C.cyan;
+      ctx.stroke();
+    }
+
+    drawRail(t, ts) {
+      const ctx = this.ctx;
+      ctx.rotate(t.angle);
+      const len = ts * (0.42 + t.tier * 0.04 - t.recoil * 0.1);
+      const gap = ts * 0.06;
+      ctx.fillRect(-ts * 0.05, -gap - ts * 0.04, len, ts * 0.04);
+      ctx.fillRect(-ts * 0.05, gap, len, ts * 0.04);
+      if (t.recoil > 0.5) {
+        ctx.globalAlpha = t.recoil;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, -gap * 0.5, len, gap);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = towerColor('rail');
+      }
+      this.hub(ts * 0.13, '#3a2214');
+    }
+
+    hub(r, fill) {
+      const ctx = this.ctx;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      const stroke = ctx.strokeStyle;
+      ctx.fillStyle = fill;
+      ctx.fill();
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(0, 0, ts * 0.05, 0, Math.PI * 2);
-      ctx.fillStyle = C.cyan;
+      ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = stroke;
       ctx.fill();
-      ctx.restore();
     }
 
     drawCore(game, edt) {
       const ctx = this.ctx;
       const ts = this.ts;
-      const x = this.X(game.core.x);
-      const y = this.Y(game.core.y);
       const ratio = game.hp / game.maxHp;
       const pulse = 0.5 + 0.5 * Math.sin(this.time * 3);
       const color = ratio > 0.3 ? C.cyan : C.magenta;
       this.coreHit = Math.max(0, this.coreHit - edt * 3);
 
       ctx.save();
-      ctx.translate(x, y);
+      ctx.translate(this.X(game.core.x), this.Y(game.core.y));
       if (this.coreHit > 0 && !this.reducedMotion) ctx.translate((Math.random() - 0.5) * ts * 0.15, 0);
 
       const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, ts * 0.9);
-      glow.addColorStop(0, ratio > 0.3 ? 'rgba(62, 240, 255, 0.28)' : 'rgba(255, 61, 139, 0.30)');
-      glow.addColorStop(1, 'rgba(62, 240, 255, 0)');
+      glow.addColorStop(0, rgba(color, 0.28));
+      glow.addColorStop(1, rgba(color, 0));
       ctx.fillStyle = glow;
       ctx.fillRect(-ts, -ts, ts * 2, ts * 2);
 
@@ -367,9 +455,8 @@
       ctx.lineWidth = 2;
       ctx.stroke();
       hex(ts * 0.3 * (0.35 + 0.65 * ratio), -this.time * 0.7);
-      ctx.fillStyle = ratio > 0.3 ? 'rgba(62, 240, 255, ' + (0.25 + pulse * 0.25).toFixed(3) + ')' : 'rgba(255, 61, 139, ' + (0.3 + pulse * 0.3).toFixed(3) + ')';
+      ctx.fillStyle = rgba(color, (0.25 + pulse * 0.25).toFixed(3));
       ctx.fill();
-      ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.beginPath();
@@ -379,47 +466,115 @@
       ctx.restore();
     }
 
+    // Enemy silhouettes, drawn around (0, 0) at size s.
+    enemyShape(type, s, rot) {
+      const ctx = this.ctx;
+      ctx.beginPath();
+      switch (type) {
+        case 'dart':
+          // Arrowhead pointing along the direction of travel.
+          ctx.moveTo(s * 1.3, 0);
+          ctx.lineTo(-s, -s * 0.9);
+          ctx.lineTo(-s * 0.5, 0);
+          ctx.lineTo(-s, s * 0.9);
+          ctx.closePath();
+          break;
+        case 'brick':
+          ctx.rect(-s, -s, s * 2, s * 2);
+          break;
+        case 'swarm':
+          ctx.arc(0, 0, s, 0, Math.PI * 2);
+          break;
+        case 'splitter':
+          // Two wedges with a seam down the middle.
+          ctx.moveTo(-s * 0.12, -s * 1.1);
+          ctx.lineTo(-s * 1.1, 0);
+          ctx.lineTo(-s * 0.12, s * 1.1);
+          ctx.closePath();
+          ctx.moveTo(s * 0.12, -s * 1.1);
+          ctx.lineTo(s * 1.1, 0);
+          ctx.lineTo(s * 0.12, s * 1.1);
+          ctx.closePath();
+          break;
+        case 'shard':
+          ctx.moveTo(s, 0);
+          ctx.lineTo(-s * 0.8, -s * 0.9);
+          ctx.lineTo(-s * 0.8, s * 0.9);
+          ctx.closePath();
+          break;
+        default: {
+          const a = Math.PI / 4 + Math.sin(rot) * 0.3;
+          for (let i = 0; i < 4; i++) {
+            const ang = a + (i * Math.PI) / 2;
+            if (i === 0) ctx.moveTo(Math.cos(ang) * s * 1.41, Math.sin(ang) * s * 1.41);
+            else ctx.lineTo(Math.cos(ang) * s * 1.41, Math.sin(ang) * s * 1.41);
+          }
+          ctx.closePath();
+        }
+      }
+    }
+
     drawEnemy(e, edt) {
       const ctx = this.ctx;
       const ts = this.ts;
       const x = this.X(e.x);
       const y = this.Y(e.y);
-      const s = e.size * ts;
+      const s = e.size * ts * 0.75;
       e.hitFlash = Math.max(0, (e.hitFlash || 0) - edt * 8);
 
-      // Glitch: every so often a drone jumps sideways for a frame or two.
+      // Glitch: every so often an enemy jumps sideways for a frame or two.
       const g = Math.sin(this.time * 7 + e.seed) > 0.96 && !this.reducedMotion ? (Math.random() - 0.5) * ts * 0.25 : 0;
       const rot = this.time * 1.5 + e.seed;
-      const diamond = (dx, size) => {
+      const facing = e.type === 'dart' || e.type === 'shard';
+      const turn = facing ? e.angle : e.type === 'splitter' ? Math.sin(rot) * 0.4 : 0;
+      const layer = (dx, size) => {
         ctx.save();
         ctx.translate(x + dx + g, y);
-        ctx.rotate(Math.PI / 4 + Math.sin(rot) * 0.3);
-        ctx.beginPath();
-        ctx.rect(-size, -size, size * 2, size * 2);
+        ctx.rotate(turn);
+        this.enemyShape(e.type, size, rot);
         ctx.restore();
       };
 
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = 0.55;
-      diamond(-ts * 0.05, s * 0.75);
+      layer(-ts * 0.05, s);
       ctx.fillStyle = C.cyan;
       ctx.fill();
       ctx.globalAlpha = 1;
-      diamond(ts * 0.03, s * 0.75);
+      layer(ts * 0.03, s);
       ctx.fillStyle = C.magenta;
       ctx.fill();
       ctx.restore();
 
-      diamond(0, s * 0.38);
-      ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : C.bg;
-      ctx.fill();
+      if (e.type !== 'swarm') {
+        layer(0, s * (e.type === 'brick' ? 0.6 : 0.5));
+        ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : C.bg;
+        ctx.fill();
+      }
+      if (e.armor) {
+        layer(0, s * 0.6);
+        ctx.strokeStyle = C.magenta;
+        ctx.lineWidth = Math.max(1, ts * 0.04);
+        ctx.stroke();
+      }
 
-      if (e.hp < e.maxHp) {
-        const bw = ts * 0.6;
+      if (e.slow > 0) {
+        ctx.save();
+        ctx.strokeStyle = rgba(C.ice, 0.85);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([ts * 0.06, ts * 0.05]);
+        ctx.beginPath();
+        ctx.arc(x, y, s * 1.6 + ts * 0.04, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (e.hp < e.maxHp && e.type !== 'swarm') {
+        const bw = ts * (e.type === 'brick' ? 0.75 : 0.6);
         const bh = Math.max(2, ts * 0.06);
         const bx = x - bw / 2;
-        const by = y - s - ts * 0.18;
+        const by = y - s * 1.4 - ts * 0.16;
         ctx.fillStyle = 'rgba(236, 233, 255, 0.18)';
         ctx.fillRect(bx, by, bw, bh);
         ctx.fillStyle = C.text;
@@ -432,21 +587,36 @@
       const ts = this.ts;
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      ctx.strokeStyle = C.cyan;
-      ctx.fillStyle = '#e6fdff';
       ctx.lineCap = 'round';
-      ctx.lineWidth = Math.max(2, ts * 0.06);
       for (const b of game.bullets) {
+        const color = towerColor(b.tower);
+        const bx = this.X(b.x);
+        const by = this.Y(b.y);
+        if (b.kind === 'splash') {
+          const glow = ctx.createRadialGradient(bx, by, 0, bx, by, ts * 0.22);
+          glow.addColorStop(0, rgba(color, 0.9));
+          glow.addColorStop(1, rgba(color, 0));
+          ctx.fillStyle = glow;
+          ctx.fillRect(bx - ts * 0.22, by - ts * 0.22, ts * 0.44, ts * 0.44);
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(bx, by, Math.max(2, ts * 0.06), 0, Math.PI * 2);
+          ctx.fill();
+          continue;
+        }
         const dx = b.tx - b.x;
         const dy = b.ty - b.y;
         const d = Math.hypot(dx, dy) || 1;
         const tail = 0.28;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, ts * 0.06);
         ctx.beginPath();
         ctx.moveTo(this.X(b.x - (dx / d) * tail), this.Y(b.y - (dy / d) * tail));
-        ctx.lineTo(this.X(b.x), this.Y(b.y));
+        ctx.lineTo(bx, by);
         ctx.stroke();
+        ctx.fillStyle = '#e6fdff';
         ctx.beginPath();
-        ctx.arc(this.X(b.x), this.Y(b.y), Math.max(1.5, ts * 0.045), 0, Math.PI * 2);
+        ctx.arc(bx, by, Math.max(1.5, ts * 0.045), 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -458,14 +628,30 @@
 
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      for (const b of this.beams) {
+        b.life -= edt;
+        const a = Math.max(0, b.life / b.max);
+        ctx.globalAlpha = a;
+        ctx.strokeStyle = b.color;
+        ctx.lineWidth = ts * 0.14 * a + 1;
+        ctx.beginPath();
+        ctx.moveTo(this.X(b.x1), this.Y(b.y1));
+        ctx.lineTo(this.X(b.x2), this.Y(b.y2));
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = Math.max(1, ts * 0.04 * a);
+        ctx.stroke();
+      }
+      this.beams = this.beams.filter((b) => b.life > 0);
+
       for (const p of this.particles) {
         p.life -= edt;
         p.x += p.vx * edt;
         p.y += p.vy * edt;
         p.vx *= 1 - edt * 3;
         p.vy *= 1 - edt * 3;
-        const a = Math.max(0, p.life / p.max);
-        ctx.globalAlpha = a;
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
         ctx.fillStyle = p.color;
         const sz = p.size * ts;
         ctx.fillRect(this.X(p.x) - sz / 2, this.Y(p.y) - sz / 2, sz, sz);
@@ -475,13 +661,15 @@
       for (const r of this.rings) {
         r.life -= edt;
         const t = 1 - Math.max(0, r.life / r.max);
-        ctx.globalAlpha = 1 - t;
+        ctx.globalAlpha = r.dashed ? (1 - t) * 0.7 : 1 - t;
         ctx.strokeStyle = r.color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = r.width || 2;
+        ctx.setLineDash(r.dashed ? [6, 6] : []);
         ctx.beginPath();
         ctx.arc(this.X(r.x), this.Y(r.y), (r.r0 + (r.r1 - r.r0) * t) * ts, 0, Math.PI * 2);
         ctx.stroke();
       }
+      ctx.setLineDash([]);
       this.rings = this.rings.filter((r) => r.life > 0);
       ctx.restore();
 
