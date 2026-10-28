@@ -384,7 +384,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 22px;
   padding-block: 24px;
   padding-left: max(24px, env(safe-area-inset-left, 0px));
@@ -609,6 +609,202 @@ body {
   font-size: 14px;
   line-height: 1.4;
   color: var(--text);
+}
+
+/* ---- Title, setup and Lab ---- */
+
+/* Centered when it fits, scrolls from the top when it doesn't. */
+.overlay > :first-child { margin-top: auto; }
+.overlay > :last-child { margin-bottom: auto; }
+
+.btn.continue { flex-direction: column; gap: 4px; }
+
+.btn-sub {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--dim);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.setup-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+}
+
+.setup-note {
+  margin: 0;
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+.map-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.map-choice {
+  --edge: rgba(141, 136, 189, 0.4);
+  flex-direction: column;
+  gap: 6px;
+  min-height: 140px;
+  padding: 12px 6px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.map-choice.selected { --edge: var(--cyan); --fill: #0f2a3d; }
+
+.map-thumb {
+  width: 54px;
+  height: 84px;
+}
+
+.map-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.map-lock {
+  min-height: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--amber);
+}
+
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid rgba(141, 136, 189, 0.45);
+}
+
+.seg-btn {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 600 13px/1 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.seg-btn + .seg-btn { border-left: 1px solid rgba(141, 136, 189, 0.45); }
+.seg-btn.selected { background: rgba(62, 240, 255, 0.16); color: var(--cyan); }
+.seg-btn:disabled { color: rgba(141, 136, 189, 0.55); cursor: default; }
+.seg-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+
+.lab-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.data-pill {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.data-pill b {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
+}
+
+.lab-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 380px;
+  text-align: left;
+}
+
+.lab-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid rgba(141, 136, 189, 0.2);
+}
+
+.lab-item:last-child { border-bottom: 1px solid rgba(141, 136, 189, 0.2); }
+
+.lab-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lab-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.lab-text {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--dim);
+}
+
+.pips { display: inline-flex; gap: 3px; }
+
+.pips i {
+  width: 10px;
+  height: 4px;
+  background: rgba(141, 136, 189, 0.35);
+}
+
+.pips i.on { background: var(--cyan); }
+
+.btn.buy {
+  --edge: var(--amber);
+  --fill: #2a2112;
+  min-width: 96px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--amber);
+}
+
+.reward {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+}
+
+.unlock-note {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
 }
 
 @media (prefers-reduced-motion: reduce) {

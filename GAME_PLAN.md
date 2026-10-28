@@ -80,9 +80,21 @@ More cards are unlocked through meta progression.
 
 ## Meta progression
 
-- Each run earns **Data** based on waves cleared (with a bonus for winning).
-- Spend Data on permanent unlocks: starting gold, extra Core HP, new cards, maps 2 and 3.
-- Saved on the phone with `localStorage`.
+- Each run pays **Data**: 2 per wave cleared, 10 per boss destroyed, 25 for a win. Hard pays 1.5×, Nightmare 2×.
+- The **Lab** spends Data on permanent unlocks:
+
+| Unlock | Cost | Effect |
+|---|---|---|
+| Seed Funding (3 levels) | 20 / 40 / 80 | +25 starting gold per level |
+| Core Plating (3 levels) | 25 / 50 / 100 | +3 Core HP per level |
+| Reroll | 60 | Reroll each card offer once |
+| Map: Express | 40 | Short, open route |
+| Map: Spiral | 80 | Long coil, faster enemies |
+| 5 new cards | 30 each | Tracer Rounds, Chain Reaction, Supercooled, Overcharge, Scrap Value |
+
+- **Difficulty:** Hard (+20% enemy HP) unlocks after a Normal win; Nightmare (+40% HP, +8% speed, 5 less Core HP) after a Hard win.
+- The run in progress is saved whenever the field is clear, so closing the app keeps it. "Continue" on the title screen picks it up from the last cleared wave.
+- Everything is stored on the phone with `localStorage`.
 
 ## Tech
 
@@ -97,7 +109,7 @@ More cards are unlocked through meta progression.
 1. **Playable prototype** ✅: map, path, Pulse tower, Drones, 10 waves, gold, win/lose, pause, fast-forward.
 2. **Content** ✅: all 4 towers with upgrades and targeting modes, all non-boss enemy types, hand-built 10-wave mix.
 3. **Roguelite layer** ✅: 14 upgrade cards, Warden (wave 10) and Overlord (wave 20) bosses, 20-wave run.
-4. **Meta**: Data, unlock shop, save/load, fast-forward, difficulty tiers, 3 maps.
+4. **Meta** ✅: Data, Lab unlock shop, run saved between waves (Continue), Normal/Hard/Nightmare, 3 maps.
 5. **Ship**: offline support, Home Screen icon, polish and balance, GitHub Pages.
 
 ## Code layout
@@ -111,6 +123,7 @@ The game lives in `docs/` so GitHub Pages can serve it as-is (no build step).
 | `docs/js/config.js` | All tunable data: map paths, tower tiers, enemy stats, wave recipe |
 | `docs/js/game.js` | Simulation only (no DOM), so it can run headless for balance tests |
 | `docs/js/render.js` | Canvas drawing and effects |
-| `docs/js/main.js` | Main loop, touch input, panels, best-run save |
+| `docs/js/profile.js` | Data, Lab unlocks, wins, best run and the saved run |
+| `docs/js/main.js` | Main loop, touch input, screens and panels |
 
 To play locally: `cd docs && python3 -m http.server`, then open `http://localhost:8000`.

@@ -11,12 +11,46 @@
 
   // Paths are lists of tile coordinates [col, row]. Enemies enter at the first
   // point (off the top of the grid) and the Core sits on the last point.
+  // hpMul and speedMul tune each map: a long path gives towers more time to shoot, so enemies get tougher or faster.
+  // cost is the Data price to unlock the map in the Lab (0 = available from the start).
   GD.maps = [
     {
+      id: 'circuit',
       name: 'Circuit',
+      blurb: 'Three folds. Towers between lanes cover two at once.',
+      cost: 0,
+      hpMul: 1,
+      speedMul: 1,
       path: [[1, -1], [1, 2], [7, 2], [7, 5], [1, 5], [1, 8], [7, 8], [7, 11], [4, 11], [4, 12]],
     },
+    {
+      id: 'express',
+      name: 'Express',
+      blurb: 'A short, open route. Less time to shoot, more room to build.',
+      cost: 40,
+      hpMul: 1,
+      speedMul: 1,
+      path: [[4, -1], [4, 3], [1, 3], [1, 7], [7, 7], [7, 11], [4, 11], [4, 12]],
+    },
+    {
+      id: 'spiral',
+      name: 'Spiral',
+      blurb: 'A long coil around a buried Core. Enemies move faster.',
+      cost: 80,
+      hpMul: 1,
+      speedMul: 1.1,
+      path: [[0, -1], [0, 12], [8, 12], [8, 3], [4, 3], [4, 8]],
+    },
   ];
+
+  // Difficulty scales enemy HP and speed, and how much Data a run pays out.
+  // unlock: the difficulty you must win on first.
+  GD.difficulties = {
+    normal: { name: 'Normal', hp: 1, speed: 1, data: 1, coreHp: 0 },
+    hard: { name: 'Hard', hp: 1.2, speed: 1, data: 1.5, coreHp: 0, unlock: 'normal' },
+    nightmare: { name: 'Nightmare', hp: 1.4, speed: 1.08, data: 2, coreHp: -5, unlock: 'hard' },
+  };
+  GD.difficultyOrder = ['normal', 'hard', 'nightmare'];
 
   // Each tower has three tiers. Tier I is the build cost; later tiers are upgrade costs.
   // range and splash are in tiles, rate is shots (or pulses) per second.
@@ -162,6 +196,9 @@
       bounty: 0,
       discount: 0,
       repair: 0,
+      chain: false,
+      overcharge: false,
+      refund: 0,
     };
   };
 
@@ -182,5 +219,28 @@
     { id: 'bulk', name: 'Bulk Order', kind: 'econ', text: 'Towers and upgrades cost 15% less.', apply: (m) => (m.discount = 0.15) },
     { id: 'repair', name: 'Nano Repair', kind: 'core', text: 'Repair 1 Core HP after each wave.', apply: (m) => (m.repair += 1) },
     { id: 'reinforce', name: 'Reinforced Core', kind: 'core', repeat: true, text: '+5 max Core HP, and repair 5 now.', apply: (m, g) => ((g.maxHp += 5), (g.hp += 5)) },
+    // Locked until bought in the Lab.
+    { id: 'tracer', name: 'Tracer Rounds', tower: 'pulse', locked: true, text: 'Pulse range +25%.', apply: (m) => (m.range.pulse *= 1.25) },
+    { id: 'chain', name: 'Chain Reaction', tower: 'nova', locked: true, text: 'Enemies destroyed by Nova burst, hurting those nearby.', apply: (m) => (m.chain = true) },
+    { id: 'supercool', name: 'Supercooled', tower: 'cryo', locked: true, text: 'Cryo range +30%.', apply: (m) => (m.range.cryo *= 1.3) },
+    { id: 'overcharge', name: 'Overcharge', tower: 'rail', locked: true, text: 'Rail deals double damage to bosses.', apply: (m) => (m.overcharge = true) },
+    { id: 'scrap', name: 'Scrap Value', kind: 'econ', locked: true, text: 'Selling a tower refunds everything you spent on it.', apply: (m) => (m.refund = 1) },
   ];
+
+  // ---- Lab: permanent unlocks bought with Data ----
+
+  // levels: Data price of each level. Effects are read by the code that starts a run.
+  GD.lab = [
+    { id: 'gold', name: 'Seed Funding', text: '+25 starting gold per level.', levels: [20, 40, 80] },
+    { id: 'plating', name: 'Core Plating', text: '+3 Core HP per level.', levels: [25, 50, 100] },
+    { id: 'reroll', name: 'Reroll', text: 'Reroll each card offer once.', levels: [60] },
+    { id: 'map:express', name: 'Map: Express', text: GD.maps[1].blurb, levels: [GD.maps[1].cost] },
+    { id: 'map:spiral', name: 'Map: Spiral', text: GD.maps[2].blurb, levels: [GD.maps[2].cost] },
+    ...GD.cards.filter((c) => c.locked).map((c) => ({ id: 'card:' + c.id, name: 'Card: ' + c.name, text: c.text, levels: [30] })),
+  ];
+
+  // Data paid at the end of a run, before the difficulty multiplier.
+  GD.dataReward = function (stats, won) {
+    return stats.wavesCleared * 2 + stats.bosses * 10 + (won ? 25 : 0);
+  };
 })(window.GD = window.GD || {});

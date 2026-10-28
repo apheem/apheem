@@ -8,14 +8,15 @@
 
   const $ = (id) => document.getElementById(id);
   const STEP = 1 / 60;
-  const BEST_KEY = 'glitch-defense.best';
   const BOSS_BAR_SPACE = 18;
+  const AUTOSAVE_EVERY = 1; // seconds between saves while the field is clear
 
   const canvas = $('field');
   const stage = $('stage');
   const renderer = new GD.Renderer(canvas);
+  const profile = GD.profile;
 
-  let game = new GD.Game(0);
+  let game = new GD.Game({ map: profile.state.map });
   let sel = null; // { c, r } for an empty tile, or { tower }
   let speed = 1;
   let paused = false;
@@ -23,76 +24,213 @@
   let endTimer = 0;
   let acc = 0;
   let last = 0;
-
-  // ---- Persistence (best run) ----
-
-  function loadBest() {
-    try {
-      return JSON.parse(localStorage.getItem(BEST_KEY)) || null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Score a run so that a win beats any loss, then the furthest wave reached wins.
-  const score = (b) => (b ? b.wave + (b.won ? 100 : 0) : 0);
-
-  function saveBest(g) {
-    const run = { wave: g.wave, won: g.state === 'won' };
-    if (score(loadBest()) >= score(run)) return;
-    try {
-      localStorage.setItem(BEST_KEY, JSON.stringify(run));
-    } catch (e) {
-      // Storage can be unavailable (private mode); the best score just isn't kept.
-    }
-  }
-
-  function showBest() {
-    const best = loadBest();
-    const el = $('best-line');
-    if (!best || !best.wave) {
-      el.hidden = true;
-      return;
-    }
-    el.hidden = false;
-    el.textContent = best.won ? 'Best run: all ' + best.wave + ' waves cleared' : 'Best run: reached wave ' + best.wave;
-  }
+  let saveTimer = 0;
+  let setupMap = profile.state.map;
+  let setupDifficulty = profile.state.difficulty;
 
   // ---- Game flow ----
 
-  function newGame() {
-    game = new GD.Game(0);
+  function useGame(g) {
+    game = g;
     sel = null;
     speed = 1;
     paused = false;
     endTimer = 0;
     acc = 0;
+    saveTimer = 0;
     renderer.reset();
     resize();
   }
 
-  function startRun() {
-    newGame();
+  function startRun(mapId, difficulty) {
+    profile.clearRun();
+    profile.state.map = mapId;
+    profile.state.difficulty = difficulty;
+    profile.save();
+    useGame(new GD.Game(profile.runOptions(mapId, difficulty)));
+    running = true;
+    showOverlay(null);
+  }
+
+  function restartRun() {
+    startRun(game.map.id, game.difficulty);
+  }
+
+  function continueRun() {
+    const snap = profile.loadRun();
+    if (!snap) return toTitle();
+    useGame(GD.Game.restore(snap));
     running = true;
     showOverlay(null);
   }
 
   function toTitle() {
-    newGame();
+    useGame(new GD.Game({ map: profile.state.map }));
     running = false;
-    showBest();
-    showOverlay('overlay-title');
+    showTitle();
   }
 
   function setPaused(p) {
     if (!running || game.state !== 'playing') return;
+    if (p) autosave(true);
     paused = p;
     showOverlay(p ? 'overlay-pause' : null);
   }
 
+  // Saves the run whenever the field is clear, so it can be continued after the app closes.
+  function autosave(now) {
+    if (!running || !game.canSave()) return;
+    if (!now && saveTimer < AUTOSAVE_EVERY) return;
+    saveTimer = 0;
+    profile.saveRun(game.snapshot());
+  }
+
+  const OVERLAYS = ['overlay-title', 'overlay-setup', 'overlay-lab', 'overlay-pause', 'overlay-cards', 'overlay-end'];
   function showOverlay(id) {
-    for (const o of ['overlay-title', 'overlay-pause', 'overlay-cards', 'overlay-end']) $(o).hidden = o !== id;
-    if (id === 'overlay-pause') showOwned();
+    for (const o of OVERLAYS) $(o).hidden = o !== id;
+    if (id === 'overlay-pause') showPause();
+  }
+
+  // ---- Title, setup and Lab ----
+
+  function runLabel(r) {
+    return GD.maps.find((m) => m.id === r.map).name + ' · ' + GD.difficulties[r.difficulty].name;
+  }
+
+  function showTitle() {
+    const snap = profile.loadRun();
+    $('btn-continue').hidden = !snap;
+    if (snap) $('continue-sub').textContent = 'Wave ' + (snap.wave + 1) + ' · ' + runLabel({ map: snap.opts.map || 'circuit', difficulty: snap.opts.difficulty || 'normal' });
+    $('btn-play').className = 'btn big' + (snap ? '' : ' primary');
+    $('title-data').textContent = profile.state.data;
+    const best = profile.state.best;
+    $('best-line').hidden = !best || !best.wave;
+    if (best && best.wave) $('best-line').textContent = 'Best run: ' + (best.won ? 'cleared all ' + best.wave + ' waves' : 'reached wave ' + best.wave) + ' · ' + runLabel(best);
+    showOverlay('overlay-title');
+  }
+
+  function showSetup() {
+    if (!GD.maps.some((m) => m.id === setupMap && profile.mapUnlocked(m))) setupMap = 'circuit';
+    if (!profile.difficultyUnlocked(setupDifficulty)) setupDifficulty = 'normal';
+    renderSetup();
+    showOverlay('overlay-setup');
+  }
+
+  function renderSetup() {
+    const maps = $('map-list');
+    maps.textContent = '';
+    for (const m of GD.maps) {
+      const open = profile.mapUnlocked(m);
+      const b = el('button', 'btn map-choice' + (m.id === setupMap ? ' selected' : ''));
+      b.type = 'button';
+      b.disabled = !open;
+      const cv = el('canvas', 'map-thumb');
+      cv.width = 54;
+      cv.height = 84;
+      drawMapThumb(cv, m, open);
+      b.append(cv, el('span', 'map-name', m.name), el('span', 'map-lock', open ? '' : m.cost + ' Data · Lab'));
+      b.addEventListener('click', () => {
+        setupMap = m.id;
+        renderSetup();
+      });
+      maps.appendChild(b);
+    }
+    $('map-blurb').textContent = GD.maps.find((m) => m.id === setupMap).blurb;
+
+    const diffs = $('diff-list');
+    diffs.textContent = '';
+    for (const id of GD.difficultyOrder) {
+      const d = GD.difficulties[id];
+      const open = profile.difficultyUnlocked(id);
+      const b = el('button', 'seg-btn' + (id === setupDifficulty ? ' selected' : ''), d.name);
+      b.type = 'button';
+      b.disabled = !open;
+      b.addEventListener('click', () => {
+        setupDifficulty = id;
+        renderSetup();
+      });
+      diffs.appendChild(b);
+    }
+    $('diff-note').textContent = describeDifficulty(setupDifficulty);
+  }
+
+  function describeDifficulty(id) {
+    const d = GD.difficulties[id];
+    const parts = [];
+    if (d.hp > 1) parts.push('Enemies have ' + Math.round((d.hp - 1) * 100) + '% more HP');
+    if (d.speed > 1) parts.push('move ' + Math.round((d.speed - 1) * 100) + '% faster');
+    if (d.coreHp < 0) parts.push('Core has ' + -d.coreHp + ' less HP');
+    let text = parts.length ? parts.join(', ') + '. ' : 'The standard run. ';
+    text += 'Pays ' + d.data + '× Data.';
+    const locked = GD.difficultyOrder.find((x) => !profile.difficultyUnlocked(x));
+    if (locked) text += ' Win on ' + GD.difficulties[GD.difficulties[locked].unlock].name + ' to unlock ' + GD.difficulties[locked].name + '.';
+    return text;
+  }
+
+  function showLab() {
+    renderLab();
+    showOverlay('overlay-lab');
+  }
+
+  function renderLab() {
+    $('lab-balance').textContent = profile.state.data;
+    const list = $('lab-list');
+    list.textContent = '';
+    for (const item of GD.lab) {
+      const lv = profile.level(item.id);
+      const cost = profile.nextCost(item.id);
+      const row = el('div', 'lab-item');
+      const info = el('div', 'lab-info');
+      const name = el('span', 'lab-name', item.name);
+      if (item.levels.length > 1) {
+        const pips = el('span', 'pips');
+        for (let i = 0; i < item.levels.length; i++) pips.appendChild(el('i', i < lv ? 'on' : ''));
+        name.appendChild(pips);
+      }
+      info.append(name, el('span', 'lab-text', item.text));
+      const buy = el('button', 'btn buy', cost === null ? 'Owned' : cost + ' Data');
+      buy.type = 'button';
+      buy.disabled = cost === null || profile.state.data < cost;
+      buy.addEventListener('click', () => {
+        if (profile.buy(item.id)) renderLab();
+      });
+      row.append(info, buy);
+      list.appendChild(row);
+    }
+  }
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function drawMapThumb(cv, map, open) {
+    const g = cv.getContext('2d');
+    const cols = GD.config.cols;
+    const rows = GD.config.rows;
+    const ts = Math.min(cv.width / cols, cv.height / rows);
+    const ox = (cv.width - ts * cols) / 2;
+    const oy = (cv.height - ts * rows) / 2;
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.globalAlpha = open ? 1 : 0.35;
+    g.strokeStyle = GD.colors.magenta;
+    g.lineWidth = ts * 0.55;
+    g.lineJoin = 'miter';
+    g.beginPath();
+    map.path.forEach(([c, r], i) => {
+      const x = ox + (c + 0.5) * ts;
+      const y = oy + (Math.max(0, r) + (r < 0 ? 0 : 0.5)) * ts;
+      if (i === 0) g.moveTo(x, y);
+      else g.lineTo(x, y);
+    });
+    g.stroke();
+    const [cc, cr] = map.path[map.path.length - 1];
+    g.fillStyle = GD.colors.cyan;
+    g.beginPath();
+    g.arc(ox + (cc + 0.5) * ts, oy + (cr + 0.5) * ts, ts * 0.6, 0, Math.PI * 2);
+    g.fill();
   }
 
   // ---- Upgrade cards ----
@@ -108,31 +246,28 @@
     $('cards-eyebrow').textContent = 'Wave ' + cleared + ' cleared';
     const box = $('card-choices');
     box.textContent = '';
-    for (const id of offer) {
+    for (const id of offer.ids) {
       const card = GD.cards.find((c) => c.id === id);
       const tag = cardTag(card);
-      const b = document.createElement('button');
+      const b = el('button', 'btn choice');
       b.type = 'button';
-      b.className = 'btn choice';
       b.style.setProperty('--edge', tag.color);
       b.style.setProperty('--tag', tag.color);
-      for (const [cls, text] of [['choice-tag', tag.label], ['choice-name', card.name], ['choice-text', card.text]]) {
-        const span = document.createElement('span');
-        span.className = cls;
-        span.textContent = text;
-        b.appendChild(span);
-      }
+      b.append(el('span', 'choice-tag', tag.label), el('span', 'choice-name', card.name), el('span', 'choice-text', card.text));
       b.addEventListener('click', () => {
         game.pickCard(id);
         showOverlay(null);
+        autosave(true);
       });
       box.appendChild(b);
     }
+    $('btn-reroll').hidden = !game.canReroll || offer.rerolled;
     sel = null;
     showOverlay('overlay-cards');
   }
 
-  function showOwned() {
+  function showPause() {
+    $('pause-sub').textContent = runLabel({ map: game.map.id, difficulty: game.difficulty }) + ' · Wave ' + game.wave + '/' + game.totalWaves;
     const names = game.cards.map((id) => GD.cards.find((c) => c.id === id).name);
     $('owned').hidden = names.length === 0;
     $('owned-list').textContent = names.join(' · ');
@@ -146,7 +281,11 @@
     $('end-wave').textContent = game.wave + '/' + game.totalWaves;
     $('end-kills').textContent = game.stats.kills;
     $('end-hp').textContent = game.hp;
-    saveBest(game);
+    profile.clearRun();
+    const result = profile.finishRun(game);
+    $('end-data').textContent = '+' + result.data + ' Data · ' + profile.state.data + ' total';
+    $('end-unlock').hidden = !result.unlocked.length;
+    $('end-unlock').textContent = result.unlocked.map((n) => n + ' difficulty unlocked').join(' · ');
     showOverlay('overlay-end');
   }
 
@@ -158,6 +297,11 @@
     last = ts;
     if (running && !paused && game.offers.length && $('overlay-cards').hidden) showCards();
     const live = running && !paused && !game.offers.length;
+
+    if (live) {
+      saveTimer += dt;
+      autosave(false);
+    }
 
     if (live && game.state === 'playing') {
       acc += dt * speed;
@@ -213,11 +357,20 @@
   $('btn-speed').addEventListener('click', () => (speed = speed === 3 ? 1 : speed + 1));
   $('btn-pause').addEventListener('click', () => setPaused(true));
   $('btn-resume').addEventListener('click', () => setPaused(false));
-  $('btn-restart').addEventListener('click', startRun);
+  $('btn-restart').addEventListener('click', restartRun);
   $('btn-quit').addEventListener('click', toTitle);
-  $('btn-play').addEventListener('click', startRun);
-  $('btn-again').addEventListener('click', startRun);
+  $('btn-continue').addEventListener('click', continueRun);
+  $('btn-play').addEventListener('click', showSetup);
+  $('btn-lab').addEventListener('click', showLab);
+  $('btn-start').addEventListener('click', () => startRun(setupMap, setupDifficulty));
+  $('btn-setup-back').addEventListener('click', showTitle);
+  $('btn-setup-lab').addEventListener('click', showLab);
+  $('btn-lab-back').addEventListener('click', showTitle);
+  $('btn-again').addEventListener('click', restartRun);
   $('btn-title').addEventListener('click', toTitle);
+  $('btn-reroll').addEventListener('click', () => {
+    if (game.reroll()) showCards();
+  });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) setPaused(true);
@@ -408,7 +561,7 @@
   new ResizeObserver(resize).observe(stage);
   window.addEventListener('orientationchange', resize);
   drawIcons();
-  showBest();
+  showTitle();
   resize();
   requestAnimationFrame(frame);
 })(window.GD = window.GD || {});

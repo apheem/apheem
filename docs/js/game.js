@@ -5,14 +5,23 @@
   GD.TILE = TILE;
 
   class Game {
-    constructor(mapIndex) {
+    // opts: map id, difficulty id, and Lab bonuses (bonusGold, bonusHp, unlockedCards, reroll).
+    constructor(opts) {
+      opts = opts || {};
       const cfg = GD.config;
+      this.opts = opts;
       this.cols = cfg.cols;
       this.rows = cfg.rows;
-      this.map = GD.maps[mapIndex || 0];
-      this.gold = cfg.startGold;
-      this.hp = cfg.coreHp;
-      this.maxHp = cfg.coreHp;
+      this.map = GD.maps.find((m) => m.id === opts.map) || GD.maps[0];
+      this.difficulty = GD.difficulties[opts.difficulty] ? opts.difficulty : 'normal';
+      const diff = GD.difficulties[this.difficulty];
+      this.enemyHp = diff.hp * this.map.hpMul;
+      this.enemySpeed = diff.speed * this.map.speedMul;
+      this.unlockedCards = opts.unlockedCards || [];
+      this.canReroll = !!opts.reroll;
+      this.gold = cfg.startGold + (opts.bonusGold || 0);
+      this.hp = cfg.coreHp + diff.coreHp + (opts.bonusHp || 0);
+      this.maxHp = this.hp;
       this.wave = 0;
       this.totalWaves = GD.waves.length;
       this.state = 'playing'; // playing | won | lost
@@ -25,10 +34,10 @@
       this.waveRemaining = {};
       this.seen = {}; // enemy types that have appeared in an earlier wave
       this.events = []; // drained by the renderer for effects and sounds
-      this.stats = { kills: 0, leaks: 0 };
+      this.stats = { kills: 0, leaks: 0, wavesCleared: 0, bosses: 0 };
       this.mods = GD.newMods();
       this.cards = []; // ids of cards picked this run
-      this.offers = []; // pending card choices, each a list of card ids
+      this.offers = []; // pending card choices: { ids, rerolled }
       this.buildGrid();
     }
 
@@ -148,7 +157,7 @@
     }
 
     sellValue(t) {
-      return Math.floor(t.spent * GD.config.sellRefund);
+      return Math.floor(t.spent * Math.max(GD.config.sellRefund, this.mods.refund));
     }
 
     sell(t) {
@@ -188,6 +197,48 @@
       const newType = this.wave > 0 ? types.find((t) => !this.seen[t] && GD.enemies[t].intro) || null : null;
       const boss = types.find((t) => GD.enemies[t].boss) || null;
       return { wave: this.wave + 1, counts, newType, boss };
+    }
+
+    // ---- Saving a run ----
+
+    // A run can be saved whenever the field is clear (between waves).
+    canSave() {
+      return this.state === 'playing' && !this.enemies.length && !this.spawnQueue.length && !this.bullets.length;
+    }
+
+    snapshot() {
+      return {
+        v: 1,
+        opts: this.opts,
+        gold: this.gold,
+        hp: this.hp,
+        maxHp: this.maxHp,
+        wave: this.wave,
+        time: this.time,
+        cards: this.cards.slice(),
+        offers: this.offers.map((o) => ({ ids: o.ids.slice(), rerolled: o.rerolled })),
+        seen: Object.assign({}, this.seen),
+        stats: Object.assign({}, this.stats),
+        towers: this.towers.map((t) => ({ type: t.type, tier: t.tier, c: t.c, r: t.r, spent: t.spent, mode: t.mode, angle: t.angle })),
+      };
+    }
+
+    static restore(snap) {
+      const g = new Game(snap.opts);
+      // Re-apply cards so run modifiers match, then restore the saved numbers over them.
+      for (const id of snap.cards) {
+        const card = GD.cards.find((c) => c.id === id);
+        if (card) card.apply(g.mods, g);
+      }
+      g.cards = snap.cards.slice();
+      Object.assign(g, { gold: snap.gold, hp: snap.hp, maxHp: snap.maxHp, wave: snap.wave, time: snap.time || 0 });
+      g.offers = snap.offers.map((o) => ({ ids: o.ids.slice(), rerolled: o.rerolled }));
+      g.seen = Object.assign({}, snap.seen);
+      g.stats = Object.assign(g.stats, snap.stats);
+      for (const t of snap.towers) {
+        g.towers.push({ type: t.type, tier: t.tier, c: t.c, r: t.r, x: t.c + 0.5, y: t.r + 0.5, cooldown: 0, angle: t.angle, spent: t.spent, recoil: 0, mode: t.mode });
+      }
+      return g;
     }
 
     // ---- Simulation ----
@@ -240,15 +291,15 @@
 
     spawn(type, dist, hpMul, rewardBonus, wave) {
       const def = GD.enemies[type];
-      const hp = Math.round(def.hp * hpMul);
+      const hp = Math.round(def.hp * hpMul * this.enemyHp);
       const p = this.posAt(dist);
       const e = {
         type,
         hp,
         maxHp: hp,
         hpMul,
-        speed: def.speed,
-        curSpeed: def.speed,
+        speed: def.speed * this.enemySpeed,
+        curSpeed: def.speed * this.enemySpeed,
         armor: def.armor || 0,
         reward: def.reward + (rewardBonus || 0),
         damage: def.damage,
@@ -285,9 +336,10 @@
       }
     }
 
-    kill(e) {
+    kill(e, tower) {
       e.dead = true;
       this.stats.kills++;
+      if (e.boss) this.stats.bosses++;
       const reward = e.reward + this.mods.bounty;
       this.gold += reward;
       this.events.push({ type: 'kill', x: e.x, y: e.y, reward, enemy: e.type });
@@ -296,6 +348,14 @@
         // Children count toward the parent's wave so the wave isn't "clear" until they're gone too.
         this.waveRemaining[e.wave] += split.count;
         for (let i = 0; i < split.count; i++) this.spawn(split.type, e.dist - i * 0.25, e.hpMul, 0, e.wave);
+      }
+      if (tower === 'nova' && this.mods.chain) {
+        // Chain Reaction: a small blast that can't set off further chains.
+        const s = this.statsFor('nova', 0);
+        this.events.push({ type: 'explode', tower: 'nova', x: e.x, y: e.y, radius: 0.8 });
+        for (const o of this.enemies.slice()) {
+          if (!o.dead && (o.x - e.x) ** 2 + (o.y - e.y) ** 2 <= 0.64) this.damage(o, s.damage * 0.5 + e.maxHp * 0.1, 'chain');
+        }
       }
       this.enemyGone(e);
     }
@@ -308,8 +368,9 @@
         const bonus = GD.waveClearBonus(e.wave) + interest;
         this.gold += bonus;
         if (m.repair) this.hp = Math.min(this.maxHp, this.hp + m.repair);
+        this.stats.wavesCleared++;
         this.events.push({ type: 'waveClear', wave: e.wave, bonus });
-        if (GD.cardWaves.includes(e.wave)) this.offers.push(this.rollCards());
+        if (GD.cardWaves.includes(e.wave)) this.offers.push({ ids: this.rollCards(), rerolled: false });
       }
     }
 
@@ -318,7 +379,7 @@
     // Three different cards, weighted toward towers the player has built.
     rollCards() {
       const owned = new Set(this.towers.map((t) => t.type));
-      let pool = GD.cards.filter((c) => c.repeat || !this.cards.includes(c.id));
+      let pool = GD.cards.filter((c) => (c.repeat || !this.cards.includes(c.id)) && (!c.locked || this.unlockedCards.includes(c.id)));
       const picks = [];
       while (picks.length < 3 && pool.length) {
         const weights = pool.map((c) => (c.tower ? (owned.has(c.tower) ? 3 : 1) : 2));
@@ -331,9 +392,17 @@
       return picks;
     }
 
+    reroll() {
+      const offer = this.offers[0];
+      if (!offer || offer.rerolled || !this.canReroll) return false;
+      offer.ids = this.rollCards();
+      offer.rerolled = true;
+      return true;
+    }
+
     pickCard(id) {
       const offer = this.offers[0];
-      if (!offer || !offer.includes(id)) return false;
+      if (!offer || !offer.ids.includes(id)) return false;
       const card = GD.cards.find((c) => c.id === id);
       card.apply(this.mods, this);
       this.cards.push(id);
@@ -345,10 +414,11 @@
     damage(e, amount, tower) {
       if (e.dead) return;
       if (e.slow > 0 && this.mods.brittle) amount *= 1 + this.mods.brittle;
+      if (e.boss && tower === 'rail' && this.mods.overcharge) amount *= 2;
       const armor = tower && this.mods.ignoreArmor[tower] ? 0 : e.armor;
       e.hp -= Math.max(1, amount - armor);
       e.hitFlash = 1;
-      if (e.hp <= 0) this.kill(e);
+      if (e.hp <= 0) this.kill(e, tower);
     }
 
     pickTarget(t, range) {

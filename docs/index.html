@@ -108,19 +108,58 @@
       <div><dt>Waves</dt><dd>Start each wave yourself. Calling one early pays +10 gold.</dd></div>
       <div><dt>Cards</dt><dd>Every third wave, pick 1 of 3 upgrades for the rest of the run.</dd></div>
     </dl>
-    <button class="btn primary big" id="btn-play" type="button">Play</button>
+    <div class="stack">
+      <button class="btn primary big continue" id="btn-continue" type="button" hidden>Continue<span class="btn-sub" id="continue-sub">Wave 1</span></button>
+      <button class="btn primary big" id="btn-play" type="button">New run</button>
+      <button class="btn" id="btn-lab" type="button">Lab · <span id="title-data">0</span> Data</button>
+    </div>
     <p class="best" id="best-line" hidden></p>
-    <p class="version">Prototype · v0.3</p>
+    <p class="version">Prototype · v0.4</p>
+  </div>
+
+  <div class="overlay" id="overlay-setup" hidden>
+    <h2 class="overlay-title small">New run</h2>
+    <section class="setup-group">
+      <span class="label">Map</span>
+      <div class="map-list" id="map-list"></div>
+      <p class="setup-note" id="map-blurb"></p>
+    </section>
+    <section class="setup-group">
+      <span class="label">Difficulty</span>
+      <div class="seg" id="diff-list"></div>
+      <p class="setup-note" id="diff-note"></p>
+    </section>
+    <div class="stack">
+      <button class="btn primary big" id="btn-start" type="button">Start</button>
+      <div class="row">
+        <button class="btn" id="btn-setup-back" type="button">Back</button>
+        <button class="btn" id="btn-setup-lab" type="button">Lab</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-lab" hidden>
+    <div class="lab-head">
+      <h2 class="overlay-title small">Lab</h2>
+      <span class="data-pill"><b id="lab-balance">0</b> Data</span>
+    </div>
+    <p class="setup-note">Every run pays Data, win or lose. Unlocks are permanent.</p>
+    <div class="lab-list" id="lab-list"></div>
+    <div class="stack">
+      <button class="btn" id="btn-lab-back" type="button">Back</button>
+    </div>
   </div>
 
   <div class="overlay" id="overlay-cards" hidden>
     <p class="eyebrow" id="cards-eyebrow">Wave 3 cleared</p>
     <h2 class="overlay-title small">Choose an upgrade</h2>
     <div class="choices" id="card-choices"></div>
+    <button class="btn" id="btn-reroll" type="button" hidden>Reroll these cards</button>
   </div>
 
   <div class="overlay" id="overlay-pause" hidden>
     <h2 class="overlay-title">Paused</h2>
+    <p class="setup-note" id="pause-sub"></p>
     <div class="owned" id="owned" hidden>
       <span class="label">Upgrades this run</span>
       <p id="owned-list"></p>
@@ -128,7 +167,7 @@
     <div class="stack">
       <button class="btn primary big" id="btn-resume" type="button">Resume</button>
       <button class="btn" id="btn-restart" type="button">Restart run</button>
-      <button class="btn" id="btn-quit" type="button">Quit to title</button>
+      <button class="btn" id="btn-quit" type="button">Save and quit</button>
     </div>
   </div>
 
@@ -139,6 +178,8 @@
       <div><dt>Destroyed</dt><dd id="end-kills">0</dd></div>
       <div><dt>Core left</dt><dd id="end-hp">0</dd></div>
     </dl>
+    <p class="reward" id="end-data">+0 Data</p>
+    <p class="unlock-note" id="end-unlock" hidden></p>
     <div class="stack">
       <button class="btn primary big" id="btn-again" type="button">Play again</button>
       <button class="btn" id="btn-title" type="button">Back to title</button>
@@ -148,6 +189,7 @@
 <script src="js/config.js"></script>
 <script src="js/game.js"></script>
 <script src="js/render.js"></script>
+<script src="js/profile.js"></script>
 <script src="js/main.js"></script>
 <!-- GAME:END -->
 </body>
