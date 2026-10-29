@@ -56,17 +56,18 @@ async function play(browserType, url, label) {
     }
     await page.keyboard.up('KeyZ');
     await wait(500);
+    // A shot can hit a nearby wall within a frame, so check the weapon fired (its cooldown started).
     await page.keyboard.press('KeyX');
-    await wait(60);
-    const shots = await get(() => HA.debug.world.shots.length);
+    await wait(50);
+    const fired = await get(() => HA.debug.world.player.cooldown > 0 || HA.debug.world.shots.length > 0);
     fs.mkdirSync(OUT, { recursive: true });
     await page.screenshot({ path: path.join(OUT, `${browserType.name()}-${label}.png`) });
     const problems = [];
     if (moved < 20) problems.push(`hero barely moved (${moved.toFixed(1)}px)`);
     if (groundY - top < 20) problems.push(`jump too low (${(groundY - top).toFixed(1)}px)`);
-    if (shots < 1) problems.push('fire made no shot');
+    if (!fired) problems.push('fire did not shoot');
     problems.push(...errors.map((e) => 'error: ' + e));
-    return { ok: problems.length === 0, moved: Math.round(moved), jump: Math.round(groundY - top), shots, problems };
+    return { ok: problems.length === 0, moved: Math.round(moved), jump: Math.round(groundY - top), fired, problems };
   } catch (e) {
     return { ok: false, problems: [String(e.message || e)].concat(errors) };
   } finally {
