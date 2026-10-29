@@ -57,9 +57,11 @@ async function play(browserType, url, label) {
     await page.keyboard.up('KeyZ');
     await wait(500);
     // A shot can hit a nearby wall within a frame, so check the weapon fired (its cooldown started).
+    // Watch every frame rather than once after a fixed delay: headless browsers on CI sometimes skip frames.
     await page.keyboard.press('KeyX');
-    await wait(50);
-    const fired = await get(() => HA.debug.world.player.cooldown > 0 || HA.debug.world.shots.length > 0);
+    const fired = await page
+      .waitForFunction(() => HA.debug.world.player.cooldown > 0 || HA.debug.world.shots.length > 0, null, { timeout: 3000, polling: 'raf' })
+      .then(() => true, () => false);
     fs.mkdirSync(OUT, { recursive: true });
     await page.screenshot({ path: path.join(OUT, `${browserType.name()}-${label}.png`) });
     const problems = [];
