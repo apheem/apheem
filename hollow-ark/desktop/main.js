@@ -102,14 +102,35 @@ function watchSmokeTest(w) {
       };
       if (process.platform === 'darwin') app.focus({ steal: true });
       w.focus();
+      await js("window.__smokeKeys = []; addEventListener('keydown', (e) => __smokeKeys.push(e.code), true); true");
       await key('Enter', 120);
       const mode = await js('HA.ui.mode');
-      // CI machines may not give the window focus, and the game pauses when focus is lost.
-      await js('HA.ui.stack.length = 0; HA.audio.setPaused(false); true');
-      const x0 = await js('HA.debug.world ? HA.debug.world.player.x : -1');
-      await key('Right', 600);
-      const x1 = await js('HA.debug.world ? HA.debug.world.player.x : -1');
-      finish({ ok: !info.error && mode === 'play' && x1 > x0, info, mode, moved: x1 - x0 });
+      const playerX = () => js('HA.debug.world ? HA.debug.world.player.x : -1');
+      // CI machines may not keep the window focused, and the game pauses when focus is lost, so keep resuming.
+      const holdFor = async (ms) => {
+        for (let t = 0; t < ms; t += 100) {
+          await js('HA.ui.stack.length = 0; HA.audio.setPaused(false); true');
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      };
+      const x0 = await playerX();
+      // First through the OS input path, as a real key press arrives.
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+      await holdFor(600);
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+      let x1 = await playerX();
+      let keyPath = 'os';
+      // Some CI desktops (macOS) don't pass injected keys to a background window; then check the game's own input handling.
+      if (x1 - x0 < 10) {
+        keyPath = 'page';
+        await js("dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', key: 'ArrowRight' })); true");
+        await holdFor(600);
+        await js("dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight', key: 'ArrowRight' })); true");
+        x1 = await playerX();
+      }
+      const keysSeen = await js('__smokeKeys');
+      const focused = await js('document.hasFocus()');
+      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10, info, mode, moved: x1 - x0, keyPath, keysSeen, focused });
     } catch (err) {
       finish({ ok: false, reason: String(err) });
     }
