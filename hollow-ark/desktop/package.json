@@ -1,0 +1,125 @@
+{
+  "name": "hollow-ark",
+  "productName": "Hollow Ark",
+  "version": "0.1.0",
+  "description": "Hollow Ark desktop app for Windows, macOS and Linux",
+  "author": "apheem",
+  "homepage": "https://github.com/apheem/apheem/tree/main/hollow-ark",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apheem/apheem.git"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke-test",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "io.github.apheem.hollowark",
+    "productName": "Hollow Ark",
+    "copyright": "Copyright © 2026 apheem",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../docs/hollow-ark",
+        "to": "game"
+      }
+    ],
+    "artifactName": "Hollow-Ark-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "Hollow-Ark-${version}-windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Hollow-Ark-${version}-windows-setup.${ext}"
+    },
+    "mac": {
+      "category": "public.app-category.games",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "Hollow-Ark-${version}-macos-${arch}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "Hollow-Ark-${version}-macos-${arch}.${ext}"
+    },
+    "linux": {
+      "category": "Game",
+      "executableName": "hollow-ark",
+      "synopsis": "Dark pixel-art action-exploration on a drifting colony ship",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "maintainer": "apheem <https://github.com/apheem>"
+    },
+    "deb": {
+      "artifactName": "Hollow-Ark-${version}-linux-${arch}.${ext}"
+    },
+    "appImage": {
+      "artifactName": "Hollow-Ark-${version}-linux-${arch}.${ext}"
+    }
+  }
+}

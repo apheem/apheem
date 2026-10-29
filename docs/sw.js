@@ -33,8 +33,10 @@ self.addEventListener('activate', (e) => {
 });
 
 // Cache first: the game never waits on the network. Opening the app always loads the cached page.
+// Hollow Ark (hollow-ark/) shares this site, so its requests are left alone and never get this game's page.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  if (new URL(e.request.url).pathname.startsWith(new URL('hollow-ark/', self.registration.scope).pathname)) return;
   const key = e.request.mode === 'navigate' ? 'index.html' : e.request;
   e.respondWith(caches.open(VERSION).then((c) => c.match(key, { ignoreSearch: true })).then((hit) => hit || fetch(e.request)));
 });

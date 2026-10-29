@@ -1,0 +1,24 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #05060d;
+}
+
+canvas {
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+body.hide-cursor,
+body.hide-cursor canvas {
+  cursor: none;
+}
+
+.noscript {
+  color: #eef4f6;
+  font: 16px/1.5 system-ui, sans-serif;
+  padding: 24px;
+}

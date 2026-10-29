@@ -1,0 +1,11 @@
+{
+  "name": "hollow-ark-browser-check",
+  "private": true,
+  "description": "Plays the browser build of Hollow Ark in Chromium, Firefox and WebKit (Safari's engine)",
+  "scripts": {
+    "check": "node browser-check.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
