@@ -1,0 +1,126 @@
+# Hollow Ark must play on any Windows PC, MacBook or Linux machine. On every change this:
+#   1. plays the browser build in Chromium, Firefox and WebKit (Safari's engine) on all three OSes, and
+#   2. builds the desktop app for Windows, macOS and Linux, launches each one and plays a few seconds.
+# Builds are attached to each run as downloadable artifacts.
+name: Hollow Ark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/hollow-ark/**'
+      - 'hollow-ark/**'
+      - '.github/workflows/hollow-ark.yml'
+  pull_request:
+    paths:
+      - 'docs/hollow-ark/**'
+      - 'hollow-ark/**'
+      - '.github/workflows/hollow-ark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hollow-ark-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browsers:
+    name: Browsers on ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Windows, os: windows-latest }
+          - { name: macOS, os: macos-latest }
+          - { name: Linux, os: ubuntu-latest }
+    defaults:
+      run:
+        working-directory: hollow-ark/tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hollow-ark/tests/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Play in Chromium, Firefox and WebKit
+        run: npm run check
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-screenshots-${{ matrix.name }}
+          path: hollow-ark/tests/screenshots
+          if-no-files-found: ignore
+      - name: Upload the browser build (unzip, open index.html)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hollow-Ark-Browser
+          path: docs/hollow-ark
+
+  desktop:
+    name: Desktop app for ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Windows, os: windows-latest, flag: --win }
+          - { name: macOS, os: macos-latest, flag: --mac }
+          - { name: Linux, os: ubuntu-latest, flag: --linux }
+    defaults:
+      run:
+        working-directory: hollow-ark/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hollow-ark/desktop/package-lock.json
+      - run: npm ci
+      - name: Build
+        run: npx electron-builder ${{ matrix.flag }} --publish never
+        env:
+          # macOS builds get an ad-hoc signature (no certificate or secrets). This lets that happen on pull requests too.
+          CSC_FOR_PULL_REQUEST: 'true'
+
+      - name: Launch and play (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run -a dist/linux-unpacked/hollow-ark --smoke-test --no-sandbox --smoke-test-out="$PWD/smoke.json"
+          cat smoke.json
+      - name: Launch and play (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          codesign --verify --deep --strict "dist/mac-universal/Hollow Ark.app"
+          lipo -archs "dist/mac-universal/Hollow Ark.app/Contents/MacOS/Hollow Ark"
+          "dist/mac-universal/Hollow Ark.app/Contents/MacOS/Hollow Ark" --smoke-test --smoke-test-out="$PWD/smoke.json"
+          cat smoke.json
+      - name: Launch and play (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'smoke.json'
+          $p = Start-Process -FilePath 'dist\win-unpacked\Hollow Ark.exe' -ArgumentList '--smoke-test', "--smoke-test-out=$out" -Wait -PassThru
+          if (Test-Path $out) { Get-Content $out }
+          if ($p.ExitCode -ne 0) { throw "Launch check failed with exit code $($p.ExitCode)" }
+
+      - name: Upload the ${{ matrix.name }} app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hollow-Ark-${{ matrix.name }}
+          path: |
+            hollow-ark/desktop/dist/*.exe
+            hollow-ark/desktop/dist/*.dmg
+            hollow-ark/desktop/dist/*.zip
+            hollow-ark/desktop/dist/*.AppImage
+            hollow-ark/desktop/dist/*.deb
+          if-no-files-found: error
+          compression-level: 0

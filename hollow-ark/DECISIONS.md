@@ -1,0 +1,26 @@
+# Hollow Ark decisions log
+
+The brief asks the builder to record every place the build departs from it, or fills a gap it leaves open, and to flag those for Cody at the next milestone. Newest first.
+
+| Date | Decision | Why | For Cody |
+| --- | --- | --- | --- |
+| 2026-10-29 | **Tech: HTML5 canvas and plain JavaScript, packaged for desktop with Electron.** | Playing on any Linux, Windows or Mac is a priority. One set of files runs in every modern browser on all three, and Electron turns the same files into Windows, macOS (one universal app for Apple Silicon and Intel) and Linux apps that ship the same Chromium, so the game behaves the same everywhere. Steam accepts Electron games on all three OSes, and the same files become the Phase 6 phone build on GitHub Pages with nothing to port. | Confirm you're happy with this before Phase 2. Switching engines later means a rewrite. |
+| 2026-10-29 | **CI plays every change on all three OSes.** | Each run plays the browser build in Chromium, Firefox and WebKit (Safari's engine) on Windows, macOS and Linux. It also builds each desktop app, launches it and walks the hero across the room before uploading it. A platform-specific break shows up on the next change, not at launch. | |
+| 2026-10-29 | **No build step; plain script tags rather than JavaScript modules.** | Modules don't load from a double-clicked `index.html`, so the folder could only be played through a web server. Plain scripts play offline from any folder on any OS. | |
+| 2026-10-29 | **Desktop apps are unsigned for now.** macOS builds get a free ad-hoc signature so Apple Silicon Macs will open them. | Real signing needs an Apple Developer account ($99 per year) and a Windows code-signing certificate. Until then, Windows and macOS each ask once on first launch (steps in the README). | Decide on signing before Phase 5 (Steam). |
+| 2026-10-29 | **Linux ships as an AppImage plus a .deb, and no plain .tar.gz.** | Ubuntu 24.04 and later block the sandbox Electron apps use unless it's set up at install time. The AppImage launcher and the .deb installer both handle that; a loose tarball would fail to start there. | |
+| 2026-10-29 | **The game draws at 320x180 and scales by whole numbers.** A "fill window" option is in Settings. | Whole-number scaling keeps pixels square and sharp on 1080p laptops, Retina MacBooks and displays scaled to 125% or 150%. | |
+| 2026-10-29 | **Phase 1 weapons: Rivet Pistol, Purge Cannon and Arc Coil.** All three can be found in the room. | They cover the starter gun, the recoil movement gun and the charge gun. In the roster, taking the Cannon costs the Coil. That permanent trade, with its confirmation screen, comes with the trading system in a later phase. | |
+| 2026-10-29 | **XP tuning: a hit costs 4 XP; after a level drop, XP is protected for 2.5 seconds.** Level caps are 8/18/30 (Pistol), 10/22/36 (Cannon) and 12/26/40 (Coil). | These are starting numbers for the feel test. One hit can never drop more than one level, per the brief. | Tell us if levels come too fast or too slow. |
+| 2026-10-29 | **Enemies come back 5 seconds after they're defeated, out of sight. Crates come back after 40 seconds.** | With a single room, a 10-minute session needs a steady supply of targets and energy. Real areas will set their own rules. | |
+| 2026-10-29 | **The hero is a placeholder of option A, the Late Waker,** in a cryo suit with an amber visor. | The protagonist is still an open question in the brief. Option A is the recommended one. | Pick A, B or C. |
+| 2026-10-29 | **All art, sound and music are original placeholders drawn and synthesized in code.** No AI-generated assets. | The brief's question about AI art and music is still open. Code-made placeholders keep the prototype free of that question. | Answer the AI art and music question before Phase 4. |
+| 2026-10-29 | **Text uses a built-in uppercase pixel font.** | It looks the same on every OS and works offline. Adjustable text size and lowercase come with the accessibility work in Phase 4. | |
+| 2026-10-29 | **Controls are fixed for now, with alternate keys** (arrows or WASD, Z/Space/J and so on). | Full remapping is listed under Accessibility (Phase 4). The alternates cover the common layouts until then. Keys are read by position, so AZERTY and QWERTZ keyboards work. | |
+| 2026-10-29 | **Glitch Defense's offline mode no longer answers for `hollow-ark/` pages.** | Both games share apheem.github.io/apheem. Glitch Defense's service worker answered every page on the site with its own page, so anyone who had played it would have seen Glitch Defense at the Hollow Ark link. | |
+
+## Known limitations
+
+- **Controller-only play in a browser can start silent.** Browsers keep sound off until a key press or click, and controller buttons don't count. One key press turns it on. The desktop app isn't affected.
+- **Fullscreen from a controller in a browser.** Browsers only allow fullscreen right after a key press, so the game asks for F11 (Ctrl+Cmd+F on a Mac) instead. The desktop app toggles fullscreen from the menu with any device.
+- **High refresh-rate displays.** The game updates 60 times a second. On a 120 Hz screen that's perfectly even; at 144 Hz there can be slight judder. Frame interpolation is planned for the polish phase.
