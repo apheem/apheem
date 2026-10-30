@@ -188,8 +188,17 @@
     if (!s.endingsSeen.includes(id)) s.endingsSeen.push(id);
   }
 
+  // After the ending's name: how long the run took, area by area, and how often the hero fell.
+  function runCard(s) {
+    const lines = [['THIS RUN', '#ffb84d'], '', { a: 'TIME', b: HA.clock(s.time) + ' · FALLS ' + s.deaths }, ''];
+    for (const id of Object.keys(HA.rooms.AREAS)) if (s.areaTime[id]) lines.push({ a: HA.rooms.AREAS[id].name, b: HA.clock(s.areaTime[id]) });
+    if (s.areaTime.endings) lines.push({ a: 'THE ENDING', b: HA.clock(s.areaTime.endings) });
+    return lines;
+  }
+
   function* play(world, id) {
     const s = world.state;
+    world.ending = id;
     HA.audio.charge(0);
     yield { fade: 'out', frames: 60 };
     HA.music.play(null);
@@ -202,6 +211,7 @@
     record(s, id);
     world.save();
     yield { card: [['ENDING · ' + NAMES[id], '#ffb84d'], '', seenLine(s.endingsSeen)], hold: 300 };
+    yield { card: runCard(s), hold: 420, gap: 11 };
     world.exitToTitle = true;
   }
 
@@ -218,5 +228,5 @@
     return all.flatMap((c) => c.lines.map((l) => (Array.isArray(l) ? l[0] : l)));
   }
 
-  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, play, lines, seenLine };
+  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, play, lines, seenLine, runCard };
 })(window.HA);

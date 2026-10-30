@@ -432,6 +432,8 @@
   function update(world, rawInput) {
     world.time++;
     world.state.time++;
+    const split = world.ending ? 'endings' : world.def.area;
+    world.state.areaTime[split] = (world.state.areaTime[split] || 0) + 1;
 
     // Room change: fade out with the world held still, swap rooms, fade back in while play goes on.
     const tr = world.transition;

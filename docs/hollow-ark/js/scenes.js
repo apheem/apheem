@@ -314,10 +314,17 @@
     if (quiet) return;
     g.globalAlpha = Math.max(0, a);
     const lines = card.card;
-    const top = card.top !== undefined ? card.top : H / 2 - (lines.length * 12) / 2;
+    const gap = card.gap || 12;
+    const top = card.top !== undefined ? card.top : H / 2 - (lines.length * gap) / 2;
     lines.forEach((line, i) => {
+      // A pair of columns ({ a, b }) meets in the middle: a name, and its value.
+      if (line && line.a !== undefined) {
+        HA.font.draw(g, line.a, W / 2 - 6, top + i * gap, '#9fb6c8', { align: 'right' });
+        HA.font.draw(g, line.b, W / 2 + 6, top + i * gap, '#eef4f6');
+        return;
+      }
       const color = Array.isArray(line) ? line[1] : i === 0 && card.title ? '#ffb84d' : '#eef4f6';
-      HA.font.draw(g, Array.isArray(line) ? line[0] : line, W / 2, top + i * 12, color, { align: 'center' });
+      HA.font.draw(g, Array.isArray(line) ? line[0] : line, W / 2, top + i * gap, color, { align: 'center' });
     });
     g.globalAlpha = 1;
   }
