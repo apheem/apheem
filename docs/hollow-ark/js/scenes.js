@@ -5,6 +5,7 @@
 //   yield { until: () => done }                wait for something (the player may move if control is on)
 //   yield { choice: {...} }                    pick an option; permanent ones show what's gained and lost first
 //   yield { card: ['LINE', ...], hold: 120 }   white text on black, full screen
+//         (press: true waits for Confirm instead of a hold, and skipping a scene doesn't pass it)
 //         (with space: 'in' | true | 'out' and ark: { x, y, s }, the Ark drifts among stars behind the text;
 //         ark.turn swings it round by that angle, and world: { x, y, r } puts the new world in the sky)
 //   yield { fade: 'out' | 'in' }               fade the screen to black or back
@@ -18,6 +19,7 @@
   const LINE_CHARS = 48;
   const LINES = 3;
   const SPEED = { slow: 0.5, normal: 1, fast: 3, instant: 999 };
+  const PRESS_AFTER = 45; // a card that waits for a press takes one only after this many frames, so it can't be mashed past
   const NONE = { held: {}, pressed: {}, released: {} };
 
   function run(world, gen, opts = {}) {
@@ -117,7 +119,7 @@
     let done = false;
     const go = input.pressed.confirm || input.pressed.fire || input.pressed.jump;
 
-    if (scene.skipping && step && !step.choice && !(step.until && !step.until())) done = true;
+    if (scene.skipping && step && !step.choice && !step.press && !(step.until && !step.until())) done = true;
     else if (step && step.say !== undefined) {
       const page = step.pages[step.page];
       const len = pageLength(page);
@@ -142,7 +144,8 @@
     } else if (step && step.card) {
       step.t++;
       world.cardClock = (world.cardClock || 0) + 1;
-      if (step.t > (step.hold || 150) || (go && step.t > 20 && step.skippable !== false)) {
+      // A card that asks for a press (the ending's results) waits for one, however long, and skipping passes it by.
+      if (step.press ? go && step.t > PRESS_AFTER : step.t > (step.hold || 150) || (go && step.t > 20 && step.skippable !== false)) {
         done = true;
         world.card = null;
       }
@@ -306,7 +309,7 @@
   function drawCard(world, g, quiet) {
     const card = world.card;
     if (!card) return;
-    const hold = card.hold || 150;
+    const hold = card.press ? Infinity : card.hold || 150;
     const a = Math.min(1, card.t / 20, (hold - card.t) / 20);
     g.fillStyle = '#05060d';
     g.fillRect(0, 0, W, H);
@@ -326,6 +329,7 @@
       const color = Array.isArray(line) ? line[1] : i === 0 && card.title ? '#ffb84d' : '#eef4f6';
       HA.font.draw(g, Array.isArray(line) ? line[0] : line, W / 2, top + i * gap, color, { align: 'center' });
     });
+    if (card.press && card.t > PRESS_AFTER) HA.font.draw(g, '{confirm} CONTINUE', W - 8, H - 14, '#6c7894', { align: 'right' });
     g.globalAlpha = 1;
   }
 

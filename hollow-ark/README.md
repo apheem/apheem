@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.8-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.9-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.8-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.9-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -34,13 +34,13 @@ No mouse is needed anywhere. On-screen prompts switch between keyboard keys and 
 | Jump (hold for higher) | Z, Space or J | A |
 | Fire | X or K | X, B or RT |
 | Aim | Hold Up; hold Down while in the air | Stick or D-pad |
-| Switch weapon | Q / E (or C / V) | LB / RB |
+| Switch weapon | Q / E (or U / O) | LB / RB |
 | Eat a Bloom bulb (never on touch) | F or L | Y |
 | Drop through a catwalk | Down + Jump | Down + A |
 | Talk, read a ship log, rest at a rest pod, ride a lift, climb a ladder, throw a crane switch, work a console | Up | Up |
 | Climb down an open floor hatch | Down | Down |
 | Thruster pack (once you have one) | In the air, press Jump again and hold | In the air, press A again and hold |
-| Grapple Harpoon | Aim at a ring (Up, or Up and a direction) and Fire; Jump to leap off, Down to let go | The same, with A and Down |
+| Grapple Harpoon (once you have it, whatever weapon is in hand) | Aim at a ring (Up, or Up and a direction) and press C or I; Jump to leap off, Down to let go. With the harpoon wielded, Fire works too | LT, then A to leap off and Down to let go |
 | Swim (without the pressure boots) | In water, press Jump for each stroke | In water, press A for each stroke |
 | Pressure boots (once you have them) | You sink in water and walk the bottom; Jump goes high off it | The same, with A |
 | Foam Sprayer | Fire: the foam sets on water or Bloom silt as a platform for a few seconds, or on land as a shield | The same |
@@ -210,8 +210,19 @@ The navigation deck under the Helm, sealed since year 40, where the Navigator ke
 
 ## Phase 3.8: finishing Phase 3
 
-- **The run clock.** The pause menu shows the play time. After an ending, following its name and the count of endings seen, a card shows **THIS RUN**: the total time and how many times you fell, then the time spent in each area and in the ending itself. A first-time player can photograph that card, and it's the whole timing against the budget in [STORYBOARD.md](STORYBOARD.md). (A save from before 0.3.8 counts the time it already had in the total, but not in any area.)
+- **The run clock.** The pause menu shows the play time. After an ending, following its results (0.3.9, below), a card shows **THIS RUN**: the total time and how many times you fell, then the time spent in each area and in the ending itself. A first-time player can photograph that card, and it's the whole timing against the budget in [STORYBOARD.md](STORYBOARD.md). (A save from before 0.3.8 counts the time it already had in the total, but not in any area.)
 - **Every ending, played from a new game.** `hollow-ark/tests/playthrough.js` plays four whole games in Chromium, one each to Homecoming, Crash, Dominion and Overgrown, and a fifth from the Homecoming run's save in the Warrens to the Purser's boat and Deserter. Nothing is set by hand: every flag, weapon, ability and person comes from the game's own scenes, pickups, fights and choice screens. Each run quits and continues at every new area, falls once on purpose in every boss fight to prove the fight comes back, and checks the hero has every ability the room checker assumed in every room they enter. What each run chose, and how each ending came out, is in [DECISIONS.md](DECISIONS.md).
+
+## 0.3.9: after Cody's first full play
+
+Cody played from a new game to an ending in about 58 minutes. These are the fixes from their notes. The bigger notes (the game's length, the story's bonds, upgrades, routes that open and close with choices, and pictures behind the epilogue) are in the [story audit and plan](https://claude.ai/artifact/SMRYSh6QmPqsC6SseGEoZC), for Cody to decide on.
+
+- **The flood's clock no longer sticks at 0:00.** A fall during the flood rebooted the suit at Odell's Workshop without Solder, and the water went on rising with no one left to fail it. A fall in the flood now comes back to the Valve Hall with Solder and the water down, like the run for the sleds does, and the flood ends if Solder is ever missing.
+- **The Silt Mother can't be shelled from behind her sluice gate.** Her fight starts when you're out over her water, and shutters come down over both gates. Three gantries cross the tank just above the water. She bites up through them, so keep moving, and they collapse when she tears the drain open.
+- **A grapple button.** C or I on the keyboard, LT on a controller, throws the harpoon's line whatever weapon is in hand. Weapon switching keeps Q / E and LB, and its other keys are now U / O.
+- **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
+- **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
+- **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
 
 ## How the rooms are checked
 

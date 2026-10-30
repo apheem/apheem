@@ -444,7 +444,7 @@
       J: { type: 'weapon', id: 'harpoon', name: 'the Grapple Harpoon' },
       H: { name: 'the suit cell', needs: { grapple: true } },
     },
-    hints: [{ x: 13, y: 12, text: 'AIM {up} AT A RING AND {fire}', when: (w) => w.player.weapons.some((x) => x.id === 'harpoon') && !w.state.taken['armory:H'] }],
+    hints: [{ x: 13, y: 12, text: 'AIM {up} AT A RING AND {grapple}', when: (w) => w.player.weapons.some((x) => x.id === 'harpoon') && !w.state.taken['armory:H'] }],
     scenery: [
       { kind: 'racks', x0: 3, x1: 26, y: 5 },
       { kind: 'stencil', x: 4, y: 3.5, text: 'ARMORY · AUTHORISED ONLY' },

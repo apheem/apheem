@@ -473,7 +473,8 @@
     update(world) {
       const s = world.state;
       const f = s.flags;
-      if (world.def.id !== 'warrens' || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
+      // (Never during the run for the sleds: the Warrens are empty then, and the clock is running.)
+      if (world.def.id !== 'warrens' || f.running || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
       if (s.people.flux === 'home' && !f.fluxHome) run(world, 'fluxHome');
       else if (s.people.flux === 'stripped' && s.logs.lists && !f.fluxNamed) run(world, 'fluxNamed');
     },

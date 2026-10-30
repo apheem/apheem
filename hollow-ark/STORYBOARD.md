@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth), 3.4 (the Flooded Ballast), 3.5 (the Engine Spine), 3.6 (the Command Tower) and 3.7 (the Dreaming Deck) are built, and 3.8's checks and run clock are in** (version 0.3.8). All five endings can be reached in play (Deserter, Crash, Dominion, Overgrown and Homecoming), and `tests/playthrough.js` plays each one from a new game. What's left of Phase 3 is Cody's own play of an ending and a first-time player's timed run (3.8). Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth), 3.4 (the Flooded Ballast), 3.5 (the Engine Spine), 3.6 (the Command Tower) and 3.7 (the Dreaming Deck) are built, and 3.8's checks and run clock are in.** All five endings can be reached in play (Deserter, Crash, Dominion, Overgrown and Homecoming), and `tests/playthrough.js` plays each one from a new game. **Cody played to an ending in about 58 minutes** against a budget of about 4h 40m, and 0.3.9 fixes what they ran into (3.9). What's left is the bigger part of their notes: the game is short, and the bonds (the hero and Mara above all) aren't built. A story audit and plan ([Claude Doc](https://claude.ai/artifact/SMRYSh6QmPqsC6SseGEoZC)) sets out the options; nothing from it is built until Cody picks. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -26,7 +26,7 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/world.js` | Entering rooms, edge transitions, doors (gates someone keeps, which open as the hero nears; crane stacks, moved by their switches; cracked walls, opened by a Breach Charge), links (lifts and floor hatches to another room, `world.travel`; a lift with `when` isn't there until it's built), interactions, triggers, rest pods, the trip between pods, the camera, drawing, the HUD. A room's `musicLayers` can be a function of the save. A story can set `world.checkpoint` (`{ room, x, y, reset }`), which a fall comes back to before the rest pod (the Steward's fight, the Overgrown fight, the run for the sleds), and a log can carry its own `label` for its prompt |
 | `js/actors.js` | The hero's movement, enemies and pickups. `TYPES` is the one table of map letters that mean an enemy in every room. `drawStandIn` draws whoever fights in the hero's place (`world.playAs`, the Overgrown ending) |
 | `js/abilities.js` | The thruster pack, the grapple's pull and hang (fired by the Grapple Harpoon; a hook can move, and can be a weak point that takes the hero's arrival as a blow), pressure boots and swimming. The hero's update and `rooms-check.js` both call it. It also holds the Engine Spine's steam vents: a room's `vents: [{ x0, x1, y0, y1 }]` carry the hero up a column of steam. Water is `~` in a map, a grapple hook ring is `o`; an area can tint its water (`water` in `HA.rooms.area`), and a room's `pressure: [{ x0, x1, y }]` draws the PRESSURE stripes over deep water |
-| `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, the THIS RUN card (`runCard`: the play time, falls and each area's time, from the save's `time`, `deaths` and `areaTime`), plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
+| `js/endings.js` | The ending runner: each ending's closing cards, its name, the epilogue chosen from the save, credits, `endingsSeen`, the results card after the credits (`resultCard`: who reached the new world out of everyone who could have, from `landed(s, id)`; then `closedCard`, what closed the other way, in the journal's words), the THIS RUN card (`runCard`: the play time, falls and each area's time, from the save's `time`, `deaths` and `areaTime`), plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
 | `js/hazards.js` | Hazards that come and go: a room's `pistons` (rams that hiss, then strike out of a wall or down from a ceiling), its vents drawn as steam, and short-lived harm anything can leave (`HA.hazards.add`: a slug's embers, a drone's steam, Abel's burning slag) |
 | `js/weapons.js` | Weapon definitions, levels and XP, and shots, including the Grapple Harpoon (`fireGrapple` at a ring, a barb otherwise), the Breach Charges (`chargesMax`) and the Foam Sprayer (platforms in `world.foam`, shields in `world.shields`, `updateFoam`, `dissolve`). An enemy with `ghost` set is out of every weapon's reach |
 | `js/boss.js` | The Bailiff, plus what every boss shares: shard vents, the health bar, and the `HA.bosses` registry the world looks bosses up in |
@@ -34,7 +34,7 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls, up to the Gardens. Also barks (short lines over someone's head that don't stop play) and companions (`npc.follow`) |
 | `js/story/*.js` | Each later area's story: `gardens.js`, `warrens.js` (the return), `cargo.js` (the Labyrinth, Flux's homecoming, and travel between pods), `ballast.js` (Solder, the flood, choice 9, the tram, and the raid at home; Solder's limping walk and the rising water live here too), `spine.js` (the crew and the lift they build, `crewOf`, Abel and choice 10, the camp's night, the verdict), `tower.js` (the Tower Lift ride, the Dome and choice 4b, the Gardener and choice 11, the Steward and choice 12, the ending branch: Overgrown, choice 13, the Key breaking, Lift B), `scuttle.js` (the run for the sleds: the clock, the falling ceilings, the pod launch, Mara's clamps, the sleds), `deck.js` (Lift B down, the seal, the memory halls and their checkpoints, the wake log, the Navigator's fight, the song and the turn, choice 14) add their scenes, lines and logs to the tables in `story.js` and push their own `{ enterRoom, update, music, talk }` hooks onto `HA.story.areas` (and anything they draw over the screen, like a clock, onto `HA.story.overlays`) (`talk` can hand a conversation to a scene). `story.js` also holds `callName` (LATE, SLEEPER or COUNTER). A person met away from the Warrens says so with `away: true` in `PEOPLE` |
 | `js/bloom.js` | The Bloom track: bulbs (carried, eaten on their own button), the stages (3, 5, 7, 8) with their journal lines, what a rise would close (`closes`), and the Thorn's kill count |
-| `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card` (a line can be a pair of columns, `{ a, b }`), `fade`, `walk` |
+| `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card` (a line can be a pair of columns, `{ a, b }`; `press: true` waits for Confirm, and skipping a scene doesn't pass it), `fade`, `walk` |
 | `js/save.js` | Save state (the Phase 3 fields and what each value means are listed in `newState`), the upgrade for older saves, autosave, the explored-map bitsets, and talk history |
 | `js/music.js` | Every music track as note data plus a `play(step, out)` function. `js/audio.js` holds the sound effects |
 | `js/scenery.js` | Area palettes, background props, and animated scenery (fires, doors, the hero's pod). A room can wear another theme than its area's (`theme`: the Deck's memory halls); a `plain` theme has no wall panels, and its props draw everything |
@@ -701,6 +701,8 @@ The slice ran 8 rooms in 20 to 30 minutes. The brief wants 4 to 6 hours on the m
 
 That totals about 4h 40m on the true path and about 4h 15m to Crash. If playtests come in under 4 hours, add rooms to the Ballast and the Labyrinth first.
 
+Cody's first full play (0.3.8) took about 58 minutes to an ending: about a fifth of the budget. The rooms are small for it (about 110 screens), so closing that takes new content as well as tuning.
+
 As built (3.8): the game keeps these splits itself. The pause menu shows the play time, and after every ending a THIS RUN card lists the total, the falls, and the time in each area and in the ending. The Lockup has its own line (the budget counts it with the Cryo Deck and the Warrens), and the Warrens' line includes the return.
 
 ### Save state additions
@@ -793,10 +795,19 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 
 ### 3.8 Finish Phase 3
 - [x] All five endings verified in full playthroughs from a new game (automated: `tests/playthrough.js`, in CI), recorded in DECISIONS.md
-- [ ] Cody plays an ending by hand (the human half of the Phase 3 gate)
+- [x] Cody plays an ending by hand (the human half of the Phase 3 gate): about 58 minutes to an ending, with notes (3.9)
 - [x] The game clocks a run: play time in the pause menu, and the THIS RUN card of splits after every ending
-- [ ] Main path timed against the budget by a first-time player (a photo of the THIS RUN card); tune where it drags or runs short
+- [ ] Main path timed against the budget by a first-time player (a photo of the THIS RUN card); tune where it drags or runs short. Cody's play came in at about a fifth of the budget, which is more than tuning can close (3.9)
 - [x] README and DECISIONS brought up to date
+
+### 3.9 After Cody's first full play
+- [x] A fall in the flood comes back to the Valve Hall with Solder (the clock used to stick at 0:00 with the water still rising)
+- [x] The Silt Mother is fought in her tank: shutters over the sluice gates once the fight starts, gantries over the water that fall when she drains it
+- [x] A grapple button (C or I, LT), whatever weapon is in hand
+- [x] The ending named before its epilogue; after the credits, a results card (who reached the new world, out of how many), what closed the other way, and THIS RUN, each waiting for a press
+- [x] The run for the sleds shows where to go (Gasket, the lead, a bar under the clock, a stencil in the Cryo Bay from the start)
+- [x] Scenes waiting on a visit home don't play during the run for the sleds
+- [ ] Cody decides on the story audit and plan: Mara and the other bonds, the length, upgrades bought with shards, routes that open and close with choices, and pictures behind the epilogue
 
 ---
 

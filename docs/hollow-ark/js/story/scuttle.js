@@ -16,7 +16,10 @@
   const CLOCK = 60 * (4 * 60 + 30); // the run, from the sump to the sleds
   const LAUNCH = 60 * 20; // what the pod launch costs on the clock
   const ROUTE = ['sump', 'warrens', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'];
+  // Which way the sleds are from each room of the run, shown under the clock.
+  const WAY = { sump: 'UP THE HATCH ↑', warrens: '←', 'warrens-gate': '→', 'coolant-hall': '→', 'pod-stacks': '←', 'thaw-corridor': '←', 'cryo-bay': '←' };
   const START = { room: 'sump', x: 44 * 8, ty: 19 };
+  const LEAD = 'RUN BACK TO THE SLEDS IN CRYO BAY 4, WHERE I WOKE';
   const WARDENS = ['warden', 'walker', 'turret', 'picker'];
 
   function startRun(world) {
@@ -115,6 +118,7 @@
 
   // Back to the sump, with a full clock.
   function restart(world) {
+    S.setLead(world, LEAD);
     world.enterRoom(START.room, START.x, START.ty * 8 - world.player.h, { noSave: true, facing: -1 });
     world.runLeft = CLOCK;
     world.player.hp = world.player.maxHp;
@@ -124,7 +128,7 @@
   function* scuttleRun(world) {
     const s = world.state;
     const lifts = (s.flags.lifts || 0) >= 1;
-    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT SLEDS ON THE COLD DECKS, BY THE PODS!');
+    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
     if (s.people.solder === 'alive') yield say('SOLDER', "THE TRAM'S STILL AT THE FOOT. EVERYONE, MOVE!");
     yield { fade: 'out', frames: 40 };
     HA.music.play('scuttle');
@@ -140,11 +144,11 @@
     world.holdFade = false;
     yield { fade: 'in', frames: 30 };
     yield say('OLD GASKET', "TAMP'S TAKEN THE VILLAGE UP TO THE SLEDS. THE CREW'S GOING ROUND BY THE COLD LIFT.");
-    yield say('OLD GASKET', "YOU'RE FASTER THROUGH THE WARRENS ALONE. GO! WE'LL SEE YOU AT THE SLEDS!");
+    yield say('OLD GASKET', "YOU'RE FASTER THROUGH THE WARRENS ALONE. BACK UP TO WHERE YOU WOKE. GO! WE'LL SEE YOU AT THE SLEDS!");
     yield { walk: g, x: 70 * 8, speed: 1.2 };
     g.state = 'gone';
     S.addStory(world, 'THE SHIP IS COMING APART. THE OLD CREW KEPT SLEDS IN CRYO BAY 4, WHERE I WOKE. I HAVE TO GET THERE BEFORE IT DOES.');
-    S.setLead(world, 'RUN FOR THE SLEDS IN CRYO BAY 4');
+    S.setLead(world, LEAD);
     world.save();
   }
 
@@ -200,6 +204,13 @@
     g.fillRect(x, 4, w, 12);
     const warn = secs <= 30 && Math.floor(world.time / 15) % 2;
     HA.font.draw(g, text, x + 4, 6, warn ? '#ff8a8a' : '#ffb84d');
+    // Under it, where the sleds are: the room the hero woke in, and which way from here.
+    const way = WAY[world.def.id];
+    const where = 'SLEDS · WHERE I WOKE' + (way ? ' · ' + way : '');
+    const ww = HA.font.measure(where) + 8;
+    g.fillStyle = 'rgba(5,6,13,0.75)';
+    g.fillRect(Math.round((HA.VIEW_W - ww) / 2), 16, ww, 11);
+    HA.font.draw(g, where, Math.round((HA.VIEW_W - ww) / 2) + 4, 18, '#9fb6c8');
     if (world.launchFlash > 0) {
       world.launchFlash--;
       HA.font.draw(g, '-0:' + LAUNCH / 60, x + w + 4, 6, '#ff8a8a');

@@ -1,6 +1,6 @@
 'use strict';
 // The Silt Mother: a silt eel the Bloom has swollen to the length of her tank. She lives under the water and is
-// fought from foam platforms. Only her head can be hurt, and only while it's out of the water.
+// fought from the gantries over it, and from foam. Only her head can be hurt, and only while it's out of the water.
 //   Bite   her shadow and a boil of bubbles gather under the hero, then her head bursts up out of the water and
 //          hangs there, open to fire, before she sinks back.
 //   Spit   her head rises at one end of the tank and spits Bloom jellies.
@@ -277,6 +277,18 @@
     HA.audio.play('rumble');
   }
 
+  // The gantries over the water (the row above it) come down when she tears the drain open: the rest is on the floor.
+  function dropGantries(world, b) {
+    const room = world.room;
+    const ty = b.surface / 8 - 1;
+    for (let tx = 13; tx <= 66; tx++) {
+      if (room.tile(tx, ty) !== HA.room.ONEWAY) continue;
+      room.set(tx, ty, HA.room.EMPTY);
+      world.burst(tx * 8 + 4, ty * 8 + 2, ['#6c7894', '#a9b6cc', '#46291a'], 3, 1.6);
+    }
+    HA.audio.play('stomp');
+  }
+
   function damage(world, b, dmg) {
     b.hp = Math.max(0, b.hp - dmg);
     b.flash = 6;
@@ -285,6 +297,7 @@
       b.phase = 2;
       b.tail = null;
       set(b, 'drain', 90);
+      dropGantries(world, b);
       world.flash('#6fd0b8', 5);
       HA.audio.play('roar');
       HA.music.setLayers(2);

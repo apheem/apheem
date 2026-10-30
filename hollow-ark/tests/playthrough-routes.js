@@ -87,7 +87,7 @@ const ballast = {
     await r.to('odell-workshop');
     await r.do('PT.read()'); // the boots
     await r.to('silt-tank');
-    await r.boss('silt-tank');
+    await r.boss('silt-tank', undefined, { enter: 'PT.trigger(0)' }); // out over her water, and the shutters come down
     await r.to('valve-hall');
     await r.bulbs();
     await r.do('PT.pace("solder", () => PT.scene() === "flood")');

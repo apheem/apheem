@@ -3,8 +3,8 @@
 // water everywhere: deep water the suit can't take without Odell's pressure boots, and Bloom silt that burns.
 // Solder is down here with the tram motor. So is the Silt Mother.
 // Map legend beyond the shared one: s Bloom silt (see room.js)   u silt eel   i Bloom jelly   x drowned Warden
-// h the grate up to the Drain   N Solder   K Odell's pressure boots   W the Silt Tank's sluice gates   M the
-// Silt Mother   Y E the Valve Hall's doors   X the jammed hatch   T the ballast control terminal   V the winch
+// h the grate up to the Drain   N Solder   K Odell's pressure boots   W the Silt Tank's sluice gates   Z the
+// shutters over them   M the Silt Mother   Y E the Valve Hall's doors   X the jammed hatch   T the ballast control terminal   V the winch
 (function (HA) {
   HA.rooms.area('ballast', {
     name: 'FLOODED BALLAST',
@@ -267,8 +267,9 @@
     ],
   });
 
-  // The Silt Tank: half full, held in by its sluice gates, and home to the Silt Mother. When it drains, the gates
-  // open onto the floor and the way on.
+  // The Silt Tank: half full, held in by its sluice gates, and home to the Silt Mother. Three gantries cross it just
+  // over the water, and she bites up through them; they go down with the water when she tears the drain open. When
+  // the tank drains for good, the gates open onto the floor and the way on.
   HA.rooms.add({
     id: 'silt-tank',
     area: 'ballast',
@@ -280,6 +281,8 @@
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
     legend: {
       W: { type: 'door', id: 'sluice', state: 'siltDown', open: (s) => !!s.flags.siltDown },
+      // Over the gates, shutters that come down once the hero is out over her water, so she's fought in her tank.
+      Z: { type: 'door', id: 'shutters', open: (s, w) => !!s.flags.siltDown || !(w && w.boss && w.boss.fighting) },
       D: { type: 'door', id: 'tankEast', open: (s) => !!s.flags.siltDown },
       M: { type: 'boss', reach: false },
     },
@@ -287,22 +290,22 @@
       { kind: 'rust', n: 30 },
       { kind: 'stencil', x: 30, y: 5, text: 'SILT TANK 1 · DO NOT ENTER WHILE FULL' },
     ],
-    triggers: [{ x0: 1, x1: 9, when: (s) => !s.flags.siltDown, run: 'siltIntro' }],
+    triggers: [{ x0: 15, x1: 64, when: (s) => !s.flags.siltDown, run: 'siltIntro' }],
     map: [
       '################################################################################',
       '################################################################################',
       '################################################################################',
-      '##............................................................................##',
-      '##............................................................................##',
-      '##............................................................................##',
-      '##............................................................................##',
-      '##............................................................................##',
-      '##............................................................................##',
-      '##............................................................................##',
+      '##........ZZZ......................................................ZZZ........##',
+      '##........ZZZ......................................................ZZZ........##',
+      '##........ZZZ......................................................ZZZ........##',
+      '##........ZZZ......................................................ZZZ........##',
+      '##........ZZZ......................................................ZZZ........##',
+      '##........ZZZ......................................................ZZZ........##',
+      '##........ZZZ..=====.................======.................=====..ZZZ........##',
       '##........WWW~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~WWW........##',
       '##....====WWW~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~WWW====....##',
       '##........WWW~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~WWW........##',
-      '##........WWW~~~~~~~~~~~~~~~~~~~~~~~~======~~~~~~~~~~~~~~~~~~~~~~~~WWW........##',
+      '##........WWW~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~WWW........##',
       '##........WWW~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~WWW........##',
       '..=====...WWW=====~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~=====WWW...===DD..',
       '..........WWW~~~~~~~~~~~~~~~~~~~~~~~~~~~M~~~~~~~~~~~~~~~~~~~~~~~~~~WWW......DD..',

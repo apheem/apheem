@@ -15,7 +15,8 @@
     gx: 0,
     gy: 0,
     legend: { T: { type: 'log', id: 'course' } },
-    scenery: [{ kind: 'pods', x: 12, y: 3.5, n: 7 }, { kind: 'pods', x: 47, y: 3.5, n: 7 }, { kind: 'window', x: 31, y: 4 }],
+    // The west wall is the old crew's sled dock: shut and stencilled from the first minute, open in the run (scuttle.js).
+    scenery: [{ kind: 'pods', x: 12, y: 3.5, n: 7 }, { kind: 'pods', x: 47, y: 3.5, n: 7 }, { kind: 'window', x: 31, y: 4 }, { kind: 'stencil', x: 5, y: 10, text: '← CREW SLEDS' }],
     hints: [
       { x: 8, y: 14, text: '{left}{right} MOVE   {jump} JUMP', when: (w) => w.state.flags.woke },
       { x: 26, y: 13, text: 'HOLD {jump} LONGER TO JUMP HIGHER' },

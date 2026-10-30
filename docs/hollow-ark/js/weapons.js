@@ -255,6 +255,18 @@
     }
   }
 
+  // The grapple's own button: the harpoon's line, thrown whatever weapon is in hand, once the hero carries it.
+  // A hook in reach takes it, otherwise the barb flies, as when the harpoon is wielded.
+  function grapple(world, pressed, input) {
+    const p = world.player;
+    if (p.hookCooldown > 0) p.hookCooldown--;
+    const w = p.weapons.find((x) => x.id === 'harpoon');
+    if (!pressed || !w || p.grapple || p.hookCooldown > 0) return;
+    const L = DEFS.harpoon.levels[w.level - 1];
+    if (!HA.abilities.fireGrapple(world, p, input)) fireHarpoon(world, L, w.level);
+    p.hookCooldown = L.cd;
+  }
+
   function firePistol(world, L, level) {
     const p = world.player;
     const m = muzzle(p);
@@ -739,5 +751,5 @@
     }
   }
 
-  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, loseXp, update, updateShots, updateFoam, dissolve, muzzle, chargesMax };
+  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, loseXp, update, grapple, updateShots, updateFoam, dissolve, muzzle, chargesMax };
 })(window.HA);
