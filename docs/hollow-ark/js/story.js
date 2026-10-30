@@ -164,7 +164,7 @@
     solder: {
       night: [
         ['A RIVET PISTOL. CHARMING. FEED IT SHARDS, THE GLOWING BITS THAT FALL OUT OF THINGS YOU KILL. THE MORE IT EATS, THE MORE IT DOES.', 'GET HIT AND IT SPITS SOME BACK UP. NEVER MORE THAN ONE LEVEL, THOUGH. AND RIGHT AFTER IT DROPS ONE, IT HOLDS ON FOR A MOMENT.'],
-        { capsule: ['THERE IS A LIFE CAPSULE UP IN THE COOLANT HALL. NO WAY UP BUT AIR.', 'A PURGE CANNON THAT HAS EATEN ENOUGH WILL HOLD YOU UP THERE. LEVEL TWO, AT LEAST.'] },
+        { capsule: ['THERE IS A SUIT CELL UP IN THE COOLANT HALL. NO WAY UP BUT AIR.', 'A PURGE CANNON THAT HAS EATEN ENOUGH WILL HOLD YOU UP THERE. LEVEL TWO, AT LEAST.'] },
         ['BRING ME SOMETHING BROKEN SOMETIME. I GET BORED.'],
       ],
       taken: [['THE COUNTERS ARE STRONG, BUT THEY ARE SLOW TO TURN. GET BEHIND THEM.', 'AND WATCH THEIR EYES. THEY GLOW BEFORE THEY SHOOT.']],
@@ -225,6 +225,46 @@
     return a;
   }
 
+  // ---- The hero's pod, in the opening ----
+  const FROST = ['#b8f4ff', '#eef4f6', '#5fd4e8'];
+  // Where the pod hangs and where it ends up: under the first ceiling above the start, and on the floor.
+  function placePod(world) {
+    const st = world.start;
+    const tx = Math.floor((st.x + 4) / 8);
+    let ty = Math.floor(st.y / 8);
+    while (ty > 0 && world.room.tile(tx, ty - 1) !== HA.room.SOLID) ty--;
+    const restY = st.y - 8;
+    const woke = world.state.flags.woke;
+    world.heroPod = { x: st.x - 3, ceil: ty * 8, y: woke ? restY : ty * 8 + 5, restY, vy: 0, state: woke ? 'open' : 'hanging' };
+    if (woke) world.heroPod.lid = { x: st.x + 28, y: restY + 19, flat: true };
+  }
+  function dropPod(world, pod) {
+    const skipping = world.scene && world.scene.skipping;
+    pod.vy = Math.min(pod.vy + 0.32, 7);
+    pod.y += pod.vy;
+    if (pod.y < pod.restY && !skipping) return false;
+    pod.y = pod.restY;
+    pod.state = 'landed';
+    if (!skipping) {
+      HA.audio.play('crash');
+      world.shake(5);
+      world.burst(pod.x + 7, pod.restY + 22, ['#3a4258', '#6c7894', '#9fb6c8'], 18, 1.8);
+    }
+    return true;
+  }
+  function flyLid(world, pod) {
+    const lid = pod.lid;
+    const skipping = world.scene && world.scene.skipping;
+    lid.vy += 0.3;
+    lid.x += lid.vx;
+    lid.y += lid.vy;
+    if (lid.y < pod.restY + 19 && !skipping) return false;
+    Object.assign(lid, { y: pod.restY + 19, flat: true });
+    if (skipping) lid.x = world.start.x + 28;
+    else HA.audio.play('land');
+    return true;
+  }
+
   // ---- The scenes ----
   const SCENES = {
     *intro(world) {
@@ -233,23 +273,43 @@
       world.fade = 1;
       world.holdFade = true;
       HA.music.play(null);
-      yield { card: ['VOYAGE YEAR 312.'], hold: 120 };
-      yield { card: ['THE ARK WAS DUE TO ARRIVE', 'IN YEAR 80.'], hold: 150 };
-      yield { card: ['CRYO POD 0417', 'EMERGENCY THAW'], hold: 120 };
-      yield { fade: 'in', frames: 45 };
-      for (let i = 0; i < 3; i++) {
-        world.burst(world.start.x + 4, world.start.y + 4, ['#b8f4ff', '#eef4f6', '#5fd4e8'], 10, 1.2);
+      // Far out in the dark, the Ark. Then closer: one window on the cryo deck, blinking red.
+      const far = { x: 146, y: 112, s: 1 };
+      yield { card: ['VOYAGE YEAR 312.'], hold: 150, top: 40, space: 'in', ark: far };
+      yield { card: ['THE ARK WAS DUE TO ARRIVE', 'IN YEAR 80.'], hold: 170, top: 40, space: true, ark: far };
+      HA.audio.play('alarm');
+      yield { card: ['CRYO POD 0417', 'EMERGENCY THAW', ['AUTHORITY: NAV', '#3b4a72']], hold: 160, top: 40, space: 'out', ark: { x: 84, y: 92, s: 2, alarm: true } };
+      // Inside: the pod hangs from the rack's clamps, frosted over, until they let go.
+      const pod = world.heroPod;
+      yield { fade: 'in', frames: 50 };
+      for (let i = 0; i < 2; i++) {
+        world.burst(pod.x + 7, pod.y + 8, FROST, 10, 1.2);
         HA.audio.play('hiss');
-        yield { wait: 26 };
+        yield { wait: 32 };
       }
-      world.state.flags.woke = true;
+      HA.audio.play('clamp');
+      world.burst(pod.x + 7, pod.ceil + 4, ['#fff0a8', '#ffb84d', '#ffffff'], 10, 1.6);
+      pod.state = 'falling';
+      yield { until: () => dropPod(world, pod) };
+      yield { wait: 40 };
+      world.burst(pod.x + 7, pod.y + 8, FROST, 14, 1.4);
+      HA.audio.play('hiss');
+      yield { wait: 30 };
+      // The lid blows off, and the sleeper spills out onto the deck.
       HA.audio.play('podOpen');
       world.shake(2);
-      world.burst(world.start.x + 4, world.start.y + 6, ['#b8f4ff', '#ffffff'], 24, 2);
+      world.burst(pod.x + 7, pod.y + 10, ['#b8f4ff', '#ffffff'], 24, 2);
+      pod.state = 'open';
+      pod.lid = { x: pod.x + 2, y: pod.y + 3, vx: 1.3, vy: -2.6, flat: false };
+      world.state.flags.woke = true;
       p.hidden = false;
-      p.vx = 1.1;
-      p.vy = -1.8;
-      yield { wait: 50 };
+      p.vx = 1.2;
+      p.vy = -1.4;
+      p.facing = 1;
+      p.kneel = 75;
+      yield { until: () => flyLid(world, pod) };
+      yield { until: () => !p.kneel || world.scene.skipping };
+      p.kneel = 0;
       world.areaBanner = 160;
       setLead(world, 'FIND A WAY OUT OF THE CRYO DECK');
       addStory(world, 'I WOKE IN POD 0417. THE ARK SHOULD HAVE ARRIVED 232 YEARS AGO.');
@@ -626,6 +686,8 @@
     world.collectorsSpawned = false;
     world.alarm = 0;
     if (id === 'cryo-bay' && !f.woke) world.player.hidden = true;
+    world.heroPod = null;
+    if (world.start) placePod(world);
     if (id === 'warrens' && f.raid && !f.raidDone) {
       spawnCollectors(world, false);
       world.alarm = 1;

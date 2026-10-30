@@ -90,6 +90,8 @@
     runB: sprite([...HEAD, ...TORSO, ...LEGS.strideB]),
     jump: sprite([...HEAD, ...TORSO, ...LEGS.jump]),
     fall: sprite([...HEAD, ...TORSO, ...LEGS.fall]),
+    // on one knee, getting up (after the thaw)
+    kneel: sprite(['............', '............', ...HEAD, ...TORSO.slice(0, 3), '..0wwwwdd0..', '.0nnnnnnd00.', '.000000000..']),
   };
 
   // Guns point right; the grip sits at the left edge, row 2.
@@ -299,9 +301,90 @@
     brine: person({ H: '#3d5a8a', C: '#a85a4a', c: '#7a3a3a', D: '#4a3a2e' }),
   };
 
+  // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----
+  // It flies right: dead engines at the back, the habitat drum and the garden dome in the middle, the ring,
+  // then the command tower forward. Most windows are dark. Something pink glows under the dome.
+  function drawArk(g, x, y, s, t, opts = {}) {
+    x = Math.round(x);
+    y = Math.round(y);
+    const r = (rx, ry, w, h, c) => {
+      g.fillStyle = c;
+      g.fillRect(x + rx * s, y + ry * s, w * s, h * s);
+    };
+    const D = '#161b2b';
+    const E = '#262e44';
+    const F = '#0b0e18';
+    // engines, cold
+    r(0, 8, 9, 9, D);
+    r(0, 8, 9, 1, E);
+    r(0, 16, 9, 1, F);
+    r(-3, 9, 3, 3, '#2a3146');
+    r(-3, 13, 3, 3, '#2a3146');
+    r(-4, 10, 1, 1, t % 240 < 4 ? '#5fd4e8' : '#1d3b52');
+    // the spine and its ribs
+    r(9, 11, 59, 3, D);
+    r(9, 11, 59, 1, E);
+    for (let i = 10; i < 66; i += 4) r(i, 14, 1, 1, F);
+    // habitat drum, two rows of windows
+    r(18, 5, 28, 14, D);
+    r(18, 5, 28, 1, E);
+    r(18, 18, 28, 1, F);
+    for (let i = 25; i < 46; i += 7) r(i, 6, 1, 12, F);
+    for (let i = 0; i < 9; i++) {
+      for (let row = 0; row < 2; row++) {
+        const lit = (i * 5 + row * 7 + Math.floor(t / 70)) % 11 === 0;
+        r(20 + i * 3, 9 + row * 5, 1, 1, lit ? '#ffb84d' : '#2a3a5a');
+      }
+    }
+    // the cryo deck's windows, one blinking red during the emergency thaw
+    for (let i = 11; i < 17; i += 2) r(i, 12, 1, 1, '#2a3a5a');
+    if (opts.alarm && Math.floor(t / 14) % 2) r(13, 12, 1, 1, '#e8434f');
+    // the garden dome
+    r(23, 2, 18, 3, '#17292d');
+    r(25, 1, 14, 1, '#17292d');
+    r(28, 0, 8, 1, '#17292d');
+    r(25, 1, 5, 1, '#24403f');
+    r(29, 3, 1, 1, Math.floor(t / 50) % 3 ? '#b04ad0' : '#f27ad8');
+    r(34, 2, 1, 1, '#5c2479');
+    // the ring, edge on
+    r(47, 5, 5, 14, D);
+    r(48, 2, 3, 20, D);
+    r(48, 2, 1, 20, E);
+    r(47, 5, 1, 14, E);
+    r(49, 1, 1, 1, Math.floor(t / 40) % 2 ? '#5fd4e8' : '#1d3b52');
+    r(49, 22, 1, 1, Math.floor(t / 40) % 2 ? '#1d3b52' : '#5fd4e8');
+    // command tower, beacon on top
+    r(56, 7, 8, 4, D);
+    r(56, 7, 8, 1, E);
+    r(59, 4, 2, 3, D);
+    r(59, 3, 1, 1, Math.floor(t / 30) % 2 ? '#e8434f' : '#3a1520');
+    r(58, 9, 1, 1, '#ffb84d');
+    // nose
+    r(68, 11, 3, 3, D);
+    r(71, 12, 2, 1, D);
+  }
+
+  // Stars drifting past, in three depths. Shared by the title and the opening.
+  const STARS = (() => {
+    let seed = 3;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    return Array.from({ length: 90 }, () => ({ x: rnd(), y: rnd(), z: rnd() }));
+  })();
+  function drawStars(g, w, h, t, speed = 1) {
+    g.fillStyle = '#04050b';
+    g.fillRect(0, 0, w, h);
+    for (const s of STARS) {
+      const x = (((s.x * w - t * (0.05 + s.z * 0.2) * speed) % w) + w) % w;
+      g.fillStyle = s.z > 0.8 ? '#ffffff' : s.z > 0.4 ? '#8aa0c8' : '#3b4a72';
+      g.fillRect(Math.floor(x), Math.floor(s.y * h), 1, 1);
+    }
+  }
+
   HA.art = {
     PAL,
     canvas,
+    drawArk,
+    drawStars,
     sprite,
     hero,
     guns,

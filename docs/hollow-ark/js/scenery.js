@@ -414,34 +414,76 @@
     });
   }
 
-  // The pod the hero wakes in: sealed and frosted before the thaw, hanging open after.
+  // The pod the hero wakes in. Before the thaw it hangs from the rack's clamps, frosted over. It falls, the
+  // lid blows off, and from then on it lies open under the empty clamps, the lid on the deck beside it.
   function drawHeroPod(g, world, cam) {
-    const x = Math.round(world.start.x - 3 - cam.x);
-    const y = Math.round(world.start.y - 8 - cam.y);
-    const open = world.state.flags.woke;
+    const pod = world.heroPod;
+    if (!pod) return;
+    const x = Math.round(pod.x - cam.x);
+    const y = Math.round(pod.y - cam.y);
+    const cy = Math.round(pod.ceil - cam.y);
+    const holding = pod.state === 'hanging';
+    // the clamps: a bar under the ceiling and two arms that grip, then hang open
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 1, cy, 16, 3);
+    g.fillStyle = '#3a4258';
+    g.fillRect(x, cy, 14, 2);
+    const spread = holding ? 0 : 2;
+    g.fillStyle = '#6c7894';
+    g.fillRect(x + 1 - spread, cy + 2, 2, 4);
+    g.fillRect(x + 11 + spread, cy + 2, 2, 4);
+    if (!holding && world.time % 131 < 3) {
+      g.fillStyle = world.time % 2 ? '#fff0a8' : '#ffb84d';
+      g.fillRect(x + 6 + (world.time % 3), cy + 3, 1, 1);
+    }
+    // the pod
     g.fillStyle = '#10121c';
     g.fillRect(x, y, 14, 23);
     g.fillStyle = '#3a4258';
     g.fillRect(x + 1, y + 1, 12, 21);
     g.fillStyle = '#6c7894';
     g.fillRect(x + 1, y + 1, 12, 1);
-    if (!open) {
+    if (pod.state !== 'open') {
       g.fillStyle = '#9fd8e8';
       g.fillRect(x + 3, y + 3, 8, 15);
       g.fillStyle = '#d8f4ff';
       g.fillRect(x + 4, y + 4, 2, 9);
       g.fillStyle = '#5fa8c0';
       g.fillRect(x + 7, y + 10, 3, 6);
+      if (pod.state === 'landed') {
+        // cracked in the fall
+        g.fillStyle = '#eef4f6';
+        for (const [cx, cyy] of [[8, 5], [7, 6], [7, 7], [6, 8], [9, 8], [10, 9], [5, 9], [4, 11]]) g.fillRect(x + cx, y + cyy, 1, 1);
+      }
     } else {
       g.fillStyle = '#05060d';
       g.fillRect(x + 3, y + 3, 8, 15);
-      g.fillStyle = '#9fd8e8';
-      g.fillRect(x + 12, y + 2, 4, 16);
-      g.fillStyle = '#d8f4ff';
-      g.fillRect(x + 13, y + 3, 1, 8);
+      g.fillStyle = '#1d3b52';
+      g.fillRect(x + 3, y + 3, 1, 15);
     }
-    g.fillStyle = Math.floor(world.time / 30) % 2 && !open ? '#e8434f' : '#5fd4e8';
+    g.fillStyle = Math.floor(world.time / 30) % 2 && pod.state !== 'open' ? '#e8434f' : '#5fd4e8';
     g.fillRect(x + 6, y + 19, 2, 1);
+    // the lid: flying, then lying on the deck
+    const lid = pod.lid;
+    if (lid) {
+      const lx = Math.round(lid.x - cam.x);
+      const ly = Math.round(lid.y - cam.y);
+      if (lid.flat) {
+        g.fillStyle = '#10121c';
+        g.fillRect(lx, ly, 17, 3);
+        g.fillStyle = '#9fd8e8';
+        g.fillRect(lx + 1, ly + 1, 15, 1);
+        g.fillStyle = '#d8f4ff';
+        g.fillRect(lx + 3, ly + 1, 4, 1);
+      } else {
+        g.fillStyle = '#10121c';
+        g.fillRect(lx, ly, 10, 17);
+        g.fillStyle = '#9fd8e8';
+        g.fillRect(lx + 1, ly + 1, 8, 15);
+        g.fillStyle = '#d8f4ff';
+        g.fillRect(lx + 2, ly + 2, 2, 9);
+      }
+    }
   }
 
   function drawTerminal(g, world, l, cam) {

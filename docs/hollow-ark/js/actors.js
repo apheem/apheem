@@ -170,6 +170,7 @@
     if (p.invuln > 0) p.invuln--;
     if (p.xpLock > 0) p.xpLock--;
     if (p.land > 0) p.land--;
+    if (p.kneel > 0) p.kneel--;
     if (p.comboTimer > 0 && --p.comboTimer === 0) p.combo = 0;
     p.anim += p.onGround ? Math.abs(p.vx) * 0.11 : 0;
   }
@@ -182,6 +183,7 @@
     let spr = H.idle;
     let bob = 0;
     if (!p.onGround) spr = p.vy < 0 ? H.jump : H.fall;
+    else if (p.kneel > 0) spr = H.kneel;
     else if (p.land > 0) {
       spr = H.jump;
       bob = 1;
@@ -456,7 +458,7 @@
       p.hp = p.maxHp;
       world.burst(k.x + 4, k.y + 5, ['#ff8a8a', '#ffffff', '#b8f4ff'], 24, 2.2);
       HA.audio.play('pickup');
-      world.toast('LIFE CAPSULE · MAX HEALTH +4', 300);
+      world.toast('SUIT CELL · MAX HEALTH +4', 300);
       if (world.collected) world.collected(k);
     }
   }

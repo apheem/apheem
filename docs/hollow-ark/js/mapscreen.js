@@ -18,18 +18,19 @@
     const p = world.player;
     const def = world.def;
     const here = { x: def.gx + Math.floor((p.x + p.w / 2) / 8), y: def.gy + Math.floor((p.y + p.h / 2) / 8) };
-    return { world, tab: tab || 'map', cursor: Object.assign({}, here), here, section: 0, scroll: 0, image: null, bounds: null, t: 0, rep: {} };
+    return { world, tab: tab || 'map', cursor: Object.assign({}, here), here, section: 0, scroll: 0, image: null, bounds: null, zoom: 1, t: 0, rep: {} };
   }
 
   // ---- Map image: one pixel per tile, only what has been seen ----
+  // It covers the rooms visited so far. While those fit, the map is drawn at double size; once the ship
+  // outgrows the box, it scrolls to follow the cursor.
   function buildMap(scr) {
     const world = scr.world;
     const rooms = HA.rooms.list.filter((r) => world.state.visited[r.id]);
-    const all = HA.rooms.list;
-    const minX = Math.min(...all.map((r) => r.gx));
-    const minY = Math.min(...all.map((r) => r.gy));
-    const maxX = Math.max(...all.map((r) => r.gx + r.w));
-    const maxY = Math.max(...all.map((r) => r.gy + r.h));
+    const minX = Math.min(...rooms.map((r) => r.gx));
+    const minY = Math.min(...rooms.map((r) => r.gy));
+    const maxX = Math.max(...rooms.map((r) => r.gx + r.w));
+    const maxY = Math.max(...rooms.map((r) => r.gy + r.h));
     const img = HA.art.canvas(maxX - minX, maxY - minY);
     const g = img.getContext('2d');
     for (const r of rooms) {
@@ -76,16 +77,37 @@
     }
     scr.image = img;
     scr.bounds = { minX, minY, maxX, maxY };
+    scr.zoom = img.width * 2 <= MAP_BOX.w && img.height * 2 <= MAP_BOX.h ? 2 : 1;
   }
 
-  function update(scr, input) {
+  // The ship tile shown at the map box's top-left corner.
+  function viewOrigin(scr) {
+    const b = scr.bounds;
+    const z = scr.zoom;
+    const fit = (lo, hi, size, at) => (hi - lo <= size ? lo - (size - (hi - lo)) / 2 : HA.clamp(at - size / 2, lo, hi - size));
+    return { x: Math.round(fit(b.minX, b.maxX, MAP_BOX.w / z, scr.cursor.x)), y: Math.round(fit(b.minY, b.maxY, MAP_BOX.h / z, scr.cursor.y)) };
+  }
+
+  const inside = (pt, r) => pt && pt.x >= r.x && pt.x < r.x + r.w && pt.y >= r.y && pt.y < r.y + r.h;
+  const TABS = [
+    ['MAP', 'map'],
+    ['JOURNAL', 'journal'],
+  ];
+  const tabRect = (i) => ({ x: W / 2 + (i ? 34 : -34) - 24, y: 6, w: 48, h: 14 });
+  const sectionRect = (i) => ({ x: 22 + i * 58 - 4, y: 22, w: 56, h: 12 });
+
+  function update(scr, input, pointer) {
     scr.t++;
     const world = scr.world;
-    if (input.pressed.prev || input.pressed.next) {
+    if (!scr.image) buildMap(scr);
+    const pt = pointer && pointer.x >= 0 ? pointer : null;
+    const tabClick = pointer && pointer.click ? TABS.findIndex((t, i) => inside(pt, tabRect(i))) : -1;
+    if (input.pressed.prev || input.pressed.next || (tabClick >= 0 && TABS[tabClick][1] !== scr.tab)) {
       scr.tab = scr.tab === 'map' ? 'journal' : 'map';
       HA.audio.play('menuMove');
+      return null;
     }
-    if (input.pressed.back || input.pressed.map || (input.pressed.pause && !input.pressed.confirm)) return 'close';
+    if (input.pressed.back || input.pressed.map || (input.pressed.pause && !input.pressed.confirm) || (pointer && pointer.back)) return 'close';
     if (scr.tab === 'map') {
       const step = (dir) => {
         if (input.pressed[dir]) {
@@ -96,15 +118,22 @@
         scr.rep[dir] = (scr.rep[dir] || 0) + 1;
         return scr.rep[dir] > 12 && scr.rep[dir] % 2 === 0;
       };
-      if (step('left')) scr.cursor.x -= 2;
-      if (step('right')) scr.cursor.x += 2;
-      if (step('up')) scr.cursor.y -= 2;
-      if (step('down')) scr.cursor.y += 2;
-      if (scr.bounds) {
-        scr.cursor.x = HA.clamp(scr.cursor.x, scr.bounds.minX, scr.bounds.maxX - 1);
-        scr.cursor.y = HA.clamp(scr.cursor.y, scr.bounds.minY, scr.bounds.maxY - 1);
+      const by = scr.zoom === 2 ? 1 : 2;
+      if (step('left')) scr.cursor.x -= by;
+      if (step('right')) scr.cursor.x += by;
+      if (step('up')) scr.cursor.y -= by;
+      if (step('down')) scr.cursor.y += by;
+      // The pointer moves the cursor to the spot under it.
+      const overMap = inside(pt, MAP_BOX);
+      if (overMap && (pointer.moved || pointer.click)) {
+        const o = viewOrigin(scr);
+        scr.cursor.x = Math.floor(o.x + (pt.x - MAP_BOX.x) / scr.zoom);
+        scr.cursor.y = Math.floor(o.y + (pt.y - MAP_BOX.y) / scr.zoom);
       }
-      if (input.pressed.confirm || input.pressed.jump) {
+      const b = scr.bounds;
+      scr.cursor.x = HA.clamp(scr.cursor.x, b.minX, b.maxX - 1);
+      scr.cursor.y = HA.clamp(scr.cursor.y, b.minY, b.maxY - 1);
+      if (input.pressed.confirm || input.pressed.jump || (overMap && pointer.click)) {
         // Drop a marker, or change the one under the cursor, or (after the last kind) remove it.
         const list = world.state.markers;
         const at = list.findIndex((m) => Math.abs(m.x - scr.cursor.x) <= 2 && Math.abs(m.y - scr.cursor.y) <= 2);
@@ -114,19 +143,21 @@
         HA.audio.play('menuOk');
       }
     } else {
-      if (input.pressed.left || input.pressed.right) {
-        scr.section = (scr.section + (input.pressed.left ? -1 : 1) + SECTIONS.length) % SECTIONS.length;
+      const sectionClick = pointer && pointer.click ? SECTIONS.findIndex((n, i) => inside(pt, sectionRect(i))) : -1;
+      if (input.pressed.left || input.pressed.right || sectionClick >= 0) {
+        scr.section = sectionClick >= 0 ? sectionClick : (scr.section + (input.pressed.left ? -1 : 1) + SECTIONS.length) % SECTIONS.length;
         scr.scroll = SECTIONS[scr.section] === 'TALK' ? Infinity : 0;
         HA.audio.play('menuMove');
       }
       if (input.held.up) scr.scroll -= input.pressed.up ? 1 : scr.t % 4 === 0 ? 1 : 0;
       if (input.held.down) scr.scroll += input.pressed.down ? 1 : scr.t % 4 === 0 ? 1 : 0;
+      if (pointer && pointer.wheel) scr.scroll += pointer.wheel * 2;
     }
     return null;
   }
 
   function panel(g, x, y, w, h, edge = '#3a4258') {
-    g.fillStyle = 'rgba(5,6,13,0.96)';
+    g.fillStyle = '#05060d';
     g.fillRect(x, y, w, h);
     g.fillStyle = edge;
     g.fillRect(x, y, w, 1);
@@ -139,7 +170,7 @@
     const world = scr.world;
     panel(g, 4, 4, W - 8, H - 8);
     // tabs
-    [['MAP', 'map'], ['JOURNAL', 'journal']].forEach(([label, id], i) => {
+    TABS.forEach(([label, id], i) => {
       const x = W / 2 + (i ? 34 : -34);
       const sel = scr.tab === id;
       HA.font.draw(g, label, x, 10, sel ? '#ffb84d' : '#6c7894', { align: 'center' });
@@ -157,31 +188,38 @@
   function drawMap(scr, g) {
     const world = scr.world;
     if (!scr.image) buildMap(scr);
+    const z = scr.zoom;
+    const o = viewOrigin(scr);
+    const sx = (tx) => MAP_BOX.x + (tx - o.x) * z;
+    const sy = (ty) => MAP_BOX.y + (ty - o.y) * z;
     const b = scr.bounds;
-    const img = scr.image;
-    const ox = Math.round(MAP_BOX.x + (MAP_BOX.w - img.width) / 2);
-    const oy = Math.round(MAP_BOX.y + (MAP_BOX.h - img.height) / 2);
-    g.drawImage(img, ox, oy);
+    g.save();
+    g.beginPath();
+    g.rect(MAP_BOX.x, MAP_BOX.y, MAP_BOX.w, MAP_BOX.h);
+    g.clip();
+    g.imageSmoothingEnabled = false;
+    g.drawImage(scr.image, sx(b.minX), sy(b.minY), scr.image.width * z, scr.image.height * z);
     // room outlines for visited rooms
     for (const r of HA.rooms.list) {
       if (!world.state.visited[r.id]) continue;
       g.strokeStyle = r.id === world.def.id ? 'rgba(238,244,246,0.5)' : 'rgba(108,120,148,0.35)';
       g.lineWidth = 1;
-      g.strokeRect(ox + r.gx - b.minX + 0.5, oy + r.gy - b.minY + 0.5, r.w - 1, r.h - 1);
+      g.strokeRect(sx(r.gx) + 0.5, sy(r.gy) + 0.5, r.w * z - 1, r.h * z - 1);
     }
-    for (const m of world.state.markers) HA.font.draw(g, MARKS[m.kind][0], ox + m.x - b.minX, oy + m.y - b.minY - 3, MARKS[m.kind][1], { align: 'center' });
+    for (const m of world.state.markers) HA.font.draw(g, MARKS[m.kind][0], sx(m.x + 0.5), sy(m.y + 0.5) - 3, MARKS[m.kind][1], { align: 'center' });
     if (Math.floor(scr.t / 15) % 2) {
       g.fillStyle = '#ffffff';
-      g.fillRect(ox + scr.here.x - b.minX - 1, oy + scr.here.y - b.minY - 1, 3, 3);
+      g.fillRect(Math.round(sx(scr.here.x + 0.5)) - 1, Math.round(sy(scr.here.y + 0.5)) - 1, 3, 3);
     }
     // cursor
-    const cx = ox + scr.cursor.x - b.minX;
-    const cy = oy + scr.cursor.y - b.minY;
+    const cx = Math.round(sx(scr.cursor.x + 0.5));
+    const cy = Math.round(sy(scr.cursor.y + 0.5));
     g.fillStyle = '#fff0a8';
     g.fillRect(cx - 4, cy, 3, 1);
     g.fillRect(cx + 2, cy, 3, 1);
     g.fillRect(cx, cy - 4, 1, 3);
     g.fillRect(cx, cy + 2, 1, 3);
+    g.restore();
     const room = HA.rooms.at(scr.cursor.x * 8, scr.cursor.y * 8);
     const known = room && world.state.visited[room.id];
     HA.font.draw(g, known ? HA.rooms.AREAS[room.area].name + ' · ' + room.name : '', W / 2, 150, known ? HA.rooms.AREAS[room.area].mapColor : '#6c7894', { align: 'center' });

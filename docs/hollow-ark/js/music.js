@@ -108,16 +108,31 @@
       },
     },
 
-    // The way down into the walls: a drone, drips, and the Warrens song half-remembered.
+    // The way down into the walls: the Warrens song half-remembered, slower, with long gaps. Same key and
+    // 6/8 as the village. The chords darken once (G minor) before turning home, and in the second half a
+    // hand drum comes up from below, as if the village were just out of sight.
     warrensEdge: {
-      step: 0.19,
-      steps: 64,
+      step: 0.36,
+      steps: 96,
       play(s, out) {
-        if (s === 0) out.note(0, 'triangle', 'D2', 30, 0.2, 0.3);
-        if (s === 32) out.note(0, 'triangle', 'A1', 30, 0.18, 0.3);
-        const motif = { 0: 'A5', 6: 'G5', 12: 'F#5', 20: 'E5' }[s];
-        if (motif) out.note(0, 'triangle', motif, 5, 0.045, 0.02);
-        if ([9, 27, 41, 50, 58].includes(s)) out.drum(0, 'drip', 0.05);
+        const bar = Math.floor(s / 6) % 16;
+        const at = s % 6;
+        const c = EDGE_CHORDS[bar];
+        if (at === 0) {
+          out.note(0, 'triangle', c.root, 5.5, 0.2, 0.02);
+          for (const iv of [12 + c.third, 19]) out.note(0, 'sine', c.root + iv, 6, 0.028, 0.3);
+        }
+        if (at === 3) out.note(0, 'triangle', c.root + 7, 2.5, 0.08, 0.02);
+        for (const [st, n, len] of EDGE_THEME[bar] || []) {
+          if (st !== at) continue;
+          out.note(0, 'triangle', n, len, 0.065, 0.03);
+          out.note(0, 0.125, n, len, 0.016, 0.03, 1.5); // the echo off the walls
+        }
+        if (bar >= 8) {
+          if (at === 0) out.drum(0, 'hand', 0.06 + (bar - 8) * 0.006);
+          if (at === 3) out.drum(0, 'hand', 0.03);
+        }
+        if ((bar === 0 && at === 4) || (bar === 4 && at === 2) || (bar === 9 && at === 5) || (bar === 13 && at === 1)) out.drum(0, 'drip', 0.035);
       },
     },
 
@@ -177,6 +192,22 @@
     [[0, 'C#5', 3], [3, 'E5', 3]],
     [[0, 'A5', 6]],
   ];
+  const EDGE_CHORDS = [chord('D3', 4), chord('D3', 4), chord('B2', 3), chord('B2', 3), chord('G2', 4), chord('G2', 4), chord('A2', 4), chord('A2', 4),
+    chord('D3', 4), chord('D3', 4), chord('B2', 3), chord('B2', 3), chord('G2', 4), chord('G2', 3), chord('A2', 4), chord('A2', 4)];
+  // Bars of the Warrens melody, with rests between; bar 13 is the G minor turn.
+  const EDGE_THEME = {
+    1: [[0, 'A5', 2], [2, 'G5', 1], [3, 'F#5', 3]],
+    2: [[0, 'F#5', 6]],
+    5: [[0, 'G5', 2], [2, 'A5', 1], [3, 'G5', 2], [5, 'E5', 1]],
+    6: [[0, 'C#5', 6]],
+    9: [[0, 'A5', 2], [2, 'G5', 1], [3, 'F#5', 2], [5, 'E5', 1]],
+    10: [[0, 'F#5', 3], [3, 'D5', 3]],
+    11: [[0, 'B5', 6]],
+    12: [[0, 'G5', 2], [2, 'A5', 1], [3, 'G5', 2], [5, 'D5', 1]],
+    13: [[0, 'Bb4', 6]],
+    14: [[0, 'A4', 3], [3, 'C#5', 3]],
+    15: [[0, 'E5', 6]],
+  };
   const HUSH_CHORDS = [chord('D3', 3), chord('D3', 3), chord('Bb2', 4), chord('Bb2', 4), chord('G2', 3), chord('A2', 4), chord('A2', 4), chord('A2', 4)];
   const HUSH_THEME = [[[0, 'A5', 2], [2, 'G5', 1], [3, 'F5', 2]], [[0, 'E5', 6]], [[0, 'D5', 3], [3, 'F5', 3]], [[0, 'Bb5', 6]]];
   const BOSS_CHORDS = [chord('E2', 3), chord('C2', 4), chord('D2', 4), chord('B1', 4)];

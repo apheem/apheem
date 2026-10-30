@@ -1,7 +1,7 @@
 'use strict';
 // The Cryo Deck: frozen sleeper bays where the hero wakes. Cold blues, humming machines, the first Bloom.
 // Map legend beyond the shared one in room.js: P hero's pod   S rest pod   T ship log   G Rivet Pistol
-// A Arc Coil   U Purge Cannon   H life capsule   c crawler   f drifter   w warden sentry   digits: people
+// A Arc Coil   U Purge Cannon   H suit cell   c crawler   f drifter   w warden sentry   digits: people
 (function (HA) {
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
 
@@ -16,9 +16,9 @@
     legend: { T: { type: 'log', id: 'course' } },
     scenery: [{ kind: 'pods', x: 12, y: 3.5, n: 7 }, { kind: 'pods', x: 47, y: 3.5, n: 7 }, { kind: 'window', x: 31, y: 4 }],
     hints: [
-      { x: 8, y: 12, text: '{left}{right} MOVE   {jump} JUMP' },
-      { x: 26, y: 11, text: 'HOLD {jump} LONGER TO JUMP HIGHER' },
-      { x: 48, y: 12, text: '{fire} FIRE   HOLD {up} TO AIM UP', when: (w) => has(w, 'pistol') },
+      { x: 8, y: 14, text: '{left}{right} MOVE   {jump} JUMP', when: (w) => w.state.flags.woke },
+      { x: 26, y: 13, text: 'HOLD {jump} LONGER TO JUMP HIGHER' },
+      { x: 43, y: 12, text: '{fire} FIRE   HOLD {up} TO AIM UP', when: (w) => has(w, 'pistol') },
     ],
     map: [
       '################################################################################',
@@ -57,7 +57,7 @@
     scenery: [{ kind: 'vent', x: 58, y: 5 }, { kind: 'window', x: 26, y: 3 }, { kind: 'pods', x: 60, y: 15, n: 0 }],
     hints: [
       { x: 2, y: 11.5, text: 'REST PODS HEAL YOU AND SAVE' },
-      { x: 46, y: 4, text: '{down}+{jump} DROPS THROUGH CATWALKS' },
+      { x: 36, y: 4, text: '{down}+{jump} DROPS THROUGH CATWALKS' },
     ],
     triggers: [{ x0: 30, x1: 40, y1: 9, when: (s) => !s.flags.shimSeen, run: 'shimGlimpse' }],
     map: [
@@ -149,7 +149,7 @@
     name: 'COOLANT HALL',
     gx: 40,
     gy: 23,
-    legend: { H: { secret: 2, name: 'the life capsule' } },
+    legend: { H: { secret: 2, name: 'the suit cell' } },
     scenery: [{ kind: 'pipes', y: 3 }, { kind: 'bloom', x: 78, y: 18, n: 60 }, { kind: 'bloom', x: 105, y: 19, n: 20 }, { kind: 'scrawl', x: 4, y: 12, text: 'HOME ←' }],
     hints: [
       { x: 86, y: 12, text: 'IN THE AIR, HOLD {down} TO AIM DOWN', when: (w) => has(w, 'cannon') },

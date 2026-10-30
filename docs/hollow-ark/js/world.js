@@ -160,7 +160,7 @@
       HA.audio.play('crate');
     };
 
-    // A weapon or capsule was picked up: it stays gone for good.
+    // A weapon or suit cell was picked up: it stays gone for good.
     world.collected = (k) => {
       world.state.taken[k.key] = true;
       if (k.kind === 'weapon') {
@@ -477,7 +477,8 @@
   }
 
   // ---- Drawing ----
-  function draw(world, g) {
+  // quiet: a menu is open on top, so banners, labels and dialogue stay hidden instead of showing through it.
+  function draw(world, g, quiet) {
     const cam = { x: Math.round(world.cam.x + world.shakeX), y: Math.round(world.cam.y + world.shakeY) };
     g.fillStyle = '#05060d';
     g.fillRect(0, 0, W, H);
@@ -540,21 +541,21 @@
       g.globalAlpha = 1;
       if (p.deadTimer < 70) HA.font.draw(g, 'SUIT FAILURE', W / 2, H / 2 - 4, '#ff8a8a', { align: 'center' });
     }
-    if (world.near && !world.scene) {
+    if (world.near && !world.scene && !quiet) {
       const o = world.near.o;
       HA.font.draw(g, world.near.label, Math.round(o.x + o.w / 2 - cam.x), Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
     }
-    if (!world.scene || world.scene.showHud) drawHud(g, world);
-    if (world.leadBanner > 0 && !(world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice))) drawLead(g, world);
+    if (!world.scene || world.scene.showHud) drawHud(g, world, quiet);
+    if (world.leadBanner > 0 && !quiet && !(world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice))) drawLead(g, world);
     if (world.boss && world.boss.active) HA.boss.drawBar(g, world, world.boss);
-    HA.scenes.draw(world, g);
+    HA.scenes.draw(world, g, quiet);
     if (world.fade > 0) {
       g.globalAlpha = world.fade;
       g.fillStyle = '#05060d';
       g.fillRect(0, 0, W, H);
       g.globalAlpha = 1;
     }
-    HA.scenes.drawCard(world, g);
+    HA.scenes.drawCard(world, g, quiet);
   }
 
   function drawHints(g, world, cam) {
@@ -694,7 +695,7 @@
   }
 
   // ---- HUD: health, weapon level and XP are always readable at a glance ----
-  function drawHud(g, world) {
+  function drawHud(g, world, quiet) {
     const p = world.player;
     // health
     HA.font.draw(g, '♥', 6, 6, '#e8434f');
@@ -762,6 +763,7 @@
       HA.font.draw(g, '{prev}{next}', W - 6, 17, '#9fb6c8', { align: 'right' });
     }
 
+    if (quiet) return;
     // area name, when arriving in a new part of the ship
     if (world.areaBanner > 0) {
       const a = Math.min(1, world.areaBanner / 30, (160 - world.areaBanner) / 20);
