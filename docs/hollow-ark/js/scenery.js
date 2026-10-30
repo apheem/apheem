@@ -1627,8 +1627,11 @@
         PROPS.workbench(g, s);
         g.restore();
       }
-      // The keel tram: at the Ballast's station until it leaves, and at the Spine Foot once the climbers come in on it.
-      const tram = s.at === 'spine' ? !!world.state.flags.crewCame : !world.state.flags.tram || (world.tramGo || 0) > 0;
+      // The keel tram: at the Ballast's station until it leaves, and at the Spine Foot once the climbers come in on it
+      // (with the hero, story/tram.js). If the keel flooded, it gets no further than the station on the way back.
+      const fl = world.state.flags;
+      const flooded = world.state.people.solder === 'dead';
+      const tram = s.at === 'spine' ? (fl.crewCame && !(fl.tramEast && flooded)) || (fl.tramEast && !flooded) : !fl.tram || (world.tramGo || 0) > 0 || (fl.tramEast && flooded);
       if (s.kind === 'tramcar' && tram) drawTramCar(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
@@ -1851,6 +1854,7 @@
   // it will run. A floor hatch is a plate in the floor, then a hole with a ladder's top once it's open. Its other
   // end is a ladder up through the ceiling.
   function drawLink(g, world, l, cam) {
+    if (l.legend.tram) return; // the keel tram's car is the room's own scenery
     if (l.legend.type === 'lift') return drawLift(g, world, l, cam);
     const x = Math.round(l.tx * 8 - 4 - cam.x);
     if (l.legend.up) {

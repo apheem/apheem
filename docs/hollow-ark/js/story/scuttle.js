@@ -148,7 +148,8 @@
     world.holdFade = true;
     yield { card: ['WE RAN.'], hold: 90 };
     yield { card: ['DOWN THE STAIR, DOWN THE TOWER LIFT,', lifts ? "DOWN THE SPINE IN THE CREW'S LIFT," : 'DOWN THE SPINE LADDER BY LADDER,', 'WITH THE SHIP SHAKING UNDER US.'], hold: 220 };
-    yield { card: ['THE KEEL TRAM TOOK US HOME.', 'NOBODY SPOKE.'], hold: 160 };
+    const pipes = s.flags.tramEast && s.people.solder === 'dead'; // the tram waited at the Ballast stop (story/tram.js)
+    yield { card: pipes ? ['BACK THROUGH THE OVERFLOW PIPES, AND', 'THE KEEL TRAM HOME FROM THE BALLAST STOP.', 'NOBODY SPOKE.'] : ['THE KEEL TRAM TOOK US HOME.', 'NOBODY SPOKE.'], hold: pipes ? 200 : 160 };
     world.enterRoom(START.room, START.x, START.ty * 8 - world.player.h, { facing: -1 });
     startRun(world);
     const g = S.makeNpc(world, 'gasket', { x: 50 * 8, y: FLOOR(19) });

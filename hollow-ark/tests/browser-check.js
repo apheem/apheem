@@ -326,6 +326,27 @@ async function play(browserType, url, label) {
       out.cradleScene = w().scene && w().scene.name;
       talkThrough();
       out.lead1 = s.lead;
+      // Wick goes up with the hero (STORYBOARD.md, "Wick's longer escort"). Left on the Terraces' floor while the
+      // hero climbs, she catches up out of sight; in the Irrigation Works she patches the hero up on the pod, opens
+      // the cradles' air, and goes back down to them.
+      const wk = () => w().npcs.find((n) => n.id === 'wick' && n.state === 'out');
+      out.up = { wickUp: !!s.flags.wickUp, following: !!(wk() && wk().follow) };
+      HA.debug.goto('terraces', 4, 41);
+      HA.debug.step(10);
+      const feet = (a) => Math.round((a.y + a.h) / 8);
+      out.caught = { before: wk() && feet(wk()) };
+      Object.assign(p, { x: 6 * 8, y: 15 * 8 - p.h, vx: 0, vy: 0, facing: -1 });
+      HA.debug.step(90);
+      Object.assign(out.caught, { after: wk() && feet(wk()), hero: feet(p) });
+      HA.debug.goto('irrigation', 76, 14);
+      p.hp = 3;
+      HA.debug.step(5);
+      out.patchScene = w().scene && w().scene.name;
+      talkThrough();
+      out.patched = { flag: !!s.flags.wickPatched, healed: p.hp === p.maxHp, gone: !wk(), story: s.journal.story.some((t) => /PATCHED ME UP/.test(t)), said: s.journal.talk.some((t) => /SOMEONE SMALL\. BADLY/.test(t.text)) };
+      HA.debug.goto('root-cellar', 40, 18);
+      HA.debug.step(5);
+      out.backDown = !!(wk() && wk().kneel && !wk().follow);
       // The Scatter Launcher, on the Terraces.
       HA.debug.goto('terraces', 4, 32);
       HA.debug.step(20);
@@ -416,6 +437,8 @@ async function play(browserType, url, label) {
     });
     expect(gd.bulbs === 1 && gd.bulbAsks && gd.ate.bloom === 1 && gd.ate.bulbs === 0 && gd.ate.healed && gd.ate.rush, `the Bloom bulb was not picked up, asked about, and eaten (${JSON.stringify(gd)})`);
     expect(gd.cradleScene === 'cradles' && gd.lead1 === 'FIND THE WARDEN THAT HOLDS THE SEALS', `the cradles scene did not play (${gd.cradleScene}, ${gd.lead1})`);
+    expect(gd.up.wickUp && gd.up.following && gd.caught.before === 42 && gd.caught.after === gd.caught.hero && gd.caught.hero === 15, `Wick didn't go up with the hero, or didn't catch up (${JSON.stringify(gd.up)}, ${JSON.stringify(gd.caught)})`);
+    expect(gd.patchScene === 'wickPatch' && gd.patched.flag && gd.patched.healed && gd.patched.gone && gd.patched.story && gd.patched.said && gd.backDown, `Wick's sit-down in the Irrigation Works went wrong (${gd.patchScene}, ${JSON.stringify(gd.patched)}, back down ${gd.backDown})`);
     expect(gd.vale, `the Gardener did not name herself and make her case in the Vat House (${gd.vale})`);
     expect(gd.scatter && gd.grenade, 'the Scatter Launcher was not picked up, or threw no grenade');
     expect(gd.prunerFighting && gd.hallShut && gd.prunerChoice, `the Pruner fight and its choice did not play (${JSON.stringify(gd)})`);
@@ -883,24 +906,56 @@ async function play(browserType, url, label) {
       const bloom = s.bloom;
       choose(1);
       out.choice = { solder: s.people.solder, by: s.flags.solderBy, bloom: s.bloom - bloom, room: w().def.id, flooded: !!s.flags.flooded, flooding: !!s.flags.flooding, charges: p.weapons.some((x) => x.id === 'charges') };
-      // 5. The tram, and the ballast control log.
+      // 5. The tram: the motor in, and the hero rides it home to the sump with Solder (story/tram.js).
       HA.debug.goto('tram-station', 33, 18);
       HA.debug.step(5);
       HA.debug.step(1, { up: true });
-      talkThrough();
-      out.tram = { tram: !!s.flags.tram, lead: s.lead };
+      out.ride = [];
+      for (let i = 0; i < 6000 && w() && w().scene; i++) {
+        if (w().card && w().card.pic && !out.ride.includes(w().card.card[0])) out.ride.push(w().card.card[0]);
+        HA.debug.step(1, { confirm: i % 4 === 0 });
+      }
+      const solderIn = () => w().npcs.some((n) => n.id === 'solder' && n.state === 'out');
+      out.tram = { tram: !!s.flags.tram, west: !!s.flags.tramWest, room: w().def.id, lead: s.lead, solder: solderIn(), tramLink: w().links.some((l) => l.legend.tram) };
+      // The ballast control log; and the way on east waits for the climbers now.
       HA.debug.goto('tram-station', 10, 8);
       HA.debug.step(5);
       HA.debug.step(1, { up: true });
       out.log = w().scene && w().scene.step && w().scene.step.text;
       talkThrough();
-      // Home: the gate held, with the pistol on it.
+      HA.debug.goto('tram-station', 36, 18);
+      for (let i = 0; i < 90; i++) HA.debug.step(1, { right: true });
+      out.held = { room: w().def.id, note: w().toastText };
+      // Home: the gate held, with the pistol on it. The news, then the tram waits.
       HA.debug.goto('warrens', 40, 18);
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 6; i++) {
         HA.debug.step(40);
         talkThrough();
       }
-      out.home = { raidSeen: !!s.flags.raidSeen, story: s.journal.story.some((t) => /GATE HELD/.test(t)), solder: w().npcs.some((n) => n.id === 'solder' && n.state === 'out') };
+      out.home = { raidSeen: !!s.flags.raidSeen, story: s.journal.story.some((t) => /GATE HELD/.test(t)), waits: !!s.flags.tramWaits, lead: s.lead, solder: solderIn() };
+      // Up at Mara's pod: a goodbye, once.
+      HA.debug.goto('cryo-bay', 10, 18);
+      HA.debug.step(5);
+      const plate = w().logs.find((l) => l.id === 'mara');
+      p.x = plate.x;
+      p.y = plate.y + plate.h - p.h;
+      HA.debug.step(3);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.bye = { flag: !!s.flags.maraBye, story: s.journal.story.filter((t) => /BACK WITH THE KEY/.test(t)).length };
+      // The sump: the climbers on the platform, and the tram east with them to the Spine Foot.
+      HA.debug.goto('sump', 60, 18);
+      HA.debug.step(5);
+      const crew = w().npcs.filter((n) => n.state === 'out').length;
+      const car = w().links.find((l) => l.legend.tram);
+      out.sump = { crew, car: !!car, enemies: w().enemies.length };
+      if (car) {
+        p.x = car.x + 8;
+        HA.debug.step(3);
+        HA.debug.step(1, { up: true });
+        talkThrough();
+      }
+      out.east = { room: w().def.id, east: !!s.flags.tramEast, lead: s.lead, crew: w().npcs.filter((n) => n.state === 'out').length, story: s.journal.story.some((t) => /RODE THE KEEL TRAM EAST/.test(t)) };
       return out;
     });
     expect(bl.into.room === 'ballast-intake' && bl.into.area === 'FLOODED BALLAST' && bl.into.music === 'ballast' && /SOLDER/.test(bl.into.lead), `the Drain's grate did not lead into the Ballast (${JSON.stringify(bl.into)})`);
@@ -913,8 +968,11 @@ async function play(browserType, url, label) {
     expect(bl.flood.flooding && bl.flood.music === 'flood' && /hallWest- culvert\+/.test(bl.flood.doors) && bl.failed === 'floodFail' && bl.retry.room === 'valve-hall' && !bl.retry.flooding && bl.retry.solder, `the flood, or its retry, went wrong (${JSON.stringify(bl.flood)}, ${bl.failed}, ${JSON.stringify(bl.retry)})`);
     expect(bl.culvert.rooms === 'valve-hall/long-culvert/jammed-hatch' && bl.culvert.under === 0 && bl.culvert.scene === 'jammed', `the escape up the culvert went wrong (${JSON.stringify(bl.culvert)})`);
     expect(bl.nine === 'BLOW THE BEAM/EAT THE BLOOM ON THE HATCH/LEAVE HER' && /BLOOM GROWS/.test(bl.bloomLose) && bl.choice.solder === 'alive' && bl.choice.by === 'bloom' && bl.choice.bloom === 2 && bl.choice.room === 'tram-station' && bl.choice.flooded && !bl.choice.flooding && bl.choice.charges, `choice 9 went wrong (${JSON.stringify(bl.choice)})`);
-    expect(bl.tram.tram && /ENGINE SPINE/.test(bl.tram.lead) && /NAVIGATOR AUTHORITY/.test(bl.log), `the tram, or the valves log, went wrong (${JSON.stringify(bl.tram)}, ${bl.log})`);
-    expect(bl.home.raidSeen && bl.home.story && bl.home.solder, `home after the raid went wrong (${JSON.stringify(bl.home)})`);
+    expect(bl.tram.tram && bl.tram.west && bl.tram.room === 'sump' && /VILLAGE/.test(bl.tram.lead) && bl.tram.solder && !bl.tram.tramLink && bl.ride.length === 2 && /WEST/.test(bl.ride[0]) && /NAVIGATOR AUTHORITY/.test(bl.log), `the tram home, or the valves log, went wrong (${JSON.stringify(bl.tram)}, ${JSON.stringify(bl.ride)}, ${bl.log})`);
+    expect(bl.held.room === 'tram-station' && /NOT WITHOUT THE CLIMBERS/.test(bl.held.note), `the way east didn't wait for the climbers (${JSON.stringify(bl.held)})`);
+    expect(bl.home.raidSeen && bl.home.story && bl.home.waits && /TRAM/.test(bl.home.lead) && !bl.home.solder, `home after the raid went wrong (${JSON.stringify(bl.home)})`);
+    expect(bl.bye.flag && bl.bye.story === 1, `the goodbye at Mara's pod went wrong (${JSON.stringify(bl.bye)})`);
+    expect(bl.sump.car && bl.sump.crew >= 4 && bl.sump.enemies === 0 && bl.east.room === 'spine-foot' && bl.east.east && /BUILD BEHIND YOU/.test(bl.east.lead) && bl.east.crew >= 3 && bl.east.story, `the tram east with the climbers went wrong (${JSON.stringify(bl.sump)}, ${JSON.stringify(bl.east)})`);
     await shot('ballast');
 
     // ---- The Engine Spine (Phase 3.5), from a save at the tram station once the tram has gone for the climbers ----

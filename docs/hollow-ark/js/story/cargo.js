@@ -511,6 +511,8 @@
       const f = s.flags;
       // (Never during the run for the sleds: the Warrens are empty then, and the clock is running.)
       if (world.def.id !== 'warrens' || f.running || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
+      // (And not before the raid's news, or Solder's: those come first.)
+      if ((s.warrensRaid && !f.raidSeen) || (s.people.solder === 'dead' && f.tram && !f.solderMourned)) return;
       if (s.people.flux === 'home' && !f.fluxHome) run(world, 'fluxHome');
       else if (s.people.flux === 'stripped' && s.logs.lists && !f.fluxNamed) run(world, 'fluxNamed');
     },

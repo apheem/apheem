@@ -535,6 +535,8 @@
     gx: 440,
     gy: 207,
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
+    // Once the hero has ridden home, the way on east waits for the climbers (story/tram.js).
+    holdBack: { right: (s) => HA.story.tramHeld(s) },
     legend: {
       T: { type: 'log', id: 'valves', name: 'the ballast control terminal' },
       V: { type: 'log', scene: 'winch', name: 'the winch' },
@@ -586,7 +588,7 @@
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
     legend: {
       a: { type: 'hatch', up: true, to: 'tram-station', name: 'the ladder up' },
-      g: { type: 'hatch', up: true, to: 'spine-foot', name: 'the ladder up' },
+      g: { type: 'hatch', up: true, to: 'spine-foot', name: 'the ladder up', shut: (s) => HA.story.tramHeld(s) },
     },
     scenery: [
       { kind: 'stencil', x: 6, y: 4, text: 'OVERFLOW 2 · KEEP OUT' },

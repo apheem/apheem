@@ -466,6 +466,39 @@
       spr(g, person('shim'), 154, GROUND, 2);
       lantern(g, 120, GROUND - 10);
     },
+    // Inside the keel tram in the tunnel: the lamps going by in the windows, and whoever is riding on the bench
+    // (opts.riders, 1 for the hero alone).
+    tram(g, t, o) {
+      g.translate(0, Math.floor(t / 7) % 5 === 0 ? 1 : 0);
+      rect(g, 0, -2, W, H + 2, '#2a1c10');
+      rect(g, 0, 10, W, 3, '#3a2818');
+      for (let i = 0; i < 4; i++) {
+        const x = 22 + i * 74;
+        rect(g, x - 2, 24, 56, 50, '#8a5a2b');
+        rect(g, x, 26, 52, 46, '#05060d');
+        rect(g, x, 62, 52, 1, '#141828');
+        const lx = (((i * 41 - t * 5) % 300) + 300) % 300;
+        if (lx < 52) rect(g, x + lx, 44, Math.min(10, 52 - lx), 2, '#ffd84d');
+      }
+      rect(g, 0, GROUND - 24, W, 8, '#5a4028');
+      rect(g, 0, GROUND - 16, W, 3, '#8a5a2b');
+      rect(g, 0, GROUND - 13, W, 13, '#3a2818');
+      rect(g, 0, GROUND, W, H - GROUND, '#1a1410');
+      const n = Math.max(1, o.riders || 1);
+      for (let i = 0; i < n; i++) {
+        const x = W / 2 + (i - (n - 1) / 2) * 34 + ((i * 7) % 5) - 2;
+        const child = i % 4 === 3;
+        // Sitting on the seat (its top is GROUND - 16): a sitter's body ends 27 (adult) or 21 (child) below the top.
+        const h = child ? 32 : 46;
+        sil(g, x, GROUND - 16 + h - (child ? 21 : 27), h, '#140e08', { sit: true, child, rim: '#d89a5a', rimSide: -1 });
+        rect(g, x - 7, GROUND - 16, 14, 3, '#140e08');
+        rect(g, x - 6, GROUND - 13, 3, 13, '#140e08');
+        rect(g, x + 3, GROUND - 13, 3, 13, '#140e08');
+      }
+      const sway = Math.round(Math.sin(t * 0.05) * 3);
+      rect(g, W / 2 + sway, 13, 1, 6, '#3a2818');
+      rect(g, W / 2 - 2 + sway, 19, 5, 4, '#ffd84d');
+    },
   };
 
   function draw(g, name, t = 0, opts = {}) {

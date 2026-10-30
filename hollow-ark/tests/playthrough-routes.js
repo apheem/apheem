@@ -94,14 +94,15 @@ const ballast = {
     await r.do('PT.settle()');
     await r.do('PT.pace("solder", () => PT.scene() === "jammed")');
     await r.do('PT.settle()');
-    await r.do('PT.read("winch")');
+    await r.do('PT.read("winch")'); // and the tram home, to the sump
+    await r.to('warrens'); // the raid's news, Solder's, Flux's; then the tram waits
   },
 };
 
 const spine = {
   name: 'spine',
   async play(r) {
-    await r.to('spine-foot');
+    await r.to('spine-foot'); // east on the tram with the climbers (or to the Ballast stop, and through the pipes)
     await r.bulbs();
     await r.to('boiler-stair');
     await r.to('reactor-throat');

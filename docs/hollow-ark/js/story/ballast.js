@@ -515,24 +515,13 @@
       s.flags.tram = true;
       HA.audio.play('crane');
       world.shake(2);
-      world.tramGo = 1;
       yield { wait: 50 };
+      // The tram home (story/tram.js): the hero rides it west to the Warrens, and back east with the climbers.
       if (s.people.solder === 'alive' && n) {
-        yield say('SOLDER', "IT'LL RUN TO THE SUMP AND STOP. I'M GOING WITH IT. SOMEONE HAS TO TELL THEM IT'S SAFE TO GET IN.");
-        yield say('SOLDER', "EVERYONE WHO CAN CLIMB. WE'LL MEET YOU AT THE FOOT OF THE SPINE. DON'T START WITHOUT ME.");
-        yield say('SOLDER', 'AND KEEP OUT OF THE OVERFLOW PIPES UNDER THE PLATFORM. THEY FLOOD.');
-        n.state = 'gone';
-        world.tramRider = true;
-      }
-      yield { until: () => world.tramGo > 260 };
-      if (s.people.solder === 'alive') {
-        S.addStory(world, 'SOLDER AND I FITTED THE MOTOR. THE KEEL TRAM WENT OFF TO THE WARRENS FOR THE CLIMBERS, WITH SOLDER ON IT.');
-        S.setLead(world, 'FOLLOW THE KEEL LINE EAST TO THE FOOT OF THE ENGINE SPINE');
-      } else {
-        S.addStory(world, 'I FITTED THE MOTOR ALONE. THE KEEL TRAM WENT OFF TO THE WARRENS FOR THE CLIMBERS. THE KEEL LINE FLOODED BEHIND ME: WITHOUT SOLDER, NOBODY HELD THE CULVERT. THE WAY TO THE SPINE IS THROUGH THE OVERFLOW PIPES.');
-        S.setLead(world, 'THE KEEL IS SHUT. GO DOWN THROUGH THE OVERFLOW PIPES TO THE SPINE');
-      }
-      world.save();
+        yield say('SOLDER', "IT RUNS WEST TO THE SUMP. GET IN. THEY'LL WANT TO SEE YOU WITH THEIR OWN EYES BEFORE THEY GET IN A BOX ON A STRING.");
+        yield say('SOLDER', 'AND WHEN WE COME BACK, KEEP OUT OF THE OVERFLOW PIPES UNDER THE PLATFORM. THEY FLOOD.');
+      } else yield me('IT RUNS WEST, TO THE SUMP. SOMEONE HAS TO TELL THEM ABOUT SOLDER.');
+      yield* S.rideWest(world);
     },
 
     // Back home after the raid: the gate held, or it fell.
@@ -554,6 +543,7 @@
         yield say('OLD GASKET', 'WE LIVE IN THE WALLS AGAIN. LIKE BEFORE THE GATE. THE HOLE BY THE HOMES GOES DOWN, IF YOU NEED THE WAY ROUND.');
         S.addStory(world, 'THE BLOOMSWORN RAIDED THE WARRENS WHILE I WAS IN THE BALLAST. THE GATE FELL. THE YOUNG AND THE OLD HID IN THE DEEP WALLS, AND TAMP WAS HURT.');
         caveIn(world);
+        yield* wallsOut(world);
       }
       world.save();
     },
@@ -562,8 +552,13 @@
       const gasket = npcOf(world, 'gasket');
       s.flags.solderMourned = true;
       if (gasket) gasket.facing = Math.sign(world.player.x - gasket.x) || 1;
-      yield say('OLD GASKET', 'THE TRAM CAME IN EMPTY. WHERE IS SHE?');
-      yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. SHE SENT THE TRAM.');
+      if (s.flags.tramWest) {
+        yield say('OLD GASKET', 'THE TRAM CAME IN WITH JUST YOU ON IT. WHERE IS SHE?');
+        yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. SHE SAID SOMEONE HAD TO START THE TRAM.');
+      } else {
+        yield say('OLD GASKET', 'THE TRAM CAME IN EMPTY. WHERE IS SHE?');
+        yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. SHE SENT THE TRAM.');
+      }
       yield { wait: 40 };
       yield say('OLD GASKET', 'WAS SHE RUDE ABOUT IT?');
       yield me('TO THE END.');
@@ -572,6 +567,35 @@
       world.save();
     },
   };
+
+  // After the gate fell, the young and the old stayed in the walls. With the hero home, they come out one door at a
+  // time, Shim first, and stay out (flags.wallsOut).
+  const OUT_LINES = {
+    shim: [say('SHIM', 'IS IT REALLY YOU?'), me("IT'S REALLY ME.")],
+    brine: [say('BRINE', 'WE COUNTED THE SHOTS. WE STOPPED AT FORTY.')],
+    woken: [say('A WOKEN VILLAGER', 'IS IT OVER?'), me('FOR NOW.')],
+  };
+  function* wallsOut(world) {
+    const f = world.state.flags;
+    const order = ['shim', 'brine', 'woken'];
+    const hid = world.npcs.filter((n) => n.state === 'hidden' && order.includes(n.id)).sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    f.wallsOut = true;
+    if (!hid.length) return;
+    yield say('OLD GASKET', "THE LITTLE ONES WON'T COME OUT. NOT FOR ME. THEY HEARD THE GATE GO.");
+    yield me("IT'S ME. THEY'VE GONE. YOU CAN COME OUT.");
+    yield { wait: 40 };
+    let woken = 0;
+    for (const n of hid) {
+      n.state = 'out';
+      n.facing = Math.sign(world.player.x - n.x) || 1;
+      HA.audio.play('land');
+      world.camTarget = { x: n.x + 4, y: n.y - 20 };
+      yield { wait: 30 };
+      if (n.id !== 'woken' || woken++ === 0) for (const line of OUT_LINES[n.id]) yield line;
+    }
+    world.camTarget = null;
+    S.addStory(world, 'THE YOUNG AND THE OLD HAD BEEN IN THE WALLS SINCE THE GATE FELL. I TALKED THEM OUT, ONE DOOR AT A TIME.');
+  }
 
   // Lock 2 (STORYBOARD.md, "Routes that close"): the gate fell, and the hall came down with it. Said once, the first
   // time the hero learns of it, from Gasket or from the rubble itself.
@@ -636,14 +660,14 @@
       }
       // Home: after the raid, and after Solder.
       if (id === 'warrens') {
-        if (s.people.solder === 'alive' && f.tram) {
+        if (s.people.solder === 'alive' && f.tram && !f.tramWest) {
           const n = S.makeNpc(world, 'solder', { x: 86 * 8, y: 18 * 8 });
           n.lines = ["THE CLIMBERS ARE PACKING. TAMP'S COUNTED THEM TWICE.", 'MEET US AT THE SPINE.'];
           world.npcs.push(n);
         }
         if (s.warrensRaid === 'fell') {
           for (const n of world.npcs) {
-            if (n.id === 'shim' || n.id === 'brine' || n.id === 'woken') n.state = 'hidden';
+            if (!f.wallsOut && (n.id === 'shim' || n.id === 'brine' || n.id === 'woken')) n.state = 'hidden';
             if (n.id === 'tamp') Object.assign(n, { sleeping: true, lines: ['...', 'I HELD IT. NOT LONG ENOUGH.'] });
           }
         } else if (s.warrensRaid === 'held') {
