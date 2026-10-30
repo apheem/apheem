@@ -8,12 +8,13 @@
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
   const FADE = 10; // frames for each half of a room change
 
-  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1 };
-  const WEAPON_CHARS = { G: 'pistol', U: 'cannon', A: 'coil' };
+  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1, q: 1, j: 1, b: 1 };
+  const WEAPON_CHARS = { G: 'pistol', U: 'cannon', A: 'coil', Q: 'scatter' };
   const WEAPON_TEXT = {
     pistol: 'RIVET PISTOL · {fire} TO FIRE',
     cannon: 'PURGE CANNON · IN THE AIR, HOLD {down}+{fire} TO HOVER',
     coil: 'ARC COIL · HOLD {fire} TO CHARGE, LET GO TO FIRE',
+    scatter: 'SCATTER LAUNCHER · {fire} LOBS GRENADES THAT ROLL',
   };
 
   function create(state) {
@@ -61,6 +62,7 @@
     };
     addEffects(world);
     HA.save.toPlayer(state, world.player);
+    HA.bloom.syncMusic(world);
     enterRoom(world, state.room, state.x, state.y, { noSave: true, facing: state.facing });
     HA.story.begin(world);
     return world;
@@ -99,7 +101,8 @@
       }
     };
     world.muzzleFlash = (x, y, level) => world.flashes.push({ x, y, life: 3, r: 1 + level });
-    world.hurtEnemy = (e, dmg, dir) => A.hurtEnemy(world, e, dmg, dir);
+    // While a Bloom bulb's rush lasts, the hero hits twice as hard.
+    world.hurtEnemy = (e, dmg, dir) => A.hurtEnemy(world, e, world.player.rush > 0 ? dmg * 2 : dmg, dir);
 
     world.hurtPlayer = (dmg, srcX) => {
       const p = world.player;
@@ -200,6 +203,9 @@
     world.logs = [];
     world.doors = [];
     world.hooks = [];
+    world.lifts = [];
+    world.glass = [];
+    world.barks = [];
     world.actors = [];
     world.boss = null;
     world.cage = null;
@@ -220,7 +226,9 @@
         sp.respawn = def.noRespawn ? -1 : 0;
         world.enemies.push(A.makeEnemy(sp));
       } else if (ch === 'B') world.crates.set(key(sp.tx, sp.ty), { tx: sp.tx, ty: sp.ty, hp: 3, broken: false, timer: 0, flash: 0 });
-      else if (WEAPON_CHARS[ch]) {
+      else if (ch === 'n') {
+        if (!s.taken[id]) world.pickups.push({ kind: 'bulb', key: id, x: sp.x, y: sp.y - 1, w: 8, h: 9, life: Infinity, t: 0 });
+      } else if (WEAPON_CHARS[ch]) {
         const wid = WEAPON_CHARS[ch];
         if (!s.taken[id] && !has(world, wid)) world.pickups.push({ kind: 'weapon', id: wid, key: id, x: sp.x - 2, y: sp.y - 8, w: 12, h: 10, life: Infinity, t: 0, message: WEAPON_TEXT[wid] });
       } else if (ch === 'H') {
@@ -229,9 +237,22 @@
       else if (legend.type === 'npc') {
         if (!legend.when || legend.when(s, world)) world.npcs.push(HA.story.makeNpc(world, legend.id, sp));
       } else if (legend.type === 'door') addDoorCell(world, legend, sp);
+      else if (legend.type === 'glass') {
+        world.room.set(sp.tx, sp.ty, HA.room.SOLID);
+        world.glass.push({ tx: sp.tx, ty: sp.ty });
+      } else if (legend.type === 'lift') world.lifts.push({ x: sp.x - 8, y: sp.y + 8 - 22, w: 24, h: 22 });
       else if (ch === 'o') world.hooks.push({ x: sp.x + 4, y: sp.y + 4 });
       else if (legend.type === 'boss') world.bossSpawn = { x: sp.x + 4, y: sp.y + 8 };
       else if (legend.type === 'cage') world.cage = { x: sp.x - 8, y: sp.y - 8, w: 24, h: 22, open: false, t: 0 };
+    }
+    // A door with a ring (the Seed Vault's hatch) is opened by the grapple biting the ring and pulling.
+    for (const d of world.doors) {
+      if (!d.legend.ring || world.state.flags[d.legend.ring]) continue;
+      const xs = d.cells.map((c) => c.tx);
+      const c = d.cells[Math.floor(d.cells.length / 2)];
+      const x0 = Math.min(...xs) * 8;
+      const x1 = (Math.max(...xs) + 1) * 8;
+      world.hooks.push({ x: (x0 + x1) / 2, y: c.ty * 8 + 4, hatch: d.legend.ring, x0, x1 });
     }
     updateDoors(world, true);
 
@@ -249,6 +270,7 @@
     if (areaChanged) world.areaBanner = 160;
     HA.story.enterRoom(world);
     HA.music.play(musicFor(world));
+    HA.music.setLayers(def.musicLayers || 1); // near the vats, the Gardens' track turns sour
     updateCamera(world, true);
     HA.save.reveal(world, true);
     // Where a continued game starts: always the latest room entrance, even when this entry doesn't save.
@@ -298,11 +320,14 @@
     const gx = def.gx * 8 + (cx < 0 ? -4 : room.pw + 4);
     const gy = def.gy * 8 + p.y + p.h - 4;
     const next = HA.rooms.at(gx, gy);
-    if (!next || world.scene || p.dead) {
+    const side = cx < 0 ? 'left' : 'right';
+    // A way back into an area whose next chapter isn't built yet is held shut, with a note.
+    const held = def.holdBack && def.holdBack[side] && def.holdBack[side](world.state);
+    if (!next || world.scene || p.dead || held) {
       p.x = HA.clamp(p.x, -p.w / 2, room.pw - p.w / 2);
       p.vx = 0;
       // An opening into an area that isn't built yet says so instead of just stopping the hero.
-      const unbuilt = !next && def.unbuilt && def.unbuilt[cx < 0 ? 'left' : 'right'];
+      const unbuilt = held || (!next && def.unbuilt && def.unbuilt[side]);
       const note = unbuilt && unbuilt + ' · COMING IN THE NEXT BUILD';
       if (note && (world.toastText !== note || world.toastTime < 30)) world.toast(note, 150);
       return;
@@ -338,7 +363,7 @@
     // Hit-stop: a few frozen frames sell big hits. Presses made during it still count afterwards.
     if (world.freezeTime > 0) {
       world.freezeTime--;
-      for (const a of ['jump', 'fire', 'prev', 'next']) if (input.pressed[a]) world.queued[a] = true;
+      for (const a of ['jump', 'fire', 'prev', 'next', 'up', 'item']) if (input.pressed[a]) world.queued[a] = true;
       return;
     }
     for (const a of Object.keys(world.queued)) input.pressed[a] = true;
@@ -433,6 +458,7 @@
       for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, '{up} REST');
       for (const n of world.npcs) if (n.talkable && n.talkable(world, n)) consider('npc', n, '{up} TALK');
       for (const l of world.logs) consider('log', l, '{up} READ');
+      for (const l of world.lifts) consider('lift', l, '{up} USE THE LIFT');
     }
     for (const pod of world.pods) if (pod.cool > 0) pod.cool--;
     world.near = best;
@@ -440,6 +466,7 @@
     if (best.kind === 'pod') rest(world, best.o);
     else if (best.kind === 'npc') HA.story.talk(world, best.o);
     else if (best.kind === 'log') HA.story.readLog(world, best.o);
+    else if (best.kind === 'lift') HA.story.run(world, 'lift');
   }
 
   // Story moments that start when the hero reaches a spot (tiles x0-x1, and above row y1 if given).
@@ -496,12 +523,14 @@
     HA.scenery.drawBack(g, world, cam);
 
     for (const pod of world.pods) drawPod(g, world, pod, cam);
+    for (const l of world.lifts) HA.scenery.drawLift(g, world, l, cam);
     for (const l of world.logs) if (!l.scene) HA.scenery.drawTerminal(g, world, l, cam);
     HA.abilities.drawHooks(g, world, cam);
     drawHints(g, world, cam);
     for (const n of world.npcs) HA.story.drawNpc(g, world, n, cam);
     g.drawImage(world.layers.tiles, -cam.x, -cam.y);
     for (const d of world.doors) if (!d.open) HA.scenery.drawDoor(g, world, d, cam);
+    if (world.glass.length) HA.scenery.drawGlass(g, world, cam);
     if (world.cage) HA.scenery.drawCage(g, world, world.cage, cam);
     for (const c of world.crates.values()) if (!c.broken) drawCrate(g, c, cam);
 
@@ -523,6 +552,7 @@
       g.fillRect(Math.round(f.x - cam.x - 1), Math.round(f.y - cam.y - f.r), 3, f.r * 2 + 1);
     }
     for (const t of world.texts) HA.font.draw(g, t.text, t.x - cam.x, t.y - cam.y, t.color, { align: 'center' });
+    if (!quiet) HA.story.drawBarks(g, world, cam);
 
     // Coil charge spark at the muzzle once fully charged
     const p = world.player;
@@ -560,7 +590,7 @@
     }
     if (!world.scene || world.scene.showHud) drawHud(g, world, quiet);
     if (world.leadBanner > 0 && !quiet && !(world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice))) drawLead(g, world);
-    if (world.boss && world.boss.active) HA.boss.drawBar(g, world, world.boss);
+    if (world.boss && world.boss.active) HA.bosses[world.boss.type].drawBar(g, world, world.boss);
     HA.scenes.draw(world, g, quiet);
     if (world.fade > 0) {
       g.globalAlpha = world.fade;
@@ -653,6 +683,27 @@
       g.fillRect(x - 2, y - 2, 5, 5);
       g.fillStyle = big ? '#ffffff' : '#ff8a8a';
       g.fillRect(x - 1, y - 1, 3, 3);
+    } else if (s.kind === 'grenade') {
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 2, y - 2, 5, 5);
+      g.fillStyle = '#3f7a4a';
+      g.fillRect(x - 1, y - 1, 3, 3);
+      g.fillStyle = s.life < 30 && Math.floor(s.life / 3) % 2 ? '#ffffff' : '#ffb84d';
+      g.fillRect(x, y - 2, 1, 1);
+    } else if (s.kind === 'lancet' || s.kind === 'lancetE') {
+      const ux = Math.sign(Math.round(s.vx * 2));
+      const uy = Math.sign(Math.round(s.vy * 2));
+      g.fillStyle = s.kind === 'lancetE' ? '#f27ad8' : '#eef4f6';
+      for (let i = 0; i < 5; i++) g.fillRect(x - ux * i, y - uy * i, 1, 1);
+      g.fillStyle = s.kind === 'lancetE' ? '#b04ad0' : '#a9b6cc';
+      g.fillRect(x - ux * 5, y - uy * 5, 1, 1);
+    } else if (s.kind === 'thorn') {
+      const ux = Math.sign(s.vx);
+      const uy = Math.sign(s.vy);
+      for (let i = 0; i < 12; i++) {
+        g.fillStyle = i < 3 ? '#ffc2dc' : i < 8 ? '#f27ad8' : '#b04ad0';
+        g.fillRect(x - ux * i, y - uy * i - (uy ? 0 : i > 3 ? 1 : 0), ux ? 1 : 2, uy ? 1 : i > 3 ? 3 : 2);
+      }
     } else if (s.kind === 'wave') {
       g.fillStyle = '#10121c';
       g.fillRect(x - 3, y - s.h, 7, s.h);
@@ -726,6 +777,19 @@
       g.fillRect(14 + i * 4, 7, 1, 5);
     }
     HA.font.draw(g, String(p.hp), 18 + barW, 6, '#eef4f6');
+    // Bloom bulbs carried, and the rush while one is working
+    const bulbs = world.state.bulbs;
+    if (bulbs > 0) {
+      const bx = 32 + barW;
+      g.drawImage(HA.art.items.bulbIcon.img, bx, 6);
+      HA.font.draw(g, String(bulbs), bx + 9, 6, '#f27ad8');
+    }
+    if (p.rush > 0) {
+      g.fillStyle = '#10121c';
+      g.fillRect(13, 14, barW + 2, 3);
+      g.fillStyle = Math.floor(world.time / 6) % 2 ? '#f27ad8' : '#b04ad0';
+      g.fillRect(14, 15, Math.ceil((barW * p.rush) / HA.bloom.RUSH), 1);
+    }
 
     const w = p.weapons[p.wi];
     if (w) {

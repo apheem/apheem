@@ -23,6 +23,12 @@
     K: '#6c7894', // metal mid
     L: '#a9b6cc', // metal light
     W: '#ffffff',
+    q: '#ffc2dc', // bloom pale pink
+    h: '#d8cfc0', // skin
+    u: '#2e2a3e', // the Steward's uniform
+    U: '#4a4060', // uniform light
+    G: '#3f7a4a', // leaf green
+    t: '#1f3a28', // leaf dark
   };
 
   function canvas(w, h) {
@@ -62,7 +68,7 @@
   // A sprite carries its normal image plus a white silhouette for hit flashes.
   function sprite(rows) {
     const img = paint(rows);
-    return { img, white: tinted(img, '#ffffff'), w: img.width, h: img.height };
+    return { img, white: tinted(img, '#ffffff'), pink: tinted(img, '#f27ad8'), w: img.width, h: img.height };
   }
 
   // ---- Hero: the Late Waker (placeholder until the protagonist is picked) ----
@@ -84,18 +90,38 @@
     jump: ['...0wwdd0...', '...0nnnd0...', '....0000....', '............'],
     fall: ['...0wd0wd0..', '..0wd0.0wd0.', '..0nn0.0nn0.', '..000...000.'],
   };
-  const hero = {
-    idle: sprite([...HEAD, ...TORSO, ...LEGS.idle]),
-    runA: sprite([...HEAD, ...TORSO, ...LEGS.strideA]),
-    runB: sprite([...HEAD, ...TORSO, ...LEGS.strideB]),
-    jump: sprite([...HEAD, ...TORSO, ...LEGS.jump]),
-    fall: sprite([...HEAD, ...TORSO, ...LEGS.fall]),
-    // on one knee, getting up (after the thaw)
-    kneel: sprite(['............', '............', ...HEAD, ...TORSO.slice(0, 3), '..0wwwwdd0..', '.0nnnnnnd00.', '.000000000..']),
+  function heroSet(head, torso) {
+    return {
+      idle: sprite([...head, ...torso, ...LEGS.idle]),
+      runA: sprite([...head, ...torso, ...LEGS.strideA]),
+      runB: sprite([...head, ...torso, ...LEGS.strideB]),
+      jump: sprite([...head, ...torso, ...LEGS.jump]),
+      fall: sprite([...head, ...torso, ...LEGS.fall]),
+      // on one knee, getting up (after the thaw)
+      kneel: sprite(['............', '............', ...head, ...torso.slice(0, 3), '..0wwwwdd0..', '.0nnnnnnd00.', '.000000000..']),
+    };
+  }
+  const hero = heroSet(HEAD, TORSO);
+  // The Bloom changes the suit (see bloom.js): at 3 a pink visor and veins, at 5 a thorn through the rear
+  // shoulder, at 7 eyes that glow through the visor.
+  const swap = (rows, map) => rows.map((r) => r.replace(/./g, (c) => map[c] || c));
+  const veins = (rows) => rows.map((r, i) => (i === 6 ? '.0sswpwwww0.' : r));
+  const veinTorso = (rows) => rows.map((r, i) => (i === 0 ? '...0bwpb0...' : i === 1 ? '..0swpwws0..' : r));
+  const thorn = (rows) => rows.map((r, i) => (i === 5 ? 'P' + r.slice(1) : i === 6 ? '.P' + r.slice(2) : i === 7 ? '.mP' + r.slice(3) : r));
+  const HEAD3 = veins(swap(HEAD, { v: 'P', y: 'q' }));
+  const heroStages = {
+    0: hero,
+    3: heroSet(HEAD3, veinTorso(TORSO)),
+    5: heroSet(thorn(HEAD3), veinTorso(TORSO)),
+    7: heroSet(thorn(veins(swap(HEAD, { v: 'm', y: 'W' }))), veinTorso(TORSO)),
   };
+  const heroFor = (stage) => heroStages[stage] || hero;
 
   // Guns point right; the grip sits at the left edge, row 2.
   const guns = {
+    scatter: sprite(['.000000.', '0kKKKKK0', '0kG0000.', '00......']),
+    lancets: sprite(['..0.0..', '00L0L00', '0hhLLL0', '00000..']),
+    thorn: sprite(['......00', '000PPPq0', '0mpPPP0.', '00000...']),
     pistol: sprite(['000000.', '0LLLLL0', '0K0000.', '00.....']),
     cannon: sprite(['.0000000.', '0KKLLLLL0', '0kKKKKKK0', '0k0000000', '00.......']),
     coil: sprite(['.000000.', '0bcCCcc0', '0bbbbbb0', '0b00000.', '00......']),
@@ -203,11 +229,61 @@
     sprite(WALKER_TOP.concat(['...0K00K0...', '..0k0..0k0..', '..0k0..0k0..', '.0KK0..0KK0.', '.0kk0..0kk0.', '.000....000.'])),
   ];
 
+  // The Gardens. A Warden picker: a lens on a long neck, a picking arm (drawn in code), and stilts.
+  const PICKER_TOP = [
+    '....0000....',
+    '...0KLLK0...',
+    '..0KkkkkK0..',
+    '..0k0rR0k0..',
+    '..0KkkkkK0..',
+    '...0KKKK0...',
+    '....0kk0....',
+    '...0KLLK0...',
+    '..0KLkkLK0..',
+    '..0Kk00kK0..',
+    '..0KkGGkK0..',
+    '..0KLkkLK0..',
+    '...0KKKK0...',
+    '....0kk0....',
+    '...0k00k0...',
+  ];
+  enemies.picker = [
+    sprite(PICKER_TOP.concat(['...0k00k0...', '..0k0..0k0..', '..0k0..0k0..', '..0k0..0k0..', '.0k0....0k0.', '.0k0....0k0.', '.0k0....0k0.', '.0K0....0K0.', '0kK0....0Kk0', '0000....0000', '............'])),
+    sprite(PICKER_TOP.concat(['...0k00k0...', '...0k00k0...', '..0k0..0k0..', '..0k0..0k0..', '..0k0..0k0..', '.0k0....0k0.', '.0k0....0k0.', '.0K0....0K0.', '.0kK0..0Kk0.', '.0000..0000.', '............'])),
+  ];
+  // The Bloomsworn: a soldier in the Steward's colours, the Bloom pushing through the cloth.
+  const SWORN_TOP = ['....0000....', '...0uuuu0...', '..0uUUUUu0..', '..0hPhhPh0..', '..0hhhhhh0..', '...0hphh0...', '..0uuuuuu0..', '.0uuPuuuuu0.', '0uPpuUUuuuu0', '0u0uuUUuu0u0', '0h0uuuuuu0h0', '.0.0uuuu0.0.'];
+  enemies.bloomsworn = [
+    sprite(SWORN_TOP.concat(['...0uu0uu0..', '...0uu0uu0..', '..0Uu0.0uU0.', '..000..000..'])),
+    sprite(SWORN_TOP.concat(['..0uu0.0uu0.', '.0uu0...0uu0', '.0Uu0...0uU0', '.000.....000'])),
+  ];
+  enemies.bloomswornStagger = sprite([
+    '............',
+    '............',
+    '....0000....',
+    '...0uuuu0...',
+    '..0uUUUUu0..',
+    '..0hhhhhh0..',
+    '..0hPhhPh0..',
+    '..0uuuuuu0..',
+    '.0uuPpuuuu0.',
+    '0uPpuUUuuuu0',
+    '0h0uuUUuu0h0',
+    '.0.0uuuu0.0.',
+    '...0uu0uu0..',
+    '..0Uu0.0uU0.',
+    '..0uu0..0u0.',
+    '..000...000.',
+  ]);
+
   // ---- Pickups and HUD icons ----
   const items = {
     shardSmall: [sprite(['.y.', 'yoy', '.y.']), sprite(['.o.', 'oyo', '.o.'])],
     shardBig: [sprite(['..y..', '.yyo.', 'yyooo', '.ooo.', '..o..']), sprite(['..o..', '.oyy.', 'ooyyy', '.yyy.', '..y..'])],
     heart: sprite(['.00.00.', '0RR0rr0', '0RrrrR0', '0rrrrr0', '.0rrr0.', '..0r0..', '...0...']),
+    bulb: sprite(['...00...', '..0GG0..', '..0G0...', '.00PP00.', '0PPqPPP0', '0PpPPPp0', '0pPPPpP0', '.0pmmp0.', '..0000..']),
+    bulbIcon: sprite(['..0G0..', '.0PPP0.', '0PqPPp0', '0pPPpP0', '.0mmp0.', '..000..']),
+    lantern: sprite(['..000..', '.0K.K0.', '0KKKKK0', '0oyyyo0', '0oyWyo0', '0oyyyo0', '0KKKKK0', '.00000.']),
     capsule: sprite([
       '..0000..',
       '.0CCCC0.',
@@ -222,6 +298,9 @@
     ]),
   };
   const icons = {
+    scatter: sprite(['............', '.00000000...', '0kKKKKKKK0..', '0kGGkkkkK0..', '0k0000000...', '00..........', '............']),
+    lancets: sprite(['............', '..0..0..0...', '.0L00L00L0..', '.0L00L00L0..', '0hhhhhhhhh0.', '.000000000..', '............']),
+    thorn: sprite(['..........0.', '.000000000q0', '0mpPPPPPPP0.', '0mm0000000..', '0m0.........', '00..........', '............']),
     pistol: sprite(['............', '.00000000...', '.0LLLLLLL0..', '.0KKK00000..', '.0K0........', '.00.........', '............']),
     cannon: sprite(['............', '.0000000000.', '0KKLLLLLLLL0', '0kKKKKKKKK0.', '0k0000000...', '00..........', '............']),
     coil: sprite(['............', '.000000000..', '0bcCCcCcc0..', '0bbbbbbbb0..', '0b0000000...', '00..........', '............']),
@@ -300,6 +379,13 @@
     shim: person({ H: '#c9a070', C: '#3d5a8a', c: '#2a3d5e', D: '#4a3a2e' }, true),
     tamp: person({ H: '#5a6a3a', C: '#7a5a3a', c: '#5a4028', D: '#2b2420' }),
     brine: person({ H: '#3d5a8a', C: '#a85a4a', c: '#7a3a3a', D: '#4a3a2e' }),
+    // The Gardener, Hester Vale: a clean white hood and a green coat.
+    gardener: person({ H: '#e8e0d0', C: '#3f7a4a', c: '#2a5a34', D: '#1f3a28', e: '#efe6d4' }),
+    // The taken, woken from the cradles: pale, in the thin grey shifts the Gardens put them in.
+    woken1: person({ H: '#8a8f99', C: '#a9b6c4', c: '#7d8a99', D: '#6c7894' }),
+    woken2: person({ H: '#5a4028', C: '#b8b0a0', c: '#8a8270', D: '#6c6458' }),
+    woken3: person({ H: '#a85a4a', C: '#a8a0b8', c: '#7d7590', D: '#625a76' }),
+    woken4: person({ H: '#c9a070', C: '#b4c0a8', c: '#88947c', D: '#6a7660' }),
   };
 
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----
@@ -417,6 +503,7 @@
     drawStars,
     sprite,
     hero,
+    heroFor,
     guns,
     enemies,
     items,

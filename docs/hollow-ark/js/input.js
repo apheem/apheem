@@ -11,6 +11,7 @@
     fire: ['KeyX', 'KeyK'],
     prev: ['KeyQ', 'KeyC'],
     next: ['KeyE', 'KeyV'],
+    item: ['KeyF', 'KeyL'], // eat a Bloom bulb: always a deliberate press of its own button
     pause: ['Escape', 'Enter', 'KeyP'],
     map: ['Tab', 'KeyM'],
     confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ'],
@@ -26,6 +27,7 @@
     fire: [2, 1, 7],
     prev: [4, 6],
     next: [5],
+    item: [3],
     pause: [9],
     map: [8],
     confirm: [0],
@@ -191,7 +193,7 @@
   }
 
   // Which controller button each action shows, by layout position.
-  const PAD_PROMPT = { jump: 'south', fire: 'west', confirm: 'south', back: 'east', prev: 'lb', next: 'rb', pause: 'start', map: 'select', up: 'dup', down: 'ddown', left: 'dleft', right: 'dright' };
+  const PAD_PROMPT = { jump: 'south', fire: 'west', item: 'north', confirm: 'south', back: 'east', prev: 'lb', next: 'rb', pause: 'start', map: 'select', up: 'dup', down: 'ddown', left: 'dleft', right: 'dright' };
   const FACE = {
     xbox: { south: ['A', '#5bd16b'], east: ['B', '#e8434f'], west: ['X', '#4a90e8'], north: ['Y', '#f2c84a'], lb: 'LB', rb: 'RB', start: 'MENU', select: 'VIEW' },
     ps: { south: ['×', '#7aa7ff'], east: ['○', '#ff6b7a'], west: ['□', '#f27ad8'], north: ['△', '#5bd1a8'], lb: 'L1', rb: 'R1', start: 'OPTIONS', select: 'CREATE' },

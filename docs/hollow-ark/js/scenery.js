@@ -42,6 +42,19 @@
       walk: ['#a9b6cc', '#6c7894', '#3a3040', '#24202a'],
       edge: 'rgba(8,2,4,0.62)',
     },
+    // The Gardens: deep greens, warm white grow-lights, and the Bloom's pink and violet creeping through.
+    gardens: {
+      bg: '#07100b',
+      panel: '#0b1710',
+      panelEdge: '#0f1f15',
+      panelMark: '#13281a',
+      conduit: ['#0f1f17', '#183224', '#203f2c'],
+      light: 'rgba(255,244,214,0.17)',
+      lamp: '#fff4d6',
+      tile: { deep: '#0d1911', deep2: '#101f15', face: '#1e3828', inner: '#284a33', speck: '#3c6a46', lip: '#a8e6a0', lip2: '#4f9a5a', under: '#060e09', left: '#376a46', right: '#13281b' },
+      walk: ['#c8e0b0', '#6a8a5a', '#3a5a3a', '#243a26'],
+      edge: 'rgba(2,8,4,0.55)',
+    },
   };
 
   const hash = (str) => {
@@ -274,6 +287,192 @@
       for (let i = 0; i < 4; i++) g.fillRect(x - 1, y + 1 + i * 4, 10, 1);
     },
     fire() {},
+
+    // ---- The Gardens ----
+    // Warm light falling in from the dome, in long slanted beams.
+    shafts(g, s, rnd, T, room) {
+      for (let i = 0; i < s.n; i++) {
+        const x = (s.x + i * s.every) * 8;
+        g.fillStyle = 'rgba(255,244,214,0.035)';
+        for (let y = 0; y < room.ph; y += 2) {
+          const dx = Math.floor(y * 0.35);
+          g.fillRect(x + dx, y, 22, 2);
+          if (y % 6 === 0) g.fillRect(x + dx + 6, y, 10, 2);
+        }
+      }
+    },
+    // Crops growing up from a floor: stalks and leaves, now and then a pink Bloom head among them.
+    plants(g, s, rnd) {
+      const base = s.y * 8;
+      for (let x = s.x0 * 8; x < (s.x1 + 1) * 8; x += 3 + Math.floor(rnd() * 3)) {
+        const h = 4 + Math.floor(rnd() * (s.tall || 16));
+        g.fillStyle = '#1f3a28';
+        g.fillRect(x, base - h, 1, h);
+        for (let ly = base - h + 2; ly < base - 2; ly += 4 + Math.floor(rnd() * 3)) {
+          g.fillStyle = rnd() < 0.5 ? '#2f5a3a' : '#3f7a4a';
+          g.fillRect(rnd() < 0.5 ? x - 2 : x + 1, ly, 2, 1);
+        }
+        const bloom = rnd() < (s.bloom || 0);
+        g.fillStyle = bloom ? '#b04ad0' : rnd() < 0.3 ? '#c8d880' : '#4f9a5a';
+        g.fillRect(x - 1, base - h - 1, 3, 2);
+        if (bloom) {
+          g.fillStyle = '#f27ad8';
+          g.fillRect(x, base - h - 1, 1, 1);
+        }
+      }
+    },
+    // Vines hanging from a ceiling.
+    vines(g, s, rnd) {
+      for (let i = 0; i < s.n; i++) {
+        const x = Math.floor((s.x0 + rnd() * (s.x1 - s.x0)) * 8);
+        const len = 10 + Math.floor(rnd() * 40);
+        for (let y = 0; y < len; y++) {
+          g.fillStyle = y % 5 === 4 ? '#3f7a4a' : '#1f3a28';
+          g.fillRect(x + (Math.floor(y / 6) % 2), s.y * 8 + y, 1, 1);
+        }
+        if (rnd() < 0.3) {
+          g.fillStyle = '#b04ad0';
+          g.fillRect(x, s.y * 8 + len, 2, 2);
+        }
+      }
+    },
+    // A planter trough along the top of a ledge, with its crop.
+    beds(g, s, rnd) {
+      const y = s.y * 8;
+      const x0 = s.x0 * 8;
+      const w = (s.x1 - s.x0 + 1) * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, y - 4, w, 4);
+      g.fillStyle = '#3a2818';
+      g.fillRect(x0 + 1, y - 3, w - 2, 3);
+      g.fillStyle = '#5a4028';
+      g.fillRect(x0 + 1, y - 4, w - 2, 1);
+      PROPS.plants(g, { x0: s.x0, x1: s.x1, y: s.y - 0.5, tall: 10, bloom: s.bloom ? 0.4 : 0.1 }, rnd);
+    },
+    // The dome: glass panes over the stars, with the ribs that hold them.
+    dome(g, s, rnd, T, room) {
+      const y0 = s.y * 8;
+      const h = s.h * 8;
+      const x1 = s.x1 ? s.x1 * 8 : room.pw;
+      g.fillStyle = '#03050c';
+      g.fillRect(0, y0, x1, h);
+      for (let i = 0; i < (x1 * h) / 300; i++) {
+        g.fillStyle = rnd() < 0.15 ? '#ffffff' : rnd() < 0.5 ? '#8aa0c8' : '#3b4a72';
+        g.fillRect(Math.floor(rnd() * x1), y0 + Math.floor(rnd() * h), 1, 1);
+      }
+      g.fillStyle = 'rgba(159,216,232,0.06)';
+      g.fillRect(0, y0, x1, h);
+      g.fillStyle = '#1a2e24';
+      for (let x = 0; x < x1; x += 40) g.fillRect(x, y0, 2, h);
+      g.fillRect(0, y0 + h - 2, x1, 2);
+      g.fillStyle = 'rgba(216,244,255,0.12)';
+      for (let x = 6; x < x1; x += 40) g.fillRect(x, y0 + 2, 1, h - 6);
+    },
+    valves(g, s) {
+      for (const [vx, vy] of s.at) {
+        const x = vx * 8;
+        const y = vy * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 5, y - 5, 11, 11);
+        g.fillStyle = '#a85a4a';
+        g.fillRect(x - 4, y - 4, 9, 9);
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 2, y - 2, 5, 5);
+        g.fillStyle = '#c87a5a';
+        g.fillRect(x, y - 4, 1, 9);
+        g.fillRect(x - 4, y, 9, 1);
+      }
+    },
+    // The Garden Lift's shaft: two cables from the ceiling down to the car.
+    liftshaft(g, s) {
+      const x = s.x * 8;
+      for (const dx of [-6, 13]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + dx, 0, 3, s.y * 8 - 20);
+        g.fillStyle = '#3a4258';
+        g.fillRect(x + dx + 1, 0, 1, s.y * 8 - 20);
+      }
+      g.fillStyle = '#16241b';
+      g.fillRect(x - 10, 24, 28, s.y * 8 - 44);
+    },
+    // The ceiling rail the Pruner climbs to.
+    rails(g, s) {
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(s.x0 * 8, y, (s.x1 - s.x0 + 1) * 8, 4);
+      g.fillStyle = '#6c7894';
+      g.fillRect(s.x0 * 8, y, (s.x1 - s.x0 + 1) * 8, 1);
+      for (let x = s.x0 * 8; x < (s.x1 + 1) * 8; x += 24) {
+        g.fillStyle = '#3a4258';
+        g.fillRect(x, y - 8, 2, 8);
+      }
+    },
+    // Clippings on a floor where something has been cutting.
+    cuttings(g, s, rnd) {
+      for (let x = s.x0 * 8; x < (s.x1 + 1) * 8; x += 2 + Math.floor(rnd() * 6)) {
+        g.fillStyle = rnd() < 0.2 ? '#b04ad0' : rnd() < 0.5 ? '#3f7a4a' : '#2f5a3a';
+        g.fillRect(x, s.y * 8 - 1, 2, 1);
+      }
+    },
+    // The Seed Vault's shelves of sealed canisters.
+    canisters(g, s, rnd) {
+      for (let r = 0; r < s.rows; r++) {
+        const y = (s.y + r * 3.4) * 8;
+        g.fillStyle = '#3a4258';
+        g.fillRect(s.x0 * 8, y + 14, (s.x1 - s.x0) * 8, 2);
+        for (let x = s.x0 * 8 + 2; x < s.x1 * 8 - 6; x += 7) {
+          g.fillStyle = '#10121c';
+          g.fillRect(x, y + 3, 6, 11);
+          g.fillStyle = rnd() < 0.5 ? '#b8c4c8' : '#a9b6cc';
+          g.fillRect(x + 1, y + 4, 4, 9);
+          g.fillStyle = ['#7ad1a0', '#ffb84d', '#c8d880', '#a85a4a'][Math.floor(rnd() * 4)];
+          g.fillRect(x + 1, y + 7, 4, 2);
+        }
+      }
+    },
+    // Tall tanks of the Bloom, pink and glowing. They bubble (drawn live, below).
+    vats(g, s) {
+      for (const vx of s.at) {
+        const x = vx * 8;
+        const y = s.y * 8;
+        const h = (19 - s.y) * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, y - 1, 42, h + 1);
+        g.fillStyle = '#2a1238';
+        g.fillRect(x, y, 40, h);
+        g.fillStyle = '#5c2479';
+        g.fillRect(x + 2, y + 10, 36, h - 12);
+        g.fillStyle = '#b04ad0';
+        g.fillRect(x + 2, y + 10, 36, 2);
+        g.fillStyle = 'rgba(216,244,255,0.15)';
+        g.fillRect(x + 4, y + 2, 3, h - 6);
+        g.fillStyle = '#3a4258';
+        g.fillRect(x - 1, y - 4, 42, 3);
+        g.fillRect(x + 6, y + h - 6, 28, 2);
+      }
+    },
+    // The Gardener's gallery, behind the glass: clean white tiles, a bench, and her own door out.
+    gallery(g, s) {
+      const x0 = s.x0 * 8;
+      const y = s.y * 8;
+      const w = (s.x1 - s.x0 + 1) * 8;
+      g.fillStyle = '#1c2a24';
+      g.fillRect(x0, y, w, 48);
+      g.fillStyle = '#24362e';
+      for (let x = x0; x < x0 + w; x += 8) for (let yy = y; yy < y + 48; yy += 8) g.fillRect(x + 1, yy + 1, 6, 6);
+      g.fillStyle = '#10121c';
+      g.fillRect(x0 + w - 12, y + 18, 10, 30);
+      g.fillStyle = '#05060d';
+      g.fillRect(x0 + w - 11, y + 19, 8, 29);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x0 + 10, y + 36, 20, 3);
+      g.fillRect(x0 + 12, y + 39, 2, 9);
+      g.fillRect(x0 + 26, y + 39, 2, 9);
+      g.fillStyle = '#b04ad0';
+      g.fillRect(x0 + 14, y + 33, 3, 3);
+      g.fillStyle = '#7ad1a0';
+      g.fillRect(x0 + 21, y + 32, 2, 4);
+    },
   };
 
   // ---- Tiles ----
@@ -373,7 +572,9 @@
     for (const s of world.def.scenery || []) {
       if (s.kind === 'fire') drawFire(g, world, s, cam);
       if (s.kind === 'homes' && hiding) drawWatchers(g, world, s, cam, hiding);
+      if (s.kind === 'vats') drawBubbles(g, world, s, cam);
     }
+    if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
     if (world.maraPod) drawPod(g, world, world.maraPod, cam);
   }
@@ -486,6 +687,116 @@
     }
   }
 
+  // Bubbles rising in the Bloom vats.
+  function drawBubbles(g, world, s, cam) {
+    for (const vx of s.at) {
+      const top = s.y * 8 + 12;
+      const h = (19 - s.y) * 8 - 14;
+      for (let i = 0; i < 5; i++) {
+        const t = (world.time * 0.4 + i * 37 + vx * 13) % h;
+        const x = Math.round(vx * 8 + 6 + ((i * 7 + vx * 3) % 28) - cam.x);
+        const y = Math.round(top + h - t - cam.y);
+        g.fillStyle = i % 2 ? '#f27ad8' : '#ffc2dc';
+        g.fillRect(x, y, i % 3 ? 1 : 2, i % 3 ? 1 : 2);
+      }
+    }
+  }
+
+  // The cradles where the taken sleep: two racks of six along the back wall of the Root Cellar.
+  // Shut, they're frosted, with a sleeper inside and the Bloom pink at the seams. Once opened they lie empty,
+  // except the ones whose sleepers didn't wake (if the Pruner was finished). The last is Sorrel's, empty all along.
+  const DARK = [2, 4, 7, 9];
+  function cradleSpot(c, i) {
+    return { x: c.x * 8 + (i % 6) * 34, y: c.y * 8 + Math.floor(i / 6) * 24 };
+  }
+  function drawCradles(g, world, c, cam) {
+    const s = world.state;
+    const open = !!s.flags.cradles;
+    const opening = world.cradlesOpening || 0; // during the wake scene, how many have opened so far
+    for (let i = 0; i < c.n; i++) {
+      const { x: px, y: py } = cradleSpot(c, i);
+      const x = Math.round(px - cam.x);
+      const y = Math.round(py - cam.y);
+      const sorrel = i === c.n - 1;
+      const dark = s.wardens.pruner === 'salvage' && DARK.includes(i);
+      const isOpen = !sorrel && !dark && (open || i < opening);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, y - 1, 30, 13);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x, y, 28, 11);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x, y + 10, 28, 1);
+      g.fillRect(x + 4, y + 11, 2, 6);
+      g.fillRect(x + 22, y + 11, 2, 6);
+      if (isOpen) {
+        g.fillStyle = '#05060d';
+        g.fillRect(x + 2, y + 2, 24, 7);
+        g.fillStyle = '#1d3b52';
+        g.fillRect(x + 2, y + 2, 24, 1);
+        continue;
+      }
+      g.fillStyle = sorrel ? '#123247' : dark && (open || opening) ? '#2a3046' : '#9fd8e8';
+      g.fillRect(x + 2, y + 2, 24, 7);
+      if (!sorrel) {
+        // the sleeper under the frost
+        g.fillStyle = dark && (open || opening) ? '#1a1e2c' : '#6f9fb4';
+        g.fillRect(x + 5, y + 4, 4, 3);
+        g.fillRect(x + 9, y + 4, 13, 4);
+        g.fillStyle = '#d8f4ff';
+        g.fillRect(x + 3, y + 2, 6, 1);
+        // the Bloom, pink at the seams
+        if (!(dark && (open || opening))) {
+          g.fillStyle = Math.floor((world.time + i * 23) / 40) % 2 ? '#f27ad8' : '#b04ad0';
+          g.fillRect(x + 1, y + 1, 1, 9);
+          g.fillRect(x + 26, y + 1, 1, 9);
+          g.fillRect(x + 2, y + 1, 4 + (i % 4) * 3, 1);
+        }
+      } else {
+        // Sorrel's name card
+        g.fillStyle = '#e9e4d8';
+        g.fillRect(x + 10, y + 4, 8, 3);
+        g.fillStyle = '#6c7894';
+        g.fillRect(x + 11, y + 5, 6, 1);
+      }
+      const lit = sorrel ? null : dark && (open || opening) ? '#e8434f' : Math.floor((world.time + i * 11) / 30) % 2 ? '#5fd4e8' : '#3f8fa8';
+      if (lit) {
+        g.fillStyle = lit;
+        g.fillRect(x + 13, y + 10, 2, 1);
+      }
+    }
+  }
+
+  // The Garden Lift's car: a cage on its cables, the lamp red while it's locked and green once it will run.
+  function drawLift(g, world, l, cam) {
+    const x = Math.round(l.x - cam.x);
+    const y = Math.round(l.y - cam.y);
+    g.fillStyle = '#10121c';
+    g.fillRect(x, y, 24, 22);
+    g.fillStyle = '#3a4258';
+    g.fillRect(x + 1, y + 1, 22, 2);
+    g.fillRect(x + 1, y + 19, 22, 3);
+    g.fillStyle = '#6c7894';
+    for (let b = 2; b < 23; b += 4) g.fillRect(x + b, y + 3, 1, 16);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(x + 1, y + 1, 22, 1);
+    g.fillStyle = world.state.flags.cradles ? '#7ad1a0' : '#e8434f';
+    g.fillRect(x + 11, y + 5, 2, 2);
+  }
+
+  // Thick glass: the Gardener's gallery is behind it. Nothing gets through.
+  function drawGlass(g, world, cam) {
+    for (const c of world.glass) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      g.fillStyle = 'rgba(159,216,232,0.22)';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = 'rgba(216,244,255,0.5)';
+      if ((c.tx + c.ty) % 3 === 0) g.fillRect(x + 2, y + 1, 1, 5);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x, y, 1, 8);
+    }
+  }
+
   function drawTerminal(g, world, l, cam) {
     const x = Math.round(l.x - cam.x);
     const y = Math.round(l.y - cam.y);
@@ -557,5 +868,5 @@
     }
   }
 
-  HA.scenery = { THEMES, layers, drawBack, drawTerminal, drawDoor, drawCage, drawLight };
+  HA.scenery = { THEMES, layers, drawBack, drawTerminal, drawDoor, drawCage, drawLight, drawLift, drawGlass, cradleSpot };
 })(window.HA);

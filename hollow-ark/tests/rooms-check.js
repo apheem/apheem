@@ -7,7 +7,8 @@
 //   - from any entrance, every other entrance and every item, person, terminal and rest pod can be reached
 //     with the abilities the hero always has by then (the room's `abilities`);
 //   - secrets that need something (`secret: n` for a level n Purge Cannon, or `needs: { thruster, grapple,
-//     boots }`) can't be reached without it, and can with it;
+//     boots }`) can't be reached without it, and can with it; a door with `needs` (a hatch the grapple pulls)
+//     keeps the exit behind it shut without the ability, and open with it;
 //   - no gap is 7 tiles wide: that width looks jumpable but needs a pixel-perfect run-up;
 //   - every on-screen hint sits in open air, so no wall hides part of it.
 // It first runs a few small test rooms that prove each ability opens exactly what it should.
@@ -32,9 +33,13 @@ HA.input = { promptWidth: (a) => ({ confirm: 34, pause: 22, map: 22, prev: 16, n
 const { SOLID, ONEWAY, THORNS, CRATE, EMPTY, WATER } = HA.room;
 
 // Spawns that are things to reach, as opposed to enemies, crates and doors.
-const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'B', 'D', 'P', 'o']);
+const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'q', 'j', 'b', 'B', 'D', 'P', 'o']);
 // Door cells: D everywhere, and any other character a room's legend calls a door.
-const doorChars = (def) => ['D', ...Object.keys(def.legend || {}).filter((c) => def.legend[c].type === 'door')];
+const legendChars = (def, test) => Object.keys(def.legend || {}).filter((c) => test(def.legend[c]));
+const doorChars = (def) => ['D', ...legendChars(def, (l) => l.type === 'door')];
+// Doors that only an ability opens (a hatch the grapple pulls), and glass, which is always shut.
+const gatedDoors = (def) => legendChars(def, (l) => l.type === 'door' && l.needs);
+const glassChars = (def) => legendChars(def, (l) => l.type === 'glass');
 const notes = [];
 const SCREEN_W = 40;
 const HEIGHTS = [23, 45, 68, 90];
@@ -377,7 +382,7 @@ function targetsOf(def, room) {
   for (const s of room.spawns) {
     if (NOT_TARGETS.has(s.type)) continue;
     const legend = (def.legend && def.legend[s.type]) || {};
-    if (legend.reach === false || legend.type === 'door') continue;
+    if (legend.reach === false || legend.type === 'door' || legend.type === 'glass') continue;
     const needs = legend.needs || (legend.secret ? { cannon: legend.secret } : null);
     list.push({ id: `${s.type}@${s.tx},${s.ty}`, name: legend.name || s.type, needs, x: s.x - 4, y: s.y - 8, w: 16, h: 16 });
   }
@@ -403,11 +408,26 @@ function checkRoom(def) {
   checkShape(def);
   checkHints(def);
   // Doors are checked open, and crates as already shot: the hero always has a weapon by the first crate.
-  const shut = new RegExp('[B' + doorChars(def).join('') + ']', 'g');
-  const room = HA.room.load(def.map.map((row) => row.replace(shut, '.')));
+  // Glass is a wall. A door only an ability opens is checked both ways: shut without it, open with it.
+  const glass = new RegExp('[' + (glassChars(def).join('') || '#') + ']', 'g');
+  const gated = gatedDoors(def);
+  const open = new RegExp('[B' + doorChars(def).join('') + ']', 'g');
+  const openGates = new RegExp('[B' + doorChars(def).filter((c) => !gated.includes(c)).join('') + ']', 'g');
+  const shutGates = gated.length ? new RegExp('[' + gated.join('') + ']', 'g') : null;
+  const rows = def.map.map((row) => row.replace(glass, '#'));
+  const room = HA.room.load(rows.map((row) => row.replace(open, '.')));
+  const shut = shutGates ? HA.room.load(rows.map((row) => row.replace(openGates, '.').replace(shutGates, '#'))) : room;
   const exits = exitsOf(def);
   checkGaps(def, room);
   const targets = targetsOf(def, room);
+  // An exit behind a gated door needs what the door needs, from either side.
+  for (const e of exits) {
+    for (const ch of gated) {
+      const col = (x) => (e.side === 'left' ? x < 5 : x >= def.w - 5);
+      const hit = def.map.some((row, y) => y >= e.a && y <= e.b && [...row].some((c, x) => c === ch && col(x)));
+      if (hit) e.needs = def.legend[ch].needs;
+    }
+  }
   const entries = exits.map((e) => ({ exit: e, x: e.side === 'left' ? 0 : def.w * 8 - 8, y: (e.b + 1) * 8 - 14 }));
   for (const s of room.spawns) if (s.type === 'P') entries.push({ start: true, x: s.x, y: s.y + 8 - 14 });
   if (!entries.length) {
@@ -416,21 +436,32 @@ function checkRoom(def) {
   }
 
   // From each way in on its own: every exit must be reachable, so the hero can never be stuck.
+  // A gated exit must stay out of reach without its ability, and come into reach with it.
   const base = def.abilities || {};
+  const reaches = (hits, e) =>
+    [...hits].some((h) => {
+      const [side, row] = h.split(':');
+      return side === e.side && +row >= e.a && +row <= e.b;
+    });
   for (const entry of entries) {
-    const { exitsHit } = reachability(def, room, base, [entry], []);
+    const from = entry.start ? 'start' : entry.exit.id;
+    const gate = entry.exit && entry.exit.needs;
+    const { exitsHit } = reachability(def, gate ? room : shut, gate ? Object.assign({}, base, gate) : base, [entry], []);
     for (const e of exits) {
       if (e === entry.exit) continue;
-      const ok = [...exitsHit].some((h) => {
-        const [side, row] = h.split(':');
-        return side === e.side && +row >= e.a && +row <= e.b;
-      });
-      if (!ok) fail(def, `can't reach the ${e.id} from the ${entry.start ? 'start' : entry.exit.id}`);
+      const ok = reaches(exitsHit, e);
+      if (!ok && (gate || !e.needs)) fail(def, `can't reach the ${e.id} from the ${from}`);
+      if (ok && e.needs && !gate) fail(def, `the ${e.id} is meant to need ${describe(e.needs)}, but the ${from} reaches it without`);
+      if (e.needs && !gate) {
+        const withIt = reachability(def, room, Object.assign({}, base, e.needs), [entry], []);
+        if (!reaches(withIt.exitsHit, e)) fail(def, `can't reach the ${e.id} from the ${from} even with ${describe(e.needs)}`);
+      }
     }
   }
 
   // From all ways in: every item, person, terminal and rest pod, using only what each one allows.
-  const plain = reachability(def, room, base, entries, targets);
+  const plainEntries = entries.filter((e) => !(e.exit && e.exit.needs));
+  const plain = reachability(def, shut, base, plainEntries, targets);
   for (const t of targets) {
     if (!t.needs && !plain.reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id}`);
     if (t.needs && plain.reached.has(t.id)) fail(def, `${t.name} at ${t.id} is meant to need ${describe(t.needs)}, but it can be reached without`);

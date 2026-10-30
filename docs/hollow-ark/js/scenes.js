@@ -89,20 +89,20 @@
     return false;
   }
 
-  function paginate(text) {
+  function paginate(text, width = LINE_CHARS, perPage = LINES) {
     const words = String(text).split(' ');
     const lines = [];
     let line = '';
     for (const w of words) {
       const next = line ? line + ' ' + w : w;
-      if (next.length > LINE_CHARS && line) {
+      if (next.length > width && line) {
         lines.push(line);
         line = w;
       } else line = next;
     }
     if (line) lines.push(line);
     const pages = [];
-    for (let i = 0; i < lines.length; i += LINES) pages.push(lines.slice(i, i + LINES));
+    for (let i = 0; i < lines.length; i += perPage) pages.push(lines.slice(i, i + perPage));
     return pages;
   }
 

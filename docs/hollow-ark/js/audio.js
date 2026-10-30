@@ -210,9 +210,31 @@
       [392, 330, 262, 196].forEach((f, i) => tone({ wave: 0.5, f, dur: 0.18, vol: 0.08, delay: 0.2 + i * 0.1 }));
     },
     choice: () => tone({ wave: 'triangle', f: 220, dur: 0.5, vol: 0.14 }),
+    // The Gardens
+    lob: () => tone({ wave: 0.5, f: 260, f2: 160, dur: 0.1, vol: 0.12 }),
+    tink: () => tone({ wave: 0.125, f: 1400, f2: 1100, dur: 0.03, vol: 0.05 }),
+    lancet: () => noise({ f: 5200, f2: 3000, dur: 0.06, vol: 0.09, q: 3 }),
+    thorn: () => {
+      tone({ wave: 'sawtooth', f: 180, f2: 90, dur: 0.14, vol: 0.09 });
+      noise({ f: 900, f2: 300, dur: 0.1, vol: 0.12 });
+    },
+    swell: () => tone({ wave: 'sine', f: 200, f2: 420, dur: 0.6, vol: 0.06 }),
+    spores: () => noise({ f: 1200, f2: 400, dur: 0.5, vol: 0.14, q: 0.8 }),
+    snip: () => {
+      noise({ f: 6000, f2: 2500, dur: 0.07, vol: 0.16, q: 2 });
+      tone({ wave: 0.125, f: 2200, f2: 1700, dur: 0.05, vol: 0.05 });
+    },
+    hedge: () => noise({ f: 400, f2: 1400, dur: 0.35, vol: 0.14, filter: 'lowpass' }),
+    lunge: () => noise({ f: 2000, f2: 600, dur: 0.18, vol: 0.14, q: 1.2 }),
+    lift: () => [0, 0.5, 1.0].forEach((d) => noise({ f: 300, f2: 120, dur: 0.45, vol: 0.12, filter: 'lowpass', delay: d })),
+    bulb: () => [523, 659, 494].forEach((f, i) => tone({ wave: 'sine', f, dur: 0.2, vol: 0.08, delay: i * 0.08 })),
+    bloom: () => {
+      tone({ wave: 'sine', f: 220, f2: 233, dur: 1.2, vol: 0.12, attack: 0.2 });
+      tone({ wave: 'sine', f: 330, f2: 311, dur: 1.2, vol: 0.08, attack: 0.3 });
+    },
   };
   // Each speaker's text blips at its own pitch.
-  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520 };
+  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700 };
 
   function play(name, arg) {
     if (!live() || !SFX[name]) return;

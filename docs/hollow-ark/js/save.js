@@ -57,7 +57,9 @@
       shimKnows: null, // choice 4b on the lie path: true or false
       warrensRaid: null, // the raid while the hero is in the Ballast: 'held' or 'fell'
       podsLaunched: 0, // the Crash ending's lifeboats
-      bloomWarned: 0, // the highest Bloom stage already announced (3, 5 or 7)
+      bloomWarned: 0, // the highest Bloom stage already announced (3, 5, 7 or 8)
+      bulbs: 0, // Bloom bulbs carried (3 at most), eaten only on a press of their own button
+      thornKills: 0, // kills with the Bloom Thorn in hand: every 30 raise the Bloom by one
       ending: null, // the ending this game reached, once it has
       endingsSeen: endings(), // every ending reached on this machine, carried into new games
       fresh: true,

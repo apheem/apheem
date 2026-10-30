@@ -3,7 +3,9 @@
 // (like GitHub Pages) and straight from disk (like a downloaded folder). Exits non-zero on any failure.
 // Each run plays by hand-held keys first (move, jump, fire), then runs the story so far quickly through the
 // game's debug helpers: rooms, saving, the raid, the boss, the choice, the reunion and the night after it,
-// and continuing a save. Then it loads a Phase 2 save to check it upgrades, and plays all five endings.
+// and continuing a save, then the Hydroponic Gardens (a bulb, the cradles, the Pruner and its choice, the
+// taken waking, Wick's fight and the Gardener's offer). Then it loads a Phase 2 save to check it upgrades,
+// and plays all five endings.
 //   node browser-check.js [chromium firefox webkit]
 const http = require('http');
 const fs = require('fs');
@@ -198,14 +200,18 @@ async function play(browserType, url, label) {
       out.restAtWarrens = !!s.rest && s.rest.room === 'warrens';
       out.wickInWarrens = w().npcs.some((n) => n.id === 'wick' && n.state !== 'gone');
       out.journal = { story: s.journal.story.length, choices: s.journal.choices.length, talk: s.journal.talk.length };
-      // The morning after: Wick waits in the Bailiff's Hall, whose east door has opened on the way to the Gardens.
-      HA.debug.goto('arena', 30, 18);
+      // The morning after: Wick waits in the Bailiff's Hall, joins the hero, and walks with them into the Gardens.
+      HA.debug.goto('arena', 22, 18);
       HA.debug.step(2);
       out.wickInHall = w().npcs.some((n) => n.id === 'wick');
       out.eastOpen = w().doors.some((d) => d.id === 'east' && d.open);
+      HA.debug.step(60, { right: true });
+      out.joinScene = w().scene && w().scene.name;
+      talkThrough();
       HA.debug.step(150, { right: true });
-      out.eastToast = w().toastText;
-      out.stayedInHall = w().def.id === 'arena';
+      out.gardensRoom = w().def.id;
+      out.gardens = !!w().state.flags.gardens;
+      out.wickFollows = w().npcs.some((n) => n.id === 'wick' && n.follow);
       return out;
     });
     expect(r.roomAfterWalk === 'thaw-corridor', `walking off the Cryo Bay's edge led to ${r.roomAfterWalk}`);
@@ -222,7 +228,8 @@ async function play(browserType, url, label) {
     expect(r.room === 'warrens' && r.homeDone && r.restAtWarrens, `the reunion and the night after it did not play (${JSON.stringify(r)})`);
     expect(r.leadAfter === 'FIND THE TAKEN IN THE GARDENS', `wrong lead after the reunion: ${r.leadAfter}`);
     expect(!r.wickInWarrens && r.wickInHall, 'Wick should have gone ahead to the Bailiff\'s Hall');
-    expect(r.eastOpen && r.stayedInHall && /NEXT BUILD/.test(r.eastToast), `the Hall's east door should be open and lead to a "next build" note (${r.eastToast})`);
+    expect(r.eastOpen && r.joinScene === 'wickJoins', `the Hall's east door should be open, and Wick should join the hero (${r.joinScene})`);
+    expect(r.gardensRoom === 'root-cellar' && r.gardens && r.wickFollows, `Wick should walk into the Root Cellar with the hero (${JSON.stringify(r)})`);
     expect(r.maraScene && r.mara, "Mara's pod could not be read, or didn't reach the journal");
     expect(r.intercomScene && r.intercom, 'the Steward did not speak over the Lockup intercom');
     expect(r.jumpThrust > r.jumpOnly + 30, `the thruster pack did not lift the hero (jump ${r.jumpOnly}px, with thrust ${r.jumpThrust}px)`);
@@ -266,7 +273,141 @@ async function play(browserType, url, label) {
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => HA.ui.mode === 'play', null, { timeout: 5000 });
     const back = await get(() => ({ room: HA.debug.world.def.id, maxHp: HA.debug.world.player.maxHp, choice: HA.debug.world.state.wardens.bailiff }));
-    expect(back.room === 'arena' && back.maxHp === 16 && back.choice === 'salvage', `continuing lost progress (${JSON.stringify(back)})`);
+    expect(back.room === 'root-cellar' && back.maxHp === 16 && back.choice === 'salvage', `continuing lost progress (${JSON.stringify(back)})`);
+
+    // ---- The Hydroponic Gardens (Phase 3.1), from the continued save, fast-forwarded ----
+    const gd = await get(() => {
+      const out = {};
+      const w = () => HA.debug.world;
+      const s = w().state;
+      const p = w().player;
+      const talkThrough = () => {
+        for (let i = 0; i < 4000 && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          HA.debug.skipScene();
+          HA.debug.step(1);
+        }
+      };
+      // Pick the option at index i, then YES on its gain-and-loss screen if it has one.
+      const choose = (i) => {
+        for (let k = 0; k < i; k++) {
+          HA.debug.step(1, { down: true });
+          HA.debug.step(1);
+        }
+        const asks = !!w().scene.step.choice.options[i].confirm;
+        const lose = asks && w().scene.step.choice.options[i].confirm.lose;
+        HA.debug.step(1, { confirm: true });
+        HA.debug.step(1);
+        if (asks) {
+          HA.debug.step(1, { up: true });
+          HA.debug.step(1);
+          HA.debug.step(1, { confirm: true });
+        }
+        talkThrough();
+        return lose;
+      };
+      w().assist.invincible = true;
+      // A Bloom bulb on the cellar's loft: picked up, then eaten only on its own button, asking the first time.
+      HA.debug.goto('root-cellar', 30, 12);
+      HA.debug.step(30);
+      out.bulbs = s.bulbs;
+      p.hp = 4;
+      HA.debug.step(2, { item: true });
+      out.bulbAsks = !!(w().scene && w().scene.step && w().scene.step.choice);
+      choose(0);
+      out.ate = { bloom: s.bloom, bulbs: s.bulbs, healed: p.hp === p.maxHp, rush: p.rush > 0 };
+      // The cradles: Wick stays with them, and the lead goes up to the Warden that holds the seals.
+      HA.debug.goto('root-cellar', 48, 18);
+      HA.debug.step(5);
+      out.cradleScene = w().scene && w().scene.name;
+      talkThrough();
+      out.lead1 = s.lead;
+      // The Scatter Launcher, on the Terraces.
+      HA.debug.goto('terraces', 4, 32);
+      HA.debug.step(20);
+      out.scatter = p.weapons.some((x) => x.id === 'scatter');
+      HA.debug.step(2, { fire: true });
+      out.grenade = w().shots.some((x) => x.kind === 'grenade');
+      // The Pruner: the doors shut, it fights, and then it asks to be finished (choice 2). Release it.
+      HA.debug.goto('seal-room', 84, 18);
+      HA.debug.step(5);
+      talkThrough();
+      out.prunerFighting = !!(w().boss && w().boss.fighting && w().boss.type === 'pruner');
+      out.hallShut = w().doors.every((d) => !d.open);
+      HA.debug.step(200);
+      w().hurtEnemy(w().boss, 999, 1);
+      talkThrough();
+      out.prunerChoice = !!(w().scene && w().scene.step && w().scene.step.choice);
+      out.prunerLose = choose(0);
+      out.pruner = s.wardens.pruner;
+      out.mercy = s.mercy;
+      // Down the Dome Stair: its shutter opens back into the Terraces.
+      HA.debug.goto('dome-stair', 12, 64);
+      HA.debug.step(140, { left: true });
+      out.shortcut = w().def.id;
+      // Back at the cradles they open; eleven wake and go home; Wick is gone and her lantern is on the floor.
+      HA.debug.goto('root-cellar', 40, 18);
+      HA.debug.step(5);
+      out.wakeScene = w().scene && w().scene.name;
+      talkThrough();
+      out.takenHome = s.takenHome;
+      out.lantern = !!s.flags.lantern;
+      out.lead2 = s.lead;
+      // The vats: the seal is open now. Wick's fight, her collapse at a quarter health, and her lancets.
+      HA.debug.goto('garden-lift', 30, 41);
+      HA.debug.step(3);
+      out.vatSeal = w().doors.find((d) => d.id === 'vats').open;
+      HA.debug.goto('vat-house', 8, 18);
+      HA.debug.step(5);
+      talkThrough();
+      out.wickFighting = !!(w().boss && w().boss.fighting && w().boss.type === 'wick');
+      HA.debug.step(200);
+      w().hurtEnemy(w().boss, 999, 1);
+      out.wickHp = w().boss.hp;
+      talkThrough();
+      out.offer = !!(w().scene && w().scene.step && w().scene.step.choice);
+      out.wick = s.people.wick;
+      out.lancets = p.weapons.some((x) => x.id === 'lancets');
+      choose(0); // keep them: the Gardener will ask again in the Tower
+      out.kept = { lancets: p.weapons.some((x) => x.id === 'lancets'), thorn: p.weapons.some((x) => x.id === 'thorn'), offered: !!s.flags.thornOffered };
+      out.music = HA.music.playing;
+      out.lead3 = s.lead;
+      // The lift home, and the walk home, both wait for the next build.
+      HA.debug.goto('garden-lift', 10, 18);
+      HA.debug.step(20); // skipped scenes end in a few frames, so let the hit-stop from Wick's fall run out
+      HA.debug.step(2, { up: true });
+      talkThrough();
+      out.liftNote = w().toastText;
+      HA.debug.goto('lockup', 2, 18);
+      HA.debug.step(60, { left: true });
+      out.heldNote = w().toastText;
+      out.held = w().def.id === 'lockup';
+      // The Seed Vault's hatch: the grapple (Phase 3.3) bites its ring and tears it open.
+      HA.debug.goto('garden-lift', 8, 41);
+      HA.debug.step(3);
+      p.facing = -1;
+      p.abilities.grapple = true;
+      out.hatchPulled = HA.abilities.fireGrapple(w(), p, { held: {}, pressed: {}, released: {} });
+      HA.debug.step(3);
+      out.hatchOpen = w().doors.find((d) => d.id === 'vault').open;
+      p.abilities.grapple = false;
+      out.choices = s.journal.choices.length;
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(gd.bulbs === 1 && gd.bulbAsks && gd.ate.bloom === 1 && gd.ate.bulbs === 0 && gd.ate.healed && gd.ate.rush, `the Bloom bulb was not picked up, asked about, and eaten (${JSON.stringify(gd)})`);
+    expect(gd.cradleScene === 'cradles' && gd.lead1 === 'FIND THE WARDEN THAT HOLDS THE SEALS', `the cradles scene did not play (${gd.cradleScene}, ${gd.lead1})`);
+    expect(gd.scatter && gd.grenade, 'the Scatter Launcher was not picked up, or threw no grenade');
+    expect(gd.prunerFighting && gd.hallShut && gd.prunerChoice, `the Pruner fight and its choice did not play (${JSON.stringify(gd)})`);
+    expect(gd.pruner === 'release' && /LAUNCHER/.test(gd.prunerLose) && gd.mercy === 0, `releasing the Pruner went wrong (${gd.pruner}, ${gd.prunerLose}, mercy ${gd.mercy})`);
+    expect(gd.shortcut === 'terraces', `the Dome Stair's shutter did not open into the Terraces (${gd.shortcut})`);
+    expect(gd.wakeScene === 'wake' && gd.takenHome === 11 && gd.lantern && gd.lead2 === 'FIND WICK IN THE VATS', `the taken did not wake and go home (${JSON.stringify(gd)})`);
+    expect(gd.vatSeal && gd.wickFighting && gd.wickHp === 40 && gd.offer, `Wick's fight did not end in her collapse and the Gardener's offer (${JSON.stringify(gd)})`);
+    expect(gd.wick === 'dead' && gd.lancets && gd.kept.lancets && !gd.kept.thorn && gd.kept.offered, `Wick's lancets were not given, or keeping them went wrong (${JSON.stringify(gd)})`);
+    expect(gd.music === null && /GARDEN LIFT/.test(gd.lead3), `after Wick, the Gardens should be silent with the lead home (${gd.music}, ${gd.lead3})`);
+    expect(/NEXT BUILD/.test(gd.liftNote) && /NEXT BUILD/.test(gd.heldNote) && gd.held, `the way home should wait for the next build (${gd.liftNote} / ${gd.heldNote})`);
+    expect(gd.hatchPulled && gd.hatchOpen, `the grapple did not tear the Seed Vault hatch open (${gd.hatchPulled}, ${gd.hatchOpen})`);
+    expect(gd.choices === 3, `the journal should list three choices by now (${gd.choices})`);
+    await shot('gardens');
 
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {

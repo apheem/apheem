@@ -202,15 +202,7 @@
     b.flash = 4;
     world.burst(b.x + b.w / 2, b.y + b.h / 2, ['#ffb84d', '#ffffff'], 3, 1.2);
     HA.audio.play('bossHit');
-    // Energy vents at every 15% lost, so a weapon can be levelled back up during the fight.
-    while (b.hp <= b.nextShards && b.nextShards > 0) {
-      b.nextShards -= SHARD_STEP;
-      const cx = b.x + b.w / 2;
-      for (let i = 0; i < 3; i++) world.pickups.push(HA.actors.makeShard(cx, b.y + 6, false));
-      world.pickups.push(HA.actors.makeShard(cx, b.y + 6, true));
-      if (world.player.hp < world.player.maxHp && Math.random() < 0.5) world.pickups.push(HA.actors.makeHeart(cx, b.y + 6));
-      HA.audio.play('vent');
-    }
+    vent(world, b, SHARD_STEP);
     const phase = b.hp <= MAX_HP / 3 ? 3 : b.hp <= (MAX_HP * 2) / 3 ? 2 : 1;
     if (phase > b.phase) {
       b.phase = phase;
@@ -322,25 +314,44 @@
     drawFigure(g, world, b, cam);
   }
 
-  function drawBar(g, world, b) {
+  const drawBar = (g, world, b) => bar(g, b, 'THE BAILIFF', { name: '#ff8a8a', fill: '#e8434f', back: '#3a1520', marks: [1 / 3, 2 / 3] });
+
+  // ---- Shared by every boss ----
+  // Energy vents at every step of health lost, so a weapon can be levelled back up during the fight.
+  function vent(world, b, step) {
+    while (b.hp <= b.nextShards && b.nextShards > 0) {
+      b.nextShards -= step;
+      const cx = b.x + b.w / 2;
+      for (let i = 0; i < 3; i++) world.pickups.push(HA.actors.makeShard(cx, b.y + 6, false));
+      world.pickups.push(HA.actors.makeShard(cx, b.y + 6, true));
+      if (world.player.hp < world.player.maxHp && Math.random() < 0.5) world.pickups.push(HA.actors.makeHeart(cx, b.y + 6));
+      HA.audio.play('vent');
+    }
+  }
+
+  // The health bar along the bottom of the screen, with a mark at each phase change.
+  function bar(g, b, name, c) {
     if (!b.fighting && b.hp > 0) return;
     const w = 200;
     const x = (HA.VIEW_W - w) / 2;
     const y = HA.VIEW_H - 14;
-    HA.font.draw(g, 'THE BAILIFF', x, y - 10, '#ff8a8a');
+    HA.font.draw(g, name, x, y - 10, c.name);
     g.fillStyle = '#10121c';
     g.fillRect(x - 1, y - 1, w + 2, 7);
-    g.fillStyle = '#3a1520';
+    g.fillStyle = c.back;
     g.fillRect(x, y, w, 5);
     g.fillStyle = '#fff0a8';
     g.fillRect(x, y, Math.round((w * b.shownHp) / b.maxHp), 5);
-    g.fillStyle = '#e8434f';
+    g.fillStyle = c.fill;
     g.fillRect(x, y, Math.round((w * b.hp) / b.maxHp), 5);
-    for (const f of [1 / 3, 2 / 3]) {
+    for (const f of c.marks) {
       g.fillStyle = '#10121c';
       g.fillRect(x + Math.round(w * f), y, 1, 5);
     }
   }
 
-  HA.boss = { MAX_HP, make, update, hurt, draw, drawFigure, drawBar };
+  // A plate of metal with an outline and a lit top edge, for bosses built from parts.
+  HA.boss = { MAX_HP, make, update, hurt, draw, drawFigure, drawBar, vent, bar, plate };
+  // Every boss, by type. Each one's file adds itself: { make, update, hurt, draw, drawBar }.
+  HA.bosses = { bailiff: HA.boss };
 })(window.HA);
