@@ -250,6 +250,7 @@
       p.vx = 1.1;
       p.vy = -1.8;
       yield { wait: 50 };
+      world.areaBanner = 160;
       setLead(world, 'FIND A WAY OUT OF THE CRYO DECK');
       addStory(world, 'I WOKE IN POD 0417. THE ARK SHOULD HAVE ARRIVED 232 YEARS AGO.');
       world.refreshMusic();
@@ -446,7 +447,7 @@
       }
       if (wick) {
         wick.kneel = false;
-        wick.y = FLOOR(19) - wick.h;
+        wick.y = wick.homeY = FLOOR(19) - wick.h;
         wick.x = 64 * 8;
         wick.facing = -1;
       }
@@ -572,6 +573,7 @@
     s.flags.reunion = true;
     world.holdFade = true;
     world.enterRoom('warrens', 50 * 8, FLOOR(19) - 14, { noSave: true });
+    world.areaBanner = 0;
     yield* SCENES.reunion(world);
   }
 
@@ -628,6 +630,8 @@
       spawnCollectors(world, false);
       world.alarm = 1;
     }
+    // A game quit in the middle of the homecoming picks it up again.
+    if (id === 'warrens' && f.reunion && !f.sliceDone && !world.scene) run(world, 'reunion');
     if (id === 'arena' && world.bossSpawn) {
       const place = () => {
         world.boss = HA.boss.make(world, world.bossSpawn.x, world.bossSpawn.y);

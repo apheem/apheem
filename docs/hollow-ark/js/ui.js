@@ -209,7 +209,8 @@
     if (ui.mode === 'play') {
       const world = ui.world;
       // Enter both pauses and confirms; while someone is talking it confirms.
-      const talking = world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice);
+      const step = world.scene && world.scene.step;
+      const talking = step && (step.say !== undefined || step.choice || step.card);
       if (input.pressed.pause && !(talking && input.pressed.confirm)) {
         ui.pause();
         return;

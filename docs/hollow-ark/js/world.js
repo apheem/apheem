@@ -245,12 +245,11 @@
     HA.music.play(musicFor(world));
     updateCamera(world, true);
     HA.save.reveal(world, true);
-    if (!opts.noSave) {
-      s.x = x;
-      s.y = y;
-      s.facing = p.facing;
-      HA.save.write(world);
-    }
+    // Where a continued game starts: always the latest room entrance, even when this entry doesn't save.
+    s.x = x;
+    s.y = y;
+    s.facing = p.facing;
+    if (!opts.noSave) HA.save.write(world);
   }
 
   function musicFor(world) {
@@ -686,11 +685,11 @@
     const w = HA.font.measure(text) + 20;
     g.globalAlpha = Math.max(0, a);
     g.fillStyle = 'rgba(5,6,13,0.9)';
-    g.fillRect(Math.round(W / 2 - w / 2), 136, w, 26);
+    g.fillRect(Math.round(W / 2 - w / 2), 72, w, 26);
     g.fillStyle = '#ffb84d';
-    g.fillRect(Math.round(W / 2 - w / 2), 136, w, 1);
-    HA.font.draw(g, 'NEW LEAD', W / 2, 140, '#ffb84d', { align: 'center' });
-    HA.font.draw(g, text, W / 2, 151, '#fff0a8', { align: 'center' });
+    g.fillRect(Math.round(W / 2 - w / 2), 72, w, 1);
+    HA.font.draw(g, 'NEW LEAD', W / 2, 76, '#ffb84d', { align: 'center' });
+    HA.font.draw(g, text, W / 2, 87, '#fff0a8', { align: 'center' });
     g.globalAlpha = 1;
   }
 
