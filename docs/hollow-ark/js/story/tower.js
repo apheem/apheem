@@ -106,6 +106,7 @@
       yield { wait: 60 };
       yield me('THE NEW WORLD. A PALE DOT OVER THE BOW, CLOSE ENOUGH TO SEE.');
       yield me('NO LIGHTS ON IT. NOT ONE. NOBODY GOT THERE FIRST.');
+      yield me('NOT A REAL SKY. NOT YET. BUT CLOSE.');
       world.camTarget = null;
       S.addStory(world, 'FROM THE OBSERVATION DOME I SAW THE NEW WORLD: A PALE DOT, DARK. NO LIGHTS ANYWHERE. NOBODY GOT THERE FIRST. THE STEWARD WAS AFRAID OF NO ONE.');
       world.save();

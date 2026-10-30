@@ -62,6 +62,8 @@
       bloomWarned: 0, // the highest Bloom stage already announced (3, 5, 7 or 8)
       bulbs: 0, // Bloom bulbs carried (3 at most), eaten only on a press of their own button
       thornKills: 0, // kills with the Bloom Thorn in hand: every 30 raise the Bloom by one
+      scrap: 0, // spare shards, kept for Solder's bench (3.10)
+      upgrades: { plating: 0, magnet: 0, steady: 0 }, // what the bench has made, tier by tier
       ending: null, // the ending this game reached, once it has
       endingsSeen: endings(), // every ending reached on this machine, carried into new games
       fresh: true,

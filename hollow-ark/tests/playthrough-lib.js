@@ -550,7 +550,13 @@
       const W = w();
       if (W.scene && !W.scene.control) PT.settle();
       const left = w().enemies.filter((e) => !e.dead && (!field || e[field]));
-      if (!left.length) return say(`cleared ${field || 'the room'}`);
+      if (!left.length) {
+        // Clearing a room can start a scene on the next frame (the raid's aftermath): let it play out here, so the
+        // next step doesn't set off walking into it.
+        tick(2);
+        PT.settle();
+        return say(`cleared ${field || 'the room'}`);
+      }
       if (n % 6 === 0) for (const e of left) w().hurtEnemy(e, 4, Math.sign(e.x - W.player.x) || 1);
       tick(1);
     }

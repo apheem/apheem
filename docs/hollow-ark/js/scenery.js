@@ -1620,6 +1620,13 @@
       if (s.kind === 'toolbag' && !world.state.flags.toolbag) drawToolbag(g, s, cam);
       if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
       if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
+      // Solder's tools at the Crew Camp: only if she came up with the crew (story/bench.js).
+      if (s.kind === 'campBench' && world.state.people.solder === 'alive') {
+        g.save();
+        g.translate(-Math.round(cam.x), -Math.round(cam.y));
+        PROPS.workbench(g, s);
+        g.restore();
+      }
       // The keel tram: at the Ballast's station until it leaves, and at the Spine Foot once the climbers come in on it.
       const tram = s.at === 'spine' ? !!world.state.flags.crewCame : !world.state.flags.tram || (world.tramGo || 0) > 0;
       if (s.kind === 'tramcar' && tram) drawTramCar(g, world, s, cam);

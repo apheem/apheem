@@ -167,9 +167,14 @@
   }
 
   // ---- Barks: short lines someone says in passing, over their head, without stopping play ----
-  function bark(world, n, text, frames) {
-    world.barks.push({ n, text, life: frames || 90 + text.length * 3, wait: world.barks.filter((b) => b.n === n).reduce((t, b) => t + b.life + b.wait, 0) });
-    HA.save.addTalk(world.state, n.name, text);
+  function bark(world, n, text, frames, opts = {}) {
+    const queued = world.barks.filter((b) => b.n === n).reduce((t, b) => t + b.life + b.wait, 0);
+    world.barks.push({ n, text, life: frames || 90 + text.length * 3, wait: Math.max(queued, opts.wait || 0), color: opts.color });
+    HA.save.addTalk(world.state, n.name || '', text);
+  }
+  // A thought over the hero's head, in the journal's voice, while play goes on (after delay frames).
+  function think(world, text, delay) {
+    bark(world, world.player, text, undefined, { color: VOICE, wait: delay });
   }
   function updateBarks(world) {
     for (const b of world.barks) {
@@ -192,7 +197,7 @@
       g.fillRect(x, y, w, h);
       g.fillStyle = '#ffb84d';
       g.fillRect(x, y + h - 1, w, 1);
-      lines.forEach((l, i) => HA.font.draw(g, l, x + 4, y + 3 + i * 9, '#eef4f6'));
+      lines.forEach((l, i) => HA.font.draw(g, l, x + 4, y + 3 + i * 9, b.color || '#eef4f6'));
       g.globalAlpha = 1;
     }
   }
@@ -252,7 +257,7 @@
     },
     shim: {
       night: [
-        ['ARE YOU A GHOST? GRAN SAYS SLEEPERS ARE GHOSTS THAT FORGOT TO LIE DOWN.', 'I SAW YOU WAKE UP. YOU FELL OUT OF YOUR BOX. IT WAS FUNNY.'],
+        ['ARE YOU A GHOST? GRAN SAYS SLEEPERS ARE GHOSTS THAT FORGOT TO LIE DOWN.', 'I SAW YOU WAKE UP. YOU FELL OUT OF YOUR BOX. IT WAS FUNNY.', "THERE WAS ANOTHER BOX NEXT TO YOURS. SHE DIDN'T FALL OUT. IS SHE A GHOST TOO?", { me: 'NOT A GHOST.' }],
         ['WHEN THE SHIP GETS THERE, I AM GOING TO STAND ON THE GROUND. NOT A FLOOR. GROUND.'],
       ],
       'after-release': [['IT HAD A NAME, YOU KNOW. BEFORE. IT TOLD ME IN THE CAGE. IT DID NOT REMEMBER IT.']],
@@ -296,6 +301,10 @@
     HA.scenes.run(world, function* () {
       for (let line of pick) {
         if (typeof line === 'function') line = line(world);
+        if (line.me) {
+          yield { say: '', text: line.me, color: VOICE };
+          continue;
+        }
         if (line.heal) {
           world.player.hp = world.player.maxHp;
           world.floatText(world.player.x + 4, world.player.y - 6, 'HEALED', '#7ad1a0');
@@ -369,6 +378,8 @@
       HA.music.play(null);
       // Far out in the dark, the Ark. Then closer: one window on the cryo deck, blinking red.
       const far = { x: 146, y: 112, s: 1 };
+      // Before anything: a girl's voice, faint, from a long way down (Mara's thread: STORYBOARD.md).
+      yield { card: [['...PROMISE?', '#8a80a8']], hold: 130 };
       yield { card: ['VOYAGE YEAR 312.'], hold: 150, top: 40, space: 'in', ark: far };
       yield { card: ['THE ARK WAS DUE TO ARRIVE', 'IN YEAR 80.'], hold: 170, top: 40, space: true, ark: far };
       HA.audio.play('alarm');
@@ -404,6 +415,10 @@
       yield { until: () => flyLid(world, pod) };
       yield { until: () => !p.kneel || world.scene.skipping };
       p.kneel = 0;
+      // The pod in the next clamps along is still shut. The hero looks at it before anything else.
+      p.facing = -1;
+      yield { wait: 40 };
+      yield { say: '', text: '0418. STILL ASLEEP.', color: VOICE };
       world.areaBanner = 160;
       setLead(world, 'FIND A WAY OUT OF THE CRYO DECK');
       addStory(world, 'I WOKE IN POD 0417. THE ARK SHOULD HAVE ARRIVED 232 YEARS AGO.');
@@ -486,8 +501,9 @@
       }
       p.x = 101 * 8;
       p.facing = -1;
-      yield { fade: 'in', frames: 40 };
-      yield { wait: 70 };
+      yield* HA.story.dream(world, 1); // the first dream, cut off by the first blast at the gate
+      yield { fade: 'in', frames: 30 };
+      yield { wait: 40 };
       HA.audio.play('rumble');
       world.shake(2);
       yield { wait: 60 };
@@ -708,6 +724,7 @@
       yield { say: 'WICK', text: 'GO REST, SLEEPER. WE LEAVE WHEN THE LAMPS COME UP.' };
       yield { wait: 40 };
       yield { fade: 'out', frames: 50 };
+      yield* HA.story.dream(world, 2);
       // Morning. The hero wakes at the village's rest pod; Wick has already gone on ahead.
       world.nightScene = false;
       world.camTarget = null;
@@ -729,6 +746,12 @@
       world.save();
       yield { wait: 30 };
       yield { fade: 'in', frames: 50 };
+      if (shim) {
+        yield { wait: 30 };
+        yield { say: 'SHIM', text: "YOU TALK IN YOUR SLEEP. YOU SAID 'MAR'." };
+        yield { say: 'SHIM', text: "WHO'S MAR?" };
+        yield { wait: 40 };
+      }
     },
 
     // Mara's pod still hangs in the rack beside the hero's empty clamps.
@@ -737,9 +760,11 @@
       world.state.flags.mara = true;
       HA.audio.play('terminal');
       yield { say: 'POD 0418', text: 'MARA · ASLEEP', color: '#b8f4ff' };
+      yield { say: 'POD 0418', text: 'THAW 0418? ... DENIED. AUTHORITY: NAV OR HELM KEY.', color: '#b8f4ff' };
       yield { say: '', text: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE.", color: VOICE };
       if (first) {
-        addStory(world, "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE.");
+        yield { say: '', text: "...THEN I'LL FIND WHOEVER CAN.", color: VOICE };
+        addStory(world, "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE. HER POD WON'T THAW WITHOUT THE NAVIGATOR OR THE HELM KEY.");
         world.toast('JOURNAL UPDATED', 120);
       }
     },
@@ -967,5 +992,5 @@
     return undefined;
   }
 
-  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, drawBarks };
+  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, think, drawBarks };
 })(window.HA);

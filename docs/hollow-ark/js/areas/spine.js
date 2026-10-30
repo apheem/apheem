@@ -28,6 +28,7 @@
     musicLayers: layers,
     legend: {
       a: up('boiler-stair'),
+      e: down('overflow-pipes'), // the Overflow Pipes come up here (the way round when the keel floods)
       T: { type: 'log', id: 'brake', name: 'the lift notices' },
       L: stop(0, 'crew-camp'),
     },
@@ -83,7 +84,7 @@
       '.....................T...S....L.......##',
       '....................####################',
       '....................####################',
-      '............0.......####################',
+      '............0.....e.####################',
       '########################################',
       '########################################',
       '########################################',
@@ -416,6 +417,7 @@
       { kind: 'bunks', x: 4, y: 12 },
       { kind: 'fire', x: 18, y: 18 },
       { kind: 'phone', x: 12, y: 18 },
+      { kind: 'campBench', x: 23, y: 18 },
       { kind: 'intercom', x: 24, y: 14 },
       { kind: 'shaft', x: 28, y0: 4, y1: 18 },
       { kind: 'scrawl', x: 15, y: 6, text: 'LIFT B GOES DOWN, NOT OUT' },

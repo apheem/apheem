@@ -412,6 +412,9 @@
       if (g) g.kneel = true;
       yield say('OLD GASKET', 'I SPENT MY WHOLE LIFE HOLDING MY BREATH.');
       yield say('OLD GASKET', "I'D LIKE TO BREATHE OUT BEFORE THE END.");
+      yield { wait: 40 };
+      yield say('OLD GASKET', 'MY BROTHER HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
+      yield say('OLD GASKET', 'GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT.');
       S.addStory(world, 'GASKET SAID SHE HAD SPENT HER WHOLE LIFE HOLDING HER BREATH. SHE WANTS TO BREATHE OUT BEFORE THE END.');
       if (g) g.sleeping = true;
       yield { wait: 90 };
@@ -441,8 +444,9 @@
         HA.audio.play('intercom');
         S.addStory(world, "THE PURSER CALLED ONE LAST TIME, OVER THE CAMP'S INTERCOM. I STAYED. I THINK HE TOOK THE BOAT HIMSELF.");
       }
-      // Morning.
+      // Morning, after the clearest dream yet.
       yield { fade: 'out', frames: 50 };
+      yield* S.dream(world, 4);
       world.nightScene = false;
       f.campDone = true;
       for (const n of world.npcs) n.sleeping = false;

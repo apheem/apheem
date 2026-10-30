@@ -92,10 +92,13 @@
     *maraRun(world) {
       const s = world.state;
       s.flags.maraRun = true;
-      if (s.podsLaunched) yield me("0418'S CLAMPS WERE EMPTY. SHE WENT WITH THE OTHERS. SHE'S FALLING TOWARD THE WORLD, ASLEEP.");
-      else {
+      if (s.podsLaunched) {
+        yield me("0418'S CLAMPS WERE EMPTY. SHE WENT WITH THE OTHERS. SHE'S FALLING TOWARD THE WORLD, ASLEEP.");
+        yield me("HOLD ON, MAR. I WON'T BE LATE.");
+      } else {
         yield me("MARA. STILL IN 0418. THE CLAMPS WON'T OPEN BY HAND, AND THERE'S NO TIME.");
         yield me("I PROMISED I'D BE THERE WHEN SHE WOKE.");
+        yield me("I'M SORRY, MAR.");
       }
     },
 

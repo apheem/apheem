@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.9-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.10-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.9-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.10-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,15 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.10: Cody's calls on the story audit
+
+Cody read the [story audit](https://claude.ai/artifact/SMRYSh6QmPqsC6SseGEoZC) and picked. This is the first part of building it; `HANDOFF.md` says what's next.
+
+- **Mara, revealed slowly.** The hero dreams on each of the story's four nights, and each dream is clearer and longer than the last: two pods in the cold (the raid cuts it off), a lamp and a list, a kitchen in the rain with two tickets, and boarding day, when Mara goes under first. 312 years asleep took the hero's memory, and it comes back a night at a time. Around the dreams there's a voice before the first card, the hero turning to 0418 on waking, a thaw the ship refuses, Shim's "IS SHE A GHOST TOO?" ("NOT A GHOST."), and a few lines from Wick, the freed Tallyman and Gasket. Mara's list comes back while you play, as thoughts over the hero's head that don't stop you. Nobody says "sister" until the end. The hero stays a mystery: the dreams show silhouettes, and nobody says the hero's name.
+- **Pictures behind the epilogue.** Every ending's cards now sit under a small pixel scene: Shim on the ground, Gasket breathing out or counting by the fire, Solder's gate, the village with its lanterns, the Wardens, the pods, Mara under the sky, the Navigator's lamp, the Deserter's boat. They're drawn in code, placeholders like the rest of the art.
+- **Spare shards become scrap.** Shards still level the weapon in hand. Any it can't use (it's at level 3, or nothing's out) are kept as scrap, shown beside the XP bar. Solder's bench, by her door in the Warrens (and at the Crew Camp if she came up alive), turns scrap into Plating (+2 health, three times), a shard Magnet (twice) and Steady Hands (a hit costs half the shards).
+- **A route that closes.** Leave Solder under the beam and nobody holds the culvert: the keel line floods behind you, its shutter jams, and the way to the Spine is down through the **Overflow Pipes**, a new room under the station with a flooded sump, eels and a drowned Warden. With Solder alive, the pipes are only a dare, with a Suit Cell at the end.
 
 ## How the rooms are checked
 

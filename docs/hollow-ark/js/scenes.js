@@ -8,6 +8,10 @@
 //         (press: true waits for Confirm instead of a hold, and skipping a scene doesn't pass it)
 //         (with space: 'in' | true | 'out' and ark: { x, y, s }, the Ark drifts among stars behind the text;
 //         ark.turn swings it round by that angle, and world: { x, y, r } puts the new world in the sky)
+//         (pic: 'name' puts one of pictures.js's scenes behind the text, which then sits under it)
+//   yield { dream: 'name', clarity: 0.3 }      the hero dreams: a picture fills the screen, washed and broken up
+//                                              less as clarity nears 1, and what's said shows over it
+//   yield { dream: false }                     the dream fades and the scene goes on (it's over a black screen)
 //   yield { fade: 'out' | 'in' }               fade the screen to black or back
 //   yield { walk: actor, x: 120, speed: 1 }    move a person or machine to an x position
 // Any other side effect (sound, shake, setting a flag) is plain code between the yields.
@@ -20,6 +24,7 @@
   const LINES = 3;
   const SPEED = { slow: 0.5, normal: 1, fast: 3, instant: 999 };
   const PRESS_AFTER = 45; // a card that waits for a press takes one only after this many frames, so it can't be mashed past
+  const DREAM_FADE = 50; // frames for a dream to come and to go
   const NONE = { held: {}, pressed: {}, released: {} };
 
   function run(world, gen, opts = {}) {
@@ -35,6 +40,7 @@
       scene.result = undefined;
       if (r.done) {
         if (world.scene === scene) world.scene = null;
+        world.dream = null; // a dream never outlasts its scene
         return;
       }
       const step = r.value || {};
@@ -72,6 +78,18 @@
       if (scene.skipping) return false;
       step.t = 0;
       world.card = step;
+      return true;
+    }
+    if (step.dream !== undefined) {
+      if (step.dream) {
+        world.dream = { name: step.dream, clarity: step.clarity === undefined ? 0.5 : step.clarity, t: 0, out: 0 };
+        return false;
+      }
+      if (!world.dream || scene.skipping) {
+        world.dream = null;
+        return false;
+      }
+      world.dream.out = 1;
       return true;
     }
     if (step.fade) {
@@ -118,6 +136,10 @@
     const step = scene.step;
     let done = false;
     const go = input.pressed.confirm || input.pressed.fire || input.pressed.jump;
+    if (world.dream) {
+      world.dream.t++;
+      if (world.dream.out) world.dream.out++;
+    }
 
     if (scene.skipping && step && !step.choice && !step.press && !(step.until && !step.until())) done = true;
     else if (step && step.say !== undefined) {
@@ -126,7 +148,7 @@
       if (step.shown < len) {
         const before = Math.floor(step.shown);
         step.shown = Math.min(len, step.shown + (SPEED[HA.settings.textSpeed] || 1));
-        if (Math.floor(step.shown) > before && Math.floor(step.shown) % 3 === 0) HA.audio.play('blip', step.say);
+        if (Math.floor(step.shown) > before && Math.floor(step.shown) % 3 === 0) HA.audio.play('blip', step.voice || step.say);
         if (go && step.shown > 1) step.shown = len;
       } else if (go) {
         HA.audio.play('menuMove');
@@ -149,6 +171,11 @@
         done = true;
         world.card = null;
       }
+    } else if (step && step.dream === false) {
+      if (!world.dream || world.dream.out > DREAM_FADE) {
+        world.dream = null;
+        done = true;
+      }
     } else if (step && step.fade) {
       const target = step.fade === 'out' ? 1 : 0;
       world.fade = HA.approach(world.fade, target, 1 / (step.frames || 20));
@@ -165,6 +192,7 @@
     if (done) {
       if (step && step.walk) step.walk.walking = false;
       if (step && step.card) world.card = null;
+      if (step && step.dream === false) world.dream = null;
       scene.step = null;
       advance(world, scene);
     }
@@ -237,7 +265,7 @@
       g.fillRect(0, H - 4, W, 4);
     }
     const step = scene.step;
-    if (quiet) return;
+    if (quiet || world.dream) return; // a dream's lines are drawn over it (drawCard)
     if (step && step.say !== undefined) drawSay(world, g, step);
     if (step && step.choice) drawChoice(world, g, step);
   }
@@ -251,9 +279,8 @@
     return p.y + p.h - world.cam.y > BOX.y - 4 ? BOX.top : BOX.y;
   }
 
-  function drawSay(world, g, step) {
+  function drawSay(world, g, step, y = boxY(world)) {
     const page = step.pages[step.page];
-    const y = boxY(world);
     panel(g, BOX.x, y, BOX.w, BOX.h);
     if (step.say) {
       const nw = HA.font.measure(step.say) + 10;
@@ -305,8 +332,20 @@
     });
   }
 
+  // A dream fills the screen, over the room and its fade, and what's said in it shows over that.
+  function drawDream(world, g, quiet) {
+    const d = world.dream;
+    const a = Math.max(0, Math.min(1, d.t / DREAM_FADE, 1 - d.out / DREAM_FADE));
+    g.fillStyle = '#05060d';
+    g.fillRect(0, 0, W, H);
+    HA.pictures.dream(g, d.name, d.clarity, d.t, a);
+    const step = world.scene && world.scene.step;
+    if (!quiet && step && step.say !== undefined) drawSay(world, g, step, BOX.y);
+  }
+
   // Full-screen cards sit above everything, fade included.
   function drawCard(world, g, quiet) {
+    if (world.dream) drawDream(world, g, quiet);
     const card = world.card;
     if (!card) return;
     const hold = card.press ? Infinity : card.hold || 150;
@@ -314,11 +353,13 @@
     g.fillStyle = '#05060d';
     g.fillRect(0, 0, W, H);
     if (card.space) drawSpace(world, g, card, hold);
+    if (card.pic) drawPic(world, g, card, hold);
     if (quiet) return;
     g.globalAlpha = Math.max(0, a);
     const lines = card.card;
     const gap = card.gap || 12;
-    const top = card.top !== undefined ? card.top : H / 2 - (lines.length * gap) / 2;
+    const below = HA.pictures.GROUND + 4; // under a picture, the text sits in the dark band below the ground
+    const top = card.top !== undefined ? card.top : card.pic ? below + (H - below) / 2 - ((lines.length - 1) * gap) / 2 - 3 : H / 2 - (lines.length * gap) / 2;
     lines.forEach((line, i) => {
       // A pair of columns ({ a, b }) meets in the middle: a name, and its value.
       if (line && line.a !== undefined) {
@@ -331,6 +372,17 @@
     });
     if (card.press && card.t > PRESS_AFTER) HA.font.draw(g, '{confirm} CONTINUE', W - 8, H - 14, '#6c7894', { align: 'right' });
     g.globalAlpha = 1;
+  }
+
+  // Behind an epilogue card: its picture, fading in and out with the card, and a dark band under it for the text.
+  function drawPic(world, g, card, hold) {
+    g.globalAlpha = HA.clamp(Math.min(card.t / 30, (hold - card.t) / 30), 0, 1);
+    HA.pictures.draw(g, card.pic, world.cardClock || 0, card.picOpts || {});
+    g.globalAlpha = 1;
+    g.fillStyle = '#05060d';
+    g.fillRect(0, HA.pictures.GROUND + 4, W, H - HA.pictures.GROUND - 4);
+    g.fillStyle = 'rgba(5,6,13,0.6)';
+    g.fillRect(0, HA.pictures.GROUND, W, 4);
   }
 
   // Behind the opening cards: stars, and the Ark far off among them, drifting on.

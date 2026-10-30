@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth), 3.4 (the Flooded Ballast), 3.5 (the Engine Spine), 3.6 (the Command Tower) and 3.7 (the Dreaming Deck) are built, and 3.8's checks and run clock are in.** All five endings can be reached in play (Deserter, Crash, Dominion, Overgrown and Homecoming), and `tests/playthrough.js` plays each one from a new game. **Cody played to an ending in about 58 minutes** against a budget of about 4h 40m, and 0.3.9 fixes what they ran into (3.9). What's left is the bigger part of their notes: the game is short, and the bonds (the hero and Mara above all) aren't built. A story audit and plan ([Claude Doc](https://claude.ai/artifact/SMRYSh6QmPqsC6SseGEoZC)) sets out the options; nothing from it is built until Cody picks. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth), 3.4 (the Flooded Ballast), 3.5 (the Engine Spine), 3.6 (the Command Tower) and 3.7 (the Dreaming Deck) are built, and 3.8's checks and run clock are in.** All five endings can be reached in play (Deserter, Crash, Dominion, Overgrown and Homecoming), and `tests/playthrough.js` plays each one from a new game. **Cody played to an ending in about 58 minutes** against a budget of about 4h 40m, and 0.3.9 fixes what they ran into (3.9). What's left is the bigger part of their notes: the game is short, and the bonds (the hero and Mara above all) aren't built. A story audit and plan ([Claude Doc](https://claude.ai/artifact/SMRYSh6QmPqsC6SseGEoZC)) set out the options, and Cody picked (3.10). `HANDOFF.md` says what's in progress. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -176,11 +176,59 @@ These are starting reservations, not exact room positions. Keep areas inside the
 The hero is the Late Waker (brief option A): a colonist thawed from pod 0417, 232 years late. They wear a cryo suit with an amber visor, and they never speak aloud. They have:
 
 - **A trade.** They were a lander pilot. That's why the Navigator woke them, and why the Purser's boat ("THE BOAT WANTS A PILOT") is a real way out.
-- **A person.** Mara is still asleep in pod 0418, hanging in the rack beside the hero's empty clamps in the Cryo Bay. The game never says what she is to the hero. The hero's journal says only: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE." Every ending says what happens to her.
+- **A person.** Mara is still asleep in pod 0418, hanging in the rack beside the hero's empty clamps in the Cryo Bay. She is the hero's younger sister, but the game doesn't say so until the end: the player works it out from dreams that come back a little clearer each night (Cody's call, Oct 30; see **Mara, and the dreams** below). The hero's journal starts with only: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE." Every ending says what happens to her.
 - **A voice.** The first-person journal ("I WOKE IN POD 0417...") is the hero's inner monologue, one or two lines per area. It shifts with the tracks. At Bloom 5: "THE GARDENS SMELLED LIKE HOME." At low Mercy the entries get shorter and start counting things.
 - **A name the Hullfolk give or withhold.** See the Mercy track.
 
 The arc runs from a sleeper who arrived 232 years too late to someone who decides whether to stay.
+
+### Mara, and the dreams (3.10)
+
+Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dreams about her on each night they sleep, and each dream is a little clearer and a little longer. Nobody says "sister" until the end. The hero stays a mystery.
+
+**The truth (what the player pieces together).** Mara is the hero's younger sister, about ten when they boarded. Their mother won two places on the Ark and stayed behind. She told the hero to keep hold of Mara's hand the whole way. In the cryo bay Mara was scared, so she went under first while the hero watched. She made the hero promise to be there when she woke, the first thing she'd see, and not late. She kept a list of things to do on the new world:
+
+1. See a real sky.
+2. Eat something that grew in dirt.
+3. Sleep outside. All three of us.
+4. Learn to swim.
+5. (Added for the hero, in the cryo bay.) Don't be late.
+
+**Rules.**
+- "Sister" is never said before the end. It's said first in the Dreaming Deck's First Night hall (true path) or in the epilogue (every ending).
+- The hero stays a mystery: no name, no face, no gender. Dream pictures show silhouettes. Nobody in them says the hero's name.
+- Why the hero doesn't simply know: 312 years asleep took their memories, and they come back in dreams. The hero learns it at the player's pace.
+- Mara's voice is pale lilac (the Navigator already has the pale cyan); the hero's is the journal's amber; their mother's is a soft green. There are no name tags in the dreams until the fourth, where Mara's reads MARA.
+- Each list item comes back once while awake, after the dream that names it. Keep these to one line.
+
+**Where each piece comes.**
+
+| When | Where | What's said or shown |
+| --- | --- | --- |
+| Before the first card | Black | A girl's voice, faint: "...PROMISE?" |
+| Waking | Cryo Bay | The hero turns to 0418 before the lead appears: "0418. STILL ASLEEP." Reading the plate adds the refused thaw: "THAW 0418? DENIED. AUTHORITY: NAV OR HELM KEY." Then: "...I'LL FIND WHOEVER CAN." |
+| First night | Warrens, talking to Shim | "THERE WAS ANOTHER BOX NEXT TO YOURS. SHE DIDN'T FALL OUT. IS SHE A GHOST TOO?" The hero: "NOT A GHOST." |
+| Dream 1 | The raid night | Two pods in blue dark, mostly static. "...IS IT ALWAYS THIS COLD?" "ONLY AT FIRST." "PROMISE YOU'LL BE—" The gate blows and wakes the hero. |
+| Dream 2 | Wick's goodbye night | A room at night, a lamp, a child writing. The list, items 1 and 2. Next morning Shim: "YOU TALK IN YOUR SLEEP. YOU SAID 'MAR'." |
+| The Gardens | First soil | "DIRT. REAL DIRT." (item 2) |
+| Wick's escort | The Gardens | "WHO'S WAITING ON YOU, SLEEPER?" "SOMEONE WHO'S STILL ASLEEP." "THEN WE'RE IN THE SAME LINE OF WORK." |
+| Shim names the hero LATE | Warrens return | The hero: "LATE. ...SOMEONE USED TO CALL ME THAT." |
+| Dream 3 | The night Solder leaves | A kitchen, rain, two tickets on the table, a tall figure: "TWO PLACES. THAT'S ALL THEY'D GIVE ME." "KEEP HOLD OF HER HAND. THE WHOLE WAY." Item 3. |
+| The released Tallyman | Labyrinth | "ITEM: POD 0418. MARA. COUNTED EVERY NIGHT. STILL THERE." |
+| First deep water | Ballast | "NUMBER FOUR. LEARN TO SWIM." (item 4) |
+| Gasket | Crew Camp | Her brother. "YOU'VE GOT THE LOOK HE HAD. LIKE SOMEBODY'S WAITING ON YOU." |
+| Dream 4 | The Crew Camp night | Boarding day, clear: the bright new cryo bay, two open pods. "YOU GO FIRST." "NO. YOU FIRST. I'LL WATCH THE WHOLE TIME." Item 5. "PROMISE?" "PROMISE." |
+| The Dome | Command Tower | The window: "NOT A REAL SKY. NOT YET." (item 1) |
+| The reveal | First Night hall (true path) | The Navigator remembers 0417 holding the glass until the frost came. The hero: "MY SISTER." |
+| The reveal | Every epilogue | Mara's card names her. Homecoming: "MY SISTER WOKE UNDER A REAL SKY." "I WASN'T LATE." Then "THAT NIGHT WE SLEPT OUTSIDE." Others follow what happened to her. |
+
+**As built (3.10).** The dreams are in `js/story/mara.js` (`HA.story.dream(world, n)`), drawn by `js/pictures.js` (`pods`, `list`, `tickets`, `boarding`) at clarity 0.2, 0.45, 0.7 and 0.95. Each dream leaves a line in the journal and sets `flags.dream1` to `dream4`. The list items while awake are thoughts over the hero's head that don't stop play (`HA.story.think`), apart from the Dome, which is in its scene. Additions to the table:
+- Shim, the morning after the second dream: "YOU TALK IN YOUR SLEEP. YOU SAID 'MAR'." "WHO'S MAR?" The hero doesn't answer.
+- Wick's question is part of her talk at the cradles (optional).
+- Gasket, at lights-out before the fourth dream: "MY BROTHER HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM." "GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT."
+- The First Night hall: "ONE SLEEPER WOULD NOT LIE DOWN UNTIL THE ONE IN 0418 WAS UNDER." "YOU HELD THE GLASS UNTIL THE FROST CAME. THE CREW HAD TO LIFT YOU INTO 0417." "I REMEMBER NOW. ALL OF IT." "I HAVE COUNTED HER EVERY NIGHT SINCE. FOR YOU." "MARA. MY LITTLE SISTER."
+- The run for the sleds, at her clamps: "HOLD ON, MAR. I WON'T BE LATE." (pods launched) or "I'M SORRY, MAR." (not).
+- The epilogue's lines for each ending are in `js/endings.js`; the Overgrown one is what's left of the hero, in pink: "I'M RIGHT HERE, LITTLE SISTER." "I'M NOT LATE."
 
 ---
 
@@ -807,7 +855,33 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 - [x] The ending named before its epilogue; after the credits, a results card (who reached the new world, out of how many), what closed the other way, and THIS RUN, each waiting for a press
 - [x] The run for the sleds shows where to go (Gasket, the lead, a bar under the clock, a stencil in the Cryo Bay from the start)
 - [x] Scenes waiting on a visit home don't play during the run for the sleds
-- [ ] Cody decides on the story audit and plan: Mara and the other bonds, the length, upgrades bought with shards, routes that open and close with choices, and pictures behind the epilogue
+- [x] Cody decides on the story audit and plan (Oct 30; see 3.10)
+
+### 3.10 Cody's calls on the story audit
+Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through dreams; upgrades are option B (spare shards bank as scrap); the main path stays at 4–6 hours plus side content, and a first-time player's photo doesn't block the build; deaths and choices can lock a main path so the hero goes round a harder way, and can close side content; the epilogue gets pictures now. Difficulty modes, and making upgrades matter more in them, come later. `HANDOFF.md` says where the work stands between sessions.
+- [x] A picture layer behind cards and dream scenes (pixel art drawn in code: `js/pictures.js`; a card takes `pic`, a scene can `yield { dream }`)
+- [x] Mara: the opening voice, the turn to 0418 and the refused thaw, Shim's "NOT A GHOST.", four dreams on the story's four nights, the list items while awake, the lines from Wick, the Tallyman and Gasket, the LATE line, the reveal in the First Night hall and in every epilogue (`js/story/mara.js`; the browser check plays each dream)
+- [x] Pictures behind the epilogue cards, all five endings (and each ending's Mara card says "sister")
+- [x] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades (`js/story/bench.js`: Plating, Magnet, Steady Hands; benches in the Warrens and, with Solder alive, the Crew Camp)
+- [x] Routes that close: the design (below, "Routes that close")
+- [x] Routes that close, lock 1: Solder left under the beam floods the keel, and the way to the Spine is the Overflow Pipes (the station's `Z` shutter and `e` hatch; `overflow-pipes`; the Spine Foot's `e`)
+- [ ] Routes that close, lock 2: the gate fell, and the Warrens' hall is rubble; the way through is the deep walls
+- [ ] Routes that close, lock 3: side content each choice shuts (the greenhouse wing and Sorrel; Flux's morning with Shim), with a journal line for each
+- [ ] The rest of the audit's story fixes: Shim on every path (4), the villains set up early (6), the small payoffs (7)
+- [ ] Length: the tram home after the Ballast (5), Wick's longer escort (8), new rooms on the main path (the Ballast and the Labyrinth first), Sorrel (9) and the other side quests
+
+### Routes that close (3.10 design)
+
+Cody's call: when someone dies, doesn't make it, or the hero makes a certain choice, a main way can shut, and the hero goes round a harder way (pipes, tunnels). Choices can also close side content. Each closure gets a journal line, in the style of the Homecoming requirements, so the player knows it was their doing. Build them in this order.
+
+1. **Solder left under the beam (choice 9) floods the keel.** Nobody holds the culvert, so its water comes through the Jammed Hatch after the hero. In the Keel Tram Station the lower trench fills, and the shutter on its east exit to the Spine Foot jams shut under the water. The way to the Spine is the old **Overflow Pipes**: two new rooms on the grid beside the station (a long crawl above the flooded keel, with steam leaks, eels in the sumps and grapple rings; then a riser that comes up through a floor hatch in the Spine Foot). It takes about five minutes and has no rest pod. With Solder alive the station stays dry. She warns the hero off the pipes, which then open as an optional side path with a Suit Cell at the far end. Journal: "THE KEEL FLOODED BEHIND ME. WITHOUT SOLDER, NOBODY HELD THE CULVERT."
+2. **The gate fell (the pistol upgraded, choice 5) leaves the Warrens' hall in rubble.** After the raid, the floor between the village pod and the sump hatch is caved in. The way to the hatch (the Labyrinth, the bench, the run for the sleds) is a crawl through the **deep walls**, where the village hid: tight vents and Bloomsworn nests, one new room. On the Crash run, against the clock, it makes the run longer. Journal: "THE GATE FELL. THE HALL CAME DOWN WITH IT. WE LIVE IN THE WALLS AGAIN."
+3. **Side content each choice shuts.** The Pruner salvaged (choice 2): the greenhouse wing it guarded stays sealed, and Sorrel's trail starts there, so her side quest never opens. Flux's pack taken (choice 6): he never comes home, so there's no morning with Shim. Each one gets a journal line when it shuts.
+
+How to build lock 1:
+- Put the two pipe rooms on the grid in free space next to the station (440, 207) and the Spine Foot (480, 185). Rooms join only at their sides, so use a floor hatch or ladder where the shapes don't line up, as the Spine does.
+- Make the station's east shutter a door whose `open` is `s.people.solder !== 'dead'`. Fill the trench with water (`~`) on entry when she's dead, the way the flood fills rooms.
+- Add the rooms to `rooms-check.js`'s expectations as usual, and give the Crash route in `playthrough-routes.js` a step through the pipes, since that route leaves Solder.
 
 ---
 

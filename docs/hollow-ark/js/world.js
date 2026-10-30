@@ -960,6 +960,19 @@
     g.globalAlpha = 1;
   }
 
+  // Scrap carried for Solder's bench, once there is any; it brightens as more comes in.
+  function drawScrap(g, world, x, y) {
+    const n = world.state.scrap;
+    if (!n) return;
+    if (world.scrapFlash > 0) world.scrapFlash--;
+    const lit = world.scrapFlash > 0 && Math.floor(world.scrapFlash / 4) % 2;
+    g.fillStyle = lit ? '#ffffff' : '#5fd4e8';
+    g.fillRect(x, y + 2, 3, 3);
+    g.fillStyle = '#10121c';
+    g.fillRect(x + 1, y + 3, 1, 1);
+    HA.font.draw(g, String(n), x + 5, y, lit ? '#ffffff' : '#9fb6c8');
+  }
+
   // ---- HUD: health, weapon level and XP are always readable at a glance ----
   function drawHud(g, world, quiet) {
     const p = world.player;
@@ -1012,6 +1025,7 @@
       g.fillStyle = '#fff0a8';
       g.fillRect(xpX, 18, fill, 1);
       if (max) HA.font.draw(g, 'MAX', xpX + xpW + 4, 17, '#fff0a8');
+      drawScrap(g, world, xpX + xpW + 24, 17);
       if (w.id === 'cannon') {
         g.fillStyle = '#10121c';
         g.fillRect(xpX - 1, 25, xpW + 2, 4);

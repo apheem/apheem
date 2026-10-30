@@ -331,6 +331,7 @@
       }
       yield { wait: 70 };
       yield { fade: 'out', frames: 50 };
+      yield* S.dream(world, 3);
       // Morning. The hero wakes at the village pod. Solder is gone, and the hatch is open.
       s.flags.solderLeft = true;
       s.flags.climbPlanned = true;
@@ -441,6 +442,8 @@
     yield say('SHIM', "GRAN SAYS IF YOU'RE GOING TO KEEP COMING BACK, YOU NEED A PROPER NAME.");
     yield say('SHIM', "YOU'RE NOT A SLEEPER ANYMORE. YOU'RE LATE.");
     yield say('SHIM', "THAT'S YOUR NAME.");
+    yield { wait: 30 };
+    yield me('LATE. ...SOMEONE USED TO CALL ME THAT.');
     shim.homeX = shim.x;
     S.addStory(world, 'SHIM GAVE ME A NAME. NOT SLEEPER ANY MORE: LATE.');
   }

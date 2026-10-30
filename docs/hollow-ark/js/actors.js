@@ -1295,8 +1295,9 @@
       const dx = p.x + p.w / 2 - (k.x + k.w / 2);
       const dy = p.y + p.h / 2 - (k.y + k.h / 2);
       const d = Math.hypot(dx, dy);
-      if (k.kind === 'shard' && d < 40 && !p.dead && k.t > 14) {
-        // Energy is pulled toward the hero.
+      const pull = HA.story.bench ? HA.story.bench.pull(world.state) : 40;
+      if (k.kind === 'shard' && d < pull && !p.dead && k.t > 14) {
+        // Energy is pulled toward the hero (from further with the bench's magnet).
         k.vx += (dx / d) * 0.35;
         k.vy += (dy / d) * 0.35;
         k.vx *= 0.92;
