@@ -140,8 +140,8 @@
     ],
   });
 
-  // The sump, under the village: the old crew's keel tram, dead at its platform, and the way on into the Cargo
-  // Labyrinth. Reached by the floor hatch by Solder's bench, once she opens it.
+  // The sump, under the village: the old crew's keel tram, dead at its platform, and the way on west into the
+  // Cargo Labyrinth. Reached by the floor hatch by Solder's bench, once she opens it.
   HA.rooms.add({
     id: 'sump',
     area: 'warrens',
@@ -153,7 +153,6 @@
       T: { type: 'log', id: 'tram' },
       h: { type: 'hatch', name: 'the ladder up', to: 'warrens', up: true },
     },
-    unbuilt: { left: 'THE CARGO LABYRINTH' },
     scenery: [
       { kind: 'pipes', y: 4 },
       { kind: 'tram', x: 50, y: 18, tunnel: 68, x1: 78 },

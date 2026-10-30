@@ -102,6 +102,7 @@
   function npcState(world, id) {
     const f = world.state.flags;
     if (id === 'shim' && world.def.id === 'thaw-corridor') return 'out';
+    if (PEOPLE[id] && PEOPLE[id].away) return 'out'; // people met away from the Warrens are always out
     if (!f.metHullfolk) return 'hidden';
     if (f.raid && !f.reunion) return id === 'tamp' || id === 'brine' ? 'hidden' : 'out';
     // Once the taken are home, the village comes out to the hero, unless they've started calling them COUNTER.
@@ -152,6 +153,7 @@
     g.scale(n.facing || 1, 1);
     g.drawImage(frame.img, -Math.floor(frame.w / 2), 0);
     if (n.lantern) HA.scenery.miniLantern(g, 2, frame.h - 7);
+    if (n.pack && HA.story.drawPack) HA.story.drawPack(g, -8, 5, true);
     if (n.wrench) {
       g.fillStyle = '#6c7894';
       g.fillRect(4, 5, 1, 6);
@@ -767,7 +769,7 @@
         prompt: "THE BAILIFF'S CORE IS STILL LIT.",
         options: [
           { label: 'RELEASE IT', confirm: { title: 'RELEASE THE BAILIFF?', gain: 'NOTHING, FOR NOW', lose: '+4 MAX HEALTH FROM ITS CORE' } },
-          { label: 'SALVAGE ITS CORE', confirm: { title: "TEAR OUT THE BAILIFF'S CORE?", gain: '+4 MAX HEALTH', lose: 'THE BAILIFF, FOREVER' } },
+          { label: 'SALVAGE ITS CORE', confirm: { title: "TEAR OUT THE BAILIFF'S CORE?", gain: '+4 MAX HEALTH', lose: HA.endings.wardenCloses(s, 'bailiff') ? 'THE BAILIFF, AND THE TRUE ENDING' : 'THE BAILIFF, FOREVER' } },
         ],
       },
     };
@@ -934,10 +936,15 @@
     run(world, world.boss.type === 'bailiff' ? 'bossDefeated' : world.boss.type + 'Defeated');
   }
 
-  // A lift or a hatch: each area's story decides whether it runs and what happens on the way.
+  // A lift or a hatch: each area's story decides whether it runs and what happens on the way. A link can name its
+  // own scene; one to an area a later build adds says so instead.
   function useLink(world, link) {
     world.link = link;
-    run(world, link.legend.type === 'lift' ? 'lift' : 'hatch');
+    if (!HA.rooms.byId[link.legend.to]) {
+      world.toast(link.legend.unbuilt + ' · COMING IN THE NEXT BUILD', 150);
+      return;
+    }
+    run(world, link.legend.scene || (link.legend.type === 'lift' ? 'lift' : 'hatch'));
   }
 
   // Music the story asks for, or undefined to let the room choose. Later areas' hooks speak first.

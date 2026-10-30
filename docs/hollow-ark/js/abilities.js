@@ -130,8 +130,8 @@
         best = h;
       }
     }
-    HA.audio.play(best ? 'harpoon' : 'empty');
     if (!best) return false;
+    HA.audio.play('harpoon');
     if (best.hatch) {
       // A ring on a hatch: the harpoon bites, and the winch tears the hatch open instead of pulling the hero.
       world.state.flags[best.hatch] = true;
@@ -139,7 +139,8 @@
       world.shake(3);
       return true;
     }
-    p.grapple = { x: best.x, y: best.y, phase: 'pull' };
+    // A hook can ride on something that moves (the Tallyman's crane); the line follows it.
+    p.grapple = { x: best.x, y: best.y, phase: 'pull', hook: best };
     p.vx = 0;
     p.vy = 0;
     p.jumping = false;
@@ -162,6 +163,14 @@
     if ((p.grappleCool || 0) > 0) p.grappleCool--;
     const gr = p.grapple;
     if (!gr) return false;
+    if (gr.hook && gr.hook.gone) {
+      p.grapple = null;
+      return false;
+    }
+    if (gr.hook) {
+      gr.x = gr.hook.x;
+      gr.y = gr.hook.y;
+    }
     const tx = gr.x - p.w / 2;
     const ty = gr.y + 3;
     if (gr.phase === 'pull') {
@@ -172,6 +181,14 @@
         gr.phase = 'hang';
         p.vx = 0;
         p.vy = 0;
+        // A hook that is a weak point (the Tallyman's core) takes the hero's arrival as a blow, and throws them off.
+        if (gr.hook && gr.hook.strike) {
+          gr.hook.strike(world, p);
+          p.grapple = null;
+          p.vy = -1.5;
+          p.vx = -p.facing * 1.2;
+          return false;
+        }
       } else {
         const hit = HA.room.move(world.room, p, (dx / d) * GRAPPLE.speed, (dy / d) * GRAPPLE.speed);
         if (hit.left || hit.right || hit.up || hit.down) gr.phase = 'hang'; // snagged on the way: hang there
@@ -180,6 +197,8 @@
     if (gr.phase === 'hang') {
       p.vx = 0;
       p.vy = 0;
+      // Hanging from a moving hook: carried along with it.
+      if (gr.hook && gr.hook.move) HA.room.move(world.room, p, tx - p.x, ty - p.y);
       const dir = (input.held.right ? 1 : 0) - (input.held.left ? 1 : 0);
       if (dir) p.facing = dir;
     }

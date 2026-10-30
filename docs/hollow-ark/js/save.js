@@ -38,6 +38,7 @@
       journal: { story: [], choices: [], talk: [] },
       lead: '',
       rest: null,
+      rested: {}, // every room whose rest pod the hero has rested at: the pods travel runs between (3.3)
       time: 0,
       deaths: 0,
       mercy: 0,
@@ -84,6 +85,8 @@
       delete s.flags.sliceDone;
     }
     if (!Array.isArray(s.endingsSeen)) s.endingsSeen = [];
+    // Saves from before travel between pods still know the last pod they rested at.
+    if (s.rest && s.rest.room) s.rested[s.rest.room] = true;
     return s;
   }
 

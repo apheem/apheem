@@ -18,8 +18,24 @@
     const p = world.player;
     const def = world.def;
     const here = { x: def.gx + Math.floor((p.x + p.w / 2) / 8), y: def.gy + Math.floor((p.y + p.h / 2) / 8) };
-    return { world, tab: tab || 'map', cursor: Object.assign({}, here), here, section: 0, scroll: 0, image: null, bounds: null, zoom: 1, t: 0, rep: {} };
+    // Opened at a rest pod, once the Labyrinth is reached, the map can take the hero to any pod rested at before.
+    const travel = !!(world.near && world.near.kind === 'pod' && world.state.flags.cargo && !world.scene);
+    return { world, tab: tab || 'map', cursor: Object.assign({}, here), here, section: 0, scroll: 0, image: null, bounds: null, zoom: 1, t: 0, rep: {}, travel, pods: travel ? podsRested(world) : [] };
   }
+
+  // Every rest pod the hero has rested at, other than the one they're standing at, on the ship grid.
+  function podsRested(world) {
+    const out = [];
+    for (const r of HA.rooms.list) {
+      if (!world.state.rested[r.id] || r.id === world.def.id) continue;
+      r.map.forEach((row, ty) => {
+        const tx = row.indexOf('S');
+        if (tx >= 0) out.push({ room: r.id, name: HA.rooms.AREAS[r.area].name + ' · ' + r.name, x: r.gx + tx, y: r.gy + ty, rx: tx * 8, ry: ty * 8 + 8 - 14 });
+      });
+    }
+    return out;
+  }
+  const podAt = (scr) => scr.pods.find((pd) => Math.abs(pd.x - scr.cursor.x) <= 3 && Math.abs(pd.y - scr.cursor.y) <= 3);
 
   // ---- Map image: one pixel per tile, only what has been seen ----
   // It covers the rooms visited so far. While those fit, the map is drawn at double size; once the ship
@@ -41,7 +57,7 @@
         for (let tx = 0; tx < r.w; tx++) {
           if (!HA.save.isSeen(world, r, tx, ty)) continue;
           const ch = r.map[ty][tx];
-          const solid = ch === '#';
+          const solid = ch === '#' || ch === '%';
           if (!solid) {
             g.fillStyle = ch === '^' ? '#5c2479' : ch === '=' ? '#3a4258' : '#141a2c';
             g.fillRect(ox + tx, oy + ty, 1, 1);
@@ -55,7 +71,7 @@
           ].some(([dx, dy]) => {
             const row = r.map[ty + dy];
             const c = row && row[tx + dx];
-            return c !== undefined && c !== '#';
+            return c !== undefined && c !== '#' && c !== '%';
           });
           if (edge) {
             g.fillStyle = color;
@@ -133,6 +149,13 @@
       const b = scr.bounds;
       scr.cursor.x = HA.clamp(scr.cursor.x, b.minX, b.maxX - 1);
       scr.cursor.y = HA.clamp(scr.cursor.y, b.minY, b.maxY - 1);
+      const pod = scr.travel && podAt(scr);
+      if (pod && (input.pressed.confirm || input.pressed.jump || (overMap && pointer.click))) {
+        // Off to another pod: the world plays the trip once the map is closed.
+        world.travelTo = pod;
+        HA.audio.play('menuOk');
+        return 'close';
+      }
       if (input.pressed.confirm || input.pressed.jump || (overMap && pointer.click)) {
         // Drop a marker, or change the one under the cursor, or (after the last kind) remove it.
         const list = world.state.markers;
@@ -207,6 +230,12 @@
       g.strokeRect(sx(r.gx) + 0.5, sy(r.gy) + 0.5, r.w * z - 1, r.h * z - 1);
     }
     for (const m of world.state.markers) HA.font.draw(g, MARKS[m.kind][0], sx(m.x + 0.5), sy(m.y + 0.5) - 3, MARKS[m.kind][1], { align: 'center' });
+    // Pods the hero can travel to ring themselves while the map is open at a pod.
+    for (const pd of scr.pods) {
+      const on = Math.floor(scr.t / 10) % 2;
+      g.strokeStyle = on ? '#b8f4ff' : '#5fd4e8';
+      g.strokeRect(Math.round(sx(pd.x + 0.5)) - 3.5, Math.round(sy(pd.y + 0.5)) - 3.5, 7, 7);
+    }
     if (Math.floor(scr.t / 15) % 2) {
       g.fillStyle = '#ffffff';
       g.fillRect(Math.round(sx(scr.here.x + 0.5)) - 1, Math.round(sy(scr.here.y + 0.5)) - 1, 3, 3);
@@ -223,7 +252,11 @@
     const room = HA.rooms.at(scr.cursor.x * 8, scr.cursor.y * 8);
     const known = room && world.state.visited[room.id];
     HA.font.draw(g, known ? HA.rooms.AREAS[room.area].name + ' · ' + room.name : '', W / 2, 150, known ? HA.rooms.AREAS[room.area].mapColor : '#6c7894', { align: 'center' });
-    HA.font.draw(g, '{confirm} MARKER   {back} CLOSE', W / 2, 161, '#6c7894', { align: 'center' });
+    const pod = scr.travel && podAt(scr);
+    let help = '{confirm} MARKER   {back} CLOSE';
+    if (pod) help = '{confirm} TRAVEL TO THIS POD   {back} CLOSE';
+    else if (scr.travel && scr.pods.length) help = 'PUT THE CURSOR ON A RINGED POD TO TRAVEL';
+    HA.font.draw(g, help, W / 2, 161, pod ? '#b8f4ff' : '#6c7894', { align: 'center' });
   }
 
   const wrap = (text) => [].concat(...HA.scenes.paginate(text));

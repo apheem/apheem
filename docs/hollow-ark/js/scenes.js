@@ -294,7 +294,7 @@
     HA.font.draw(g, o.gain, cx + 50, cy + 24, '#eef4f6');
     HA.font.draw(g, 'LOSE:', cx + 12, cy + 36, '#ff8a8a');
     HA.font.draw(g, o.lose, cx + 50, cy + 36, '#eef4f6');
-    HA.font.draw(g, "THIS CAN'T BE UNDONE.", W / 2, cy + 50, '#9fb6c8', { align: 'center' });
+    HA.font.draw(g, o.note || "THIS CAN'T BE UNDONE.", W / 2, cy + 50, o.note ? '#ff8a8a' : '#9fb6c8', { align: 'center' });
     ['YES', 'NOT YET'].forEach((label, i) => {
       const sel = step.csel === i;
       HA.font.draw(g, sel ? '> ' + label + ' <' : label, W / 2, cy + 62 + i * 11, sel ? '#fff0a8' : '#6c7894', { align: 'center' });

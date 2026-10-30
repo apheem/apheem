@@ -76,7 +76,33 @@
         { cd: 18, dmg: 12, len: 50, speed: 7 },
       ],
     },
+    // The Armory's harpoon, kept for "collection work". Fired at a hook ring it bites and winches the hero up
+    // (see abilities.js); fired at anything else it's a light barb on a line that drags small things back.
+    harpoon: {
+      name: 'GRAPPLE HARPOON',
+      caps: [10, 22, 36],
+      levels: [
+        { cd: 18, speed: 5, range: 96, dmg: 2 },
+        { cd: 16, speed: 5.5, range: 112, dmg: 3 },
+        { cd: 14, speed: 6, range: 128, dmg: 4 },
+      ],
+    },
+    // The Vault's Breach Charges: a few heavy rockets that open cracked walls (and whatever is standing near them).
+    // There are 3, or 5 if the Tallyman's core went into the rack, and a rest pod restocks them.
+    charges: {
+      name: 'BREACH CHARGES',
+      caps: [10, 22, 36],
+      levels: [
+        { cd: 30, speed: 3.2, dmg: 12, blast: 20 },
+        { cd: 26, speed: 3.6, dmg: 15, blast: 22 },
+        { cd: 22, speed: 4, dmg: 18, blast: 26 },
+      ],
+    },
   };
+  // How many charges the rack holds (choice 8).
+  const chargesMax = (s) => (s.wardens.tallyman === 'salvage' ? 5 : 3);
+  // Small things the harpoon's line drags back to the hero.
+  const LIGHT = { crawler: 1, drifter: 1, rat: 1, drone: 1, dropper: 1 };
   const XP_LOSS = 4;
   const XP_LOCK = 150;
 
@@ -135,8 +161,9 @@
     return { x: cx + p.facing * 9, y: p.y + 8, dx: p.facing, dy: 0 };
   }
 
-  // Fire handling, called from the hero's update. fire = { held, pressed, released }.
-  function update(world, fire) {
+  // Fire handling, called from the hero's update. fire = { held, pressed, released }; input is the frame's
+  // controls, which aim the harpoon's grapple.
+  function update(world, fire, input) {
     const p = world.player;
     const w = p.weapons[p.wi];
     if (!w) return; // the hero wakes unarmed
@@ -166,6 +193,20 @@
       if (p.cooldown <= 0 && (fire.pressed || fire.held)) {
         ({ scatter: fireScatter, lancets: fireLancets, thorn: fireThorn })[w.id](world, L, w.level);
         p.cooldown = fire.pressed ? L.cd : Math.round(L.cd * 1.3);
+      }
+    } else if (w.id === 'harpoon') {
+      // Only a fresh press throws the line: a hook in reach takes it, otherwise the barb flies.
+      if (p.cooldown <= 0 && fire.pressed && !p.grapple) {
+        if (!HA.abilities.fireGrapple(world, p, input || { held: {} })) fireHarpoon(world, L, w.level);
+        p.cooldown = L.cd;
+      }
+    } else if (w.id === 'charges') {
+      if (p.cooldown <= 0 && fire.pressed) {
+        if (w.ammo > 0) {
+          w.ammo--;
+          fireCharge(world, L, w.level);
+          p.cooldown = L.cd;
+        } else HA.audio.play('empty');
       }
     } else if (w.id === 'coil') {
       if (fire.held) {
@@ -294,6 +335,72 @@
     HA.audio.play('thorn', level);
   }
 
+  // The harpoon's barb, on its line. It stops at the first thing it hits.
+  function fireHarpoon(world, L, level) {
+    const p = world.player;
+    const m = muzzle(p);
+    world.shots.push({ owner: 'player', kind: 'harpoon', level, x: m.x, y: m.y, vx: m.dx * L.speed, vy: m.dy * L.speed, life: Math.round(L.range / L.speed), dmg: L.dmg, pierce: 0, hits: new Set() });
+    HA.audio.play('harpoon');
+  }
+
+  // A small thing the barb hits is reeled in to the hero's feet, stunned.
+  function reel(world, e) {
+    if (e.boss || !LIGHT[e.type] || e.dead) return;
+    e.yank = 26;
+    e.stun = 40;
+  }
+
+  // A Breach Charge: a slow rocket that speeds up, and bursts on whatever it meets.
+  function fireCharge(world, L, level) {
+    const p = world.player;
+    const m = muzzle(p);
+    world.shots.push({ owner: 'player', kind: 'charge', level, x: m.x, y: m.y, vx: m.dx * L.speed * 0.5, vy: m.dy * L.speed * 0.5, top: L.speed, life: 140, dmg: L.dmg, blast: L.blast, pierce: 0, hits: new Set() });
+    p.vx -= p.facing * (m.dx ? 0.6 : 0);
+    world.muzzleFlash(m.x, m.y, 3);
+    world.shake(1.2);
+    HA.audio.play('charge');
+  }
+
+  function updateCharge(world, s) {
+    s.life--;
+    const sp = Math.hypot(s.vx, s.vy);
+    if (sp < s.top) {
+      s.vx *= 1.06;
+      s.vy *= 1.06;
+    }
+    s.x += s.vx;
+    s.y += s.vy;
+    if (world.time % 2 === 0) world.particles.push({ x: s.x - s.vx, y: s.y - s.vy, vx: -s.vx * 0.2 + HA.rand(-0.2, 0.2), vy: -s.vy * 0.2 + HA.rand(-0.2, 0.2), life: 14, max: 14, color: world.time % 4 ? '#9fb6c8' : '#ffb84d', size: 1, grav: 0 });
+    const t = world.room.tile(Math.floor(s.x / 8), Math.floor(s.y / 8));
+    if (t === HA.room.SOLID || t === HA.room.CRATE) return breach(world, s);
+    for (const e of world.enemies) if (!e.dead && HA.overlap({ x: s.x - 2, y: s.y - 2, w: 4, h: 4 }, e)) return breach(world, s);
+    if (s.life <= 0) breach(world, s);
+  }
+
+  // A charge bursts: enemies in reach take it all, crates go, and a cracked wall in reach is opened for good.
+  function breach(world, s) {
+    s.life = 0;
+    const r = s.blast;
+    for (const e of world.enemies) {
+      if (e.dead) continue;
+      if (Math.hypot(e.x + e.w / 2 - s.x, e.y + e.h / 2 - s.y) <= r + Math.max(e.w, e.h) / 2) world.hurtEnemy(e, s.dmg, HA.sign(e.x + e.w / 2 - s.x));
+    }
+    for (let ty = Math.floor((s.y - r) / 8); ty <= Math.floor((s.y + r) / 8); ty++) {
+      for (let tx = Math.floor((s.x - r) / 8); tx <= Math.floor((s.x + r) / 8); tx++) {
+        if (world.room.tile(tx, ty) === HA.room.CRATE) world.damageCrate(tx, ty, 9);
+      }
+    }
+    for (const d of world.doors) {
+      if (!d.legend.cracked || d.open) continue;
+      if (d.cells.some((c) => Math.hypot(c.tx * 8 + 4 - s.x, c.ty * 8 + 4 - s.y) < r + 6)) world.state.flags[d.legend.cracked] = true;
+    }
+    world.burst(s.x, s.y, ['#ffb84d', '#fff0a8', '#ff9b3d', '#e8434f', '#9fb6c8'], 26, 2.6, 2);
+    world.flashes.push({ x: s.x, y: s.y, life: 4, r: 6 });
+    world.flash('#ffb84d', 4);
+    world.shake(3.5);
+    HA.audio.play('blast');
+  }
+
   // A grenade bursts: everything near takes the blast, flyers half of it, and crates break.
   function explode(world, s) {
     s.life = 0;
@@ -302,7 +409,7 @@
       if (e.dead) continue;
       const d = Math.hypot(e.x + e.w / 2 - s.x, e.y + e.h / 2 - s.y);
       if (d > r + Math.max(e.w, e.h) / 2) continue;
-      const flyer = e.type === 'drifter' || e.type === 'warden';
+      const flyer = e.type === 'drifter' || e.type === 'warden' || e.type === 'drone';
       world.hurtEnemy(e, flyer ? Math.ceil(s.dmg / 2) : s.dmg, HA.sign(e.x + e.w / 2 - s.x));
     }
     for (let ty = Math.floor((s.y - r) / 8); ty <= Math.floor((s.y + r) / 8); ty++) {
@@ -415,6 +522,10 @@
         updateGrenade(world, s);
         continue;
       }
+      if (s.kind === 'charge') {
+        updateCharge(world, s);
+        continue;
+      }
       s.x += s.vx;
       s.y += s.vy;
       s.life--;
@@ -437,6 +548,7 @@
           s.hits.add(e);
           world.hurtEnemy(e, s.dmg, HA.sign(s.vx || 0.01));
           if (s.heal) lancetHeal(world);
+          if (s.kind === 'harpoon') reel(world, e);
           if (s.pierce > 0) s.pierce--;
           else {
             s.life = 0;
@@ -484,5 +596,5 @@
     }
   }
 
-  HA.weapons = { DEFS, make, cap, isMax, addXp, loseXp, update, updateShots, muzzle };
+  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, loseXp, update, updateShots, muzzle, chargesMax };
 })(window.HA);

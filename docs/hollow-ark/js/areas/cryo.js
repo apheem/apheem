@@ -2,6 +2,7 @@
 // The Cryo Deck: frozen sleeper bays where the hero wakes. Cold blues, humming machines, the first Bloom.
 // Map legend beyond the shared one in room.js: P hero's pod   S rest pod   T ship log   G Rivet Pistol
 // A Arc Coil   U Purge Cannon   H suit cell   c crawler   f drifter   w warden sentry   digits: people
+// L the cold lift (down to the Cargo Labyrinth's Cold Store)
 (function (HA) {
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
 
@@ -149,8 +150,12 @@
     name: 'COOLANT HALL',
     gx: 40,
     gy: 23,
-    legend: { H: { secret: 2, name: 'the suit cell' } },
-    scenery: [{ kind: 'pipes', y: 3 }, { kind: 'bloom', x: 78, y: 18, n: 60 }, { kind: 'bloom', x: 105, y: 19, n: 20 }, { kind: 'scrawl', x: 4, y: 12, text: 'HOME ←' }],
+    legend: {
+      H: { secret: 2, name: 'the suit cell' },
+      // The Cold Store's lift, down in the Cargo Labyrinth. It only answers once it has been called from below.
+      L: { type: 'lift', name: 'the cold lift', to: 'cold-store', scene: 'coldLift', lit: (s) => !!s.flags.coldLift },
+    },
+    scenery: [{ kind: 'pipes', y: 3 }, { kind: 'liftshaft', x: 10, y: 20, color: '#0d1426' }, { kind: 'bloom', x: 78, y: 18, n: 60 }, { kind: 'bloom', x: 105, y: 19, n: 20 }, { kind: 'scrawl', x: 4, y: 12, text: 'HOME ←' }],
     hints: [
       { x: 86, y: 12, text: 'IN THE AIR, HOLD {down} TO AIM DOWN', when: (w) => has(w, 'cannon') },
       { x: 49, y: 6, text: 'A LEVEL 2 PURGE CANNON CAN HOLD YOU UP', when: (w) => has(w, 'cannon') && !w.state.taken['coolant-hall:H'] },
@@ -175,7 +180,7 @@
       '........................................................................................................................',
       '.....................................................=====................===...===..............U......................',
       '....................B..........................................................................#####....................',
-      '....................B.........c.............................c.............................c....#####....................',
+      '..........L.........B.........c.............................c.............................c....#####....................',
       '######################################################################................#################.....############',
       '######################################################################^^^^^^^^^^^^^^^^#################^^^^^############',
       '########################################################################################################################',

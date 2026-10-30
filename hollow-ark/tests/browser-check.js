@@ -4,9 +4,11 @@
 // Each run plays by hand-held keys first (move, jump, fire), then runs the story so far quickly through the
 // game's debug helpers: rooms, saving, the raid, the boss, the choice, the reunion and the night after it,
 // and continuing a save, then the Hydroponic Gardens (a bulb, the cradles, the Pruner and its choice, the
-// taken waking, Wick's fight and the Gardener's offer), and the Warrens return (the lift home, telling Shim,
-// the broadcast, the pistol, the night Solder leaves, her gate, the hatch to the sump). Then it loads a Phase 2
-// save to check it upgrades, and plays all five endings.
+// taken waking, Wick's fight and the Gardener's offer), the Warrens return (the lift home, telling Shim,
+// the broadcast, the pistol, the night Solder leaves, her gate, the hatch to the sump), and the Cargo Labyrinth
+// (the cranes, the harpoon, the deserter, Odell, the Tallyman, the Breach Charges, travel between pods, and the
+// Purser's boat to the Deserter ending). Then it loads a Phase 2 save to check it upgrades, and plays all five
+// endings.
 //   node browser-check.js [chromium firefox webkit]
 const http = require('http');
 const fs = require('fs');
@@ -282,8 +284,9 @@ async function play(browserType, url, label) {
       const w = () => HA.debug.world;
       let s = w().state;
       let p = w().player;
+      // (An ending returns to the title, where there's no world left to step.)
       const talkThrough = () => {
-        for (let i = 0; i < 4000 && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
           HA.debug.skipScene();
           HA.debug.step(1);
         }
@@ -494,7 +497,7 @@ async function play(browserType, url, label) {
       out.sump = w().def.id;
       HA.debug.goto('sump', 3, 18);
       HA.debug.step(60, { left: true });
-      out.sumpNote = w().toastText;
+      out.sumpWest = w().def.id;
       HA.debug.goto('sump', 38, 18);
       HA.debug.step(3);
       HA.debug.step(1, { up: true });
@@ -519,9 +522,195 @@ async function play(browserType, url, label) {
     expect(wr.pistolScene === 'pistol' && /FALLS/.test(wr.pistolLose) && wr.gun.includes('repeater') && !wr.gun.includes('pistol') && wr.twin === 2, `the pistol did not become the Repeater (${JSON.stringify(wr)})`);
     expect(wr.night === 'solderLeaves' && wr.morning.newGate && wr.morning.hatch && wr.morning.planned && wr.morning.solderGone && wr.morning.lead === 'FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH', `the night Solder leaves did not play out (${JSON.stringify(wr.morning)})`);
     expect(wr.gateShut && wr.gateOpened, `the new gate should be shut, and open as the hero comes near (${wr.gateShut}, ${wr.gateOpened})`);
-    expect(/CLIMB DOWN/.test(wr.hatchPrompt) && wr.sump === 'sump' && /CARGO LABYRINTH/.test(wr.sumpNote) && wr.ladderUp[0] === 'warrens' && wr.ladderUp[1] === 78, `the hatch to the sump went wrong (${JSON.stringify(wr)})`);
+    expect(/CLIMB DOWN/.test(wr.hatchPrompt) && wr.sump === 'sump' && wr.sumpWest === 'hatch-drop' && wr.ladderUp[0] === 'warrens' && wr.ladderUp[1] === 78, `the hatch to the sump went wrong (${JSON.stringify(wr)})`);
     expect(wr.liftUp === 'garden-lift' && wr.music2 === 'gardens' && wr.choices === 5, `the lift back up, the Gardens' music or the journal went wrong (${JSON.stringify(wr)})`);
     await shot('warrens-return');
+
+    // ---- The Cargo Labyrinth (Phase 3.3): the cranes, the harpoon, the deserter, Odell, the Tallyman, the boat ----
+    const cl = await get(() => {
+      const out = {};
+      const w = () => HA.debug.world;
+      const s = w().state;
+      const p = w().player;
+      const { talkThrough, choose } = window;
+      const at = (room, tx, ty) => {
+        HA.debug.goto(room, tx, ty);
+        HA.debug.step(5);
+        return w().near && w().near.label;
+      };
+      w().assist.invincible = true;
+      // West out of the sump, into the Labyrinth.
+      HA.debug.goto('sump', 4, 18);
+      HA.debug.step(60, { left: true });
+      HA.debug.step(20);
+      talkThrough();
+      out.into = { room: w().def.id, cargo: !!s.flags.cargo, music: HA.music.playing };
+      // The Stacks: crane A's switch from below drops its stack into the hole, opening the corridor; crane B's
+      // switch in the pocket hoists the other stack out of the way out.
+      out.switchPrompt = at('stacks', 28, 41);
+      HA.debug.step(1, { up: true });
+      out.craneMoving = !!w().craneMove;
+      HA.debug.step(70);
+      out.cranes = { a: !!s.flags.craneA, corridor: w().room.tile(37, 12) === 0, hole: w().room.tile(37, 16) !== 0 };
+      at('stacks', 49, 41);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(70);
+      out.cranes.b = !!s.flags.craneB;
+      out.cranes.wayOut = w().room.tile(60, 40) === 0;
+      // The Sorting Floor: Solder's chalk stops, and the belts carry the hero toward the chute.
+      at('sorting-floor', 3, 64);
+      HA.debug.step(10);
+      out.chalk = w().scene && w().scene.name;
+      talkThrough();
+      const x0 = p.x;
+      HA.debug.step(30);
+      out.belt = p.x - x0;
+      // The Armory: the Grapple Harpoon, and a ring to pull up on.
+      at('armory', 28, 18);
+      HA.debug.step(40, { right: true });
+      out.harpoon = p.weapons.some((x) => x.id === 'harpoon') && !!s.abilities.grapple;
+      p.wi = p.weapons.findIndex((x) => x.id === 'harpoon');
+      at('armory', 24, 18);
+      HA.debug.step(2, { up: true, fire: true });
+      HA.debug.step(30);
+      out.hung = !!(p.grapple && p.grapple.phase === 'hang');
+      HA.debug.step(10, { down: true });
+      // The Lifeboat Dock: the deserter, shaking. Choice 6: let him fly home.
+      at('lifeboat-dock', 3, 18);
+      HA.debug.step(80, { right: true });
+      out.deserter = w().scene && w().scene.name;
+      talkThrough();
+      out.deserterLose = choose(0);
+      out.fluxFate = { flux: s.people.flux, coldOpen: !!s.flags.coldOpen, thruster: s.abilities.thruster, lead: s.lead };
+      // The Purser's boat: not yet.
+      const purser = w().npcs.find((n) => n.id === 'purser');
+      p.x = purser.x + 12;
+      p.y = purser.y + purser.h - p.h;
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.boat = w().scene && w().scene.step.choice.options.map((o) => o.label).join('/');
+      choose(0);
+      // The Cold Store, past the melted ice: Odell, still waiting, and his pack.
+      out.ice = (at('hatch-drop', 8, 38), w().doors.find((d) => d.id === 'ice').open);
+      out.odellPrompt = at('cold-store', 7, 11);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.odell = { thruster: s.abilities.thruster, lead: s.lead, music: HA.music.playing };
+      // Its old lift runs up to the Coolant Hall once called from below.
+      at('cold-store', 10, 38);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      HA.debug.step(5);
+      out.coldLift = w().def.id;
+      // The rest pod at the top of the Sorting Floor, then the Tallyman.
+      at('sorting-floor', 33, 18);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(20);
+      HA.debug.goto('tally-yard', 4, 18);
+      HA.debug.step(40, { right: true });
+      out.tallyIntro = w().scene && w().scene.name;
+      talkThrough();
+      HA.debug.step(10);
+      const b = w().boss;
+      out.fight = { fighting: b.fighting, music: HA.music.playing };
+      for (let i = 0; i < 40 && b.state !== 'open'; i++) HA.debug.step(20);
+      out.fight.opened = b.state === 'open' && w().hooks.includes(b.core);
+      // Its hold hangs open: the harpoon bites the core's ring and winches the hero up into it.
+      p.wi = p.weapons.findIndex((x) => x.id === 'harpoon');
+      Object.assign(p, { x: b.x + b.w / 2 - 4, y: 19 * 8 - 14, vx: 0, vy: 0 });
+      HA.debug.step(2);
+      const hp0 = b.hp;
+      HA.debug.step(2, { up: true, fire: true });
+      HA.debug.step(40);
+      out.fight.struck = hp0 - b.hp;
+      b.hp = 1;
+      b.state = 'open';
+      HA.bosses.tallyman.hurt(w(), b, 5, 1);
+      HA.debug.step(10);
+      out.fight.after = w().scene && w().scene.name;
+      talkThrough();
+      // Choice 8: let it finish its count. (This run tore out the Bailiff's core, so the true ending is already
+      // closed and the core's screen doesn't name it; with the other two free, it would.)
+      out.coreLose = w().scene.step.choice.options[1].confirm.lose;
+      out.coreCloses = HA.endings.wardenCloses({ wardens: { bailiff: 'release', pruner: 'release', tallyman: null } }, 'tallyman') && !HA.endings.wardenCloses(s, 'tallyman');
+      out.tallyLose = choose(0);
+      out.tally = { fate: s.wardens.tallyman, vault: w().doors.find((d) => d.id === 'vault').open, said: s.journal.talk.some((t) => /LOCATION: BALLAST/.test(t.text)) };
+      // The Vault's Breach Charges, and the cracked wall at the foot of the Sorting Floor.
+      HA.debug.goto('vault', 26, 18);
+      HA.debug.step(60, { right: true });
+      const charges = p.weapons.find((x) => x.id === 'charges');
+      out.charges = charges && charges.ammo;
+      p.wi = p.weapons.indexOf(charges);
+      HA.debug.goto('sorting-floor', 8, 86);
+      p.facing = -1;
+      HA.debug.step(5);
+      HA.debug.step(2, { fire: true });
+      HA.debug.step(60);
+      out.wall = !!s.flags.aisleWall;
+      HA.debug.step(100, { left: true });
+      out.aisle = w().def.id;
+      // The Drain: Solder's toolbag by the grate, and the grate down to the Ballast.
+      at('drain', 19, 18);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.toolbag = s.lead;
+      at('drain', 14, 18);
+      HA.debug.step(1, { down: true });
+      HA.debug.step(5);
+      out.grate = w().toastText;
+      // Travel: at a pod, the map rings the others; picking one goes there.
+      s.rested.warrens = true;
+      at('pursers-office', 8, 18);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(100);
+      out.podPrompt = w().near && w().near.label;
+      HA.debug.step(1, { map: true });
+      HA.debug.step(2);
+      const scr = HA.ui.stack.length && HA.ui.stack[HA.ui.stack.length - 1].screen;
+      out.travel = scr && scr.travel && scr.pods.map((x) => x.room).join('/');
+      const pod = scr.pods.find((x) => x.room === 'warrens');
+      scr.cursor.x = pod.x;
+      scr.cursor.y = pod.y;
+      HA.debug.step(1, { confirm: true });
+      HA.debug.step(120);
+      out.travelled = w().def.id;
+      // Home: the deserter was Flux, Shim's father. He's by the fire.
+      for (let i = 0; i < 3; i++) {
+        HA.debug.step(30);
+        talkThrough();
+      }
+      out.flux = w().npcs.some((n) => n.id === 'flux') && s.flags.fluxHome;
+      // The Purser's boat, taken this time: the Deserter ending, played to the title.
+      HA.debug.goto('lifeboat-dock', 16, 38);
+      const purser2 = w().npcs.find((n) => n.id === 'purser');
+      p.x = purser2.x + 12;
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.boatLose = w().scene.step.choice.options[1].confirm;
+      choose(1);
+      for (let i = 0; i < 400 && HA.ui.mode === 'play'; i++) {
+        HA.debug.step(22);
+        if (HA.ui.mode === 'play') HA.debug.step(1, { confirm: true });
+      }
+      out.ending = { mode: HA.ui.mode, seen: HA.save.endings() };
+      return out;
+    });
+    expect(cl.into.room === 'hatch-drop' && cl.into.cargo && cl.into.music === 'cargo', `the sump did not lead into the Labyrinth (${JSON.stringify(cl.into)})`);
+    expect(/SWITCH/.test(cl.switchPrompt) && cl.craneMoving && cl.cranes.a && cl.cranes.corridor && cl.cranes.hole && cl.cranes.b && cl.cranes.wayOut, `the Stacks' cranes did not move their stacks (${JSON.stringify(cl.cranes)})`);
+    expect(cl.chalk === 'chalkStops' && cl.belt > 10, `the Sorting Floor's chalk or belts went wrong (${cl.chalk}, ${cl.belt})`);
+    expect(cl.harpoon && cl.hung, `the Grapple Harpoon did not pull the hero up to the Armory's ring (${cl.harpoon}, ${cl.hung})`);
+    expect(cl.deserter === 'deserter' && /BLOOMFIRE/.test(cl.deserterLose) && cl.fluxFate.flux === 'home' && cl.fluxFate.coldOpen && !cl.fluxFate.thruster && /COLD STORE/.test(cl.fluxFate.lead), `choice 6 went wrong (${JSON.stringify(cl)})`);
+    expect(cl.boat === 'STAY/TAKE THE BOAT', `the Purser did not offer the boat (${cl.boat})`);
+    expect(cl.ice && /READ/.test(cl.odellPrompt) && cl.odell.thruster === 'odell' && /TALLYMAN/.test(cl.odell.lead) && cl.odell.music === 'coldStore' && cl.coldLift === 'coolant-hall', `Odell, his pack or the cold lift went wrong (${JSON.stringify(cl)})`);
+    expect(cl.tallyIntro === 'tallyIntro' && cl.fight.fighting && cl.fight.music === 'tallyman' && cl.fight.opened && cl.fight.struck === 40 && cl.fight.after === 'tallymanDefeated', `the Tallyman's fight went wrong (${JSON.stringify(cl.fight)})`);
+    expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.coreCloses && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
+    expect(cl.charges === 3 && cl.wall && cl.aisle === 'long-aisle', `the Breach Charges did not open the cracked wall (${cl.charges}, ${cl.wall}, ${cl.aisle})`);
+    expect(/BALLAST/.test(cl.toolbag) && /FLOODED BALLAST/.test(cl.grate), `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
+    expect(/TRAVEL/.test(cl.podPrompt) && /warrens/.test(cl.travel) && cl.travelled === 'warrens' && cl.flux, `travel between pods, or Flux at home, went wrong (${JSON.stringify(cl)})`);
+    expect(cl.boatLose.lose === 'EVERYONE ELSE, AND MARA' && /ENDS HERE/.test(cl.boatLose.note) && cl.ending.mode === 'title' && cl.ending.seen.includes('deserter'), `taking the boat did not play the Deserter ending to the title (${JSON.stringify(cl.ending)})`);
+    await shot('labyrinth');
 
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {

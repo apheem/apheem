@@ -22,6 +22,8 @@
     { id: 'bloom', ok: (s) => s.bloom <= 2, line: 'THE SEAL READ THE BLOOM IN ME AND STAYED SHUT.' },
   ];
   const missing = (s) => REQUIREMENTS.filter((r) => !r.ok(s));
+  // Would tearing out this Warden's core close the true ending? Only if no other Warden's core is gone already.
+  const wardenCloses = (s, id) => !Object.keys(s.wardens).some((k) => k !== id && s.wardens[k] === 'salvage');
 
   // Where the story goes once the Steward falls: Overgrown takes the hero, Dominion is offered, the lift
   // opens for Homecoming, or the scuttle starts and it's Crash.
@@ -213,5 +215,5 @@
     return all.flatMap((c) => c.lines.map((l) => (Array.isArray(l) ? l[0] : l)));
   }
 
-  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, lines, seenLine };
+  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, wardenCloses, afterSteward, run, play, lines, seenLine };
 })(window.HA);
