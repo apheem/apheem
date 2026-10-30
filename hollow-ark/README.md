@@ -1,6 +1,6 @@
 # Hollow Ark
 
-A dark, retro pixel-art action-exploration game set aboard a colony ship drifting off course for 300 years. This folder holds **Phase 2, the vertical slice** (the Cryo Deck, the Hullfolk Warrens, the Warden Lockup and the first boss, with saving, a map, a journal and one moral choice), and **Phase 3 in progress**, the full main path. Today the story runs from waking in pod 0417, through the Hydroponic Gardens, and home to the Warrens, and stops at the way down into the Cargo Labyrinth, the next area to be built.
+A dark, retro pixel-art action-exploration game set aboard a colony ship drifting off course for 300 years. This folder holds **Phase 2, the vertical slice** (the Cryo Deck, the Hullfolk Warrens, the Warden Lockup and the first boss, with saving, a map, a journal and one moral choice), and **Phase 3 in progress**, the full main path. Today the story runs from waking in pod 0417, through the Hydroponic Gardens, home to the Warrens, and down through the Cargo Labyrinth, and stops at the drain into the Flooded Ballast, the next area to be built. The first of the five endings, Deserter, can be reached in play.
 
 The game direction lives in the [Hollow Ark game direction brief](https://claude.ai/artifact/1DQU8Exivvskbjp3ykeMXY). Every place the build departs from it is in [DECISIONS.md](DECISIONS.md). The plan for the rest of the game, Phase 3 onward, is in [STORYBOARD.md](STORYBOARD.md): the whole story area by area, every boss, weapon, choice and ending, and the build order with a checklist. Start there to pick up the work.
 
@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.2-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.3-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.2-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.3-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -37,8 +37,11 @@ No mouse is needed anywhere. On-screen prompts switch between keyboard keys and 
 | Switch weapon | Q / E (or C / V) | LB / RB |
 | Eat a Bloom bulb (never on touch) | F or L | Y |
 | Drop through a catwalk | Down + Jump | Down + A |
-| Talk, read a ship log, rest at a rest pod, ride a lift, climb a ladder | Up | Up |
+| Talk, read a ship log, rest at a rest pod, ride a lift, climb a ladder, throw a crane switch | Up | Up |
 | Climb down an open floor hatch | Down | Down |
+| Thruster pack (once you have one) | In the air, press Jump again and hold | In the air, press A again and hold |
+| Grapple Harpoon | Aim at a ring (Up, or Up and a direction) and Fire; Jump to leap off, Down to let go | The same, with A and Down |
+| Travel to another rest pod (from the Cargo Labyrinth on) | At a rest pod, open the map and pick a ringed pod | The same |
 | Next line of dialogue | Z, Space, Enter or X | A or X |
 | Map and journal | Tab or M (Q / E switch tabs) | View / Back (LB / RB switch tabs) |
 | Pause (also: skip a scene) | Esc, Enter or P | Start |
@@ -119,9 +122,29 @@ An interlude at home, between the Gardens and the Cargo Labyrinth. The checklist
 - **The Sump,** down the hatch: the old keel tram dead at its platform under its cable, a ship log about where its motor went, and Solder's chalk at the way into the Cargo Labyrinth, which is the next build.
 - **What the Hullfolk call you.** Release the Wardens and tell Shim the truth, and in the morning he gives you a name: "YOU'RE NOT A SLEEPER ANYMORE. YOU'RE LATE." Be cruel enough and the village starts calling you COUNTER, the word they use for the Wardens, and hides from you. Everyone else calls you SLEEPER, and the people in the Warrens say whichever name is yours.
 
+## Phase 3.3: the Cargo Labyrinth
+
+The old crew's stores under the Warrens: eleven rooms of stacked containers, belts and cranes. Getting lost is part of it, and the game points out the map's markers on the way in. The checklist is at the bottom of [STORYBOARD.md](STORYBOARD.md).
+
+- **The way in.** West from the sump, the Hatch Drop falls past the containers to the Stacks. Solder's chalk marks her route: "LEFT. NO, YOUR OTHER LEFT." "DON'T TOUCH THE YELLOW ONES." "IF YOU'RE READING THIS, YOU'RE SLOW." Her notes stop on the Sorting Floor.
+- **The Stacks** are a container maze with two cranes. A crane's switch moves its yellow stack from one slot to the other: one stack either blocks the corridor or plugs the hole under it; the other either blocks the way out or hangs up in its bay. Each crane has a switch on both sides of its stack, so whichever way you come in, the way on can be moved.
+- **The Sorting Floor** is a tall shaft of conveyor belts and chutes, and the main floor's belts carry you toward the chute. Up the shaft is the Armory. At the top, past a ledge only a thruster reaches and a ring only the harpoon can cross on, a rest pod waits outside the Tallyman's Yard. Down the chute there's a cracked wall.
+- **New enemies:** Bloom rats that scurry in packs and rush you on their level; cargo drones that fly their lines and drop a bolt on anyone below (their lamp blinks first); stack-crawlers that hang under the containers and let go when you pass beneath; and squads of Bloomsworn.
+- **The Grapple Harpoon,** in the Armory, where the Steward kept it for "collection work." Aim at a ring and fire: it bites and winches you up to hang there. Jump to leap off, or press Down to let go. Fired at anything else, it's a light barb on a line that drags small things back to your feet, stunned. It opens the Gardens' Seed Vault now too.
+- **The deserter** (choice 6). A Bloomsworn man sits by the Lifeboat Dock, shaking, the Steward's Bloomfire thruster on his back, trying to get home before his next dose: "IT DOESN'T STOP. IT JUST GETS QUIETER." Take his pack (a strong, short burn, and the Bloom grows in you) and he sits down where he is. Or let him fly home: his pack melts the ice over the Cold Store's door on his way, and an older pack waits in there, on a dead man. That's the long way round.
+- **Chief Engineer Odell** sits frozen at a dead terminal in the Cold Store, where he came to make his complaint in person in year 41: "I AM STANDING IN FRONT OF YOU. ANSWER ME." No reply. His pack (a longer, steadier burn) is still on his back. The Cold Store's old lift runs up to the Coolant Hall on the Cryo Deck once it has been called from below: a shortcut home.
+- **The Purser** (choice 7) stands by the last lifeboat with a pilot's seat: "THE STEWARD WANTS YOU GONE. I WANT A QUIET LIFE. THE BOAT WANTS A PILOT. EVERYONE WINS." Say no, and the offer stands. Say yes, and it's the **Deserter ending**, the first ending you can reach in play: the Ark shrinking in the boat's window, the Wardens' counts on the radio, fading, and the hero alone on the new world.
+- **The Tallyman,** the Warden that has counted every crate on the ship for 300 years, rides a gantry crane across its yard's ceiling. It lines up over you and counts out loud, a crate falling on every count; it swings its hook across the yard at knee height; it stamps red audit marks on the floor that go off two seconds later; and in its second half it stacks crates into cover. Its cab is armoured. After it drops its crates, the hold under the cab hangs open and its core shows, with a ring on it: harpoon the ring and the winch drives you into the core. Shots count only while the hold is open.
+- **Its core is the Vault's lock** (choice 8). It asks to finish its count. Let it, and it counts the Hullfolk by name, not as stock, and tells you where Solder went: "ITEM: ONE TINKERER. LOCATION: BALLAST." Take its core, and the Breach Charges hold 5 instead of 3, but its last count breaks off halfway through the answer.
+- **Breach Charges,** in the Vault: a few heavy rockets that open cracked walls, restocked at any rest pod. One opens the way through the Long Aisle to the Drain, where Solder's toolbag lies by a grate she levered up. Down there is the Flooded Ballast, the next build.
+- **Travel between rest pods.** From the Labyrinth on, open the map while standing at a rest pod: every other pod you've rested at is ringed, and picking one takes you there, rested.
+- **Home, if you go.** Let the deserter fly home, and he's at the Warrens' fire with Shim asleep on his knee: Flux, Shim's father. Take his pack, and once you've read the page of the Steward's lists in the Purser's office, Gasket reads his name out from it.
+- **The music:** a mechanical track in D Dorian, with a clock that ticks and tocks and the Ark's theme in pieces, each note in a different octave; only a hum in the Lifeboat Dock; a frozen drone in the Cold Store; and the Tallyman's own fight, counting in threes.
+- **Every Warden's core screen says when taking it would close the true ending,** the Bailiff's and the Pruner's now included.
+
 ## How the rooms are checked
 
-Every gap on the main path can be jumped with room to spare: 5 tiles or less (a running jump reaches 7, but only with a pixel-perfect run-up). Gaps that aren't meant to be jumped are 9 tiles or more, with another route in view. `hollow-ark/tests/rooms-check.js` plays every room with the game's own movement code, swimming, thruster and grapple included. It fails the build if any entrance (an edge, or a lift or ladder from another room), item, person or rest pod can't be reached with the abilities the hero has by then, if a secret meant for an ability can be reached without it (that includes a way through a door only an ability opens, like the Seed Vault's hatch), if a gap is exactly 7 tiles wide, or if a hint runs into a wall. Before the real rooms it plays four small test rooms, one per ability, to prove each one opens exactly what it should.
+Every gap on the main path can be jumped with room to spare: 5 tiles or less (a running jump reaches 7, but only with a pixel-perfect run-up). Gaps that aren't meant to be jumped are 9 tiles or more, with another route in view. `hollow-ark/tests/rooms-check.js` plays every room with the game's own movement code: swimming, belts, both thruster packs, and the Grapple Harpoon fired as it is in the game (including a burn straight after leaping off a ring). It fails the build if any entrance (an edge, or a lift or ladder from another room), item, person, switch or rest pod can't be reached with the abilities the hero has by then, if a secret meant for an ability can be reached without it (that includes a way through a door only an ability opens, like the Seed Vault's hatch or a cracked wall, and an exit a room marks as needing one, like the Sorting Floor's way up to the Yard), if a room with cranes can't be crossed from every way in whichever slots its stacks are in, if a gap is exactly 7 tiles wide, or if a hint runs into a wall. Before the real rooms it plays four small test rooms, one per ability, to prove each one opens exactly what it should.
 
 ## How it's built
 
@@ -131,7 +154,7 @@ Every gap on the main path can be jumped with room to spare: 5 tiles or less (a 
 | `hollow-ark/desktop/` | Electron shell that packages those same files as Windows, macOS and Linux apps (Steam-ready in Phase 5). |
 | `docs/hollow-ark/js/areas/` | The rooms, one file per area, drawn as text maps (the legend is at the top of each file). |
 | `docs/hollow-ark/js/story/`, `js/bosses/` | Each area's story (scenes, lines, logs) and each boss, one file each, from Phase 3 on. |
-| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens and the Warrens return included), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
+| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens, the Warrens return and the Cargo Labyrinth included, to the Deserter ending), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
 | `.github/workflows/hollow-ark.yml` | CI. On Windows, macOS and Linux it checks the rooms, plays the slice in all three browser engines, builds each desktop app, launches it, plays a few seconds and uploads it. |
 
 Run the desktop app from source:

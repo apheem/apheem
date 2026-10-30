@@ -126,6 +126,8 @@
     repeater: sprite(['0000000.', '0LLLLLL0', '0kK00000', '0K0LLLL0', '00.0000.']),
     cannon: sprite(['.0000000.', '0KKLLLLL0', '0kKKKKKK0', '0k0000000', '00.......']),
     coil: sprite(['.000000.', '0bcCCcc0', '0bbbbbb0', '0b00000.', '00......']),
+    harpoon: sprite(['.0000000.', '0kKKKKKLW', '0k0000000', '00.......']),
+    charges: sprite(['.0000000.', '0kLLLLLr0', '0kKKKKKr0', '0K0000000', '00.......']),
   };
 
   // ---- Enemies ----
@@ -277,6 +279,21 @@
     '..000...000.',
   ]);
 
+  // The Cargo Labyrinth: Bloom rats (pink growths on grey fur), cargo drones on their rotors, and the
+  // stack-crawlers that hang under the containers in hazard stripes.
+  enemies.rat = [
+    sprite(['.......0.0.', '...00000K0.', '..0kKKKkKP0', '00kkkkkkKK0', '0.0kmk0k00.', '...0.0.0...']),
+    sprite(['.......0.0.', '...00000K0.', '..0kKKKkKP0', '00kkkkkkKK0', '0.0kmk0k00.', '..0.0...0..']),
+  ];
+  enemies.drone = [
+    sprite(['.0000....0000.', '..00......00..', '...00000000...', '..0KLLLLLLK0..', '..0Kkkvvkkk0..', '..0KKKKKKKK0..', '...0k0..0k0...', '...00....00...']),
+    sprite(['..0000..0000..', '...00....00...', '...00000000...', '..0KLLLLLLK0..', '..0Kkkvvkkk0..', '..0KKKKKKKK0..', '...0k0..0k0...', '...00....00...']),
+  ];
+  enemies.dropper = [
+    sprite(['...000000...', '..0v0vv0v0..', '.0vv0vv0vv0.', '.0kkkkkkkk0.', '0kkkkkkkkRk0', '0kkkkkkkkkk0', '.0k0k00k0k0.', '.0.0....0.0.']),
+    sprite(['............', '...000000...', '..0v0vv0v0..', '.0vv0vv0vv0.', '.0kkkkkkkk0.', '0kkkkkkkkRk0', '0kkkkkkkkkk0', '..0k0k0k0k..']),
+  ];
+
   // ---- Pickups and HUD icons ----
   const items = {
     shardSmall: [sprite(['.y.', 'yoy', '.y.']), sprite(['.o.', 'oyo', '.o.'])],
@@ -306,6 +323,8 @@
     repeater: sprite(['.000000000..', '.0LLLLLLLL0.', '.0KKK000000.', '.0K0LLLLLL0.', '.0K0000000..', '.00.........', '............']),
     cannon: sprite(['............', '.0000000000.', '0KKLLLLLLLL0', '0kKKKKKKKK0.', '0k0000000...', '00..........', '............']),
     coil: sprite(['............', '.000000000..', '0bcCCcCcc0..', '0bbbbbbbb0..', '0b0000000...', '00..........', '............']),
+    harpoon: sprite(['............', '.........0..', '.00000000L0.', '0kKKKKKKKLW0', '0k0000000L0.', '00.......0..', '............']),
+    charges: sprite(['............', '.000000000..', '0KLLLLLLLr0.', '0kKKKKKKKr0.', '0k0000000...', '00..........', '............']),
   };
 
   // ---- The Hullfolk: small, pale, big-eyed, hooded against the cold of the walls ----
@@ -388,6 +407,10 @@
     woken2: person({ H: '#5a4028', C: '#b8b0a0', c: '#8a8270', D: '#6c6458' }),
     woken3: person({ H: '#a85a4a', C: '#a8a0b8', c: '#7d7590', D: '#625a76' }),
     woken4: person({ H: '#c9a070', C: '#b4c0a8', c: '#88947c', D: '#6a7660' }),
+    // The Purser: the Steward's colours, buttoned up, a clerk's grey hood.
+    purser: person({ H: '#6c7894', C: '#2e2a3e', c: '#4a4060', D: '#2e2a3e', e: '#e6dccc' }),
+    // The deserter, Flux: a Bloomsworn in the Steward's uniform, the Bloom pinking his skin.
+    flux: person({ H: '#2e2a3e', C: '#4a4060', c: '#2e2a3e', D: '#2e2a3e', e: '#e8c8d8', E: '#c890b0' }, false, (r) => r.map((row, i) => (i === 7 ? '0CcPCCCC0' : row))),
   };
 
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----

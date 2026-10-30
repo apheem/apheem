@@ -316,6 +316,95 @@
   ];
   const BOSS_THEME = transpose(THEME, 7);
 
+  // The Cargo Labyrinth: D Dorian, minimal and mechanical. A clock ticks and tocks under a bass ostinato, and the
+  // Ark's theme turns up in pieces, each note in a different octave, like crates stacked anyhow.
+  const C_THEME = transpose(THEME, 5);
+  const C_OCTAVE = [0, 12, -12, 0, 12, 0, -12, 12, 0, -12, 12, 0];
+  const C_CHORDS = [chord('D2', 3), chord('D2', 3), chord('G2', 4), chord('G2', 4), chord('C2', 4), chord('C2', 4), chord('A1', 3), chord('G2', 4)];
+  TRACKS.cargo = {
+    step: 60 / 96 / 4,
+    steps: 128,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = C_CHORDS[bar];
+      // the clock: tick, tock
+      if (at % 4 === 0) out.drum(0, at % 8 ? 'clank' : 'hat', at % 8 ? 0.035 : 0.05);
+      // the ostinato: root, fifth, seventh, octave
+      if (at % 4 === 0) out.note(0, 'triangle', c.root + [0, 7, 10, 12][at / 4], 1.6, 0.24);
+      if (at === 10) out.note(0, 'triangle', c.root + 7, 1, 0.14);
+      if (at === 0) out.note(0, 0.25, c.root + 24 + c.third, 12, 0.02, 0.3);
+      // the theme in pieces: only every other note of a bar, each in its own octave
+      if (bar % 2 === 1 || bar >= 4) {
+        themeAt(C_THEME[bar % 4], at, (n, len, i) => {
+          if (i % 2 && bar < 4) return;
+          out.note(0, 0.125, midi(n) + C_OCTAVE[(bar * 3 + i) % C_OCTAVE.length], len, 0.05, 0.004);
+        });
+      }
+    },
+  };
+  // Plays the notes of one theme bar that start at this step, with their index in the bar.
+  function themeAt(bar, at, fn) {
+    bar.forEach(([st, n, len], i) => st === at && fn(n, len, i));
+  }
+
+  // The Lifeboat Dock: nothing but the hum of the boat's cradle, and now and then a ping from its systems.
+  TRACKS.dock = {
+    step: 0.5,
+    steps: 32,
+    fadeIn: 2,
+    play(s, out) {
+      if (s % 16 === 0) {
+        out.note(0, 'sine', 'D2', 16, 0.16, 1.2);
+        out.note(0, 'sine', midi('A2') + 0.08, 16, 0.07, 1.6);
+      }
+      if (s === 6 || s === 23) out.note(0, 'sine', s === 6 ? 'A5' : 'E6', 1.5, 0.025, 0.01);
+    },
+  };
+
+  // The Cold Store: a thin high drone, and the theme so slowly it barely moves, frozen in place.
+  TRACKS.coldStore = {
+    step: 0.42,
+    steps: 64,
+    fadeIn: 2,
+    play(s, out) {
+      if (s % 32 === 0) {
+        out.note(0, 'sine', 'D5', 32, 0.03, 2);
+        out.note(0, 'sine', midi('A5') + 0.1, 32, 0.018, 2.5);
+        out.note(0, 'triangle', 'D2', 32, 0.12, 1.5);
+      }
+      const notes = { 4: ['A5', 6], 12: ['G5', 3], 16: ['F5', 6], 28: ['E5', 10], 40: ['D5', 6], 48: ['F5', 4], 52: ['E5', 10] };
+      if (notes[s]) out.note(0, 'triangle', notes[s][0], notes[s][1], 0.05, 0.08);
+    },
+  };
+
+  // The Tallyman: the Labyrinth's clock gone hard and fast, counting in threes like its drops. Layer 2 adds the
+  // stamp of its audit; layer 3 brings the Ark's theme in whole, high over everything.
+  const T_CHORDS = [chord('D2', 3), chord('Bb1', 4), chord('C2', 4), chord('A1', 4)];
+  TRACKS.tallyman = {
+    step: 60 / 150 / 4,
+    steps: 64,
+    layers: 3,
+    fadeIn: 0.1,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 4;
+      const at = s % 16;
+      const c = T_CHORDS[bar];
+      // one, two, three ... and a breath
+      if (at === 0 || at === 4 || at === 8) out.drum(0, 'kick', 0.3);
+      if (at === 0 || at === 4 || at === 8) out.note(0, 'triangle', c.root + [0, 0, 7][at / 4], 1.8, 0.3);
+      if (at % 2 === 1) out.drum(0, 'hat', 0.025);
+      if (at === 12) out.drum(0, 'clank', 0.1);
+      out.note(1, 0.125, c.root + 24 + [0, 7, c.third, 12][at % 4], 0.8, 0.035);
+      if (at === 12 || at === 14) out.drum(1, 'snare', 0.13);
+      for (const [st, n, len] of C_THEME[bar]) {
+        if (st !== at) continue;
+        out.note(2, 0.5, n, len, 0.06, 0.005);
+        out.note(2, 0.125, midi(n) + 12, len, 0.02, 0.005);
+      }
+    },
+  };
+
   // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
   let current = null;
   const fading = [];

@@ -403,7 +403,7 @@
         prompt: "THE PRUNER'S CORE IS STILL LIT.",
         options: [
           { label: 'GIVE IT SOMETHING ELSE TO CUT', confirm: { title: 'RELEASE THE PRUNER?', gain: 'ELEVEN OF THE TAKEN COME HOME', lose: 'A CORE THAT KEEPS THE LAUNCHER LV2' } },
-          { label: 'FINISH IT, AS IT ASKS', confirm: { title: "TEAR OUT THE PRUNER'S CORE?", gain: 'THE SEAL CODES · LAUNCHER STAYS LV2+', lose: 'FOUR OF THE TAKEN. SEVEN COME HOME' } },
+          { label: 'FINISH IT, AS IT ASKS', confirm: { title: "TEAR OUT THE PRUNER'S CORE?", gain: 'THE SEAL CODES · LAUNCHER STAYS LV2+', lose: HA.endings.wardenCloses(s, 'pruner') ? 'FOUR OF THE TAKEN · THE TRUE ENDING' : 'FOUR OF THE TAKEN. SEVEN COME HOME' } },
         ],
       },
     };

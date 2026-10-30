@@ -156,7 +156,7 @@
       fire.released = !p.fireToggle && p.fireWasHeld;
     }
     p.fireWasHeld = fire.held;
-    HA.weapons.update(world, fire);
+    HA.weapons.update(world, fire, input);
 
     // Move and collide (unless the grapple is winching the hero in, or holding them)
     const fallSpeed = p.vy;
@@ -172,6 +172,9 @@
       p.ground = HA.room.grounded(room, p, { dropThrough: p.dropTimer > 0 });
       p.onGround = !!p.ground && p.vy >= 0;
       if (p.onGround) p.vy = 0;
+      // A conveyor belt carries whoever stands on it.
+      const belt = p.onGround ? HA.room.beltUnder(room, p) : 0;
+      if (belt) HA.room.move(room, p, belt, 0);
       if (p.onGround && !wasGround && fallSpeed > 1.5) {
         p.land = 5;
         world.dust(p.x + p.w / 2, p.y + p.h, fallSpeed > 3.5 ? 6 : 3);
@@ -261,19 +264,27 @@
     pod: { w: 10, h: 9, hp: 2, dmg: 0, drops: { small: 1, big: 0, heart: 0.05 } },
     picker: { w: 12, h: 26, hp: 12, dmg: 2, drops: { small: 3, big: 1, heart: 0.4 } },
     bloomsworn: { w: 10, h: 16, hp: 20, dmg: 3, drops: { small: 3, big: 1, heart: 0.5 } },
+    // The Cargo Labyrinth: Bloom rats that scurry in packs and rush whoever is on their level, cargo drones
+    // that fly their lines and drop a bolt on anyone below, and stack-crawlers that hang under containers and
+    // let go when someone passes beneath.
+    rat: { w: 8, h: 5, hp: 2, dmg: 1, drops: { small: 1, big: 0, heart: 0.06 } },
+    drone: { w: 12, h: 7, hp: 3, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
+    dropper: { w: 12, h: 8, hp: 5, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
   };
-  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn' };
+  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper' };
   // What the Bloomsworn are thinking. Only a hero with the Bloom in them (stage 3 or more) can hear it.
   const THOUGHTS = ['SO LOUD', 'WHERE IS MY GIRL', 'IT HURTS WHEN IT STOPS', 'COUNT ME', 'SO WARM', 'I HAD A NAME', 'KEEP MOVING'];
 
   function makeEnemy(spawn) {
     const type = TYPES[spawn.type];
     const d = ENEMY[type];
+    // A stack-crawler starts clinging under the ceiling of its cell; everything else stands on its cell's floor.
+    const y = type === 'dropper' ? spawn.y : spawn.y + 8 - d.h;
     return {
       type,
       spawn,
       x: spawn.x + 4 - d.w / 2,
-      y: spawn.y + 8 - d.h,
+      y,
       w: d.w,
       h: d.h,
       vx: type === 'crawler' ? (Math.random() < 0.5 ? -0.45 : 0.45) : 0,
@@ -284,10 +295,12 @@
       dead: false,
       t: Math.floor(Math.random() * 200),
       homeX: spawn.x + 4 - d.w / 2,
-      homeY: spawn.y + 8 - d.h,
+      homeY: y,
       cool: 90 + Math.floor(Math.random() * 60),
       tele: 0,
       facing: 1,
+      dir: type === 'drone' ? 1 : Math.random() < 0.5 ? -1 : 1,
+      cling: type === 'dropper',
     };
   }
 
@@ -303,7 +316,32 @@
     const ey = e.y + e.h / 2;
     const dist = Math.hypot(px - ex, py - ey);
 
-    if (e.type === 'crawler') {
+    // Reeled in on the harpoon's line: dragged to the hero's feet, then stunned for a moment, harmless.
+    if (e.yank > 0) {
+      e.yank--;
+      e.cling = false;
+      const tx = px + p.facing * 9 - e.w / 2;
+      const ty = p.y + p.h - e.h;
+      const d = Math.hypot(tx - e.x, ty - e.y);
+      if (d < 3) e.yank = 0;
+      else HA.room.move(room, e, ((tx - e.x) / d) * Math.min(4, d), ((ty - e.y) / d) * Math.min(4, d));
+      e.vx = 0;
+      e.vy = 0;
+      return;
+    }
+    if (e.stun > 0) {
+      e.stun--;
+      if (e.type !== 'drifter' && e.type !== 'drone') {
+        e.vx = 0;
+        walk(world, e);
+      }
+      return;
+    }
+
+    if (e.type === 'rat') updateRat(world, e, px, py, dist);
+    else if (e.type === 'drone') updateDrone(world, e, px, py);
+    else if (e.type === 'dropper') updateDropper(world, e, px, py, dist);
+    else if (e.type === 'crawler') {
       e.vy = Math.min(e.vy + 0.3, 4);
       const speed = 0.45 * sign(e.vx);
       e.vx = approach(e.vx, speed, 0.05);
@@ -540,6 +578,74 @@
     }
   }
 
+  // A Bloom rat scurries back and forth, turning at walls and edges. One that sees the hero on its own level
+  // rushes them, and the rest of its pack soon follows.
+  function updateRat(world, e, px, py, dist) {
+    const p = world.player;
+    const level = Math.abs(py - (e.y + e.h / 2)) < 18;
+    const rush = level && dist < 120 && !p.dead;
+    if (rush && e.t % 24 === 0) e.dir = HA.sign(px - (e.x + e.w / 2));
+    e.vx = approach(e.vx, e.dir * (rush ? 1.5 : 0.75), 0.18);
+    const hit = walk(world, e);
+    if (hit.ledge || hit.left || hit.right) e.dir = -e.dir;
+    e.facing = e.dir;
+  }
+
+  // A cargo drone flies its line, turning at walls. Passing over the hero, its lamp blinks, then it lets a
+  // bolt fall.
+  function updateDrone(world, e, px, py) {
+    const room = world.room;
+    if (e.tele > 0) {
+      if (--e.tele === 0) {
+        world.shots.push({ owner: 'enemy', kind: 'orb', x: e.x + e.w / 2, y: e.y + e.h + 2, vx: 0, vy: 1.5, life: 140, dmg: 2, pierce: 0, hits: new Set() });
+        HA.audio.play('orb');
+      }
+    } else {
+      e.x += e.dir * 0.7;
+      const ahead = e.dir > 0 ? e.x + e.w + 1 : e.x - 1;
+      if (ahead < 0 || ahead > room.pw || room.solidAt(ahead, e.y + e.h / 2)) e.dir = -e.dir;
+      if (--e.cool <= 0 && Math.abs(px - (e.x + e.w / 2)) < 8 && py > e.y && py - e.y < 110 && !world.player.dead) {
+        e.cool = 120;
+        e.tele = 26;
+        HA.audio.play('telegraph');
+      }
+    }
+    e.y = e.homeY + Math.sin((e.t + e.spawn.tx * 7) * 0.06) * 3;
+    e.facing = e.dir;
+  }
+
+  // A stack-crawler hangs under a container until the hero passes below. It shakes loose, drops, and then
+  // crawls after them.
+  function updateDropper(world, e, px, py, dist) {
+    const p = world.player;
+    if (e.cling) {
+      const below = py > e.y && py - e.y < 120 && Math.abs(px - (e.x + e.w / 2)) < 22;
+      if (e.tele > 0) {
+        e.x = e.homeX + (e.tele % 4 < 2 ? -1 : 1);
+        if (--e.tele === 0) {
+          e.cling = false;
+          e.x = e.homeX;
+          e.vy = 0.5;
+          HA.audio.play('swipe');
+        }
+      } else if (below && !p.dead) {
+        e.tele = 24;
+        HA.audio.play('telegraph');
+      }
+      return;
+    }
+    if (e.onGround) e.vx = approach(e.vx, HA.sign(px - (e.x + e.w / 2)) * (dist < 140 ? 0.55 : 0.25), 0.05);
+    const hit = walk(world, e);
+    e.onGround = hit.down;
+    if (hit.down && !e.landed) {
+      e.landed = true;
+      world.dust(e.x + e.w / 2, e.y + e.h, 5);
+      world.shake(1.2);
+      HA.audio.play('land');
+    }
+    if (e.vx) e.facing = HA.sign(e.vx);
+  }
+
   function hurtEnemy(world, e, dmg, dir) {
     if (e.dead) return;
     if (e.boss) return HA.bosses[e.type].hurt(world, e, dmg, dir);
@@ -552,6 +658,9 @@
       if (e.hp <= 0 && e.state !== 'spent') burstPod(world, e);
     } else if (e.type === 'picker' || e.type === 'bloomsworn') {
       if (!e.state) e.facing = -dir || e.facing;
+    } else if (e.type === 'dropper') {
+      // shot down from its perch
+      if (e.cling) Object.assign(e, { cling: false, tele: 0, x: e.homeX, vy: 0.5 });
     } else {
       e.x += dir * 1.5;
     }
@@ -579,17 +688,33 @@
     if (e.boss) return HA.bosses[e.type].draw(ctx, world, e, cam);
     if (e.type === 'pod') return drawPod(ctx, world, e, cam);
     const frames = HA.art.enemies[e.type];
-    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn') || Math.abs(e.vx) > 0.05;
-    let spr = frames[walking ? Math.floor(e.t / (e.type === 'crawler' ? 10 : e.state === 'charge' ? 5 : 14)) % frames.length : 0];
+    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn' && !e.cling) || Math.abs(e.vx) > 0.05;
+    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9 }[e.type] || (e.state === 'charge' ? 5 : 14);
+    let spr = frames[walking && !(e.stun > 0) ? Math.floor(e.t / pace) % frames.length : 0];
     if (e.type === 'bloomsworn' && e.state === 'stagger') spr = HA.art.enemies.bloomswornStagger;
     const img = e.flash > 0 ? spr.white : spr.img;
     const x = Math.round(e.x + e.w / 2 - cam.x);
     const y = Math.round(e.y + e.h - spr.h - cam.y);
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(e.facing, 1);
+    // A clinging stack-crawler hangs upside down from the container above it.
+    if (e.cling) {
+      ctx.translate(0, spr.h);
+      ctx.scale(e.facing, -1);
+    } else ctx.scale(e.facing, 1);
     ctx.drawImage(img, -Math.floor(spr.w / 2), 0);
     ctx.restore();
+    // A stunned thing, reeled in on the harpoon's line, sees stars.
+    if (e.stun > 0 && Math.floor(e.t / 6) % 2) {
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillRect(x - 3, y - 3, 1, 1);
+      ctx.fillRect(x + 3, y - 4, 1, 1);
+    }
+    if (e.type === 'drone' && e.tele > 0 && Math.floor(e.tele / 4) % 2 === 0) {
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillRect(x - 2, y + 4, 4, 1);
+      ctx.fillRect(x - 1, y + 8, 2, 2);
+    }
     // Warden telegraph: the eye glows before it fires.
     if (e.type === 'warden' && e.tele > 0 && Math.floor(e.tele / 4) % 2 === 0) {
       ctx.fillStyle = '#fff0a8';
@@ -704,6 +829,8 @@
       const w = HA.weapons.make(k.id);
       const floor = HA.weapons.DEFS[k.id].floor;
       if (floor) w.level = Math.max(w.level, floor(world)); // a launcher found after the Pruner was finished
+      if (k.id === 'charges') w.ammo = HA.weapons.chargesMax(world.state);
+      if (k.id === 'harpoon') world.state.abilities.grapple = true;
       p.weapons.push(w);
       p.wi = p.weapons.length - 1;
       p.charge = 0;

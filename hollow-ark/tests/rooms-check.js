@@ -2,17 +2,23 @@
 // Proves every room of the ship can be crossed, using the game's own movement code (no browser needed).
 // For each room it finds every floor the hero can stand on (and every water surface they can float on),
 // tries runs, jumps, drops, swims and, where a room asks for them, Purge Cannon hovers, thruster burns and
-// grapple pulls from each one, and checks that:
+// Grapple Harpoon pulls (and a burn after leaping off a hook) from each one, and checks that:
 //   - every opening at a room's edge lines up with an opening in the next room, with a floor to land on;
 //   - from any entrance (an edge, or a lift or hatch from another room), every other entrance and every item,
-//     person, terminal and rest pod can be reached with the abilities the hero always has by then (the room's
-//     `abilities`);
+//     person, terminal, switch and rest pod can be reached with the abilities the hero always has by then (the
+//     room's `abilities`; `thruster: true` means either pack, and both are tried);
 //   - secrets that need something (`secret: n` for a level n Purge Cannon, or `needs: { thruster, grapple,
-//     boots }`) can't be reached without it, and can with it; a door with `needs` (a hatch the grapple pulls)
-//     keeps the exit behind it shut without the ability, and open with it;
+//     boots, charges }`) can't be reached without it, and can with it; a door with `needs` (a hatch the grapple
+//     pulls, a cracked wall a Breach Charge opens) keeps the exit behind it shut without it, and open with it,
+//     and so does an exit the room lists in `exitNeeds` (a ledge only a thruster reaches);
+//   - a room with cranes (the Stacks) can be crossed from every way in, whichever slot each crane's stack is
+//     in, by throwing the switches it can reach;
+//   - belts carry the hero as they do in the game, and containers (%) are walls;
 //   - no gap is 7 tiles wide: that width looks jumpable but needs a pixel-perfect run-up;
 //   - every on-screen hint sits in open air, so no wall hides part of it.
-// It first runs a few small test rooms that prove each ability opens exactly what it should.
+// It first runs a few small test rooms that prove each ability opens exactly what it should. Each room's floors
+// and moves are simulated once per shape (crane state, doors shut or open) and set of abilities, then searched
+// from each way in.
 //   node rooms-check.js [room-id ...]
 const vm = require('vm');
 const fs = require('fs');
@@ -34,7 +40,7 @@ HA.input = { promptWidth: (a) => ({ confirm: 34, pause: 22, map: 22, prev: 16, n
 const { SOLID, ONEWAY, THORNS, CRATE, EMPTY, WATER } = HA.room;
 
 // Spawns that are things to reach, as opposed to enemies, crates and doors.
-const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'q', 'j', 'b', 'B', 'D', 'P', 'o']);
+const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'q', 'j', 'b', 'r', 'd', 'v', 'B', 'D', 'P', 'o']);
 // Door cells: D everywhere, and any other character a room's legend calls a door.
 const legendChars = (def, test) => Object.keys(def.legend || {}).filter((c) => test(def.legend[c]));
 const doorChars = (def) => ['D', ...legendChars(def, (l) => l.type === 'door')];
@@ -55,7 +61,7 @@ function openRuns(def, col) {
   let start = -1;
   for (let y = 0; y <= def.h; y++) {
     const ch = y < def.h ? def.map[y][col] : '#';
-    const open = ch !== '#' && ch !== 'B' && !doors.includes(ch);
+    const open = ch !== '#' && ch !== '%' && ch !== 'B' && !doors.includes(ch);
     if (open && start < 0) start = y;
     if (!open && start >= 0) {
       runs.push([start, y - 1]);
@@ -69,7 +75,7 @@ function checkShape(def) {
   if (def.w % SCREEN_W) fail(def, `width ${def.w} is not a whole number of screens (${SCREEN_W} tiles)`);
   if (!HEIGHTS.includes(def.h)) fail(def, `height ${def.h} should be one of ${HEIGHTS.join(', ')} tiles`);
   def.map.forEach((row, y) => row.length !== def.w && fail(def, `row ${y} is ${row.length} wide, not ${def.w}`));
-  for (const y of [0, def.h - 1]) if (/[^#]/.test(def.map[y])) fail(def, `the ${y ? 'bottom' : 'top'} edge must be solid; rooms join only at their sides`);
+  for (const y of [0, def.h - 1]) if (/[^#%]/.test(def.map[y])) fail(def, `the ${y ? 'bottom' : 'top'} edge must be solid; rooms join only at their sides`);
   for (const r of HA.rooms.list) {
     if (r === def) continue;
     const overlapX = def.gx < r.gx + r.w && r.gx < def.gx + def.w;
@@ -84,7 +90,7 @@ function exitsOf(def) {
     const col = side === 'left' ? 0 : def.w - 1;
     for (const [a, b] of openRuns(def, col)) {
       exits.push({ side, a, b, id: `${side} exit (rows ${a}-${b})` });
-      if (b + 1 >= def.h || def.map[b + 1][col] !== '#') fail(def, `${side} exit (rows ${a}-${b}) needs solid floor under it at the edge`);
+      if (b + 1 >= def.h || (def.map[b + 1][col] !== '#' && def.map[b + 1][col] !== '%')) fail(def, `${side} exit (rows ${a}-${b}) needs solid floor under it at the edge`);
       if (b - a < 2) fail(def, `${side} exit (rows ${a}-${b}) is too low for the hero (needs 3 rows)`);
       for (let y = a - 1; y <= b + 1; y++) {
         for (let x = 0; x < 4; x++) {
@@ -172,9 +178,14 @@ function hooksOf(room) {
   return room.spawns.filter((s) => s.type === 'o').map((s) => ({ x: s.x + 4, y: s.y + 4 }));
 }
 
-function simulate(room, def, abilities, start, program, onFrame) {
+// weapon: what the hero holds for this move. Hovers fire the Purge Cannon; grapples fire the Grapple Harpoon,
+// which bites a hook in reach exactly as it does in the game.
+function simulate(room, def, abilities, start, program, onFrame, weapon) {
   const p = HA.actors.makePlayer(start.x, start.y);
-  p.weapons = abilities.cannon ? [{ id: 'cannon', level: abilities.cannon, xp: 0, ammo: 40 }] : [];
+  p.weapons = [];
+  if (abilities.cannon) p.weapons.push({ id: 'cannon', level: abilities.cannon, xp: 0, ammo: 40 });
+  if (abilities.grapple) p.weapons.push({ id: 'harpoon', level: 1, xp: 0, ammo: 0 });
+  p.wi = Math.max(0, p.weapons.findIndex((w) => w.id === weapon));
   p.abilities = { thruster: abilities.thruster || null, grapple: !!abilities.grapple, boots: !!abilities.boots };
   p.vx = start.vx || 0;
   p.ground = HA.room.grounded(room, p);
@@ -205,19 +216,16 @@ function simulate(room, def, abilities, start, program, onFrame) {
   const pressed = {};
   const released = {};
   let airborne = false;
-  let grappled = false;
   for (let f = 0; f < 300; f++) {
     const want = program(f, p);
     if (want === null) return { end: 'stop', p };
     for (const a of ['left', 'right', 'up', 'down', 'jump', 'fire']) {
-      pressed[a] = !!want[a] && !held[a];
-      released[a] = !want[a] && !!held[a];
-      held[a] = !!want[a];
+      const on = a === 'fire' ? !!(want.fire || want.grapple) : !!want[a];
+      pressed[a] = on && !held[a];
+      released[a] = !on && !!held[a];
+      held[a] = on;
     }
     world.time++;
-    // The Grapple Harpoon (Phase 3.3) will fire this on a press; until then the moves ask for it directly.
-    if (want.grapple && !grappled) HA.abilities.fireGrapple(world, p, { held, pressed, released });
-    grappled = !!want.grapple;
     HA.actors.updatePlayer(world, { held, pressed, released });
     world.shots.length = 0;
     if (hurt) return { end: 'hurt' };
@@ -273,7 +281,7 @@ function programs(abilities, onCatwalk) {
     for (const dir of DIRS) {
       for (const at of [6, 14, 22]) {
         for (const stop of [Infinity, 50, 90]) {
-          list.push({ runup: dir, prog: (f) => (f > 280 ? null : input(f < stop ? dir : 0, { jump: f < 30, down: f >= at, fire: f >= at })) });
+          list.push({ runup: dir, weapon: 'cannon', prog: (f) => (f > 280 ? null : input(f < stop ? dir : 0, { jump: f < 30, down: f >= at, fire: f >= at })) });
         }
       }
     }
@@ -292,7 +300,8 @@ function programs(abilities, onCatwalk) {
       }
     }
   }
-  // Grapple: fire forward, up or up-and-forward (standing, or at the top of a jump), hang, then leap off or drop.
+  // Grapple: fire the harpoon forward, up or up-and-forward (standing, or at the top of a jump), hang, then
+  // leap off or drop.
   if (abilities.grapple) {
     const aims = [
       { up: false, dir: -1 },
@@ -308,6 +317,7 @@ function programs(abilities, onCatwalk) {
             if (leap === 'drop' && hold !== 8) continue;
             list.push({
               runup: 0,
+              weapon: 'harpoon',
               prog: (f, p) => {
                 if (f < at) return { jump: f < 12 };
                 if (!p.hangSince && p.grapple && p.grapple.phase === 'hang') p.hangSince = f;
@@ -321,39 +331,50 @@ function programs(abilities, onCatwalk) {
             });
           }
         }
+        // With a thruster: leap off the hook, let go, then burn, steering out across.
+        if (!abilities.thruster) continue;
+        for (const leap of [-1, 1]) {
+          list.push({
+            runup: 0,
+            weapon: 'harpoon',
+            prog: (f, p) => {
+              if (f < at) return { jump: f < 12 };
+              if (!p.hangSince && p.grapple && p.grapple.phase === 'hang') p.hangSince = f;
+              if (!p.hangSince) return input(aim.dir, { up: aim.up, grapple: f > at && f < at + 3, jump: at > 0 && f < 12 });
+              const t = f - p.hangSince;
+              if (t < 6) return {};
+              return input(leap, { jump: t < 14 || (t >= 20 && t < 100) });
+            },
+          });
+        }
       }
     }
   }
   return list;
 }
 
-function reachability(def, room, abilities, entries, targets) {
+// Where a room can be crossed: every floor (segment) the hero can stand on, and from each one, which floors
+// the moves land on, which exits they leave by, and which targets they touch. Built once per room shape and
+// set of abilities, then searched from any entrance.
+function buildGraph(def, room, abilities, targets) {
   const { segs, at } = findSegments(def, room, abilities);
   const segOf = (x, y) => {
     const ty = Math.round((y + 14) / 8);
     return at.get(Math.floor((x + 4) / 8) + ',' + ty) || at.get(Math.floor(x / 8) + ',' + ty) || at.get(Math.floor((x + 7.9) / 8) + ',' + ty);
   };
-  const reached = new Set();
-  const exitsHit = new Set();
-  const seen = new Set();
-  const queue = [];
-  const visit = (seg) => {
-    if (seg && !seen.has(seg.id)) {
-      seen.add(seg.id);
-      queue.push(seg);
-    }
-  };
-  const touch = (p) => {
-    for (const t of targets) if (!reached.has(t.id) && p.x < t.x + t.w && p.x + p.w > t.x && p.y < t.y + t.h && p.y + p.h > t.y) reached.add(t.id);
-  };
-  for (const e of entries) visit(segOf(e.x, e.y));
+  const next = segs.map(() => new Set());
+  const exits = segs.map(() => new Set());
+  const touch = segs.map(() => new Set());
   const progs = programs(abilities, false);
   const progsCat = programs(abilities, true);
-  while (queue.length) {
-    const seg = queue.shift();
+  for (const seg of segs) {
+    const touched = touch[seg.id];
+    const onFrame = (p) => {
+      for (const t of targets) if (!touched.has(t.id) && p.x < t.x + t.w && p.x + p.w > t.x && p.y < t.y + t.h && p.y + p.h > t.y) touched.add(t.id);
+    };
     const y = seg.ty * 8 - 14;
     // Walking covers the whole floor.
-    for (let tx = seg.x0; tx <= seg.x1; tx++) touch({ x: tx * 8, y, w: 8, h: 14 });
+    for (let tx = seg.x0; tx <= seg.x1; tx++) onFrame({ x: tx * 8, y, w: 8, h: 14 });
     const spots = new Set();
     for (let tx = seg.x0; tx <= seg.x1; tx++) spots.add(tx * 8);
     spots.add(seg.x0 * 8 - 5);
@@ -369,13 +390,103 @@ function reachability(def, room, abilities, entries, targets) {
           if (back < 16) continue;
           vx = pr.runup * HA.actors.MOVE.run;
         }
-        const r = simulate(room, def, abilities, { x, y, vx }, pr.prog, touch);
-        if (r.end === 'land') visit(segOf(r.x, r.y));
-        else if (r.end === 'exit') exitsHit.add(r.side + ':' + r.row);
+        const r = simulate(room, def, abilities, { x, y, vx }, pr.prog, onFrame, pr.weapon);
+        if (r.end === 'land') {
+          const n = segOf(r.x, r.y);
+          if (n && n !== seg) next[seg.id].add(n.id);
+        } else if (r.end === 'exit') exits[seg.id].add(r.side + ':' + r.row);
       }
     }
   }
-  return { reached, exitsHit };
+  return { segs, segOf, next, exits, touch };
+}
+
+// A room as the checker sees it, in one crane state (the Stacks' container stacks), with the doors only an
+// ability opens either shut or open. Every other door is open, crates are taken as already shot, glass is a wall.
+function shapeOf(def, flags, gatesOpen) {
+  const state = { flags, wardens: {}, people: {} };
+  const rows = def.map.map((row) =>
+    [...row]
+      .map((ch) => {
+        const L = def.legend && def.legend[ch];
+        if (L && L.type === 'glass') return '#';
+        if (ch === 'B') return '.';
+        if (ch === 'D' || (L && L.type === 'door')) {
+          if (L && L.crane) return L.open(state) ? '.' : '%';
+          if (L && L.needs && !gatesOpen) return '#';
+          return '.';
+        }
+        return ch;
+      })
+      .join(''),
+  );
+  const room = HA.room.load(rows);
+  room.belts = def.belts || [];
+  return room;
+}
+
+// A thruster that's needed without saying which pack (true) must work with both of them.
+function variants(abilities) {
+  if (abilities.thruster !== true) return [abilities];
+  return ['odell', 'bloomfire'].map((t) => Object.assign({}, abilities, { thruster: t }));
+}
+const abKey = (ab) => JSON.stringify(ab);
+
+// Everything that can be reached from some entrances, starting in one crane state. Throwing a crane's switch
+// moves on to the other state of that crane, with the hero standing at the switch. With a thruster of either
+// pack, only what both packs reach counts.
+function makeSolver(def, targets) {
+  const cranes = [...new Set(legendChars(def, (l) => l.type === 'door' && l.crane).map((c) => def.legend[c].crane))];
+  const switches = new Map();
+  for (const t of targets) if (t.legend && t.legend.type === 'switch') switches.set(t.id, t);
+  const graphs = new Map();
+  const graph = (si, gatesOpen, ab) => {
+    const k = si + ':' + gatesOpen + ':' + abKey(ab);
+    if (!graphs.has(k)) {
+      const flags = {};
+      cranes.forEach((c, i) => (flags[c] = !!(si & (1 << i))));
+      graphs.set(k, buildGraph(def, shapeOf(def, flags, gatesOpen), ab, targets));
+    }
+    return graphs.get(k);
+  };
+  function search(entries, s0, gatesOpen, ab) {
+    const exitsHit = new Set();
+    const reached = new Set();
+    const seen = new Set();
+    const queue = [];
+    const push = (si, seg) => {
+      if (!seg || seen.has(si + ':' + seg.id)) return;
+      seen.add(si + ':' + seg.id);
+      queue.push([si, seg]);
+    };
+    for (const e of entries) push(s0, graph(s0, gatesOpen, ab).segOf(e.x, e.y));
+    while (queue.length) {
+      const [si, seg] = queue.shift();
+      const G = graph(si, gatesOpen, ab);
+      for (const x of G.exits[seg.id]) exitsHit.add(x);
+      for (const t of G.touch[seg.id]) {
+        reached.add(t);
+        const sw = switches.get(t);
+        if (!sw) continue;
+        const sj = si ^ (1 << cranes.indexOf(sw.legend.crane));
+        push(sj, graph(sj, gatesOpen, ab).segOf(sw.stand.x, sw.stand.y));
+      }
+      for (const n of G.next[seg.id]) push(si, G.segs[n]);
+    }
+    return { exitsHit, reached };
+  }
+  return {
+    states: 1 << cranes.length,
+    reach(entries, s0, gatesOpen, abilities) {
+      const results = variants(abilities).map((ab) => search(entries, s0, gatesOpen, ab));
+      const [first, ...rest] = results;
+      for (const r of rest) {
+        for (const x of [...first.exitsHit]) if (!r.exitsHit.has(x)) first.exitsHit.delete(x);
+        for (const x of [...first.reached]) if (!r.reached.has(x)) first.reached.delete(x);
+      }
+      return first;
+    },
+  };
 }
 
 function targetsOf(def, room) {
@@ -385,7 +496,7 @@ function targetsOf(def, room) {
     const legend = (def.legend && def.legend[s.type]) || {};
     if (legend.reach === false || legend.type === 'door' || legend.type === 'glass') continue;
     const needs = legend.needs || (legend.secret ? { cannon: legend.secret } : null);
-    list.push({ id: `${s.type}@${s.tx},${s.ty}`, name: legend.name || s.type, needs, x: s.x - 4, y: s.y - 8, w: 16, h: 16 });
+    list.push({ id: `${s.type}@${s.tx},${s.ty}`, name: legend.name || s.type, legend, needs, x: s.x - 4, y: s.y - 8, w: 16, h: 16, stand: { x: s.x, y: s.y + 8 - 14 } });
   }
   return list;
 }
@@ -399,7 +510,7 @@ function checkHints(def) {
     const hit = [];
     for (let ty = Math.floor(h.y); ty <= Math.floor(h.y + 7 / 8); ty++) {
       const row = def.map[ty] || '';
-      for (let tx = Math.floor(h.x); tx <= Math.min(last, def.w - 1); tx++) if (row[tx] === '#') hit.push(tx);
+      for (let tx = Math.floor(h.x); tx <= Math.min(last, def.w - 1); tx++) if (row[tx] === '#' || row[tx] === '%') hit.push(tx);
     }
     if (hit.length) fail(def, `hint "${h.text}" at ${h.x},${h.y} runs into a wall at column ${Math.min(...hit)}; it needs ${last - Math.floor(h.x) + 1} open tiles`);
   }
@@ -410,24 +521,21 @@ function checkRoom(def) {
   checkHints(def);
   // Doors are checked open, and crates as already shot: the hero always has a weapon by the first crate.
   // Glass is a wall. A door only an ability opens is checked both ways: shut without it, open with it.
-  const glass = new RegExp('[' + (glassChars(def).join('') || '#') + ']', 'g');
+  // A crane's stacks are checked in every state the cranes can be in, with the switches to move between them.
   const gated = gatedDoors(def);
-  const open = new RegExp('[B' + doorChars(def).join('') + ']', 'g');
-  const openGates = new RegExp('[B' + doorChars(def).filter((c) => !gated.includes(c)).join('') + ']', 'g');
-  const shutGates = gated.length ? new RegExp('[' + gated.join('') + ']', 'g') : null;
-  const rows = def.map.map((row) => row.replace(glass, '#'));
-  const room = HA.room.load(rows.map((row) => row.replace(open, '.')));
-  const shut = shutGates ? HA.room.load(rows.map((row) => row.replace(openGates, '.').replace(shutGates, '#'))) : room;
+  const room = shapeOf(def, {}, true);
   const exits = exitsOf(def);
   checkGaps(def, room);
   const targets = targetsOf(def, room);
-  // An exit behind a gated door needs what the door needs, from either side.
+  // An exit behind a gated door needs what the door needs, from either side. A room can also say an exit
+  // needs an ability (exitNeeds: a high ledge only a thruster reaches).
   for (const e of exits) {
     for (const ch of gated) {
       const col = (x) => (e.side === 'left' ? x < 5 : x >= def.w - 5);
       const hit = def.map.some((row, y) => y >= e.a && y <= e.b && [...row].some((c, x) => c === ch && col(x)));
       if (hit) e.needs = def.legend[ch].needs;
     }
+    for (const n of def.exitNeeds || []) if (n.side === e.side && n.row >= e.a && n.row <= e.b) e.needs = Object.assign({}, e.needs, n.needs);
   }
   const entries = exits.map((e) => ({ exit: e, x: e.side === 'left' ? 0 : def.w * 8 - 8, y: (e.b + 1) * 8 - 14 }));
   for (const s of room.spawns) if (s.type === 'P') entries.push({ start: true, x: s.x, y: s.y + 8 - 14 });
@@ -439,9 +547,11 @@ function checkRoom(def) {
     fail(def, 'has no way in');
     return;
   }
+  const solver = makeSolver(def, targets);
+  const stateName = (si) => (solver.states > 1 ? ` with the cranes in state ${si}` : '');
 
-  // From each way in on its own: every exit must be reachable, so the hero can never be stuck.
-  // A gated exit must stay out of reach without its ability, and come into reach with it.
+  // From each way in on its own, in every crane state: every exit must be reachable, so the hero can never be
+  // stuck. A gated exit must stay out of reach without its ability, and come into reach with it.
   const base = def.abilities || {};
   const reaches = (hits, e) =>
     [...hits].some((h) => {
@@ -451,23 +561,25 @@ function checkRoom(def) {
   for (const entry of entries) {
     const from = entry.start ? 'start' : entry.link ? entry.link.name.replace(/^the /, '') : entry.exit.id;
     const gate = entry.exit && entry.exit.needs;
-    const { exitsHit, reached } = reachability(def, gate ? room : shut, gate ? Object.assign({}, base, gate) : base, [entry], links);
-    for (const t of links) if (t !== entry.link && !reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id} from the ${from}`);
-    for (const e of exits) {
-      if (e === entry.exit) continue;
-      const ok = reaches(exitsHit, e);
-      if (!ok && (gate || !e.needs)) fail(def, `can't reach the ${e.id} from the ${from}`);
-      if (ok && e.needs && !gate) fail(def, `the ${e.id} is meant to need ${describe(e.needs)}, but the ${from} reaches it without`);
-      if (e.needs && !gate) {
-        const withIt = reachability(def, room, Object.assign({}, base, e.needs), [entry], []);
-        if (!reaches(withIt.exitsHit, e)) fail(def, `can't reach the ${e.id} from the ${from} even with ${describe(e.needs)}`);
+    for (let si = 0; si < solver.states; si++) {
+      const { exitsHit, reached } = solver.reach([entry], si, !!gate, gate ? Object.assign({}, base, gate) : base);
+      for (const t of links) if (t !== entry.link && !reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id} from the ${from}${stateName(si)}`);
+      for (const e of exits) {
+        if (e === entry.exit) continue;
+        const ok = reaches(exitsHit, e);
+        if (!ok && (gate || !e.needs)) fail(def, `can't reach the ${e.id} from the ${from}${stateName(si)}`);
+        if (ok && e.needs && !gate) fail(def, `the ${e.id} is meant to need ${describe(e.needs)}, but the ${from} reaches it without${stateName(si)}`);
+        if (e.needs && !gate) {
+          const withIt = solver.reach([entry], si, true, Object.assign({}, base, e.needs));
+          if (!reaches(withIt.exitsHit, e)) fail(def, `can't reach the ${e.id} from the ${from} even with ${describe(e.needs)}${stateName(si)}`);
+        }
       }
     }
   }
 
-  // From all ways in: every item, person, terminal and rest pod, using only what each one allows.
+  // From all ways in: every item, person, terminal, switch and rest pod, using only what each one allows.
   const plainEntries = entries.filter((e) => !(e.exit && e.exit.needs));
-  const plain = reachability(def, shut, base, plainEntries, targets);
+  const plain = solver.reach(plainEntries, 0, false, base);
   for (const t of targets) {
     if (!t.needs && !plain.reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id}`);
     if (t.needs && plain.reached.has(t.id)) fail(def, `${t.name} at ${t.id} is meant to need ${describe(t.needs)}, but it can be reached without`);
@@ -475,7 +587,7 @@ function checkRoom(def) {
   const wants = new Map();
   for (const t of targets) if (t.needs) wants.set(JSON.stringify(t.needs), t.needs);
   for (const [k, needs] of wants) {
-    const withIt = reachability(def, room, Object.assign({}, base, needs), entries, targets);
+    const withIt = solver.reach(entries, 0, true, Object.assign({}, base, needs));
     for (const t of targets) if (t.needs && JSON.stringify(t.needs) === k && !withIt.reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id} even with ${describe(needs)}`);
   }
 }
@@ -483,9 +595,10 @@ function checkRoom(def) {
 function describe(needs) {
   const parts = [];
   if (needs.cannon) parts.push(`a level ${needs.cannon} Purge Cannon`);
-  if (needs.thruster) parts.push(needs.thruster === 'bloomfire' ? 'the Bloomfire pack' : "Odell's thruster pack");
+  if (needs.thruster) parts.push(needs.thruster === true ? 'a thruster pack (either one)' : needs.thruster === 'bloomfire' ? 'the Bloomfire pack' : "Odell's thruster pack");
   if (needs.grapple) parts.push('the grapple');
   if (needs.boots) parts.push('the pressure boots');
+  if (needs.charges) parts.push('Breach Charges');
   return parts.join(' and ');
 }
 
@@ -516,6 +629,10 @@ ABILITY_TESTS.forEach((def) => {
   def.w = 40;
   def.h = 23;
 });
+
+// Other scripts (and debugging) can use the checker's parts without running it.
+module.exports = { HA, shapeOf, targetsOf, buildGraph, findSegments, exitsOf, makeSolver };
+if (require.main !== module) return;
 
 const only = process.argv.slice(2);
 if (!only.length || only.includes('abilities')) {

@@ -55,7 +55,31 @@
       walk: ['#c8e0b0', '#6a8a5a', '#3a5a3a', '#243a26'],
       edge: 'rgba(2,8,4,0.55)',
     },
+    // The Cargo Labyrinth: rust and hazard yellow under cold white strip-lights, and the containers' colours.
+    cargo: {
+      bg: '#0c0b0c',
+      panel: '#131112',
+      panelEdge: '#191617',
+      panelMark: '#211b19',
+      conduit: ['#1d1512', '#2e1f17', '#3d281b'],
+      light: 'rgba(214,236,255,0.15)',
+      lamp: '#d6ecff',
+      tile: { deep: '#15110f', deep2: '#1a1512', face: '#3a2a20', inner: '#4a3526', speck: '#6a4a30', lip: '#ffb84d', lip2: '#a8643a', under: '#0b0807', left: '#5a3e2a', right: '#22170f' },
+      walk: ['#ffd84d', '#8a6a2a', '#3a2a18', '#2a1e12'],
+      edge: 'rgba(4,3,2,0.6)',
+      stripLights: true,
+    },
   };
+  // Container colours: rust, teal, olive, ochre, slate and plum, each with a lit top edge and a dark rib.
+  const CONTAINERS = [
+    ['#6e3424', '#8e4a34', '#4a2218'],
+    ['#2a4f5c', '#3c6a78', '#1a343e'],
+    ['#55552a', '#70703a', '#38381a'],
+    ['#7a4f22', '#9a6a32', '#523416'],
+    ['#343f5c', '#4a5878', '#222a3e'],
+    ['#4f2840', '#6a3a56', '#341a2a'],
+  ];
+  const HAZARD = ['#c9a227', '#ffd84d', '#7a6214'];
 
   const hash = (str) => {
     let h = 2166136261;
@@ -109,6 +133,24 @@
     for (let x = 40; x < W; x += 96) {
       for (let ly = 24; ly < H - 40; ly += 136) {
         if (room.tile(Math.floor(x / 8), Math.floor(ly / 8)) !== HA.room.EMPTY) continue;
+        if (T.stripLights) {
+          // a long cold tube, and its light falling in a cone
+          const cone = g.createLinearGradient(0, ly, 0, ly + 44);
+          cone.addColorStop(0, T.light);
+          cone.addColorStop(1, 'rgba(0,0,0,0)');
+          g.fillStyle = cone;
+          g.beginPath();
+          g.moveTo(x - 10, ly + 1);
+          g.lineTo(x + 10, ly + 1);
+          g.lineTo(x + 26, ly + 44);
+          g.lineTo(x - 26, ly + 44);
+          g.fill();
+          g.fillStyle = '#10121c';
+          g.fillRect(x - 11, ly - 1, 22, 3);
+          g.fillStyle = T.lamp;
+          g.fillRect(x - 10, ly, 20, 1);
+          continue;
+        }
         const grad = g.createRadialGradient(x, ly + 2, 0, x, ly + 2, 26);
         grad.addColorStop(0, T.light);
         grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -512,6 +554,188 @@
         g.fillRect(x + 6, y + h - 6, 28, 2);
       }
     },
+    // ---- The Cargo Labyrinth ----
+    // Stacks of containers far back in the dark, for depth. y is the floor row they stand on.
+    stacks(g, s, rnd) {
+      for (let x = s.x0 * 8; x < s.x1 * 8 - 32; x += 34 + Math.floor(rnd() * 8)) {
+        const n = 1 + Math.floor(rnd() * (s.h || 3));
+        for (let i = 0; i < n; i++) {
+          const y = s.y * 8 - (i + 1) * 17;
+          const C = CONTAINERS[Math.floor(rnd() * CONTAINERS.length)];
+          g.globalAlpha = 0.3;
+          g.fillStyle = C[0];
+          g.fillRect(x, y, 32, 16);
+          g.fillStyle = C[2];
+          for (let r = 3; r < 32; r += 3) g.fillRect(x + r, y + 2, 1, 13);
+          g.fillStyle = C[1];
+          g.fillRect(x, y, 32, 1);
+          g.globalAlpha = 1;
+        }
+      }
+    },
+    // The gantry rail a crane runs on, under the ceiling, with hazard stripes at its stops.
+    cranerail(g, s) {
+      const y = s.y * 8;
+      const x0 = s.x0 * 8;
+      const w = (s.x1 - s.x0 + 1) * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, y, w, 5);
+      g.fillStyle = '#5a4a3a';
+      g.fillRect(x0, y + 1, w, 2);
+      g.fillStyle = '#8a6a4a';
+      g.fillRect(x0, y + 1, w, 1);
+      for (let x = x0; x < x0 + w; x += 32) {
+        g.fillStyle = '#3a2a20';
+        g.fillRect(x + 2, y - 8, 2, 8);
+      }
+      for (const ex of [x0, x0 + w - 6]) {
+        for (let i = 0; i < 6; i += 2) {
+          g.fillStyle = HAZARD[1];
+          g.fillRect(ex + i, y - 1, 1, 7);
+        }
+      }
+    },
+    // Tall shelving in the Long Aisle, boxes on every shelf.
+    shelves(g, s, rnd) {
+      for (let x = s.x0 * 8; x < s.x1 * 8; x += 56) {
+        const top = (s.y - s.h) * 8;
+        g.fillStyle = '#1a1412';
+        g.fillRect(x, top, 3, s.h * 8);
+        g.fillRect(x + 45, top, 3, s.h * 8);
+        for (let y = top + 6; y < s.y * 8; y += 18) {
+          g.fillStyle = '#2a201a';
+          g.fillRect(x, y, 48, 2);
+          for (let bx = x + 4; bx < x + 44; bx += 7 + Math.floor(rnd() * 4)) {
+            if (rnd() < 0.25) continue;
+            const h = 5 + Math.floor(rnd() * 8);
+            g.fillStyle = rnd() < 0.5 ? '#3a2c20' : '#2e2620';
+            g.fillRect(bx, y - h, 6, h);
+            g.fillStyle = '#4a3a2a';
+            g.fillRect(bx, y - h, 6, 1);
+          }
+        }
+      }
+    },
+    // Sorting machinery on the back wall: hoppers with chutes running down from them.
+    chutes(g, s, rnd) {
+      for (const [cx, cy, len] of s.at) {
+        const x = cx * 8;
+        const y = cy * 8;
+        g.fillStyle = '#1d1512';
+        g.fillRect(x - 10, y, 28, 10);
+        g.fillStyle = '#2e1f17';
+        g.fillRect(x - 8, y + 2, 24, 6);
+        g.fillStyle = '#1a1210';
+        g.fillRect(x, y + 10, 8, len * 8);
+        g.fillStyle = '#3d281b';
+        g.fillRect(x + 1, y + 10, 1, len * 8);
+        g.fillStyle = HAZARD[0];
+        g.fillRect(x - 10, y, 28, 1);
+        if (rnd() < 0.5) g.fillRect(x + 2, y + 4, 4, 2);
+      }
+    },
+    // The Armory's racks: hooks and outlines where the guns used to hang.
+    racks(g, s, rnd) {
+      for (let x = s.x0 * 8; x < s.x1 * 8; x += 40) {
+        const y = s.y * 8;
+        g.fillStyle = '#1a1412';
+        g.fillRect(x, y, 34, 30);
+        g.fillStyle = '#2a201a';
+        g.fillRect(x + 1, y + 1, 32, 28);
+        for (let r = 0; r < 3; r++) {
+          g.fillStyle = '#3a2c20';
+          g.fillRect(x + 3, y + 7 + r * 9, 28, 1);
+          if (rnd() < 0.3) {
+            g.fillStyle = '#4a4a52';
+            g.fillRect(x + 6, y + 4 + r * 9, 18, 2);
+          } else {
+            g.fillStyle = '#211a16';
+            g.fillRect(x + 6, y + 4 + r * 9, 18, 2);
+          }
+        }
+      }
+    },
+    // The Purser's desk: a lamp, a ledger and a cup, and the Steward's lists pinned up behind it.
+    desk(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y - 10, 36, 10);
+      g.fillStyle = '#4a3020';
+      g.fillRect(x + 1, y - 9, 34, 3);
+      g.fillStyle = '#3a2418';
+      g.fillRect(x + 2, y - 6, 3, 6);
+      g.fillRect(x + 31, y - 6, 3, 6);
+      g.fillStyle = '#e6e2d6';
+      g.fillRect(x + 8, y - 11, 9, 2);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 25, y - 14, 1, 5);
+      g.fillStyle = '#fff0a8';
+      g.fillRect(x + 23, y - 15, 5, 2);
+      for (let i = 0; i < 4; i++) {
+        g.fillStyle = i % 2 ? '#d8cfc0' : '#e6e2d6';
+        g.fillRect(x + 2 + i * 9, y - 40, 7, 10);
+        g.fillStyle = '#6c7894';
+        for (let l = 0; l < 4; l++) g.fillRect(x + 3 + i * 9, y - 38 + l * 2, 5, 1);
+      }
+    },
+    // Frost on the Cold Store's walls, and icicles from every ceiling.
+    frost(g, s, rnd, T, room) {
+      for (let i = 0; i < (s.n || 80); i++) {
+        g.fillStyle = rnd() < 0.5 ? 'rgba(216,244,255,0.12)' : 'rgba(159,216,232,0.1)';
+        g.fillRect(Math.floor(rnd() * room.pw), Math.floor(rnd() * room.ph), 2 + Math.floor(rnd() * 6), 1);
+      }
+      for (let tx = 1; tx < room.w - 1; tx++) {
+        for (let ty = 1; ty < room.h - 1; ty++) {
+          if (room.tile(tx, ty) !== HA.room.EMPTY || room.tile(tx, ty - 1) !== HA.room.SOLID || rnd() < 0.55) continue;
+          const len = 2 + Math.floor(rnd() * 5);
+          g.fillStyle = '#9fd8e8';
+          g.fillRect(tx * 8 + Math.floor(rnd() * 6), ty * 8, 1, len);
+        }
+      }
+    },
+    // The Lifeboat Dock's empty cradles, and the hull doors under them.
+    berths(g, s) {
+      for (const bx of s.at) {
+        const x = bx * 8;
+        const y = s.y * 8;
+        g.fillStyle = '#1a1412';
+        g.fillRect(x, y - 3, 48, 3);
+        g.fillRect(x + 4, y - 14, 3, 11);
+        g.fillRect(x + 41, y - 14, 3, 11);
+        g.fillStyle = HAZARD[2];
+        for (let i = 0; i < 48; i += 6) g.fillRect(x + i, y - 3, 3, 1);
+      }
+    },
+    // The last boat: a short-range lifeboat, nose to the hull doors, its canopy dark over the pilot's seat.
+    boat(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y - 22, 56, 18);
+      g.fillRect(x + 56, y - 18, 6, 10);
+      g.fillStyle = '#a9b6cc';
+      g.fillRect(x + 1, y - 21, 54, 16);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 1, y - 10, 54, 5);
+      g.fillStyle = '#e8434f';
+      g.fillRect(x + 4, y - 13, 28, 1);
+      g.fillStyle = '#1d3b52';
+      g.fillRect(x + 36, y - 19, 16, 6);
+      g.fillStyle = '#5fd4e8';
+      g.fillRect(x + 37, y - 19, 4, 1);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x + 6, y - 4, 10, 4);
+      g.fillRect(x + 40, y - 4, 10, 4);
+      HA.font.draw(g, 'LB-7', x + 8, y - 20, '#3a4258', { shadow: null });
+    },
+    // Big stencilled deck numbers, half worn away.
+    stencil(g, s) {
+      g.globalAlpha = 0.35;
+      HA.font.draw(g, s.text, s.x * 8, s.y * 8, HAZARD[0], { shadow: null });
+      g.globalAlpha = 1;
+    },
+
     // The Gardener's gallery, behind the glass: clean white tiles, a bench, and her own door out.
     gallery(g, s) {
       const x0 = s.x0 * 8;
@@ -537,16 +761,55 @@
   };
 
   // ---- Tiles ----
+  // One 8px cell of a stacked cargo container. Containers are 4 cells wide and 2 tall, staggered a little
+  // row by row, so a wall of them reads as a stack and not a grid. A lit top edge marks where to stand.
+  function containerCell(g, x, y, tx, ty, isCargo, open, palette) {
+    const cy = Math.floor(ty / 2);
+    const shift = (cy % 2) * 2;
+    const cx = Math.floor((tx + shift) / 4);
+    const C = palette || CONTAINERS[hash(cx + ',' + cy) % CONTAINERS.length];
+    const top = ty % 2 === 0 || !isCargo(tx, ty - 1);
+    const bottom = ty % 2 === 1 || !isCargo(tx, ty + 1);
+    const left = (tx + shift) % 4 === 0 || !isCargo(tx - 1, ty);
+    const right = (tx + shift) % 4 === 3 || !isCargo(tx + 1, ty);
+    g.fillStyle = C[0];
+    g.fillRect(x, y, 8, 8);
+    g.fillStyle = C[2];
+    for (let rx = 2; rx < 8; rx += 3) g.fillRect(x + rx, y + (top ? 2 : 0), 1, 8 - (top ? 2 : 0) - (bottom ? 1 : 0));
+    if (top) {
+      g.fillStyle = open(tx, ty - 1) ? (palette ? palette[1] : '#c9a07a') : C[1];
+      g.fillRect(x, y, 8, 1);
+    }
+    g.fillStyle = '#0b0807';
+    if (bottom) g.fillRect(x, y + 7, 8, 1);
+    if (left) g.fillRect(x, y, 1, 8);
+    if (right) {
+      g.fillStyle = C[2];
+      g.fillRect(x + 7, y, 1, 8);
+      // the door end of a container: its locking bars
+      if (isCargo(tx - 1, ty)) {
+        g.fillStyle = C[1];
+        g.fillRect(x + 4, y + (top ? 2 : 0), 1, top && bottom ? 4 : 6);
+      }
+    }
+  }
+
   function buildTiles(room, T) {
     const img = canvas(room.pw, room.ph);
     const g = img.getContext('2d');
     const P = T.tile;
     const solid = (tx, ty) => room.tile(tx, ty) === HA.room.SOLID;
+    const isCargo = (tx, ty) => tx >= 0 && ty >= 0 && tx < room.w && ty < room.h && room.cargo[ty * room.w + tx] === 1;
+    const open = (tx, ty) => room.tile(tx, ty) === HA.room.EMPTY;
     for (let ty = 0; ty < room.h; ty++) {
       for (let tx = 0; tx < room.w; tx++) {
         const t = room.tile(tx, ty);
         const x = tx * 8;
         const y = ty * 8;
+        if (isCargo(tx, ty)) {
+          containerCell(g, x, y, tx, ty, isCargo, open);
+          continue;
+        }
         if (t === HA.room.SOLID) {
           const up = solid(tx, ty - 1);
           const down = solid(tx, ty + 1);
@@ -634,6 +897,8 @@
       if (s.kind === 'fire') drawFire(g, world, s, cam);
       if (s.kind === 'homes' && hiding) drawWatchers(g, world, s, cam, hiding);
       if (s.kind === 'vats') drawBubbles(g, world, s, cam);
+      if (s.kind === 'odell') drawOdell(g, world, s, cam);
+      if (s.kind === 'toolbag' && !world.state.flags.toolbag) drawToolbag(g, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -900,7 +1165,8 @@
     for (let b = 2; b < 23; b += 4) g.fillRect(x + b, y + 3, 1, 16);
     g.fillStyle = '#a9b6cc';
     g.fillRect(x + 1, y + 1, 22, 1);
-    g.fillStyle = world.state.flags.cradles ? '#7ad1a0' : '#e8434f';
+    const lit = l.legend.lit ? l.legend.lit(world.state) : world.state.flags.cradles;
+    g.fillStyle = lit ? '#7ad1a0' : '#e8434f';
     g.fillRect(x + 11, y + 5, 2, 2);
   }
 
@@ -936,7 +1202,185 @@
     }
   }
 
+  // Chief Engineer Odell, frozen at the dead terminal where he came to make his complaint. His pack stays on his
+  // back until someone needs it more than he does.
+  function drawOdell(g, world, s, cam) {
+    const x = Math.round(s.x * 8 - cam.x);
+    const y = Math.round(s.y * 8 - cam.y);
+    g.fillStyle = '#10121c';
+    g.fillRect(x + 9, y - 18, 11, 18);
+    g.fillStyle = '#3a4258';
+    g.fillRect(x + 10, y - 17, 9, 16);
+    g.fillStyle = '#05060d';
+    g.fillRect(x + 11, y - 15, 7, 5);
+    g.fillStyle = '#1a1412';
+    g.fillRect(x - 5, y - 8, 9, 8);
+    g.fillStyle = '#5a6b87';
+    g.fillRect(x - 1, y - 7, 8, 3);
+    g.fillRect(x + 5, y - 5, 2, 5);
+    g.fillStyle = '#8a9aa8';
+    g.fillRect(x - 3, y - 17, 7, 11);
+    g.fillRect(x + 3, y - 14, 7, 2);
+    g.fillStyle = '#c8dce8';
+    g.fillRect(x - 1, y - 22, 5, 5);
+    g.fillStyle = '#10121c';
+    g.fillRect(x + 2, y - 20, 1, 1);
+    if (!world.state.flags.odellPack) {
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 7, y - 17, 5, 9);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x - 6, y - 16, 3, 7);
+      g.fillStyle = '#ffb84d';
+      g.fillRect(x - 6, y - 9, 3, 1);
+    }
+    g.fillStyle = '#eef4f6';
+    for (const [fx, fy] of [[-2, -17], [1, -12], [3, -21], [-4, -10], [6, -14], [0, -6]]) g.fillRect(x + fx, y + fy, 1, 1);
+    if (!world.state.flags.odell && Math.floor(world.time / 16) % 4 === 0) {
+      g.fillStyle = '#ffffff';
+      g.fillRect(x + 18, y - 17, 1, 1);
+    }
+  }
+
+  // Solder's toolbag, where she left it by the grate, a wrench sticking out.
+  function drawToolbag(g, s, cam) {
+    const x = Math.round(s.x * 8 - cam.x);
+    const y = Math.round(s.y * 8 - cam.y);
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 1, y - 7, 12, 7);
+    g.fillStyle = '#7a5a3a';
+    g.fillRect(x, y - 6, 10, 6);
+    g.fillStyle = '#a8743a';
+    g.fillRect(x, y - 6, 10, 1);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(x + 7, y - 10, 1, 4);
+    g.fillRect(x + 6, y - 11, 3, 1);
+    g.fillStyle = '#5fd4e8';
+    g.fillRect(x + 2, y - 4, 2, 1);
+  }
+
+  // ---- The Cargo Labyrinth's moving parts ----
+  const inDoor = (d) => {
+    const set = new Set(d.cells.map((c) => c.tx + ',' + c.ty));
+    return (tx, ty) => set.has(tx + ',' + ty);
+  };
+
+  // A crane's stack: hazard-yellow containers with a lifting ring on top.
+  function drawStack(g, world, d, cam) {
+    const isIn = inDoor(d);
+    for (const c of d.cells) containerCell(g, c.tx * 8 - cam.x, c.ty * 8 - cam.y, c.tx, c.ty, isIn, () => true, HAZARD);
+    const xs = d.cells.map((c) => c.tx);
+    const top = Math.min(...d.cells.map((c) => c.ty));
+    const mx = ((Math.min(...xs) + Math.max(...xs) + 1) / 2) * 8 - cam.x;
+    g.fillStyle = '#10121c';
+    g.fillRect(mx - 3, top * 8 - 4 - cam.y, 6, 4);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(mx - 2, top * 8 - 3 - cam.y, 4, 2);
+  }
+
+  // The stack on its way between slots, hanging from the crane's cable.
+  function drawCraneMove(g, world, m, cam) {
+    const k = m.t / m.frames;
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    const x = Math.round(m.from.x + (m.to.x - m.from.x) * e - cam.x);
+    const y = Math.round(m.from.y + (m.to.y - m.from.y) * e - cam.y);
+    g.fillStyle = '#6c7894';
+    g.fillRect(x + m.from.w / 2, -2, 1, y + 2);
+    const cells = (tx, ty) => tx >= 0 && ty >= 0 && tx < m.from.w / 8 && ty < m.from.h / 8;
+    for (let ty = 0; ty < m.from.h / 8; ty++) for (let tx = 0; tx < m.from.w / 8; tx++) containerCell(g, x + tx * 8, y + ty * 8, tx, ty, cells, () => true, HAZARD);
+  }
+
+  // A crane switch on the wall: a lever, up or down, and a lamp that blinks while the crane moves.
+  function drawSwitch(g, world, sw, cam) {
+    const x = Math.round(sw.x - cam.x);
+    const y = Math.round(sw.y - cam.y);
+    const on = !!world.state.flags[sw.legend.crane];
+    g.fillStyle = '#10121c';
+    g.fillRect(x, y + 2, 8, 12);
+    g.fillStyle = HAZARD[0];
+    g.fillRect(x + 1, y + 3, 6, 10);
+    g.fillStyle = '#10121c';
+    g.fillRect(x + 3, y + 5, 2, 6);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(x + 2, on ? y + 9 : y + 4, 4, 2);
+    const busy = world.craneMove && world.craneMove.flag === sw.legend.crane;
+    g.fillStyle = busy && Math.floor(world.time / 6) % 2 ? '#fff0a8' : on ? '#7ad1a0' : '#e8434f';
+    g.fillRect(x + 3, y, 2, 2);
+  }
+
+  // Conveyor belts: a dark band along the floor's top with chevrons running the way it carries.
+  function drawBelts(g, world, cam) {
+    const shift = Math.floor(world.time * 0.6) % 6;
+    for (const b of world.room.belts) {
+      const y = b.y * 8 - cam.y;
+      for (let tx = b.x0; tx <= b.x1; tx++) {
+        const x = tx * 8 - cam.x;
+        if (x < -8 || x > HA.VIEW_W) continue;
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y, 8, 3);
+        g.fillStyle = '#3a3a40';
+        g.fillRect(x, y + 1, 8, 1);
+      }
+      g.fillStyle = HAZARD[1];
+      for (let px = b.x0 * 8 + (b.dir > 0 ? shift : 5 - shift); px < (b.x1 + 1) * 8 - 1; px += 6) {
+        g.fillRect(px - cam.x, y + 1, 1, 1);
+        g.fillRect(px - cam.x - b.dir, y, 1, 1);
+        g.fillRect(px - cam.x - b.dir, y + 2, 1, 1);
+      }
+      for (const ex of [b.x0 * 8, (b.x1 + 1) * 8 - 3]) {
+        g.fillStyle = '#6c7894';
+        g.fillRect(ex - cam.x, y, 3, 3);
+      }
+    }
+  }
+
+  // A cracked wall: hull plates split by a dark crack, or (the Cold Store's door) a slab of ice.
+  function drawCracked(g, world, d, cam) {
+    const ice = d.legend.ice;
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      g.fillStyle = ice ? '#5f8fae' : '#10121c';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = ice ? ((c.tx + c.ty) % 2 ? '#9fd8e8' : '#b8e4f0') : (c.tx + c.ty) % 2 ? '#3a2a20' : '#4a3526';
+      g.fillRect(x + 1, y + 1, 6, 6);
+      g.fillStyle = ice ? '#ffffff' : '#0b0807';
+      const k = (c.tx * 7 + c.ty * 3) % 4;
+      g.fillRect(x + 1 + k, y + 1, 1, 3);
+      g.fillRect(x + 2 + k, y + 3, 1, 3);
+      g.fillRect(x + 1 + ((k + 2) % 4), y + 5, 2, 1);
+    }
+  }
+
+  // The Vault's door: thick plates and a wheel, its lamp red until the Tallyman's lock lets go.
+  function drawVaultDoor(g, world, d, cam) {
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = '#4a4a52';
+      g.fillRect(x + 1, y, 6, 8);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 1, y, 1, 8);
+    }
+    const b = { x: Math.min(...d.cells.map((c) => c.tx)) * 8, y: Math.min(...d.cells.map((c) => c.ty)) * 8, h: d.cells.length * 8 };
+    const cx = Math.round(b.x + 4 - cam.x);
+    const cy = Math.round(b.y + b.h / 2 - cam.y);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(cx - 3, cy - 3, 7, 7);
+    g.fillStyle = '#10121c';
+    g.fillRect(cx - 2, cy - 2, 5, 5);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(cx, cy - 2, 1, 5);
+    g.fillRect(cx - 2, cy, 5, 1);
+    g.fillStyle = Math.floor(world.time / 20) % 2 ? '#e8434f' : '#3a1520';
+    g.fillRect(cx, cy - 8, 1, 2);
+  }
+
   function drawDoor(g, world, d, cam) {
+    if (d.legend.crane) return drawStack(g, world, d, cam);
+    if (d.legend.cracked) return drawCracked(g, world, d, cam);
+    if (d.legend.vault) return drawVaultDoor(g, world, d, cam);
     // Solder's gate, the one that opens from the Hullfolk's side: patched plates, rivets, and a wheel.
     if (d.legend.kept && d.legend.kept(world.state)) {
       for (const c of d.cells) {
@@ -1013,5 +1457,5 @@
     }
   }
 
-  HA.scenery = { THEMES, layers, drawBack, drawTerminal, drawDoor, drawCage, drawLight, drawLink, drawGlass, cradleSpot, miniLantern };
+  HA.scenery = { THEMES, layers, drawBack, drawTerminal, drawDoor, drawCage, drawLight, drawLink, drawGlass, drawSwitch, drawBelts, drawCraneMove, cradleSpot, miniLantern };
 })(window.HA);

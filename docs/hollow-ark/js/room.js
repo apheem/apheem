@@ -1,8 +1,9 @@
 'use strict';
 // Room tiles, collision and movement. Room layouts live in js/areas/, one file per area of the ship.
-// Map legend shared by every room: # hull   = catwalk (jump up through, Down+Jump to drop)   ^ Bloom thorns   B crate
-// ~ water (see abilities.js).
+// Map legend shared by every room: # hull   % cargo containers (solid, drawn as stacked containers)
+// = catwalk (jump up through, Down+Jump to drop)   ^ Bloom thorns   B crate   ~ water (see abilities.js).
 // Every other character is a spawn that the room's own legend (or the shared one in world.js) explains.
+// A room's belts ({ x0, x1, y, dir }: the floor row y, from column x0 to x1) carry whoever stands on them.
 (function (HA) {
   const EMPTY = 0;
   const SOLID = 1;
@@ -10,18 +11,21 @@
   const THORNS = 3;
   const CRATE = 4;
   const WATER = 5;
-  const CODES = { '#': SOLID, '=': ONEWAY, '^': THORNS, B: CRATE, '~': WATER };
+  const CODES = { '#': SOLID, '%': SOLID, '=': ONEWAY, '^': THORNS, B: CRATE, '~': WATER };
+  const BELT_SPEED = 0.6;
 
   function load(MAP) {
     const h = MAP.length;
     const w = MAP[0].length;
     const tiles = new Uint8Array(w * h);
+    const cargo = new Uint8Array(w * h);
     const spawns = [];
     for (let y = 0; y < h; y++) {
       if (MAP[y].length !== w) throw new Error('Room row ' + y + ' has the wrong width');
       for (let x = 0; x < w; x++) {
         const ch = MAP[y][x];
         tiles[y * w + x] = CODES[ch] || EMPTY;
+        if (ch === '%') cargo[y * w + x] = 1;
         if (ch !== '.' && ch !== ' ' && !CODES[ch]) spawns.push({ type: ch, tx: x, ty: y, x: x * 8, y: y * 8 });
         if (ch === 'B') spawns.push({ type: 'B', tx: x, ty: y, x: x * 8, y: y * 8 });
       }
@@ -33,7 +37,9 @@
       pw: w * 8,
       ph: h * 8,
       tiles,
+      cargo,
       spawns,
+      belts: [],
       // Outside the room, the edge tile continues: walls stay walls, and openings lead on to the next room.
       tile(tx, ty) {
         tx = tx < 0 ? 0 : tx >= w ? w - 1 : tx;
@@ -136,6 +142,15 @@
     return false;
   }
 
+  // The belt a body stands on, if any: its speed along x (the Sorting Floor's conveyors).
+  function beltUnder(room, b) {
+    if (!room.belts.length) return 0;
+    const ty = Math.floor((b.y + b.h + 0.5) / 8);
+    const cx = (b.x + b.w / 2) / 8;
+    const belt = room.belts.find((t) => t.y === ty && cx >= t.x0 && cx < t.x1 + 1);
+    return belt ? belt.dir * BELT_SPEED : 0;
+  }
+
   function touchesThorns(room, b) {
     const left = Math.floor((b.x + 1) / 8);
     const right = Math.floor((b.x + b.w - 1) / 8);
@@ -145,7 +160,7 @@
     return false;
   }
 
-  HA.room = { load, move, grounded, touchesThorns, EMPTY, SOLID, ONEWAY, THORNS, CRATE, WATER };
+  HA.room = { load, move, grounded, touchesThorns, beltUnder, EMPTY, SOLID, ONEWAY, THORNS, CRATE, WATER };
 
   // ---- Every room of the ship, placed on one grid (in tiles) so neighbors and the map line up ----
   // A room def: { id, area, name, gx, gy, map: [rows], legend: { char: spawn }, hints, triggers, music, ... }

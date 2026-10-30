@@ -8,13 +8,16 @@
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
   const FADE = 10; // frames for each half of a room change
 
-  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1, q: 1, j: 1, b: 1 };
+  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1, q: 1, j: 1, b: 1, r: 1, d: 1, v: 1 };
+  // Weapons placed by a map character everywhere, or by a room's legend ({ type: 'weapon', id }).
   const WEAPON_CHARS = { G: 'pistol', U: 'cannon', A: 'coil', Q: 'scatter' };
   const WEAPON_TEXT = {
     pistol: 'RIVET PISTOL · {fire} TO FIRE',
     cannon: 'PURGE CANNON · IN THE AIR, HOLD {down}+{fire} TO HOVER',
     coil: 'ARC COIL · HOLD {fire} TO CHARGE, LET GO TO FIRE',
     scatter: 'SCATTER LAUNCHER · {fire} LOBS GRENADES THAT ROLL',
+    harpoon: 'GRAPPLE HARPOON · AIM AT A RING AND {fire} TO PULL UP',
+    charges: 'BREACH CHARGES · {fire} BLOWS OPEN CRACKED WALLS',
   };
 
   function create(state) {
@@ -221,6 +224,8 @@
     world.doors = [];
     world.hooks = [];
     world.links = [];
+    world.switches = [];
+    world.craneMove = null;
     world.glass = [];
     world.barks = [];
     world.actors = [];
@@ -245,12 +250,14 @@
       } else if (ch === 'B') world.crates.set(key(sp.tx, sp.ty), { tx: sp.tx, ty: sp.ty, hp: 3, broken: false, timer: 0, flash: 0 });
       else if (ch === 'n') {
         if (!s.taken[id]) world.pickups.push({ kind: 'bulb', key: id, x: sp.x, y: sp.y - 1, w: 8, h: 9, life: Infinity, t: 0 });
-      } else if (WEAPON_CHARS[ch]) {
-        const wid = WEAPON_CHARS[ch];
-        if (!s.taken[id] && !has(world, wid)) world.pickups.push({ kind: 'weapon', id: wid, key: id, x: sp.x - 2, y: sp.y - 8, w: 12, h: 10, life: Infinity, t: 0, message: WEAPON_TEXT[wid] });
-      } else if (ch === 'H') {
+      } else if (WEAPON_CHARS[ch] || legend.type === 'weapon') {
+        const wid = WEAPON_CHARS[ch] || legend.id;
+        const shown = !legend.when || legend.when(s, world);
+        if (!s.taken[id] && !has(world, wid) && shown) world.pickups.push({ kind: 'weapon', id: wid, key: id, x: sp.x - 2, y: sp.y - 8, w: 12, h: 10, life: Infinity, t: 0, message: WEAPON_TEXT[wid] });
+      } else if (legend.type === 'switch') world.switches.push({ legend, x: sp.x, y: sp.y + 8 - 16, w: 8, h: 16 });
+      else if (ch === 'H') {
         if (!s.taken[id]) world.pickups.push({ kind: 'capsule', key: id, x: sp.x, y: sp.y - 2, w: 8, h: 10, life: Infinity, t: 0 });
-      } else if (legend.type === 'log') world.logs.push({ id: legend.id, x: sp.x - 1, y: sp.y + 8 - 12, w: 10, h: 12, read: !!s.logs[legend.id] });
+      } else if (legend.type === 'log') world.logs.push({ id: legend.id, scene: legend.scene, x: sp.x - 1, y: sp.y + 8 - 12, w: 10, h: 12, read: !!s.logs[legend.id] });
       else if (legend.type === 'npc') {
         if (!legend.when || legend.when(s, world)) world.npcs.push(HA.story.makeNpc(world, legend.id, sp));
       } else if (legend.type === 'door') addDoorCell(world, legend, sp);
@@ -272,6 +279,8 @@
       const x1 = (Math.max(...xs) + 1) * 8;
       world.hooks.push({ x: (x0 + x1) / 2, y: c.ty * 8 + 4, hatch: d.legend.ring, x0, x1 });
     }
+
+    world.room.belts = def.belts || [];
 
     const p = world.player;
     p.x = x;
@@ -332,8 +341,14 @@
       if (open === d.open) continue;
       d.open = open;
       for (const c of d.cells) world.room.set(c.tx, c.ty, open ? HA.room.EMPTY : HA.room.SOLID);
-      if (instant) continue;
+      if (instant || d.legend.crane) continue; // a crane's stack shows its own move (see throwSwitch)
       const c = d.cells[Math.floor(d.cells.length / 2)];
+      if (d.legend.cracked) {
+        // A cracked wall comes down in rubble, for good.
+        for (const cell of d.cells) world.burst(cell.tx * 8 + 4, cell.ty * 8 + 4, d.legend.ice ? ['#d8f4ff', '#9fd8e8', '#ffffff'] : ['#6c7894', '#3a4258', '#a9b6cc'], 4, 1.6);
+        HA.audio.play('crate');
+        continue;
+      }
       if (kept) {
         world.burst(c.tx * 8 + 4, c.ty * 8, ['#a8743a', '#6c7894'], 6, 1);
         HA.audio.play(open ? 'unlock' : 'doorShut');
@@ -343,6 +358,32 @@
       world.shake(open ? 4 : 2);
       HA.audio.play(open ? 'blast' : 'doorShut');
     }
+  }
+
+  const boxOf = (d) => {
+    const xs = d.cells.map((c) => c.tx);
+    const ys = d.cells.map((c) => c.ty);
+    return { x: Math.min(...xs) * 8, y: Math.min(...ys) * 8, w: (Math.max(...xs) - Math.min(...xs) + 1) * 8, h: (Math.max(...ys) - Math.min(...ys) + 1) * 8 };
+  };
+
+  // A crane switch (the Stacks) hoists its stack of containers from one slot to the other. It won't drop a
+  // stack on anyone. The stack is solid in its new slot at once; the crane's move is shown over a second.
+  function throwSwitch(world, sw) {
+    const flag = sw.legend.crane;
+    const to = world.doors.find((d) => d.legend.crane === flag && d.open);
+    const from = world.doors.find((d) => d.legend.crane === flag && !d.open);
+    if (!to || !from || world.craneMove) return;
+    const box = boxOf(to);
+    if (HA.overlap(world.player, box) || world.enemies.some((e) => !e.dead && HA.overlap(e, box))) {
+      HA.audio.play('empty');
+      world.toast('SOMETHING IS IN THE WAY OF THE STACK', 120);
+      return;
+    }
+    world.state.flags[flag] = !world.state.flags[flag];
+    updateDoors(world, true);
+    world.craneMove = { flag, from: boxOf(from), to: box, door: to, t: 0, frames: 60 };
+    world.shake(1.5);
+    HA.audio.play('crane');
   }
 
   // Walking off an open edge leads into the next room on the ship grid.
@@ -392,6 +433,12 @@
     }
     if (world.fade > 0 && !world.holdFade) world.fade = Math.max(0, world.fade - 1 / FADE);
 
+    // A trip picked on the map, from one rest pod to another.
+    if (world.travelTo && !world.scene) {
+      HA.story.travel(world, world.travelTo);
+      world.travelTo = null;
+    }
+
     // Scenes (talk, cutscenes, choices) take the controls while they run.
     const input = HA.scenes.update(world, rawInput);
     // Toasts held back during a scene: the first replaces whatever is showing when it ends, the rest follow.
@@ -417,6 +464,11 @@
     if (world.transition) return;
 
     updateDoors(world, false);
+    if (world.craneMove && ++world.craneMove.t >= world.craneMove.frames) {
+      world.craneMove = null;
+      world.shake(2);
+      HA.audio.play('stomp');
+    }
     updateInteractions(world, input);
     checkTriggers(world);
     HA.story.update(world);
@@ -498,9 +550,11 @@
       }
     };
     if (!p.dead && !world.scene) {
-      for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, '{up} REST');
+      const travel = world.state.flags.cargo ? '{up} REST  {map} TRAVEL' : '{up} REST';
+      for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, travel);
       for (const n of world.npcs) if (n.talkable && n.talkable(world, n)) consider('npc', n, '{up} TALK');
       for (const l of world.logs) consider('log', l, '{up} READ');
+      for (const sw of world.switches) if (!world.craneMove) consider('switch', sw, '{up} THROW THE SWITCH');
       for (const l of world.links) {
         if (l.legend.type === 'lift') consider('link', l, '{up} USE THE LIFT');
         else if (l.legend.up) consider('link', l, '{up} CLIMB UP');
@@ -513,6 +567,7 @@
     if (best.kind === 'pod') rest(world, best.o);
     else if (best.kind === 'npc') HA.story.talk(world, best.o);
     else if (best.kind === 'log') HA.story.readLog(world, best.o);
+    else if (best.kind === 'switch') throwSwitch(world, best.o);
     else if (best.kind === 'link') HA.story.useLink(world, best.o);
   }
 
@@ -536,7 +591,10 @@
     const s = world.state;
     pod.cool = 90;
     p.hp = p.maxHp;
+    // A pod restocks the Breach Charges, and is remembered for travel between pods (see mapscreen.js).
+    for (const w of p.weapons) if (w.id === 'charges') w.ammo = HA.weapons.chargesMax(s);
     s.rest = { room: world.def.id, x: pod.x + 4, y: pod.y + pod.h - p.h };
+    s.rested[world.def.id] = true;
     s.x = s.rest.x;
     s.y = s.rest.y;
     world.burst(pod.x + 8, pod.y + 10, ['#5fd4e8', '#b8f4ff', '#ffffff'], 16, 1.4);
@@ -572,11 +630,14 @@
     for (const pod of world.pods) drawPod(g, world, pod, cam);
     for (const l of world.links) if (l.legend.type === 'lift' || l.legend.up) HA.scenery.drawLink(g, world, l, cam);
     for (const l of world.logs) if (!l.scene) HA.scenery.drawTerminal(g, world, l, cam);
+    for (const sw of world.switches) HA.scenery.drawSwitch(g, world, sw, cam);
     HA.abilities.drawHooks(g, world, cam);
     drawHints(g, world, cam);
     for (const n of world.npcs) HA.story.drawNpc(g, world, n, cam);
     g.drawImage(world.layers.tiles, -cam.x, -cam.y);
-    for (const d of world.doors) if (!d.open) HA.scenery.drawDoor(g, world, d, cam);
+    if (world.room.belts.length) HA.scenery.drawBelts(g, world, cam);
+    for (const d of world.doors) if (!d.open && !(world.craneMove && world.craneMove.door === d)) HA.scenery.drawDoor(g, world, d, cam);
+    if (world.craneMove) HA.scenery.drawCraneMove(g, world, world.craneMove, cam);
     for (const l of world.links) if (l.legend.type === 'hatch' && !l.legend.up) HA.scenery.drawLink(g, world, l, cam);
     if (world.glass.length) HA.scenery.drawGlass(g, world, cam);
     if (world.cage) HA.scenery.drawCage(g, world, world.cage, cam);
@@ -752,6 +813,26 @@
         g.fillStyle = i < 3 ? '#ffc2dc' : i < 8 ? '#f27ad8' : '#b04ad0';
         g.fillRect(x - ux * i, y - uy * i - (uy ? 0 : i > 3 ? 1 : 0), ux ? 1 : 2, uy ? 1 : i > 3 ? 3 : 2);
       }
+    } else if (s.kind === 'harpoon') {
+      // the barb, and its line back to the gun
+      const m = HA.weapons.muzzle(world.player);
+      line(g, Math.round(m.x - cam.x), Math.round(m.y - cam.y), x, y, '#6c7894', 1);
+      g.fillStyle = '#c9d6e8';
+      g.fillRect(x - 1, y - 1, 3, 3);
+      g.fillStyle = '#ffffff';
+      g.fillRect(x + Math.sign(s.vx), y + Math.sign(s.vy), 1, 1);
+    } else if (s.kind === 'charge') {
+      const horiz = Math.abs(s.vx) >= Math.abs(s.vy);
+      const ux = Math.sign(s.vx);
+      const uy = Math.sign(s.vy);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - (horiz ? 3 : 2), y - (horiz ? 2 : 3), horiz ? 7 : 5, horiz ? 5 : 7);
+      g.fillStyle = '#a9b6cc';
+      g.fillRect(x - (horiz ? 2 : 1), y - (horiz ? 1 : 2), horiz ? 5 : 3, horiz ? 3 : 5);
+      g.fillStyle = '#e8434f';
+      g.fillRect(x + (horiz ? ux * 2 : -1), y + (horiz ? -1 : uy * 2), horiz ? 1 : 3, horiz ? 3 : 1);
+      g.fillStyle = Math.floor(world.time / 2) % 2 ? '#fff0a8' : '#ff9b3d';
+      g.fillRect(x - (horiz ? ux * 4 : 0), y - (horiz ? 0 : uy * 4), 1, 1); // the flame at its tail
     } else if (s.kind === 'wave') {
       g.fillStyle = '#10121c';
       g.fillRect(x - 3, y - s.h, 7, s.h);
@@ -863,6 +944,15 @@
         g.fillRect(xpX - 1, 25, xpW + 2, 4);
         g.fillStyle = w.ammo > 0 ? '#5fd4e8' : '#e8434f';
         g.fillRect(xpX, 26, Math.round((xpW * w.ammo) / def.ammoMax), 2);
+      } else if (w.id === 'charges') {
+        // one pip per charge in the rack
+        const max = HA.weapons.chargesMax(world.state);
+        for (let i = 0; i < max; i++) {
+          g.fillStyle = '#10121c';
+          g.fillRect(xpX - 1 + i * 7, 25, 6, 5);
+          g.fillStyle = i < w.ammo ? '#ffb84d' : '#3a1520';
+          g.fillRect(xpX + i * 7, 26, 4, 3);
+        }
       } else if (w.id === 'coil' && p.charge > 0) {
         const L = def.levels[w.level - 1];
         g.fillStyle = '#10121c';
