@@ -1622,6 +1622,34 @@ async function play(browserType, url, label) {
     expect(up.bailiff === 'release' && up.choiceFlag === undefined && up.people && up.endings, `a Phase 2 save did not upgrade (${JSON.stringify(up)})`);
     expect(up.scene === 'goodbye' && up.goodbye, `a finished Phase 2 save should pick up with the night after the reunion (${JSON.stringify(up)})`);
 
+    // ---- Mara's dreams (3.10): each one plays over the screen, clears, and leaves a line in the journal ----
+    const dreams = await get(() => {
+      const w = HA.debug.world;
+      const c = document.createElement('canvas');
+      c.width = HA.VIEW_W;
+      c.height = HA.VIEW_H;
+      const g = c.getContext('2d');
+      const out = [];
+      for (let n = 1; n <= 4; n++) {
+        const before = w.state.journal.story.length;
+        HA.scenes.run(w, () => HA.story.dream(w, n), { name: 'dream' + n });
+        let lit = 0;
+        for (let i = 0; i < 400 && w.scene; i++) {
+          HA.debug.step(10);
+          HA.debug.step(1, { confirm: true });
+          if (!w.dream) continue;
+          HA.scenes.drawCard(w, g);
+          const px = g.getImageData(0, 0, HA.VIEW_W, HA.VIEW_H).data;
+          let sum = 0;
+          for (let k = 0; k < px.length; k += 4) sum += px[k] + px[k + 1] + px[k + 2];
+          lit = Math.max(lit, sum / (px.length / 4));
+        }
+        out.push({ n, flag: !!w.state.flags['dream' + n], journal: w.state.journal.story.length - before, left: !!w.dream || !!w.scene, lit: Math.round(lit) });
+      }
+      return out;
+    });
+    for (const d of dreams) expect(d.flag && d.journal === 1 && !d.left && d.lit > 8, `dream ${d.n} did not play through, show its picture and leave a journal line (${JSON.stringify(d)})`);
+
     // ---- The five endings, each from the flags its path would set, played to the title and recorded ----
     const PATHS = {
       deserter: { takenHome: 11, people: { solder: null } },
@@ -1631,11 +1659,12 @@ async function play(browserType, url, label) {
       homecoming: { crew: 9, bloom: 1, mercy: 9, toldShim: 'truth', warrensRaid: 'held', wardens: { bailiff: 'release', pruner: 'release', tallyman: 'release' }, people: { solder: 'alive', navigator: 'stay', flux: 'home' } },
     };
     const WANT = {
-      deserter: ['COUNT: HULLFOLK, 31.', 'I LEFT MARA IN 0418.', 'COUNT: SOLDER. NOT RECORDED.'],
-      dominion: ['COUNT THEM.', 'THANK YOU.', 'THEY ARE SAFER ASLEEP.'],
-      overgrown: ['OLD GASKET WALKED OUT OF THE HELM ALIVE.', 'ON 0418 FIRST.', 'THE GARDENER WENT INTO THE BLOOM SHE MADE.'],
-      crash: ['COUNT: SURVIVORS, 6.', 'THE PODS CAME DOWN LIKE SEEDS.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', 'COUNT: WARDENS, 2.'],
-      homecoming: ['THE ONE IN 0417 STAYED WITH THE SHIP.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
+      // Each one names Mara as the hero's sister, the first time anything does (3.10).
+      deserter: ['COUNT: HULLFOLK, 31.', 'I LEFT MARA IN 0418.', "MY LITTLE SISTER. SHE'LL WAKE WITHOUT ME.", 'COUNT: SOLDER. NOT RECORDED.'],
+      dominion: ['COUNT THEM.', 'THANK YOU.', 'THEY ARE SAFER ASLEEP.', 'I HAD THE KEY. I COULD HAVE WOKEN MY SISTER.'],
+      overgrown: ['OLD GASKET WALKED OUT OF THE HELM ALIVE.', 'ON 0418 FIRST.', "I'M RIGHT HERE, LITTLE SISTER.", 'THE GARDENER WENT INTO THE BLOOM SHE MADE.'],
+      crash: ['COUNT: SURVIVORS, 6.', 'THE PODS CAME DOWN LIKE SEEDS.', 'I GOT THERE BEFORE MY SISTER WOKE.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', 'COUNT: WARDENS, 2.'],
+      homecoming: ['THE ONE IN 0417 STAYED WITH THE SHIP.', 'FORGIVE ME FOR BEING LATE, LITTLE SISTER.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
     };
     const LANDED = {
       deserter: () => ({ hullfolk: 0, sleepers: 0, mara: false, hero: true }),
@@ -1658,6 +1687,8 @@ async function play(browserType, url, label) {
             else s[k] = v;
           }
           const out = { branch: HA.endings.afterSteward(s), missing: HA.endings.missing(s).map((r) => r.id), lines: HA.endings.lines(id, s), landed: HA.endings.landed(s, id), home: 20 + (s.takenHome || 0) };
+          // Every picture an epilogue card asks for is one pictures.js can draw.
+          out.badPics = HA.endings.epilogue(id, s).filter((c) => c.pic && !HA.pictures.names().includes(c.pic)).map((c) => c.pic);
           HA.debug.ending(id);
           // Read every card (or skip the whole ending from the pause menu), as a player would.
           for (let i = 0; i < 400 && HA.ui.mode === 'play'; i++) {
@@ -1674,6 +1705,7 @@ async function play(browserType, url, label) {
       const lines = e.lines.join(' | ');
       for (const want of WANT[id]) expect(lines.includes(want), `the ${id} ending is missing "${want}" (${lines})`);
       if (id !== 'deserter') expect(e.branch === id, `the ${id} path led to ${e.branch} after the Steward (missing: ${e.missing})`);
+      expect(!e.badPics.length, `the ${id} epilogue asks for pictures that don't exist: ${e.badPics.join(', ')}`);
       // The results card: who reached the new world on this path (the gate fell on the Crash path: the crew and Tamp).
       const want = LANDED[id](e.home);
       expect(JSON.stringify(e.landed) === JSON.stringify(want), `the ${id} results counted ${JSON.stringify(e.landed)}, not ${JSON.stringify(want)}`);

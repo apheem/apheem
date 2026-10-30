@@ -31,7 +31,7 @@
 
   // Wick at the cradles, keeping the taken breathing while the hero goes up.
   S.TALK.wick.cellar = [
-    ["I'M TALKING TO THEM. GASKET SAYS THE SLEEPING CAN HEAR.", 'GO ON, SLEEPER. THE SEALS.'],
+    ["I'M TALKING TO THEM. GASKET SAYS THE SLEEPING CAN HEAR.", "WHO'S WAITING ON YOU, SLEEPER? EVERYBODY'S GOT SOMEBODY.", { me: "SOMEONE WHO'S STILL ASLEEP." }, "THEN WE'RE IN THE SAME LINE OF WORK.", 'GO ON, SLEEPER. THE SEALS.'],
     ["MOONWORT TEA FOR WHEN THEY WAKE. IF THEY WAKE. WHEN THEY WAKE.", "I'M NOT GOING ANYWHERE."],
   ];
 
@@ -123,7 +123,8 @@
       s.flags.gardens = true;
       const wick = npcOf(world, 'wick');
       if (wick) S.bark(world, wick, 'SMELL THAT? THAT IS THINGS GROWING.');
-      S.addStory(world, "THE GARDENS ARE WARM. I HADN'T NOTICED HOW COLD I'D BEEN.");
+      S.think(world, 'DIRT. REAL DIRT.', 140);
+      S.addStory(world, "THE GARDENS ARE WARM. I HADN'T NOTICED HOW COLD I'D BEEN. THERE'S REAL DIRT UP HERE, AND THINGS GROWING IN IT.");
       world.save();
     },
     *wickBeans(world) {
@@ -131,6 +132,7 @@
       if (!wick || !wick.follow) return;
       S.bark(world, wick, 'MOONWORT, THERE. GOOD FOR FEVERS.');
       S.bark(world, wick, 'AND BEANS. NOBODY DOWN HERE HAS EATEN A BEAN IN A HUNDRED YEARS.');
+      S.think(world, 'SOMETHING THAT GREW IN DIRT...', 300);
     },
     *wickStory(world) {
       const wick = npcOf(world, 'wick');

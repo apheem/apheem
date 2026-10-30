@@ -198,7 +198,7 @@ Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dream
 - "Sister" is never said before the end. It's said first in the Dreaming Deck's First Night hall (true path) or in the epilogue (every ending).
 - The hero stays a mystery: no name, no face, no gender. Dream pictures show silhouettes. Nobody in them says the hero's name.
 - Why the hero doesn't simply know: 312 years asleep took their memories, and they come back in dreams. The hero learns it at the player's pace.
-- Mara's voice is the pod's cyan; the hero's is the journal's amber; their mother's is a warm white. There are no name tags in the dreams until the fourth, where Mara's reads MARA.
+- Mara's voice is pale lilac (the Navigator already has the pale cyan); the hero's is the journal's amber; their mother's is a soft green. There are no name tags in the dreams until the fourth, where Mara's reads MARA.
 - Each list item comes back once while awake, after the dream that names it. Keep these to one line.
 
 **Where each piece comes.**
@@ -221,6 +221,14 @@ Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dream
 | The Dome | Command Tower | The window: "NOT A REAL SKY. NOT YET." (item 1) |
 | The reveal | First Night hall (true path) | The Navigator remembers 0417 holding the glass until the frost came. The hero: "MY SISTER." |
 | The reveal | Every epilogue | Mara's card names her. Homecoming: "MY SISTER WOKE UNDER A REAL SKY." "I WASN'T LATE." Then "THAT NIGHT WE SLEPT OUTSIDE." Others follow what happened to her. |
+
+**As built (3.10).** The dreams are in `js/story/mara.js` (`HA.story.dream(world, n)`), drawn by `js/pictures.js` (`pods`, `list`, `tickets`, `boarding`) at clarity 0.2, 0.45, 0.7 and 0.95. Each dream leaves a line in the journal and sets `flags.dream1` to `dream4`. The list items while awake are thoughts over the hero's head that don't stop play (`HA.story.think`), apart from the Dome, which is in its scene. Additions to the table:
+- Shim, the morning after the second dream: "YOU TALK IN YOUR SLEEP. YOU SAID 'MAR'." "WHO'S MAR?" The hero doesn't answer.
+- Wick's question is part of her talk at the cradles (optional).
+- Gasket, at lights-out before the fourth dream: "MY BROTHER HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM." "GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT."
+- The First Night hall: "ONE SLEEPER WOULD NOT LIE DOWN UNTIL THE ONE IN 0418 WAS UNDER." "YOU HELD THE GLASS UNTIL THE FROST CAME. THE CREW HAD TO LIFT YOU INTO 0417." "I REMEMBER NOW. ALL OF IT." "I HAVE COUNTED HER EVERY NIGHT SINCE. FOR YOU." "MARA. MY LITTLE SISTER."
+- The run for the sleds, at her clamps: "HOLD ON, MAR. I WON'T BE LATE." (pods launched) or "I'M SORRY, MAR." (not).
+- The epilogue's lines for each ending are in `js/endings.js`; the Overgrown one is what's left of the hero, in pink: "I'M RIGHT HERE, LITTLE SISTER." "I'M NOT LATE."
 
 ---
 
@@ -852,7 +860,7 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 ### 3.10 Cody's calls on the story audit
 Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through dreams; upgrades are option B (spare shards bank as scrap); the main path stays at 4–6 hours plus side content, and a first-time player's photo doesn't block the build; deaths and choices can lock a main path so the hero goes round a harder way, and can close side content; the epilogue gets pictures now. Difficulty modes, and making upgrades matter more in them, come later. `HANDOFF.md` says where the work stands between sessions.
 - [x] A picture layer behind cards and dream scenes (pixel art drawn in code: `js/pictures.js`; a card takes `pic`, a scene can `yield { dream }`)
-- [ ] Mara: the opening voice, the turn to 0418 and the refused thaw, Shim's "NOT A GHOST.", four dreams on the story's four nights, the list items while awake, the lines from Wick, the Tallyman and Gasket, the LATE line, the reveal in the First Night hall and in every epilogue
+- [x] Mara: the opening voice, the turn to 0418 and the refused thaw, Shim's "NOT A GHOST.", four dreams on the story's four nights, the list items while awake, the lines from Wick, the Tallyman and Gasket, the LATE line, the reveal in the First Night hall and in every epilogue (`js/story/mara.js`; the browser check plays each dream)
 - [x] Pictures behind the epilogue cards, all five endings (and each ending's Mara card says "sister")
 - [ ] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades
 - [ ] Routes that close: a death or a choice shuts a main way and a harder way round opens (design first, in `DECISIONS.md`)
