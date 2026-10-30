@@ -5,7 +5,8 @@
 //   yield { until: () => done }                wait for something (the player may move if control is on)
 //   yield { choice: {...} }                    pick an option; permanent ones show what's gained and lost first
 //   yield { card: ['LINE', ...], hold: 120 }   white text on black, full screen
-//         (with space: 'in' | true | 'out' and ark: { x, y, s }, the Ark drifts among stars behind the text)
+//         (with space: 'in' | true | 'out' and ark: { x, y, s }, the Ark drifts among stars behind the text;
+//         ark.turn swings it round by that angle, and world: { x, y, r } puts the new world in the sky)
 //   yield { fade: 'out' | 'in' }               fade the screen to black or back
 //   yield { walk: actor, x: 120, speed: 1 }    move a person or machine to an x position
 // Any other side effect (sound, shake, setting a flag) is plain code between the yields.
@@ -328,8 +329,35 @@
     const fadeOut = card.space === 'out' ? HA.clamp((hold - card.t) / 30, 0, 1) : 1;
     g.globalAlpha = Math.min(fadeIn, fadeOut);
     HA.art.drawStars(g, W, H, t, 0.5);
-    if (card.ark) HA.art.drawArk(g, card.ark.x + t * 0.02 * card.ark.s, card.ark.y, card.ark.s, t, card.ark);
+    if (card.world) drawWorldDisc(g, card.world);
+    if (card.ark) {
+      const ax = card.ark.x + t * 0.02 * card.ark.s;
+      if (card.ark.turn) {
+        // Homecoming: the Ark swings its nose round toward the world, slowly
+        const k = Math.min(1, card.t / 220);
+        const cx = ax + 30 * card.ark.s;
+        const cy = card.ark.y + 12 * card.ark.s;
+        g.save();
+        g.translate(cx, cy);
+        g.rotate(card.ark.turn * k * k * (3 - 2 * k));
+        g.translate(-cx, -cy);
+        HA.art.drawArk(g, ax, card.ark.y, card.ark.s, t, card.ark);
+        g.restore();
+      } else HA.art.drawArk(g, ax, card.ark.y, card.ark.s, t, card.ark);
+    }
     g.globalAlpha = 1;
+  }
+
+  // The new world, pale and dark, as it looks from the Ark.
+  function drawWorldDisc(g, w) {
+    for (let dy = -w.r; dy <= w.r; dy++) {
+      const half = Math.floor(Math.sqrt(w.r * w.r - dy * dy));
+      g.fillStyle = dy < -w.r / 3 ? '#b8c4cc' : dy < w.r / 3 ? '#94a2ae' : '#6c7a88';
+      g.fillRect(w.x - half, w.y + dy, half * 2 + 1, 1);
+    }
+    g.fillStyle = '#5a6878';
+    g.fillRect(w.x - Math.floor(w.r / 2), w.y + 2, Math.floor(w.r / 2), 1);
+    g.fillRect(w.x + 2, w.y - Math.floor(w.r / 3), Math.floor(w.r / 2), 1);
   }
 
   HA.scenes = { run, update, draw, drawCard, skip, paginate, active: (w) => !!(w && w.scene) };

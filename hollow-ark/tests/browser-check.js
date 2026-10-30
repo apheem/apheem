@@ -1449,14 +1449,132 @@ async function play(browserType, url, label) {
       out.link = w().links.some((l) => l.legend.name === 'Lift B');
       out.music = HA.music.playing;
       out.lead = s.lead;
+      // Lift B takes everyone down to the Dreaming Deck.
       HA.debug.goto('helm', 73, 16);
       HA.debug.step(3);
       press('up');
-      out.toast = w().toastText;
+      out.ride = w().scene && w().scene.name;
+      out.rideSaid = listen().join(' | ');
+      HA.debug.step(20);
+      out.room = w().def.id;
+      out.crew = w().npcs.filter((n) => n.state === 'out').length;
+      out.check = w().checkpoint && w().checkpoint.room;
+      out.downLead = w().state.lead;
       return out;
     });
-    expect(/ONE COUNT REMAINS/.test(home.said) && /CAN'T LIFT THE BRAKE ALONE/.test(home.said) && home.liftB && home.link && home.music === 'scuttle' && /LIFT B/.test(home.lead) && /DREAMING DECK · COMING IN THE NEXT BUILD/.test(home.toast), `the true path at the Helm went wrong (${JSON.stringify(home)})`);
+    expect(/ONE COUNT REMAINS/.test(home.said) && /CAN'T LIFT THE BRAKE ALONE/.test(home.said) && home.liftB && home.link && home.music === 'scuttle' && /LIFT B/.test(home.lead), `the true path at the Helm went wrong (${JSON.stringify(home)})`);
+    expect(home.ride === 'liftBDown' && /DOWN, NOT OUT/.test(home.rideSaid) && home.room === 'lift-down' && home.crew >= 9 && home.check === 'lift-down' && /SEAL/.test(home.downLead), `Lift B down to the Dreaming Deck went wrong (${JSON.stringify(home)})`);
     await shot('tower');
+
+    // ---- The Dreaming Deck (Phase 3.7), on from the Lift Down: the seal, the memory halls and their checkpoint,
+    // the wake log, the Navigator's fight (a fall at its checkpoint, every loop cut, its course held on the world),
+    // the song and the turn, and choice 14 in the Quiet, to the Homecoming ending ----
+    const deck = await get(() => {
+      const { w, listen, choose, options, toTitle } = window.tw;
+      const walk = (dir, frames) => {
+        for (let i = 0; i < frames && !w().scene; i++) HA.debug.step(1, { [dir]: true });
+      };
+      const out = {};
+      walk('right', 400);
+      out.seal = w().scene && w().scene.name;
+      out.sealSaid = listen().join(' | ');
+      HA.debug.step(5);
+      out.sealOpen = w().state.flags.sealOpen;
+      out.sealMusic = HA.music.playing;
+      walk('right', 300);
+      out.hall = w().def.id + ':' + (w().scene && w().scene.name);
+      out.hallSaid = listen().join(' | ');
+      HA.debug.goto('hall-helm', 8, 18);
+      HA.debug.step(5);
+      out.helm = w().scene && w().scene.name;
+      listen();
+      out.check = w().checkpoint && w().checkpoint.room;
+      out.checkToast = w().toastText;
+      HA.debug.goto('hall-helm', 62, 18);
+      HA.debug.step(5);
+      out.wake = w().scene && w().scene.name;
+      out.wakeSaid = listen().join(' | ');
+      HA.debug.goto('sphere', 30, 18);
+      HA.debug.step(5);
+      out.intro = listen().join(' | ');
+      HA.debug.step(30);
+      let b = w().boss;
+      const p = w().player;
+      out.fight = { fighting: b.fighting, music: HA.music.playing, check: w().checkpoint && w().checkpoint.room, nodes: b.nodes.length };
+      // a fall in the fight: back at its checkpoint, and straight back into it
+      p.hp = 1;
+      p.invuln = 0;
+      w().hurtPlayer(2, p.x + 20);
+      for (let i = 0; i < 200 && (p.dead || !w().scene); i++) HA.debug.step(1);
+      out.fall = { room: w().def.id, toast: w().toastText, scene: w().scene && w().scene.name };
+      out.again = listen().join(' ');
+      HA.debug.step(10);
+      out.refight = w().boss !== b && w().boss.fighting;
+      b = w().boss;
+      // each loop: its nodes cut, and it redrawn faster, with more of them; the second burns
+      w().assist.invincible = true;
+      const loops = [];
+      let burned = false;
+      for (let k = 0; k < 3; k++) {
+        for (let i = 0; i < 520; i++) {
+          HA.debug.step(1);
+          if (b.burn > 0) burned = true;
+        }
+        loops.push(b.phase + ':' + b.nodes.length + ':' + (w().navLayers || 0));
+        for (const n of b.nodes) HA.bosses.navnode.hurt(w(), n, 99);
+        HA.debug.step(10);
+        loops.push(b.state + ':' + (w().navLine && w().navLine.text));
+        HA.debug.step(130);
+      }
+      out.loops = loops.join(',');
+      out.burned = burned;
+      HA.debug.step(100); // the loop opens, and its course swings out
+      // the hold: hits push the course onto the world, and it pulls back between them
+      out.hold = { state: b.state, layers: w().navLayers, d0: +b.d.toFixed(2) };
+      for (let i = 0; i < 240; i++) {
+        if (i % 6 === 0) HA.bosses.navhead.hurt(w(), b.head, 3);
+        HA.debug.step(1);
+      }
+      out.hold.held = +b.d.toFixed(2);
+      out.hold.gained = b.hold;
+      HA.debug.step(200);
+      out.hold.pulled = +b.d.toFixed(2);
+      for (let i = 0; i < 2000 && b.state !== 'held'; i++) {
+        if (i % 6 === 0) HA.bosses.navhead.hurt(w(), b.head, 3);
+        HA.debug.step(1);
+      }
+      w().assist.invincible = false;
+      HA.debug.step(20);
+      out.won = w().scene && w().scene.name;
+      out.song = [];
+      for (let i = 0; i < 9000 && w().scene; i++) {
+        const m = HA.music.playing;
+        if (out.song[out.song.length - 1] !== m) out.song.push(m);
+        HA.debug.step(1, { confirm: i % 3 === 0 });
+      }
+      out.song = out.song.map(String).join(',');
+      const f = w().state.flags;
+      out.turned = { turned: f.navTurned, scuttle: f.scuttle, crew: w().npcs.filter((n) => n.state === 'out').length, lead: w().state.lead };
+      walk('left', 600);
+      out.quiet = w().def.id + ':' + (w().scene && w().scene.name);
+      out.quietSaid = listen().join(' | ');
+      out.fourteen = options();
+      choose(1);
+      toTitle();
+      const saved = JSON.parse(localStorage.getItem('hollow-ark.save.v1'));
+      out.ending = saved.ending;
+      out.navigator = saved.people.navigator;
+      return out;
+    });
+    expect(deck.seal === 'seal' && /CLEAN PERSONNEL ONLY/.test(deck.sealSaid) && /ACCESS: ONE/.test(deck.sealSaid) && deck.sealOpen && deck.sealMusic === 'deck', `the seal went wrong (${JSON.stringify(deck)})`);
+    expect(deck.hall === 'hall-night:hallNight' && /I KEPT THE SONG/.test(deck.hallSaid) && deck.helm === 'hallHelm' && deck.check === 'hall-helm' && /CHECKPOINT/.test(deck.checkToast), `the memory halls or their checkpoint went wrong (${deck.hall}, ${deck.hallSaid}, ${deck.helm}, ${deck.check}, ${deck.checkToast})`);
+    expect(deck.wake === 'wakeLog' && /0112\. LEFT/.test(deck.wakeSaid) && /2207\. RULED/.test(deck.wakeSaid) && /CHOOSE TO STAY/.test(deck.wakeSaid) && /THE WATER WAS A QUESTION/.test(deck.wakeSaid), `the wake log went wrong (${deck.wake}, ${deck.wakeSaid})`);
+    expect(/YOU ARE STILL HERE/.test(deck.intro) && /NOT YET/.test(deck.intro) && deck.fight.fighting && deck.fight.music === 'navigator' && deck.fight.check === 'sphere' && deck.fight.nodes === 4, `the Navigator's fight did not start (${deck.intro}, ${JSON.stringify(deck.fight)})`);
+    expect(deck.fall.room === 'sphere' && /CHECKPOINT/.test(deck.fall.toast) && deck.fall.scene === 'navIntro' && /NOT YET/.test(deck.again) && !/STILL HERE/.test(deck.again) && deck.refight, `a fall in the Navigator's fight did not come back to its checkpoint (${JSON.stringify(deck.fall)}, ${deck.again}, ${deck.refight})`);
+    expect(deck.loops === '0:4:1,redraw:NOT YET.,1:5:2,redraw:NOT YET.,2:6:3,redraw:NOT YET.' && deck.burned, `the Navigator's loops went wrong (${deck.loops}, burned ${deck.burned})`);
+    expect(deck.hold.state === 'hold' && deck.hold.layers === 4 && deck.hold.held < 0.35 && deck.hold.gained > 0 && deck.hold.pulled > deck.hold.held && deck.won === 'navigatorDefeated', `the hold went wrong (${JSON.stringify(deck.hold)}, ${deck.won})`);
+    expect(/^null,hum,homecoming$/.test(deck.song) && deck.turned.turned && !deck.turned.scuttle && deck.turned.crew >= 9 && /QUIET/.test(deck.turned.lead), `the song and the turn went wrong (${deck.song}, ${JSON.stringify(deck.turned)})`);
+    expect(deck.quiet === 'quiet:quietChoice' && /WILL YOU LEAVE ME TOO/.test(deck.quietSaid) && deck.fourteen === 'TAKE ITS CORE TO THE NEW WORLD/LET IT REST/STAY ABOARD WITH IT' && deck.ending === 'homecoming' && deck.navigator === 'rest', `choice 14 or the Homecoming ending went wrong (${deck.quiet}, ${deck.fourteen}, ${deck.ending}, ${deck.navigator})`);
 
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {

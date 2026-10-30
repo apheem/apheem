@@ -1124,6 +1124,13 @@
       ctx.scale(e.facing, -1);
     } else ctx.scale(e.facing, 1);
     ctx.drawImage(img, -Math.floor(spr.w / 2), 0);
+    // On the Dreaming Deck the ship's defences are memories: washed out, nearly white.
+    if (world.def.dream && e.flash <= 0) {
+      if (!spr.pale) spr.pale = HA.art.tinted(spr.img, '#dcf0f8');
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(spr.pale, -Math.floor(spr.w / 2), 0);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
     // A stunned thing, reeled in on the harpoon's line, sees stars.
     if (e.stun > 0 && Math.floor(e.t / 6) % 2) {

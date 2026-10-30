@@ -640,6 +640,118 @@
     },
   };
 
+  // The Dreaming Deck's memory halls: the Ark's theme on a music box, slow, each note ringing out with a faint
+  // echo above it, as if the box has been wound and played for a very long time.
+  const BOX = (out, layer, n, len, vol) => {
+    out.note(layer, 'triangle', n, len, vol, 0.002);
+    out.note(layer, 'sine', n + 12.08, len * 0.6, vol * 0.35, 0.002, 1.5);
+  };
+  TRACKS.deck = {
+    step: 60 / 76 / 4,
+    steps: 128,
+    fadeIn: 2,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = CRYO_CHORDS[bar % 4];
+      if (at % 2 === 0) out.note(0, 'triangle', c.root + 24 + [0, c.third, 7, 12, 7, c.third, 0, 7][at / 2], 1.6, 0.022, 0.002);
+      if (at === 0) out.note(0, 'sine', c.root + 12, 15, 0.05, 0.3);
+      if (bar >= 2) themeAt(THEME[bar % 4], at, (n, len) => BOX(out, 0, midi(n) + 12, len, 0.055));
+    },
+  };
+
+  // The Navigator: its own song, the theme on the music box but driven hard, over a running bass. Each phase
+  // brings in more of the ship: the Spine's machines and the Warrens' hand drum, then the Steward's organ and the
+  // Gardens' waltz figure, and, while the hero holds its course on the world, the theme whole and loud.
+  TRACKS.navigator = {
+    step: 60 / 138 / 4,
+    steps: 128,
+    layers: 4,
+    fadeIn: 0.3,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = CRYO_CHORDS[bar % 4];
+      out.note(0, 0.25, c.root + (at % 4 === 2 ? 12 : 0), 0.9, at % 4 === 0 ? 0.16 : 0.1);
+      themeAt(THEME[bar % 4], at, (n, len) => BOX(out, 0, midi(n) + 12, len, 0.05));
+      if (at % 4 === 0) out.drum(1, 'kick', 0.26);
+      if (at === 4 || at === 12) out.drum(1, 'snare', 0.11);
+      if (at % 4 === 3) out.drum(1, 'clank', 0.05);
+      if (at === 6 || at === 14) out.drum(1, 'hand', 0.07);
+      if (at === 0 || at === 8) for (const iv of [12, 12 + c.third, 19, 24]) out.note(2, 0.5, c.root + iv, 7.6, 0.018, 0.04);
+      if (at % 2 === 0) out.note(2, 0.125, c.root + 24 + [0, 7, c.third + 12][(at / 2) % 3], 1.4, 0.025);
+      themeAt(THEME[bar % 4], at, (n, len) => {
+        out.note(3, 0.25, midi(n), len, 0.085, 0.01);
+        out.note(3, 0.5, midi(n) - 12, len, 0.05, 0.01);
+      });
+      if (at % 2 === 1) out.drum(3, 'hat', 0.03);
+    },
+  };
+
+  // The crew, humming the old lullaby back to the ship: soft voices, a little apart, over one low note. The second
+  // layer is Shim, an octave up, a beat ahead of everyone.
+  TRACKS.hum = {
+    step: 60 / 64 / 4,
+    steps: 128,
+    layers: 2,
+    fadeIn: 3,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = CRYO_CHORDS[bar % 4];
+      if (at === 0) out.note(0, 'sine', c.root, 16, 0.12, 0.8);
+      if (bar >= 1) {
+        themeAt(THEME[bar % 4], at, (n, len) => {
+          out.note(0, 'sine', midi(n) - 12, len, 0.09, 0.12);
+          out.note(0, 'sine', midi(n) - 12.12, len, 0.05, 0.2, 0.25);
+          out.note(0, 'triangle', midi(n) - 24 + (bar >= 4 ? 7 : 12), len, 0.03, 0.15, 0.5);
+        });
+      }
+      themeAt(THEME[bar % 4], at, (n, len) => out.note(1, 'sine', midi(n), len, 0.06, 0.08));
+    },
+  };
+
+  // The Ark's theme in full, at last, and in a major key: everything the game has played it on, together.
+  const HOME_CHORDS = [chord('A2', 4), chord('D2', 4), chord('E2', 4), chord('E2', 4)];
+  const MAJOR = (n) => {
+    const m = midi(n);
+    return [0, 5, 7].includes(m % 12) ? m + 1 : m; // C, F and G up a semitone: A minor into A major
+  };
+  TRACKS.homecoming = {
+    step: 60 / 84 / 4,
+    steps: 128,
+    fadeIn: 1.5,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = HOME_CHORDS[bar % 4];
+      if (at % 4 === 0) out.note(0, 'triangle', c.root + [0, 12, 7, 12][at / 4], 3.8, 0.28);
+      if (at === 0) for (const iv of [12, 12 + c.third, 19]) out.note(0, 'triangle', c.root + iv, 15, 0.035, 0.3);
+      out.note(0, 0.125, c.root + 24 + [0, c.third, 7, 12, 7, c.third, 0, 7][at % 8], 0.8, 0.03);
+      if (at === 0 || at === 8) out.drum(0, 'kick', 0.22);
+      if (at === 12) out.drum(0, 'hand', 0.08);
+      if (at % 4 === 2) out.drum(0, 'shaker', 0.025);
+      themeAt(THEME[bar % 4], at, (n, len) => {
+        out.note(0, 0.25, MAJOR(n), len, 0.085, 0.02);
+        out.note(0, 'triangle', MAJOR(n) - 12, len, 0.06, 0.03);
+        if (bar >= 4) BOX(out, 0, MAJOR(n) + 12, len, 0.035);
+      });
+    },
+  };
+
+  // The Quiet: the music box, nearly wound down, a note now and then.
+  TRACKS.quiet = {
+    step: 60 / 52 / 4,
+    steps: 64,
+    fadeIn: 3,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 4;
+      const at = s % 16;
+      if (at === 0) out.note(0, 'sine', CRYO_CHORDS[bar].root, 16, 0.07, 1.2);
+      themeAt(THEME[bar], at, (n, len, i) => i < 3 && BOX(out, 0, midi(n) + 12, len, 0.04));
+    },
+  };
+
   // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
   let current = null;
   const fading = [];

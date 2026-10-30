@@ -111,6 +111,25 @@
       edge: 'rgba(2,3,10,0.6)',
       marble: true,
     },
+    // The Dreaming Deck: black, with the ship's courses drawn over it in cyan. Its thorns are static.
+    deck: {
+      bg: '#030509',
+      edge: 'rgba(0,1,4,0.62)',
+      tile: { deep: '#05070c', deep2: '#070a10', face: '#0c1219', inner: '#0e151d', speck: '#1a3a48', lip: '#5fd4e8', lip2: '#1a4a58', under: '#020305', left: '#1a3a48', right: '#05080c' },
+      walk: ['#b8f4ff', '#5fd4e8', '#1a4a58', '#0e2a34'],
+      plain: true,
+      static: true,
+    },
+    // The memory halls: earlier decks as the Navigator remembers them, washed out like an old photograph, the
+    // screen's edges going white instead of dark.
+    memory: {
+      bg: '#1e232c',
+      edge: 'rgba(226,240,248,0.24)',
+      tile: { deep: '#2a303a', deep2: '#2e343e', face: '#58606e', inner: '#6a7280', speck: '#8a92a0', lip: '#f0f8fc', lip2: '#b0c0cc', under: '#20262e', left: '#7a8290', right: '#3a404a' },
+      walk: ['#f0f8fc', '#b0c0cc', '#6a7280', '#4a525e'],
+      plain: true,
+      static: true,
+    },
   };
   // Container colours: rust, teal, olive, ochre, slate and plum, each with a lit top edge and a dark rib.
   const CONTAINERS = [
@@ -132,7 +151,7 @@
   const cache = new Map();
   function layers(def, room) {
     if (cache.has(def.id)) return cache.get(def.id);
-    const theme = THEMES[HA.rooms.AREAS[def.area].theme];
+    const theme = THEMES[def.theme || HA.rooms.AREAS[def.area].theme]; // a room can dress as another deck
     const out = { bg: buildBackground(def, room, theme), tiles: buildTiles(room, theme), theme, vignette: buildVignette(theme) };
     cache.set(def.id, out);
     return out;
@@ -146,6 +165,11 @@
     const rnd = HA.seeded(hash(def.id));
     g.fillStyle = T.bg;
     g.fillRect(0, 0, W, H);
+    // A plain room (the Dreaming Deck) has no walls to speak of: its props draw everything.
+    if (T.plain) {
+      for (const s of def.scenery || []) PROPS[s.kind] && PROPS[s.kind](g, s, rnd, T, room);
+      return img;
+    }
     // wall panels
     for (let y = 0; y < H; y += 24) {
       for (let x = (y / 24) % 2 ? -16 : 0; x < W; x += 32) {
@@ -1236,6 +1260,174 @@
         g.fillRect(x + 5, y - 5, 5, 1);
       }
     },
+    // The Dreaming Deck: faint stars, and the ship's courses in cyan, the loop it flew and the corrections it
+    // turned down. The Sphere has its ribs; the Quiet has one round window, with the world in it, closer now.
+    courselines(g, s, rnd, T, room) {
+      const W = room.pw;
+      const H = room.ph;
+      for (let i = 0; i < W / 3; i++) {
+        g.fillStyle = rnd() < 0.15 ? '#2e4a58' : '#122028';
+        g.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * H), 1, 1);
+      }
+      const dotted = (cx, cy, rx, ry, tilt, color, every) => {
+        g.fillStyle = color;
+        const n = Math.ceil((rx + ry) * 2);
+        for (let i = 0; i < n; i += every) {
+          const a = (i / n) * Math.PI * 2;
+          const ex = Math.cos(a) * rx;
+          const ey = Math.sin(a) * ry;
+          g.fillRect(Math.round(cx + ex * Math.cos(tilt) - ey * Math.sin(tilt)), Math.round(cy + ex * Math.sin(tilt) + ey * Math.cos(tilt)), 1, 1);
+        }
+      };
+      if (s.sphere) {
+        // the sphere's ribs, and the floor ring
+        for (const r of [60, 100, 140]) dotted(W / 2, 76, r, r * 0.42, 0, 'rgba(95,212,232,0.18)', 2);
+        for (const r of [30, 70, 110]) dotted(W / 2, 76, r * 0.3, 70, 0, 'rgba(95,212,232,0.1)', 3);
+        g.fillStyle = 'rgba(95,212,232,0.12)';
+        g.fillRect(16, 19 * 8 - 1, W - 32, 1);
+        return;
+      }
+      if (s.quiet) {
+        // one round window: the stars, and the world, bigger than it has ever looked
+        const cx = W / 2;
+        const cy = 56;
+        g.fillStyle = '#10121c';
+        g.beginPath();
+        g.arc(cx, cy, 34, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#03050c';
+        g.beginPath();
+        g.arc(cx, cy, 31, 0, Math.PI * 2);
+        g.fill();
+        for (let i = 0; i < 50; i++) {
+          const a = rnd() * Math.PI * 2;
+          const r = rnd() * 30;
+          g.fillStyle = rnd() < 0.2 ? '#ffffff' : '#6c7894';
+          g.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1);
+        }
+        for (let dy = -11; dy <= 11; dy++) {
+          const half = Math.floor(Math.sqrt(121 - dy * dy));
+          g.fillStyle = dy < -4 ? '#c8d4dc' : dy < 4 ? '#a2b0bc' : '#7a8898';
+          g.fillRect(cx + 6 - half, cy + 4 + dy, half * 2 + 1, 1);
+        }
+        g.fillStyle = '#6a7a8a';
+        g.fillRect(cx + 1, cy + 5, 5, 1);
+        g.fillRect(cx + 8, cy, 4, 1);
+        g.strokeStyle = '#1a4a58';
+        g.lineWidth = 2;
+        g.beginPath();
+        g.arc(cx, cy, 32, 0, Math.PI * 2);
+        g.stroke();
+        return;
+      }
+      // the loop the ship has flown since year 38, and three courses in that it turned down
+      dotted(W * 0.55, 70, W * 0.36, 34, 0.05, 'rgba(95,212,232,0.35)', 2);
+      dotted(W * 0.55, 70, W * 0.36 + 6, 40, 0.05, 'rgba(95,212,232,0.1)', 3);
+      for (let i = 0; i < 3; i++) {
+        const y0 = 96 + i * 12;
+        g.fillStyle = 'rgba(95,212,232,0.22)';
+        for (let x = 40 + i * 30; x < W - 30; x += 3) g.fillRect(x, Math.round(y0 + (x - 40) * 0.08), 1, 1);
+        g.globalAlpha = 0.4;
+        HA.font.draw(g, 'COURSE ' + (i + 1) + ' · REJECTED', 40 + i * 30, y0 - 9, '#5fd4e8', { shadow: null });
+        g.globalAlpha = 1;
+      }
+    },
+    // The memory halls: an earlier deck as the Navigator remembers it, pale, with a haze over the top of it.
+    memory(g, s, rnd, T, room) {
+      const W = room.pw;
+      const H = room.ph;
+      const FLOOR = 19 * 8;
+      const pale = (a) => 'rgba(226,240,248,' + a + ')';
+      // someone standing, head up, as the Navigator saw them
+      const figure = (x, a) => {
+        g.fillStyle = pale(a);
+        g.fillRect(x - 2, FLOOR - 19, 4, 4);
+        g.fillRect(x - 3, FLOOR - 14, 6, 8);
+        g.fillRect(x - 3, FLOOR - 6, 2, 6);
+        g.fillRect(x + 1, FLOOR - 6, 2, 6);
+      };
+      const year = { cryo: 'YEAR 0', gardens: 'YEAR 151', helm: 'YEAR 290' }[s.of];
+      if (s.of === 'cryo') {
+        // the pod racks, every pod still shut, and the first crew among them, singing
+        for (let x = 20; x < W - 30; x += 24) {
+          if (rnd() < 0.12) continue;
+          for (const y of [26, 62]) {
+            // a pod: rounded ends, a frosted window, someone asleep behind it
+            g.fillStyle = pale(0.1);
+            g.fillRect(x + 1, y, 12, 28);
+            g.fillRect(x, y + 1, 14, 26);
+            g.fillStyle = pale(0.16);
+            g.fillRect(x + 3, y + 3, 8, 18);
+            g.fillStyle = 'rgba(30,35,44,0.45)';
+            g.fillRect(x + 5, y + 5, 4, 3);
+            g.fillRect(x + 4, y + 9, 6, 9);
+            g.fillStyle = 'rgba(184,244,255,0.4)';
+            g.fillRect(x + 6, y + 24, 2, 1);
+          }
+        }
+        for (const x of [70, 118, 260, 300, 420, 452, 540]) figure(x, 0.16);
+        // their song, as the Navigator kept it: notes rising
+        g.fillStyle = pale(0.2);
+        for (let i = 0; i < 16; i++) g.fillRect(60 + Math.floor(rnd() * (W - 120)), 20 + Math.floor(rnd() * 90), 2, 2);
+      } else if (s.of === 'gardens') {
+        // grow-lights, the cradles hanging under them, and the beds
+        for (let x = 24; x < W - 24; x += 48) {
+          g.fillStyle = 'rgba(255,248,220,0.22)';
+          g.fillRect(x, 22, 30, 2);
+          const glow = g.createLinearGradient(0, 24, 0, 90);
+          glow.addColorStop(0, 'rgba(255,248,220,0.09)');
+          glow.addColorStop(1, 'rgba(255,248,220,0)');
+          g.fillStyle = glow;
+          g.fillRect(x - 6, 24, 42, 66);
+          if (rnd() < 0.6) {
+            g.fillStyle = pale(0.12);
+            g.fillRect(x + 14, 24, 1, 20);
+            g.fillRect(x + 9, 44, 11, 14);
+          }
+        }
+        for (let i = 0; i < W / 5; i++) {
+          const x = Math.floor(rnd() * W);
+          const h = 8 + Math.floor(rnd() * 26);
+          g.fillStyle = 'rgba(200,232,200,0.13)';
+          g.fillRect(x, 120 - h, 1, h);
+          if (rnd() < 0.18) {
+            // the first of the Bloom, pink even in a memory
+            g.fillStyle = 'rgba(242,122,216,0.3)';
+            g.fillRect(x - 1, 118 - h, 3, 2);
+          }
+        }
+        figure(330, 0.16);
+      } else {
+        // the Helm: tall windows full of night, his banners, and a man at the top of the dais
+        for (let x = 30; x < W - 40; x += 90) {
+          g.fillStyle = pale(0.1);
+          g.fillRect(x, 20, 30, 92);
+          g.fillStyle = 'rgba(20,30,52,0.5)';
+          g.fillRect(x + 2, 22, 26, 88);
+          for (let i = 0; i < 10; i++) {
+            g.fillStyle = pale(0.35);
+            g.fillRect(x + 3 + Math.floor(rnd() * 24), 24 + Math.floor(rnd() * 84), 1, 1);
+          }
+        }
+        for (const x of [80, 250, 430]) {
+          g.fillStyle = pale(0.12);
+          g.fillRect(x, 20, 14, 34);
+          g.fillStyle = 'rgba(232,220,192,0.2)';
+          g.fillRect(x + 5, 26, 4, 4);
+        }
+        figure(600, 0.2);
+        figure(612, 0.1);
+      }
+      g.globalAlpha = 0.18;
+      HA.font.draw(g, year, 24, 14, '#ffffff', { shadow: null });
+      g.globalAlpha = 1;
+      const haze = g.createLinearGradient(0, 0, 0, H);
+      haze.addColorStop(0, 'rgba(232,244,250,0.18)');
+      haze.addColorStop(0.55, 'rgba(232,244,250,0.03)');
+      haze.addColorStop(1, 'rgba(232,244,250,0)');
+      g.fillStyle = haze;
+      g.fillRect(0, 0, W, H);
+    },
     gallery(g, s) {
       const x0 = s.x0 * 8;
       const y = s.y * 8;
@@ -1368,6 +1560,15 @@
           g.fillStyle = d;
           g.fillRect(x + 1, y + 3, 1, 2);
           g.fillRect(x + 5, y + 3, 1, 2);
+        } else if (t === HA.room.THORNS && T.static) {
+          // static: a memory breaking up where the floor should be
+          g.fillStyle = T === THEMES.memory ? '#3a4a56' : '#0a1a22';
+          g.fillRect(x, y + 4, 8, 4);
+          for (let i = 0; i < 7; i++) {
+            const k = (tx * 13 + ty * 7 + i * 5) % 8;
+            g.fillStyle = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#b8f4ff' : '#5fd4e8';
+            g.fillRect(x + k, y + 1 + ((i * 3 + tx) % 6), 1 + (i % 2), 1);
+          }
         } else if (t === HA.room.THORNS && T.heat) {
           // a grille over the heat, its bars glowing
           g.fillStyle = '#3a1a10';
