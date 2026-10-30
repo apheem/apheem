@@ -693,9 +693,9 @@
             break;
           }
         }
-        // Player shots knock enemy orbs out of the air.
+        // Player shots knock enemy orbs out of the air (not rounds: they're too small and too fast).
         for (const o of world.shots) {
-          if (o.owner === 'enemy' && o.life > 0 && Math.abs(o.x - s.x) < 5 && Math.abs(o.y - s.y) < 5) {
+          if (o.owner === 'enemy' && o.kind !== 'round' && o.life > 0 && Math.abs(o.x - s.x) < 5 && Math.abs(o.y - s.y) < 5) {
             o.life = 0;
             s.life = 0;
             world.burst(o.x, o.y, ['#ff8a8a', '#ffffff'], 6, 1.2);

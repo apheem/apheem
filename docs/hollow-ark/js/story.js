@@ -967,5 +967,5 @@
     return undefined;
   }
 
-  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, drawBarks };
+  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, drawBarks };
 })(window.HA);

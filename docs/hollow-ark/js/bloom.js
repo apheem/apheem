@@ -52,7 +52,7 @@
   function eat(world) {
     const s = world.state;
     const p = world.player;
-    if (!s.bulbs || p.dead || world.scene) return;
+    if (!s.bulbs || p.dead || world.scene || world.playAs) return; // not while someone else fights for the hero
     const lose = closes(s, 1);
     if (s.flags.ateBulb && !lose) {
       consume(world);

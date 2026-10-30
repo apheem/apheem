@@ -460,7 +460,7 @@
     musicLayers: layers,
     legend: {
       e: down('crew-camp'),
-      Z: { type: 'lift', to: 'tower-foot', unbuilt: 'THE COMMAND TOWER', name: 'the Tower Lift', big: true, lit: (s) => !!s.flags.verdict },
+      Z: { type: 'lift', to: 'barracks', name: 'the Tower Lift', big: true, scene: 'towerLift', lit: (s) => !!s.flags.verdict },
       T: { type: 'log', id: 'sealed', name: 'the security terminal' },
     },
     scenery: [

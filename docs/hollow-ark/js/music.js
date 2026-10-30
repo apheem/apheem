@@ -551,6 +551,95 @@
     },
   };
 
+  // The Command Tower: the Ark's theme at its grandest, slow and full, brass on square voices over a marching bass.
+  // (The Observation Dome has none at all.)
+  TRACKS.tower = {
+    step: 60 / 84 / 4,
+    steps: 128,
+    fadeIn: 1,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = CRYO_CHORDS[bar % 4];
+      if (at % 4 === 0) out.note(0, 'triangle', c.root + [0, 12, 7, 12][at / 4], 3.8, 0.3);
+      if (at === 0) for (const iv of [12, 12 + c.third, 19]) out.note(0, 0.5, c.root + iv, 15, 0.022, 0.4);
+      if (at === 0 || at === 8) out.drum(0, 'kick', 0.3);
+      if (at === 12 && bar % 2) out.drum(0, 'snare', 0.08);
+      themeAt(THEME[bar % 4], at, (n, len) => {
+        out.note(0, 0.25, midi(n), len, 0.08, 0.02);
+        if (bar >= 4) out.note(0, 0.5, midi(n) - 12, len, 0.05, 0.02);
+      });
+    },
+  };
+
+  // Steward Marrant: an organ of square pipes over a pedal note. The second layer (his guard) brings in a march;
+  // the third (the man himself) puts the theme on top, loud.
+  const ST_CHORDS = [chord('A1', 3), chord('D2', 3), chord('E1', 4), chord('A1', 3), chord('F1', 4), chord('D2', 3), chord('E1', 4), chord('E1', 4)];
+  TRACKS.steward = {
+    step: 60 / 132 / 4,
+    steps: 128,
+    layers: 3,
+    fadeIn: 0.2,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = ST_CHORDS[bar];
+      if (at === 0 || at === 8) for (const iv of [12, 12 + c.third, 19, 24]) out.note(0, 0.5, c.root + iv, 7.6, 0.02, 0.05);
+      if (at % 8 === 0) out.note(0, 'triangle', c.root, 7.8, 0.28, 0.02);
+      if (at === 4 || at === 12) out.note(0, 'triangle', c.root + 12, 3.6, 0.14);
+      if (at % 4 === 0) out.drum(1, 'kick', 0.26);
+      if (at === 4 || at === 12) out.drum(1, 'snare', 0.12);
+      if (at % 2 === 1) out.drum(1, 'hat', 0.025);
+      out.note(1, 0.125, c.root + 24 + [0, 7, 12, c.third + 12, 12, 7, c.third, 7][at % 8], 0.8, 0.03);
+      themeAt(THEME[bar % 4], at, (n, len) => {
+        out.note(2, 0.5, midi(n), len, 0.07, 0.005);
+        out.note(2, 0.25, midi(n) + 12, len, 0.025, 0.005);
+      });
+    },
+  };
+
+  // The scuttle: the hull alarm's two tones over a heartbeat run far too fast.
+  TRACKS.scuttle = {
+    step: 60 / 168 / 4,
+    steps: 32,
+    fadeIn: 0.1,
+    play(s, out) {
+      const at = s % 16;
+      const bar = Math.floor(s / 16) % 2;
+      if (at % 4 === 0) out.drum(0, 'kick', 0.3);
+      if (at % 4 === 1) out.drum(0, 'kick', 0.15);
+      if (at % 2 === 0) out.note(0, 'triangle', midi('A1') + (bar ? 1 : 0) + (at % 8 ? 12 : 0), 0.6, 0.14);
+      if (at === 0) out.note(0, 0.5, midi('E5'), 6, 0.045, 0.01);
+      if (at === 8) out.note(0, 0.5, midi('C5'), 6, 0.045, 0.01);
+    },
+  };
+
+  // What the hero became: the Gardens' waltz gone wrong, out of tune and too fast, the theme sung flat over it.
+  TRACKS.overgrown = {
+    step: 60 / 150 / 2,
+    steps: 96,
+    fadeIn: 0.2,
+    play(s, out) {
+      const bar = Math.floor(s / 6) % 16;
+      const at = s % 6;
+      const c = G_CHORDS[bar % 8];
+      if (at === 0) {
+        out.note(0, 'triangle', c.root - 0.4, 1.8, 0.3);
+        out.drum(0, 'kick', 0.3);
+      }
+      if (at === 2 || at === 4) {
+        out.note(0, 0.25, c.root + 12 + c.third + 0.3, 0.9, 0.04);
+        out.drum(0, 'clank', 0.05);
+      }
+      if (at % 2 === 1) out.drum(0, 'hat', 0.02);
+      for (const [st, n, len] of G_THEME[bar % 8]) {
+        if (st !== at) continue;
+        out.note(0, 0.5, midi(n) - 0.45, len, 0.06, 0.01);
+        out.note(0, 'sine', midi(n) - 12.3, len, 0.03, 0.05);
+      }
+    },
+  };
+
   // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
   let current = null;
   const fading = [];

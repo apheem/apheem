@@ -659,6 +659,6 @@
     return !!n && Math.abs(n.x - world.player.x) < 64;
   };
   S.drawMotor = drawMotor;
-  S.drawFlood = drawFlood;
+  S.overlays.push(drawFlood);
   Object.assign(S.SCENES, SCENES);
 })(window.HA);

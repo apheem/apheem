@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth), 3.4 (the Flooded Ballast) and 3.5 (the Engine Spine) are built** (version 0.3.5); the next job is 3.6, the Command Tower. The Deserter ending can be reached in play. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth), 3.4 (the Flooded Ballast), 3.5 (the Engine Spine) and 3.6 (the Command Tower) are built** (version 0.3.6); the next job is 3.7, the Dreaming Deck. Four endings can be reached in play: Deserter, Crash, Dominion and Overgrown. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -23,16 +23,16 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/core.js` | The `HA` namespace, settings, constants (320x180 view, 8px tiles, 60 updates a second) |
 | `js/room.js` | Tile maps, collision, conveyor belts (`beltUnder`), and the room registry (`HA.rooms.area`, `HA.rooms.add`, `HA.rooms.at`). `%` in a map is a cargo container: solid, drawn as stacked containers. `s` is Bloom silt (it burns, and throws the hero back to the last firm ground: `touchesSludge`). Foam is a tile set while the game runs, held like a catwalk |
 | `js/areas/*.js` | One file per area: its rooms as ASCII maps, plus the legend, scenery, hints, triggers and music |
-| `js/world.js` | Entering rooms, edge transitions, doors (gates someone keeps, which open as the hero nears; crane stacks, moved by their switches; cracked walls, opened by a Breach Charge), links (lifts and floor hatches to another room, `world.travel`; a lift with `when` isn't there until it's built), interactions, triggers, rest pods, the trip between pods, the camera, drawing, the HUD. A room's `musicLayers` can be a function of the save |
-| `js/actors.js` | The hero's movement, enemies and pickups. `TYPES` is the one table of map letters that mean an enemy in every room |
+| `js/world.js` | Entering rooms, edge transitions, doors (gates someone keeps, which open as the hero nears; crane stacks, moved by their switches; cracked walls, opened by a Breach Charge), links (lifts and floor hatches to another room, `world.travel`; a lift with `when` isn't there until it's built), interactions, triggers, rest pods, the trip between pods, the camera, drawing, the HUD. A room's `musicLayers` can be a function of the save. A story can set `world.checkpoint` (`{ room, x, y, reset }`), which a fall comes back to before the rest pod (the Steward's fight, the Overgrown fight, the run for the sleds), and a log can carry its own `label` for its prompt |
+| `js/actors.js` | The hero's movement, enemies and pickups. `TYPES` is the one table of map letters that mean an enemy in every room. `drawStandIn` draws whoever fights in the hero's place (`world.playAs`, the Overgrown ending) |
 | `js/abilities.js` | The thruster pack, the grapple's pull and hang (fired by the Grapple Harpoon; a hook can move, and can be a weak point that takes the hero's arrival as a blow), pressure boots and swimming. The hero's update and `rooms-check.js` both call it. It also holds the Engine Spine's steam vents: a room's `vents: [{ x0, x1, y0, y1 }]` carry the hero up a column of steam. Water is `~` in a map, a grapple hook ring is `o`; an area can tint its water (`water` in `HA.rooms.area`), and a room's `pressure: [{ x0, x1, y }]` draws the PRESSURE stripes over deep water |
 | `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
 | `js/hazards.js` | Hazards that come and go: a room's `pistons` (rams that hiss, then strike out of a wall or down from a ceiling), its vents drawn as steam, and short-lived harm anything can leave (`HA.hazards.add`: a slug's embers, a drone's steam, Abel's burning slag) |
 | `js/weapons.js` | Weapon definitions, levels and XP, and shots, including the Grapple Harpoon (`fireGrapple` at a ring, a barb otherwise), the Breach Charges (`chargesMax`) and the Foam Sprayer (platforms in `world.foam`, shields in `world.shields`, `updateFoam`, `dissolve`). An enemy with `ghost` set is out of every weapon's reach |
 | `js/boss.js` | The Bailiff, plus what every boss shares: shard vents, the health bar, and the `HA.bosses` registry the world looks bosses up in |
-| `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`, `tallyman.js`, `siltmother.js`, `abel.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
+| `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`, `tallyman.js`, `siltmother.js`, `abel.js`, `steward.js` (with his relays, `HA.bosses.relay`), `overgrown.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
 | `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls, up to the Gardens. Also barks (short lines over someone's head that don't stop play) and companions (`npc.follow`) |
-| `js/story/*.js` | Each later area's story: `gardens.js`, `warrens.js` (the return), `cargo.js` (the Labyrinth, Flux's homecoming, and travel between pods), `ballast.js` (Solder, the flood, choice 9, the tram, and the raid at home; Solder's limping walk and the rising water live here too), `spine.js` (the crew and the lift they build, `crewOf`, Abel and choice 10, the camp's night, the verdict) add their scenes, lines and logs to the tables in `story.js` and push their own `{ enterRoom, update, music, talk }` hooks onto `HA.story.areas` (`talk` can hand a conversation to a scene). `story.js` also holds `callName` (LATE, SLEEPER or COUNTER). A person met away from the Warrens says so with `away: true` in `PEOPLE` |
+| `js/story/*.js` | Each later area's story: `gardens.js`, `warrens.js` (the return), `cargo.js` (the Labyrinth, Flux's homecoming, and travel between pods), `ballast.js` (Solder, the flood, choice 9, the tram, and the raid at home; Solder's limping walk and the rising water live here too), `spine.js` (the crew and the lift they build, `crewOf`, Abel and choice 10, the camp's night, the verdict), `tower.js` (the Tower Lift ride, the Dome and choice 4b, the Gardener and choice 11, the Steward and choice 12, the ending branch: Overgrown, choice 13, the Key breaking, Lift B), `scuttle.js` (the run for the sleds: the clock, the falling ceilings, the pod launch, Mara's clamps, the sleds) add their scenes, lines and logs to the tables in `story.js` and push their own `{ enterRoom, update, music, talk }` hooks onto `HA.story.areas` (and anything they draw over the screen, like a clock, onto `HA.story.overlays`) (`talk` can hand a conversation to a scene). `story.js` also holds `callName` (LATE, SLEEPER or COUNTER). A person met away from the Warrens says so with `away: true` in `PEOPLE` |
 | `js/bloom.js` | The Bloom track: bulbs (carried, eaten on their own button), the stages (3, 5, 7, 8) with their journal lines, what a rise would close (`closes`), and the Thorn's kill count |
 | `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card`, `fade`, `walk` |
 | `js/save.js` | Save state (the Phase 3 fields and what each value means are listed in `newState`), the upgrade for older saves, autosave, the explored-map bitsets, and talk history |
@@ -140,7 +140,7 @@ The player can finish the game without learning most of this (the Crash ending).
 | Cargo Labyrinth | 0 – 280 | 69 – 161, around the sump | built (3.3); entered from the sump's west side, the Drain's grate leads down to the Ballast |
 | Flooded Ballast | 0 – 480 | 161 – 230 | built (3.4); the keel tram's station is at its east end, its tunnel runs on to the Spine |
 | Engine Spine | 480 – 520 | −64 – 230 (one shaft of six rooms, joined by ladders and hatches) | built (3.5) |
-| Command Tower | 520 – 640 | −92 – 46 | 3.6 |
+| Command Tower | 520 – 640 | −156 – −64 (five rooms above the Tower Lift) | built (3.6) |
 | The Dreaming Deck (hidden) | 520 – 640 | 46 – 138 | 3.7 |
 
 These are starting reservations, not exact room positions. Keep areas inside their boxes so the map reads as one ship. The Gardens' east bulkhead into the Spine is choked with Bloom and can't be opened, so the Spine is reached only from its foot.
@@ -488,6 +488,8 @@ The crew follow the hero up ("WE WANT TO BE IN THE ROOM"). The Dome is the brief
 
 **Flags:** `tower`, `shimKnows`, `gardenerFate` (`'spared'` / `'dosed'` / `'passed'`), `stewardFate` (`'spared'` / `'ended'` / `'counted'`), `key` (`'claimed'` / `'broken'`), `podsLaunched`.
 
+**As built (3.6).** Five rooms above the Tower Lift: the Barracks (520, −87), where the Tower Lift comes up; the Observation Dome (600, −87) east of it; the Garden Gallery (560, −110) over the Dome, up a ladder; the Bridge Stair (520, −133, two screens tall) west of the Gallery; and the Helm (520, −156) up the Stair's ladder. Rest pods in the Dome and on the Stair's landing outside the Helm; pods stop offering travel once the hero is up the Tower Lift. New enemies: Warden turrets (`7`, a sight line, then a burst of three) and the honour guard (`9`, a shield in front, open after a pike lunge). The crew ride up with the hero, hold the Tower Lift in the Barracks, and come up the Helm's ladder for the speech. The Dome: no music, the world dark over the bow, the Navigator's "YOU ARE STILL HERE." from its one terminal; on the lie path, Shim at the glass and choice 4b (he follows the hero if the lie goes on). The Gallery: the Gardener's last offer of the Thorn (if the hero still has the Lancets), her line to a still-lied-to Shim, and choice 11. The Helm: the speech and Gasket's line; the Steward's three phases (the Key's relays, with turrets and gates on his word; the dosed guard; the man, from cover, with the sidearm), with a checkpoint at the fight's start; choice 12; then `HA.endings.afterSteward`. Overgrown is fought as Solder or Gasket against what's left of the hero, with the hero's weapon. Dominion is choice 13. Otherwise the Key breaks: on the true path the freed Wardens hold the doors and the crew mend Lift B (`liftB`), which waits for 3.7; for Crash, three cards take everyone down the Tower, the Spine and home along the keel, and the hero runs alone from the sump to the sleds in Cryo Bay 4 against a 4:30 clock (`running`; the Pod Stacks' console launches the pods for 20 seconds of it; running out starts the run again at the sump). Fates are kept in `people.gardener` and `people.steward`, the Key in `flags.key`. Extra flags: `towerUp`, `domeSeen`, `navSpoke`, `shimFollow`, `shimWith`, `shimHeard`, `helmSeen`, `stewardSeen`, `stewardDown`, `overgrown`, `scuttle`, `liftB`, `running`, `maraRun`.
+
 ### Beat 7: the truth. The Dreaming Deck (3.7, true path only)
 
 **Role:** the hidden area, a gauntlet and the final boss, under the clock of the scuttle. The brief's fixes apply: a checkpoint halfway through the gauntlet and another at the start of the final fight. It stays hard, but failing costs minutes.
@@ -714,7 +716,7 @@ Mercy and Bloom already exist.
 
 Fast travel arrives with the Cargo Labyrinth (the brief says "from mid-game onward"). From any rest pod the hero has rested at, the map lists the others. It isn't offered during timed sequences (the flood, the scuttle) or after the Tower Lift.
 
-As built (3.3): standing at a rest pod, open the map; every other pod rested at is ringed, and picking one takes the hero there, rested. During the flood (3.4) there's no pod in reach to travel from; the scuttle must switch it off (`mapscreen.create` decides whether it's offered).
+As built (3.3): standing at a rest pod, open the map; every other pod rested at is ringed, and picking one takes the hero there, rested. During the flood (3.4) there's no pod in reach to travel from. From the Tower Lift on (`flags.tower`) pods don't offer travel, and during the scuttle every pod is dark (3.6; `mapscreen.create` and `world.updateInteractions` decide).
 
 ---
 
@@ -776,10 +778,10 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 - [x] Abel and choice 10; the Crew Camp; the Purser's last call
 
 ### 3.6 Command Tower
-- [ ] Rooms; the Observation Dome with the world in view; choice 4b on the lie path
-- [ ] The Gardener and choice 11
-- [ ] Steward Marrant (three phases, checkpoint), the boots, and choice 12
-- [ ] The ending branch: Overgrown (playable as Solder or Gasket), Dominion (choice 13), the scuttle, Crash (sled escape, pod launch)
+- [x] Rooms; the Observation Dome with the world in view; choice 4b on the lie path
+- [x] The Gardener and choice 11
+- [x] Steward Marrant (three phases, checkpoint), the boots, and choice 12
+- [x] The ending branch: Overgrown (playable as Solder or Gasket), Dominion (choice 13), the scuttle, Crash (sled escape, pod launch)
 
 ### 3.7 The Dreaming Deck
 - [ ] The lift and its four requirements; memory halls with a checkpoint

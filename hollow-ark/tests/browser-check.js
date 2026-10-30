@@ -1095,16 +1095,19 @@ async function play(browserType, url, label) {
         HA.debug.step(1, { confirm: i % 2 === 0 });
       }
       out.verdict = { room: w().def.id, counts: counts.length, crew: s.crew, lead: s.lead };
-      const Z = w().links.find((l) => l.legend.big);
-      p.x = Z.x + 8;
-      HA.debug.step(3);
-      press('up');
-      out.tower = w().toastText;
       HA.debug.goto('tower-lift', 24, 18);
       HA.debug.step(3);
       press('up');
       out.sealed = w().scene && w().scene.step && w().scene.step.text;
       talkThrough();
+      // The Tower Lift takes them all up into the Command Tower (Phase 3.6 carries on from there).
+      const Z = w().links.find((l) => l.legend.big);
+      p.x = Z.x + 8;
+      HA.debug.step(3);
+      press('up');
+      out.tower = w().scene && w().scene.name;
+      talkThrough();
+      out.towerRoom = w().def.id;
       // Home: those who climbed are gone from the village, and so is Shim.
       HA.debug.goto('warrens', 40, 18);
       HA.debug.step(10);
@@ -1124,9 +1127,336 @@ async function play(browserType, url, label) {
     expect(sp.camp.room === 'crew-camp' && sp.camp.crew === 8 && sp.camp.lifts === 3 && sp.camp.people === 8 && sp.camp.music === 'camp', `the climbers did not reach the camp (${JSON.stringify(sp.camp)})`);
     expect(sp.stitch === 'stitch' && /REST FIRST/.test(sp.notYet) && sp.night === 'lightsOut' && sp.call === 'STAY/TAKE THE BOAT' && sp.shim, `the camp's night went wrong (${JSON.stringify(sp)})`);
     expect(sp.morning.done && sp.morning.purser && /TOWER LIFT/.test(sp.morning.lead), `the morning at the camp went wrong (${JSON.stringify(sp.morning)})`);
-    expect(sp.verdict.room === 'tower-lift' && sp.verdict.counts === 8 && sp.verdict.crew === 8 && /STEWARD/.test(sp.verdict.lead) && /COMMAND TOWER/.test(sp.tower) && /WARDENS ONLY/.test(sp.sealed), `the crew's verdict, the Tower Lift or the sealed log went wrong (${JSON.stringify(sp.verdict)}, ${sp.tower}, ${sp.sealed})`);
+    expect(sp.verdict.room === 'tower-lift' && sp.verdict.counts === 8 && sp.verdict.crew === 8 && /STEWARD/.test(sp.verdict.lead) && sp.tower === 'towerLift' && sp.towerRoom === 'barracks' && /WARDENS ONLY/.test(sp.sealed), `the crew's verdict, the Tower Lift or the sealed log went wrong (${JSON.stringify(sp.verdict)}, ${sp.tower}, ${sp.towerRoom}, ${sp.sealed})`);
     expect(!sp.home.gasket && !sp.home.shim && sp.home.tamp, `home after the climb went wrong (${JSON.stringify(sp.home)})`);
     await shot('spine');
+
+    // ---- The Command Tower (Phase 3.6), from a save on the Tower Lift's deck after the crew's verdict ----
+    // The lie path with a Warden salvaged: Shim in the Dome (choice 4b), the Gardener (choice 11), the Steward's fight
+    // (a fall at the checkpoint), choice 12, the Key broken, and the run for the sleds to the Crash ending.
+    const towerSave = (extra) =>
+      get((extra) => {
+        const s = HA.save.newState();
+        Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'shim', cargo: true, chalkStops: true, deserterMet: true, deserterOffered: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true, ballast: true, solderFound: true, toolbagBack: true, siltSeen: true, siltDown: true, floodSeen: true, flooded: true, hatchOpen: true, tram: true, raidSeen: true, spine: true, crewCame: true, lifts: 2, liftTwoSeen: true, abelSeen: true, abelDown: true, camp: true, lightsOut: true, shimRanOff: true, purserGone: true, campDone: true, verdict: true });
+        Object.assign(s.wardens, { bailiff: 'salvage', pruner: 'release', tallyman: 'release' });
+        Object.assign(s.people, { wick: 'dead', flux: 'home', solder: 'alive', abel: 'spared' });
+        Object.assign(s.abilities, { thruster: 'odell', grapple: true, boots: true });
+        Object.assign(s, { toldShim: 'lie', warrensRaid: 'held', mercy: 5, takenHome: 11, crew: 6, room: 'tower-lift', x: 18 * 8, y: 19 * 8 - 14, facing: -1, fresh: false, lead: 'RIDE THE TOWER LIFT UP TO THE STEWARD' });
+        s.weapons = ['cannon', 'harpoon', 'foam', 'lancets'].map((id) => HA.weapons.make(id));
+        for (const [k, v] of Object.entries(extra || {})) {
+          if (v && typeof v === 'object' && !Array.isArray(v)) Object.assign(s[k], v);
+          else s[k] = v;
+        }
+        localStorage.setItem('hollow-ark.save.v1', JSON.stringify(s));
+      }, extra);
+    const startSaved = async () => {
+      await page.reload();
+      await page.waitForFunction(() => window.HA && HA.debug && HA.debug.frames > 20, null, { timeout: 15000 });
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => HA.ui.mode === 'play', null, { timeout: 5000 });
+      await get(() => {
+        const w = () => HA.debug.world;
+        window.tw = {
+          w,
+          talkThrough() {
+            for (let i = 0; i < 6000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+              HA.debug.skipScene();
+              HA.debug.step(1);
+            }
+          },
+          // Every line said until the next choice (or the scene's end), confirming as a player would.
+          listen() {
+            const said = [];
+            for (let i = 0; i < 8000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+              const st = w().scene.step;
+              if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+              HA.debug.step(1, { confirm: i % 3 === 0 });
+            }
+            return said;
+          },
+          choose(i) {
+            HA.debug.step(2); // let go of Confirm first: a choice answers to a fresh press
+            for (let k = 0; k < i; k++) {
+              HA.debug.step(1, { down: true });
+              HA.debug.step(1);
+            }
+            const asks = !!w().scene.step.choice.options[i].confirm;
+            HA.debug.step(1, { confirm: true });
+            HA.debug.step(1);
+            if (asks) {
+              HA.debug.step(1, { up: true });
+              HA.debug.step(1);
+              HA.debug.step(1, { confirm: true });
+            }
+            HA.debug.step(1);
+          },
+          press(key) {
+            HA.debug.step(1, { [key]: true });
+            HA.debug.step(1);
+          },
+          options: () => w().scene && w().scene.step && w().scene.step.choice && w().scene.step.choice.options.map((o) => o.label).join('/'),
+          toTitle() {
+            for (let i = 0; i < 12000 && w() && !w().exitToTitle && HA.ui.mode === 'play'; i++) {
+              HA.debug.skipScene();
+              HA.debug.step(1);
+            }
+            HA.debug.step(30);
+          },
+        };
+      });
+    };
+    await towerSave();
+    await startSaved();
+    const tw = await get(() => {
+      const { w, talkThrough, listen, choose, press, options } = window.tw;
+      const out = {};
+      const s = w().state;
+      const p = w().player;
+      // Up the Tower Lift with the crew.
+      HA.debug.goto('tower-lift', 14, 18);
+      HA.debug.step(3);
+      press('up');
+      out.lift = w().scene && w().scene.name;
+      talkThrough();
+      out.barracks = { room: w().def.id, crew: w().npcs.filter((n) => n.state === 'out').length, music: HA.music.playing, lead: s.lead, area: w().area.name };
+      // The Observation Dome: the world, dark; Shim at the glass; the Navigator's terminal.
+      HA.debug.goto('observation-dome', 1, 18);
+      for (let i = 0; i < 40 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.dome = { scene: w().scene && w().scene.name, music: HA.music.playing, said: listen().join(' ') };
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.shimScene = w().scene && w().scene.name;
+      out.shimSaid = listen().join(' ');
+      out.fourB = options();
+      const m = s.mercy;
+      choose(1);
+      talkThrough();
+      out.lied = { knows: s.shimKnows, mercy: s.mercy - m, follow: !!(w().npcs.find((n) => n.id === 'shim') || {}).follow };
+      HA.debug.goto('observation-dome', 19, 18);
+      HA.debug.step(3);
+      press('up');
+      out.nav = listen().join(' ');
+      out.navSpoke = s.flags.navSpoke;
+      // Up the ladder into the Garden Gallery, Shim behind, and west to the Gardener.
+      HA.debug.goto('observation-dome', 32, 18);
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      out.gallery = { room: w().def.id, shim: w().npcs.some((n) => n.id === 'shim' && n.follow), gardener: w().npcs.some((n) => n.id === 'gardener') };
+      HA.debug.goto('garden-gallery', 52, 18);
+      for (let i = 0; i < 300 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.gardenerScene = w().scene && w().scene.name;
+      listen();
+      out.thorn = options();
+      choose(0);
+      out.toShim = listen().join(' ');
+      out.eleven = options();
+      const m2 = s.mercy;
+      choose(0);
+      talkThrough();
+      out.gardener = { fate: s.people.gardener, mercy: s.mercy - m2, shimWith: s.flags.shimWith, lead: s.lead };
+      // Up the Bridge Stair's ladder into the Helm: the speech, and the fight.
+      HA.debug.goto('bridge-stair', 12, 8);
+      HA.debug.step(3);
+      out.podPrompt = w().near && w().near.label;
+      HA.debug.goto('bridge-stair', 5, 8);
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      out.helm = w().def.id;
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.speech = listen().join(' | ');
+      const b = w().boss;
+      out.fight = { fighting: b.fighting, music: HA.music.playing, check: w().checkpoint && w().checkpoint.room, crew: w().npcs.filter((n) => n.state === 'out').length };
+      // Phase 1: the Key's field turns shots aside; the turrets fire on his word; the gates come down.
+      HA.bosses.steward.hurt(w(), b, 10, 1);
+      out.field = b.field > 0 && b.hp === b.maxHp;
+      w().assist.invincible = true;
+      let ordered = false;
+      let gate = false;
+      for (let i = 0; i < 900; i++) {
+        HA.debug.step(1);
+        ordered = ordered || w().shots.some((x) => x.kind === 'round');
+        gate = gate || (b.gates[0].down && w().room.tile(b.gates[0].tx, 17) === HA.room.SOLID);
+      }
+      w().assist.invincible = false;
+      out.ordered = ordered;
+      out.gate = gate;
+      // A fall in the fight: back at the checkpoint, inside the Helm, and straight back into it.
+      p.hp = 1;
+      p.invuln = 0;
+      w().hurtPlayer(2, p.x + 20);
+      for (let i = 0; i < 200 && (p.dead || !w().scene); i++) HA.debug.step(1);
+      out.fall = { room: w().def.id, x: Math.round(p.x / 8), toast: w().toastText, scene: w().scene && w().scene.name };
+      out.again = listen().join(' ');
+      const b2 = w().boss;
+      out.refight = b2.fighting && b2.phase === 1 && b2 !== b;
+      // Break the relays: his guard, dosed; then the man himself.
+      for (const r of b2.relays) HA.bosses.relay.hurt(w(), r, 50);
+      HA.debug.step(2);
+      out.guardScene = w().scene && w().scene.name;
+      out.guardSaid = listen().join(' ');
+      out.guards = b2.guards.map((g) => g.dosed && !g.shield).filter(Boolean).length;
+      for (const g of b2.guards) {
+        g.hp = 1;
+        HA.actors.hurtEnemy(w(), g, 5, 1);
+      }
+      HA.debug.step(12);
+      out.manSaid = listen().join(' ');
+      w().assist.invincible = true;
+      const states = new Set();
+      let sight = false;
+      for (let i = 0; i < 900; i++) {
+        HA.debug.step(1);
+        states.add(b2.state);
+        sight = sight || !!b2.sight;
+      }
+      w().assist.invincible = false;
+      out.man = { phase: b2.phase, states: [...states].join(','), sight };
+      b2.manHp = 1;
+      b2.rolling = false;
+      HA.bosses.steward.hurt(w(), b2, 5, 1);
+      HA.debug.step(20);
+      out.defeated = w().scene && w().scene.name;
+      out.beaten = listen().join(' ');
+      out.twelve = options();
+      const m3 = s.mercy;
+      choose(0);
+      // The Key breaks, the ship begins to come apart, and the crew run for the sleds.
+      out.after = listen().join(' | ');
+      out.steward = { fate: s.people.steward, mercy: s.mercy - m3, key: s.flags.key };
+      talkThrough();
+      out.run = { room: w().def.id, running: s.flags.running, scuttle: s.flags.scuttle, left: Math.round(w().runLeft / 60), music: HA.music.playing, check: w().checkpoint && w().checkpoint.room, lead: s.lead, alarm: w().alarm };
+      // Along the way: the pods have no power, the Wardens are gone, and the ceilings come down.
+      HA.debug.goto('thaw-corridor', 7, 18);
+      HA.debug.step(5);
+      out.podOff = !(w().near && w().near.kind === 'pod');
+      HA.debug.goto('coolant-hall', 30, 18);
+      HA.debug.step(5);
+      out.wardens = w().enemies.filter((e) => !e.dead && ['warden', 'walker'].includes(e.type)).length;
+      let debris = false;
+      for (let i = 0; i < 300; i++) {
+        HA.debug.step(1, { left: i % 60 < 30 });
+        debris = debris || w().hazards.some((h) => h.kind === 'debris');
+      }
+      out.debris = debris;
+      // The clock running out: back to the sump, with a full clock.
+      w().runLeft = 2;
+      HA.debug.step(4);
+      out.failScene = w().scene && w().scene.name;
+      talkThrough();
+      out.retry = { room: w().def.id, left: Math.round(w().runLeft / 60) };
+      // The Pod Stacks' console: launching the pods costs time.
+      HA.debug.goto('pod-stacks', 5, 18);
+      HA.debug.step(5);
+      out.consolePrompt = w().near && w().near.label;
+      press('up');
+      listen();
+      out.launchAsk = options();
+      const before = w().runLeft;
+      choose(0);
+      talkThrough();
+      out.launch = { cost: Math.round((before - w().runLeft) / 60), pods: s.podsLaunched };
+      // Cryo Bay 4: Mara's clamps, empty; the sleds; the Crash ending.
+      HA.debug.goto('cryo-bay', 22, 16);
+      HA.debug.step(5);
+      for (let i = 0; i < 400 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.mara = listen().join(' ');
+      for (let i = 0; i < 400 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.sleds = w().scene && w().scene.name;
+      window.tw.toTitle();
+      out.title = HA.ui.mode;
+      out.ending = JSON.parse(localStorage.getItem('hollow-ark.save.v1')).ending;
+      return out;
+    });
+    expect(tw.lift === 'towerLift' && tw.barracks.room === 'barracks' && tw.barracks.crew === 6 && tw.barracks.music === 'tower' && tw.barracks.area === 'COMMAND TOWER' && /UP TO THE HELM/.test(tw.barracks.lead), `the Tower Lift did not take the crew up into the Barracks (${tw.lift}, ${JSON.stringify(tw.barracks)})`);
+    expect(tw.dome.scene === 'domeView' && tw.dome.music === null && /NO LIGHTS/.test(tw.dome.said), `the Dome's view went wrong (${JSON.stringify(tw.dome)})`);
+    expect(tw.shimScene === 'shimDome' && /WHERE IS MY MOTHER/.test(tw.shimSaid) && tw.fourB === 'TELL HIM THE TRUTH/KEEP LYING' && tw.lied.knows === false && tw.lied.mercy === -1 && tw.lied.follow, `choice 4b went wrong (${tw.shimScene}, ${tw.fourB}, ${JSON.stringify(tw.lied)})`);
+    expect(/YOU ARE STILL HERE/.test(tw.nav) && tw.navSpoke, `the Navigator did not speak in the Dome (${tw.nav})`);
+    expect(tw.gallery.room === 'garden-gallery' && tw.gallery.shim && tw.gallery.gardener && tw.gardenerScene === 'gardener', `the Garden Gallery went wrong (${JSON.stringify(tw.gallery)}, ${tw.gardenerScene})`);
+    expect(/KEEP WICK'S LANCETS/.test(tw.thorn) && /ASKED VERY GOOD QUESTIONS/.test(tw.toShim) && tw.eleven === 'SPARE HER/MAKE HER TAKE HER OWN DOSE/WALK PAST', `the Gardener's offer or choice 11 went wrong (${tw.thorn}, ${tw.eleven}, ${tw.toShim})`);
+    expect(tw.gardener.fate === 'spared' && tw.gardener.mercy === 1 && tw.gardener.shimWith && /BRIDGE STAIR/.test(tw.gardener.lead), `choice 11 did not spare the Gardener (${JSON.stringify(tw.gardener)})`);
+    expect(tw.podPrompt === '{up} REST' && tw.helm === 'helm', `the Bridge Stair's pod or ladder went wrong (${tw.podPrompt}, ${tw.helm})`);
+    expect(/DEAD MAN'S BOOTS/.test(tw.speech) && /THOSE WERE HIS BOOTS/.test(tw.speech) && /TELL ME AGAIN WHO THE MONSTER IS/.test(tw.speech), `the Steward's speech went wrong (${tw.speech})`);
+    expect(tw.fight.fighting && tw.fight.music === 'steward' && tw.fight.check === 'helm' && tw.fight.crew >= 6 && tw.field && tw.ordered && tw.gate, `the Steward's first phase went wrong (${JSON.stringify(tw.fight)}, field ${tw.field}, turrets ${tw.ordered}, gates ${tw.gate})`);
+    expect(tw.fall.room === 'helm' && /CHECKPOINT/.test(tw.fall.toast) && tw.fall.scene === 'stewardIntro' && /AGAIN, THEN/.test(tw.again) && !/BOOTS/.test(tw.again) && tw.refight, `a fall in the Steward's fight did not come back to its checkpoint (${JSON.stringify(tw.fall)}, ${tw.again}, ${tw.refight})`);
+    expect(tw.guardScene === 'stewardGuard' && /MEASURE: FULL/.test(tw.guardSaid) && tw.guards === 3 && /DO IT MYSELF/.test(tw.manSaid), `the Steward's guard went wrong (${tw.guardScene}, ${tw.guardSaid}, ${tw.guards}, ${tw.manSaid})`);
+    expect(tw.man.phase === 3 && /aim/.test(tw.man.states) && /crouch/.test(tw.man.states) && /run/.test(tw.man.states) && tw.man.sight, `the Steward's last phase went wrong (${JSON.stringify(tw.man)})`);
+    expect(tw.defeated === 'stewardDefeated' && /AFRAID OF NOTHING/.test(tw.beaten) && tw.twelve === "SPARE HIM/END HIM/LEAVE HIM TO THE WARDENS' COUNT", `the Steward's defeat or choice 12 went wrong (${tw.defeated}, ${tw.twelve})`);
+    expect(tw.steward.fate === 'spared' && tw.steward.mercy === 1 && tw.steward.key === 'broken' && /NOT YET/.test(tw.after) && /SLEDS/.test(tw.after), `choice 12 or the Key breaking went wrong (${JSON.stringify(tw.steward)}, ${tw.after})`);
+    expect(tw.run.room === 'sump' && tw.run.running && tw.run.scuttle && tw.run.left === 270 && tw.run.music === 'scuttle' && tw.run.check === 'sump' && /SLEDS/.test(tw.run.lead) && tw.run.alarm, `the run for the sleds did not start (${JSON.stringify(tw.run)})`);
+    expect(tw.podOff && tw.wardens === 0 && tw.debris, `the scuttle's ship went wrong (pods off ${tw.podOff}, wardens ${tw.wardens}, debris ${tw.debris})`);
+    expect(tw.failScene === 'runFail' && tw.retry.room === 'sump' && tw.retry.left === 270, `running out of time did not start the run again (${tw.failScene}, ${JSON.stringify(tw.retry)})`);
+    expect(/LAUNCH THE PODS/.test(tw.consolePrompt) && tw.launchAsk === 'LAUNCH THE PODS/KEEP RUNNING' && tw.launch.cost === 20 && tw.launch.pods > 0, `the pod launch went wrong (${tw.consolePrompt}, ${tw.launchAsk}, ${JSON.stringify(tw.launch)})`);
+    expect(/CLAMPS WERE EMPTY/.test(tw.mara) && tw.sleds === 'sledsAway' && tw.title === 'title' && tw.ending === 'crash', `the sleds and the Crash ending went wrong (${tw.mara}, ${tw.sleds}, ${tw.title}, ${tw.ending})`);
+
+    // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
+    const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };
+    const branch = async (extra, fn) => {
+      await towerSave(Object.assign({}, helm, extra, { flags: helm.flags, people: Object.assign({}, helm.people, extra.people) }));
+      await startSaved();
+      return get(fn);
+    };
+    // Dominion: Mercy -3 or less, and the Wardens kneel to the Key.
+    const dom = await branch({ mercy: -4, crew: 2 }, () => {
+      const { w, listen, choose, options, toTitle } = window.tw;
+      HA.debug.step(40);
+      const out = { scene: w().scene && w().scene.name, twelve: options() };
+      choose(1);
+      out.said = listen().join(' ');
+      out.thirteen = options();
+      choose(0);
+      toTitle();
+      out.ending = JSON.parse(localStorage.getItem('hollow-ark.save.v1')).ending;
+      return out;
+    });
+    expect(dom.scene === 'stewardChoice' && /NEW HOLDER/.test(dom.said) && dom.thirteen === 'CLAIM THE KEY/BREAK IT' && dom.ending === 'dominion', `the Key offered and Dominion went wrong (${JSON.stringify(dom)})`);
+    // Overgrown: Bloom 8 or more; the fight is Solder's, with the hero's weapon.
+    const over = await branch({ bloom: 8, mercy: 2, crew: 3 }, () => {
+      const { w, talkThrough, choose, toTitle } = window.tw;
+      HA.debug.step(40);
+      choose(0);
+      talkThrough();
+      const b = w().boss;
+      const out = { playAs: w().playAs, type: b.type, weapons: w().player.weapons.map((x) => x.id).join(','), music: HA.music.playing, check: w().checkpoint && w().checkpoint.room };
+      w().assist.invincible = true;
+      const states = new Set();
+      for (let i = 0; i < 1200; i++) {
+        HA.debug.step(1);
+        states.add(b.state);
+      }
+      w().assist.invincible = false;
+      out.states = [...states].join(',');
+      b.hp = 1;
+      HA.bosses.overgrown.hurt(w(), b, 5);
+      HA.debug.step(20);
+      out.scene = w().scene && w().scene.name;
+      toTitle();
+      const saved = JSON.parse(localStorage.getItem('hollow-ark.save.v1'));
+      out.ending = saved.ending;
+      out.kept = saved.weapons.length;
+      return out;
+    });
+    expect(over.playAs === 'solder' && over.type === 'overgrown' && over.weapons === 'cannon' && over.music === 'overgrown' && over.check === 'helm', `the Overgrown fight did not start as Solder (${JSON.stringify(over)})`);
+    expect(/press/.test(over.states) && /air/.test(over.states) && /draw/.test(over.states) && /shake/.test(over.states) && over.scene === 'overgrownDefeated' && over.ending === 'overgrown' && over.kept === 4, `the Overgrown fight or ending went wrong (${JSON.stringify(over)})`);
+    // The true path: every requirement met. The freed Wardens hold the doors, and the crew mend Lift B.
+    const home = await branch({ mercy: 9, crew: 9, wardens: { bailiff: 'release', pruner: 'release', tallyman: 'release' } }, () => {
+      const { w, listen, choose, press } = window.tw;
+      HA.debug.step(40);
+      choose(0);
+      const out = { said: listen().join(' | ') };
+      const s = w().state;
+      out.liftB = s.flags.liftB;
+      out.link = w().links.some((l) => l.legend.name === 'Lift B');
+      out.music = HA.music.playing;
+      out.lead = s.lead;
+      HA.debug.goto('helm', 73, 16);
+      HA.debug.step(3);
+      press('up');
+      out.toast = w().toastText;
+      return out;
+    });
+    expect(/ONE COUNT REMAINS/.test(home.said) && /CAN'T LIFT THE BRAKE ALONE/.test(home.said) && home.liftB && home.link && home.music === 'scuttle' && /LIFT B/.test(home.lead) && /DREAMING DECK · COMING IN THE NEXT BUILD/.test(home.toast), `the true path at the Helm went wrong (${JSON.stringify(home)})`);
+    await shot('tower');
 
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {
