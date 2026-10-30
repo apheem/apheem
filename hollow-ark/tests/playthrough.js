@@ -105,12 +105,15 @@ class Run {
   }
 
   // A boss fight, once its fight has started: fall once on purpose, come back to it from wherever the suit
-  // reboots, and win it. done is a test in the page that says the fight is won.
+  // reboots, and win it. done is a test in the page that says the fight is won. opts.enter is a step that starts
+  // the fight, for one that doesn't start at the room's door (the Silt Mother waits till the hero is over her water).
   async boss(room, done = '!(HA.ui.world.boss && HA.ui.world.boss.fighting)', opts = {}) {
+    if (opts.enter) await this.do(opts.enter);
     await this.do(`PT.fight(() => HA.ui.world.boss && HA.ui.world.boss.fighting, { max: 2000, every: 1e9 })`);
     if (opts.fall !== false) {
       await this.do('PT.fall()');
       await this.to(room);
+      if (opts.enter) await this.do(opts.enter);
     }
     await this.do(`PT.fight(() => ${done}, ${JSON.stringify(opts.fight || {})})`);
     await this.do('PT.settle()');

@@ -9,8 +9,9 @@
     down: ['ArrowDown', 'KeyS'],
     jump: ['KeyZ', 'Space', 'KeyJ'],
     fire: ['KeyX', 'KeyK'],
-    prev: ['KeyQ', 'KeyC'],
-    next: ['KeyE', 'KeyV'],
+    grapple: ['KeyC', 'KeyI'], // the harpoon's line, whatever weapon is in hand
+    prev: ['KeyQ', 'KeyU'],
+    next: ['KeyE', 'KeyO'],
     item: ['KeyF', 'KeyL'], // eat a Bloom bulb: always a deliberate press of its own button
     pause: ['Escape', 'Enter', 'KeyP'],
     map: ['Tab', 'KeyM'],
@@ -25,7 +26,8 @@
     down: [13],
     jump: [0],
     fire: [2, 1, 7],
-    prev: [4, 6],
+    grapple: [6],
+    prev: [4],
     next: [5],
     item: [3],
     pause: [9],
@@ -193,11 +195,11 @@
   }
 
   // Which controller button each action shows, by layout position.
-  const PAD_PROMPT = { jump: 'south', fire: 'west', item: 'north', confirm: 'south', back: 'east', prev: 'lb', next: 'rb', pause: 'start', map: 'select', up: 'dup', down: 'ddown', left: 'dleft', right: 'dright' };
+  const PAD_PROMPT = { jump: 'south', fire: 'west', grapple: 'lt', item: 'north', confirm: 'south', back: 'east', prev: 'lb', next: 'rb', pause: 'start', map: 'select', up: 'dup', down: 'ddown', left: 'dleft', right: 'dright' };
   const FACE = {
-    xbox: { south: ['A', '#5bd16b'], east: ['B', '#e8434f'], west: ['X', '#4a90e8'], north: ['Y', '#f2c84a'], lb: 'LB', rb: 'RB', start: 'MENU', select: 'VIEW' },
-    ps: { south: ['×', '#7aa7ff'], east: ['○', '#ff6b7a'], west: ['□', '#f27ad8'], north: ['△', '#5bd1a8'], lb: 'L1', rb: 'R1', start: 'OPTIONS', select: 'CREATE' },
-    nintendo: { south: ['B', '#c9d6e8'], east: ['A', '#c9d6e8'], west: ['Y', '#c9d6e8'], north: ['X', '#c9d6e8'], lb: 'L', rb: 'R', start: '+', select: '-' },
+    xbox: { south: ['A', '#5bd16b'], east: ['B', '#e8434f'], west: ['X', '#4a90e8'], north: ['Y', '#f2c84a'], lb: 'LB', rb: 'RB', lt: 'LT', start: 'MENU', select: 'VIEW' },
+    ps: { south: ['×', '#7aa7ff'], east: ['○', '#ff6b7a'], west: ['□', '#f27ad8'], north: ['△', '#5bd1a8'], lb: 'L1', rb: 'R1', lt: 'L2', start: 'OPTIONS', select: 'CREATE' },
+    nintendo: { south: ['B', '#c9d6e8'], east: ['A', '#c9d6e8'], west: ['Y', '#c9d6e8'], north: ['X', '#c9d6e8'], lb: 'L', rb: 'R', lt: 'ZL', start: '+', select: '-' },
   };
 
   function promptSpec(action) {

@@ -503,7 +503,7 @@
     update(world) {
       const s = world.state;
       const f = s.flags;
-      if (world.def.id !== 'warrens' || !f.homeAgain || world.scene || world.player.dead || world.transition) return;
+      if (world.def.id !== 'warrens' || !f.homeAgain || f.running || world.scene || world.player.dead || world.transition) return;
       const due = (s.mercy <= -3 && !f.namedCounter) || (s.mercy >= 4 && !f.namedLate && f.climbPlanned && npcOf(world, 'shim'));
       if (due) run(world, 'named');
     },

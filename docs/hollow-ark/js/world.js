@@ -15,7 +15,7 @@
     cannon: 'PURGE CANNON · IN THE AIR, HOLD {down}+{fire} TO HOVER',
     coil: 'ARC COIL · HOLD {fire} TO CHARGE, LET GO TO FIRE',
     scatter: 'SCATTER LAUNCHER · {fire} LOBS GRENADES THAT ROLL',
-    harpoon: 'GRAPPLE HARPOON · AIM AT A RING AND {fire} TO PULL UP',
+    harpoon: 'GRAPPLE HARPOON · AIM AT A RING AND {grapple} TO PULL UP',
     charges: 'BREACH CHARGES · {fire} BLOWS OPEN CRACKED WALLS',
     foam: 'FOAM SPRAYER · {fire} ON WATER SETS A PLATFORM',
   };
@@ -465,7 +465,7 @@
     // Hit-stop: a few frozen frames sell big hits. Presses made during it still count afterwards.
     if (world.freezeTime > 0) {
       world.freezeTime--;
-      for (const a of ['jump', 'fire', 'prev', 'next', 'up', 'item']) if (input.pressed[a]) world.queued[a] = true;
+      for (const a of ['jump', 'fire', 'grapple', 'prev', 'next', 'up', 'item']) if (input.pressed[a]) world.queued[a] = true;
       return;
     }
     for (const a of Object.keys(world.queued)) input.pressed[a] = true;

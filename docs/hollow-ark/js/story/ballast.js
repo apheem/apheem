@@ -98,6 +98,20 @@
     world.state.flags.flooding = true;
     world.refreshMusic();
     applyFlood(world);
+    // A fall in the flood comes back to the Valve Hall, with Solder and the water down, not to the last rest pod.
+    world.checkpoint = { room: 'valve-hall', x: 6 * 8, y: 42 * 8 - world.player.h, reset: endFlood };
+  }
+  // The water goes down as fast as it came, and Solder is back by the hero in the Valve Hall.
+  function endFlood(world) {
+    world.state.flags.flooding = false;
+    world.state.flags.solderWith = true;
+    world.floodLevel = undefined;
+    world.checkpoint = null;
+    const room = world.room;
+    for (let ty = 0; ty < room.h; ty++) for (let tx = 0; tx < room.w; tx++) if (room.tile(tx, ty) === HA.room.WATER) room.set(tx, ty, HA.room.EMPTY);
+    room.hasWater = room.hasLiquid = false;
+    if (world.def.id === 'valve-hall' && !npcOf(world, 'solder')) placeSolder(world);
+    world.refreshMusic();
   }
   // Every tile at or under the water line is water now (doors and walls stay as they are).
   function applyFlood(world) {
@@ -115,13 +129,15 @@
     world.floodLevel -= (FLOOD.start - FLOOD.top) / FLOOD.frames;
     applyFlood(world);
     if (world.time % 90 === 0) HA.audio.play('rumble');
-    // Solder can't swim with that leg: under for more than two seconds and the water has her.
+    // Solder can't swim with that leg: under for more than two seconds and the water has her. The water at the top
+    // of the hatch, or Solder lost on the way, ends it too (never a clock stopped at 0:00 with nothing happening).
     const n = npcOf(world, 'solder');
-    if (!n) return;
-    const head = world.room.tile(Math.floor((n.x + 4) / 8), Math.floor((n.y + 3) / 8)) === HA.room.WATER;
-    n.under = head ? n.under + 1 : 0;
-    if (n.under === 1) S.bark(world, n, 'SLEEPER! THE WATER!', 80);
-    if (n.under > 130 || world.floodLevel <= FLOOD.top) run(world, 'floodFail');
+    if (n) {
+      const head = world.room.tile(Math.floor((n.x + 4) / 8), Math.floor((n.y + 3) / 8)) === HA.room.WATER;
+      n.under = head ? n.under + 1 : 0;
+      if (n.under === 1) S.bark(world, n, 'SLEEPER! THE WATER!', 80);
+    }
+    if (!n || n.under > 130 || world.floodLevel <= FLOOD.top) run(world, 'floodFail');
   }
   // How long until the water reaches the top of the hatch, shown while the flood rises.
   function drawFlood(g, world) {
@@ -323,7 +339,9 @@
     *floodFail(world) {
       const s = world.state;
       s.flags.flooding = false;
+      s.flags.solderWith = true;
       world.floodLevel = undefined;
+      world.checkpoint = null;
       yield { fade: 'out', frames: 30 };
       yield { wait: 30 };
       world.enterRoom('valve-hall', 6 * 8, 42 * 8 - 14, { noSave: true, facing: 1 });
@@ -447,6 +465,7 @@
       // Through the hatch, which shuts behind; the flood stays on the other side of it.
       s.flags.flooding = false;
       world.floodLevel = undefined;
+      world.checkpoint = null;
       HA.music.play(null);
       if (s.people.solder === 'alive') {
         n.kneel = false;
@@ -623,7 +642,7 @@
       const culvert = world.def.id === 'long-culvert' || world.def.id === 'jammed-hatch';
       if (culvert && !f.flooding && !f.flooded && !world.scene && !world.transition && !world.player.dead) run(world, 'floodFail');
       if (world.tramGo) world.tramGo++;
-      if (world.def.id !== 'warrens' || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
+      if (world.def.id !== 'warrens' || f.running || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
       if (s.warrensRaid && !f.raidSeen) run(world, 'raidSeen');
       else if (s.people.solder === 'dead' && f.tram && !f.solderMourned) run(world, 'solderMourned');
     },

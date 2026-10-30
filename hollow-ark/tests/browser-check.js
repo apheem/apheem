@@ -800,12 +800,19 @@ async function play(browserType, url, label) {
       HA.debug.step(1, { down: true, jump: true });
       HA.debug.step(200);
       out.sank = p.y > 55 * 8;
-      // The Silt Mother: her moves run, she's only hurt out of the water, she drains the tank, and she falls.
+      // The Silt Mother: she waits until the hero is out over her water (from the door she can't be fought), then the
+      // shutters come down over her gates. Her moves run, she's only hurt out of the water, she drains the tank (the
+      // gantries go with the water), and she falls.
       HA.debug.goto('silt-tank', 4, 18);
+      HA.debug.step(30);
+      const shutters = () => w().doors.find((d) => d.id === 'shutters');
+      out.atDoor = { fighting: !!(w().boss && w().boss.fighting), shut: !shutters().open };
+      HA.debug.goto('silt-tank', 17, 8);
       HA.debug.step(5);
       talkThrough();
+      HA.debug.step(2);
       const b = w().boss;
-      out.fighting = b && b.fighting && HA.music.playing === 'siltMother';
+      out.fighting = b && b.fighting && HA.music.playing === 'siltMother' && !shutters().open;
       const states = new Set();
       for (let i = 0; i < 1200; i++) {
         HA.debug.step(1);
@@ -824,7 +831,7 @@ async function play(browserType, url, label) {
       };
       hurtWhenOut(140);
       HA.debug.step(200);
-      out.drained = b.phase === 2 && w().room.tile(40, 15) === HA.room.EMPTY;
+      out.drained = b.phase === 2 && w().room.tile(40, 15) === HA.room.EMPTY && w().room.tile(17, 9) === HA.room.EMPTY;
       hurtWhenOut(0);
       out.defeated = w().scene && w().scene.name;
       talkThrough();
@@ -841,6 +848,17 @@ async function play(browserType, url, label) {
       out.failed = w().scene && w().scene.name;
       talkThrough();
       out.retry = { room: w().def.id, flooding: !!s.flags.flooding, solder: !!solder() };
+      // A fall in the flood comes back to the Valve Hall with Solder, not to the rest pod with the water still rising.
+      for (let i = 0; i < 600 && !(w().scene && w().scene.name === 'flood'); i++) pace(i);
+      talkThrough();
+      HA.debug.step(20, { right: true });
+      for (let i = 0; i < 300 && p.invuln > 0; i++) HA.debug.step(1);
+      w().assist.invincible = false;
+      w().hurtPlayer(p.hp, p.x + 20);
+      for (let i = 0; i < 400 && (p.dead || w().transition); i++) HA.debug.step(1);
+      w().assist.invincible = true;
+      HA.debug.step(30);
+      out.fell = { room: w().def.id, flooding: !!s.flags.flooding, solder: !!solder(), level: w().floodLevel === undefined };
       // Then up the culvert, keeping her close, to the hatch.
       for (let i = 0; i < 600 && !(w().scene && w().scene.name === 'flood'); i++) pace(i);
       talkThrough();
@@ -884,6 +902,8 @@ async function play(browserType, url, label) {
     expect(bl.into.room === 'ballast-intake' && bl.into.area === 'FLOODED BALLAST' && bl.into.music === 'ballast' && /SOLDER/.test(bl.into.lead), `the Drain's grate did not lead into the Ballast (${JSON.stringify(bl.into)})`);
     expect(bl.found.foam && bl.found.back && bl.found.walk && bl.walk.barks >= 6 && bl.walk.door === 'workshopDoor', `finding Solder, or the walk, went wrong (${JSON.stringify(bl.found)}, ${JSON.stringify(bl.walk)})`);
     expect(bl.foam && bl.thrown && bl.boots && bl.sank, `the Foam Sprayer, the silt or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.boots}, ${bl.sank})`);
+    expect(!bl.atDoor.fighting && !bl.atDoor.shut, `the Silt Mother's fight started from the door, or her shutters were already down (${JSON.stringify(bl.atDoor)})`);
+    expect(bl.fell.room === 'valve-hall' && !bl.fell.flooding && bl.fell.solder && bl.fell.level, `a fall in the flood did not come back to the Valve Hall with Solder (${JSON.stringify(bl.fell)})`);
     expect(bl.fighting && /bite/.test(bl.states) && /lash/.test(bl.states) && /spit/.test(bl.states) && bl.underwater && bl.drained && bl.defeated === 'siltMotherDefeated', `the Silt Mother's fight went wrong (${JSON.stringify(bl)})`);
     expect(bl.after.down && bl.after.raid === 'held' && bl.after.withHer && bl.after.solder && bl.after.gates, `after the Silt Mother, Solder or the raid went wrong (${JSON.stringify(bl.after)})`);
     expect(bl.flood.flooding && bl.flood.music === 'flood' && /hallWest- culvert\+/.test(bl.flood.doors) && bl.failed === 'floodFail' && bl.retry.room === 'valve-hall' && !bl.retry.flooding && bl.retry.solder, `the flood, or its retry, went wrong (${JSON.stringify(bl.flood)}, ${bl.failed}, ${JSON.stringify(bl.retry)})`);
@@ -1196,9 +1216,10 @@ async function play(browserType, url, label) {
           },
           options: () => w().scene && w().scene.step && w().scene.step.choice && w().scene.step.choice.options.map((o) => o.label).join('/'),
           toTitle() {
+            // Skipping passes everything but the results cards, which wait for a press.
             for (let i = 0; i < 12000 && w() && !w().exitToTitle && HA.ui.mode === 'play'; i++) {
               HA.debug.skipScene();
-              HA.debug.step(1);
+              HA.debug.step(1, i % 60 === 59 ? { confirm: true } : undefined);
             }
             HA.debug.step(30);
           },
@@ -1613,8 +1634,15 @@ async function play(browserType, url, label) {
       deserter: ['COUNT: HULLFOLK, 31.', 'I LEFT MARA IN 0418.', 'COUNT: SOLDER. NOT RECORDED.'],
       dominion: ['COUNT THEM.', 'THANK YOU.', 'THEY ARE SAFER ASLEEP.'],
       overgrown: ['OLD GASKET WALKED OUT OF THE HELM ALIVE.', 'ON 0418 FIRST.', 'THE GARDENER WENT INTO THE BLOOM SHE MADE.'],
-      crash: ['COUNT: SURVIVORS, 5.', 'THE PODS CAME DOWN LIKE SEEDS.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', 'COUNT: WARDENS, 2.'],
+      crash: ['COUNT: SURVIVORS, 6.', 'THE PODS CAME DOWN LIKE SEEDS.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', 'COUNT: WARDENS, 2.'],
       homecoming: ['THE ONE IN 0417 STAYED WITH THE SHIP.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
+    };
+    const LANDED = {
+      deserter: () => ({ hullfolk: 0, sleepers: 0, mara: false, hero: true }),
+      dominion: () => ({ hullfolk: 0, sleepers: 0, mara: false, hero: false }),
+      overgrown: () => ({ hullfolk: 0, sleepers: 0, mara: false, hero: false }),
+      crash: () => ({ hullfolk: 5, sleepers: 3986, mara: true, hero: true }),
+      homecoming: (home) => ({ hullfolk: home, sleepers: 3986, mara: true, hero: false }),
     };
     for (const [id, path] of Object.entries(PATHS)) {
       if (!(await get(() => HA.ui.mode === 'play'))) {
@@ -1629,7 +1657,7 @@ async function play(browserType, url, label) {
             if (v && typeof v === 'object') Object.assign(s[k], v);
             else s[k] = v;
           }
-          const out = { branch: HA.endings.afterSteward(s), missing: HA.endings.missing(s).map((r) => r.id), lines: HA.endings.lines(id, s) };
+          const out = { branch: HA.endings.afterSteward(s), missing: HA.endings.missing(s).map((r) => r.id), lines: HA.endings.lines(id, s), landed: HA.endings.landed(s, id), home: 20 + (s.takenHome || 0) };
           HA.debug.ending(id);
           // Read every card (or skip the whole ending from the pause menu), as a player would.
           for (let i = 0; i < 400 && HA.ui.mode === 'play'; i++) {
@@ -1646,6 +1674,9 @@ async function play(browserType, url, label) {
       const lines = e.lines.join(' | ');
       for (const want of WANT[id]) expect(lines.includes(want), `the ${id} ending is missing "${want}" (${lines})`);
       if (id !== 'deserter') expect(e.branch === id, `the ${id} path led to ${e.branch} after the Steward (missing: ${e.missing})`);
+      // The results card: who reached the new world on this path (the gate fell on the Crash path: the crew and Tamp).
+      const want = LANDED[id](e.home);
+      expect(JSON.stringify(e.landed) === JSON.stringify(want), `the ${id} results counted ${JSON.stringify(e.landed)}, not ${JSON.stringify(want)}`);
       expect(e.title && e.seen.includes(id), `the ${id} ending did not finish at the title and get recorded (${JSON.stringify({ title: e.title, seen: e.seen })})`);
     }
     await shot('endings');

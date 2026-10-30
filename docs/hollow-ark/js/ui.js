@@ -387,8 +387,9 @@
       ['MOVE', 'ARROWS / WASD', 'STICK / D-PAD'],
       ['JUMP', 'Z / SPACE / J', 'A'],
       ['FIRE', 'X / K', 'X / B / RT'],
+      ['GRAPPLE', 'C / I', 'LT'],
       ['AIM', 'UP / DOWN IN AIR', 'STICK / D-PAD'],
-      ['WEAPON', 'Q E  (OR C V)', 'LB / RB'],
+      ['WEAPON', 'Q E  (OR U O)', 'LB / RB'],
       ['EAT A BLOOM BULB', 'F / L', 'Y'],
       ['DROP DOWN', 'DOWN + JUMP', 'DOWN + A'],
       ['TALK, READ, REST', 'UP', 'UP'],
@@ -401,7 +402,7 @@
     HA.font.draw(g, 'KEYBOARD', px + 104, py + 21, '#6c7894');
     HA.font.draw(g, 'CONTROLLER', px + 206, py + 21, '#6c7894');
     rows.forEach((r, i) => {
-      const y = py + 32 + i * 10;
+      const y = py + 32 + i * 9;
       HA.font.draw(g, r[0], px + 8, y, '#9fb6c8');
       HA.font.draw(g, r[1], px + 104, y, '#eef4f6');
       HA.font.draw(g, r[2], px + 206, y, '#eef4f6');

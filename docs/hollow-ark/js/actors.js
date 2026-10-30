@@ -157,6 +157,7 @@
     }
     p.fireWasHeld = fire.held;
     HA.weapons.update(world, fire, input);
+    HA.weapons.grapple(world, pressed.grapple, input);
 
     // Move and collide (unless the grapple is winching the hero in, or holding them)
     const fallSpeed = p.vy;

@@ -75,6 +75,74 @@
     return 20 + (s.takenHome || 0);
   }
 
+  // ---- Who reached the new world, out of everyone who could have: the results after the credits ----
+  // The Warrens are twenty, plus the taken who came home from the Gardens (eleven at most). The sleepers are
+  // every pod still in the stacks. Every number follows a line the epilogue says.
+  const HULLFOLK_MOST = 20 + 11;
+  const SLEEPERS = 3986;
+  function landed(s, id) {
+    const pods = id === 'homecoming' || (id === 'crash' && s.podsLaunched > 0);
+    let hullfolk = 0;
+    if (id === 'homecoming') hullfolk = hullfolkCount(s); // "THE WARRENS CAME DOWN WHOLE", or those who hid came too
+    // On the sleds the whole village made it if the gate held; if it fell, only the few left (the crew and Tamp).
+    if (id === 'crash') hullfolk = s.warrensRaid === 'fell' ? Math.min(hullfolkCount(s), s.crew + 1) : hullfolkCount(s);
+    return {
+      hullfolk,
+      sleepers: pods ? SLEEPERS : 0,
+      mara: pods,
+      hero: id === 'crash' || id === 'deserter' || (id === 'homecoming' && s.people.navigator !== 'stay'),
+    };
+  }
+
+  // Long lines broken to fit the screen.
+  function wrap(text, width = HA.VIEW_W - 24) {
+    const out = [];
+    let line = '';
+    for (const word of text.split(' ')) {
+      const next = line ? line + ' ' + word : word;
+      if (line && HA.font.measure(next) > width) {
+        out.push(line);
+        line = word;
+      } else line = next;
+    }
+    if (line) out.push(line);
+    return out;
+  }
+
+  const yes = (ok) => (ok ? 'YES' : 'NO');
+  function resultCard(s, id) {
+    const got = landed(s, id);
+    const n = released(s);
+    return [
+      ['ENDING · ' + NAMES[id], '#ffb84d'],
+      [seenLine(s.endingsSeen), DIM],
+      '',
+      ['WHO REACHED THE NEW WORLD', DIM],
+      { a: 'HULLFOLK', b: got.hullfolk + ' OF ' + HULLFOLK_MOST },
+      { a: 'SLEEPERS', b: got.sleepers + ' OF ' + SLEEPERS },
+      { a: 'MARA', b: yes(got.mara) },
+      { a: 'YOU', b: yes(got.hero) },
+      '',
+      { a: 'WARDENS FREED', b: n + ' OF 3' },
+      { a: 'MERCY · BLOOM', b: s.mercy + ' · ' + s.bloom },
+    ];
+  }
+
+  // What closed the way to Homecoming, in the journal's own words (Part 4: "the journal notes it afterward").
+  function closedCard(s, id) {
+    if (id === 'homecoming') return null;
+    const why = [];
+    if (id === 'deserter') why.push('I TOOK THE BOAT, AND LEFT THE REST OF IT UNFINISHED.');
+    if (id === 'overgrown') why.push('THE BLOOM HAD TOO MUCH OF ME BY THE END.');
+    if (id === 'dominion') why.push('BY THE END I WANTED THE KEY MORE THAN THE GROUND.');
+    if (id !== 'deserter') for (const r of missing(s)) if (!why.includes(r.line)) why.push(r.line);
+    if (!why.length) return null;
+    const lines = [['WHAT CLOSED THE OTHER WAY', DIM], ''];
+    for (const w of why) lines.push(...wrap(w).map((l) => [l, VOICE]), '');
+    lines.pop();
+    return lines;
+  }
+
   const EPILOGUES = {
     homecoming(s) {
       const stayed = s.people.navigator === 'stay';
@@ -96,7 +164,7 @@
     crash(s) {
       const pods = s.podsLaunched > 0;
       return [
-        count('COUNT: SURVIVORS, ' + (s.crew + 1) + '.'),
+        count('COUNT: SURVIVORS, ' + (landed(s, 'crash').hullfolk + 1) + '.'),
         pods ? card('THE PODS CAME DOWN LIKE SEEDS.', 'MOST OF THEM OPENED.') : card('THE POD STACKS WENT DOWN WITH THE ARK.'),
         pods ? voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE SHE WOKE.') : voice("I PROMISED I'D BE THERE WHEN MARA WOKE."),
         shimCard(s, 'SHIM STOOD ON THE GROUND. IT WAS STILL BURNING.'),
@@ -204,14 +272,18 @@
     HA.music.play(null);
     yield { wait: 40 };
     for (const c of CLOSING[id]) yield step(c, c.space ? 40 : undefined);
+    yield { card: [['ENDING · ' + NAMES[id], '#ffb84d']], hold: 160 };
     if (id === 'crash' || id === 'homecoming') HA.music.play('title');
     for (const c of EPILOGUES[id](s)) yield step(c, c.space ? 40 : undefined);
     HA.music.play('title');
     for (const lines of CREDITS) yield { card: lines, hold: 180, space: true };
     record(s, id);
     world.save();
-    yield { card: [['ENDING · ' + NAMES[id], '#ffb84d'], '', seenLine(s.endingsSeen)], hold: 300 };
-    yield { card: runCard(s), hold: 420, gap: 11 };
+    // The results wait for a press, so they can be read (and photographed) however the credits were skipped.
+    yield { card: resultCard(s, id), press: true, gap: 11 };
+    const closed = closedCard(s, id);
+    if (closed) yield { card: closed, press: true, gap: 11 };
+    yield { card: runCard(s), press: true, gap: 11 };
     world.exitToTitle = true;
   }
 
@@ -228,5 +300,5 @@
     return all.flatMap((c) => c.lines.map((l) => (Array.isArray(l) ? l[0] : l)));
   }
 
-  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, play, lines, seenLine, runCard };
+  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, play, lines, seenLine, runCard, resultCard, closedCard, landed };
 })(window.HA);
