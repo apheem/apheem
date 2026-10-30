@@ -33,3 +33,4 @@ Their words are in the session log; the story audit doc is [here](https://claude
 ## Log
 
 - **Oct 30:** 0.3.9 merged. Cody answered the audit. Plan written into `STORYBOARD.md` (3.10 and the Mara section); this file started.
+- **Oct 30:** `js/pictures.js`: four dream scenes (`pods`, `list`, `tickets`, `boarding`) and the epilogue's scenes. Every ending's cards have pictures, and Mara's cards name her as the hero's sister. To see them all: the contact-sheet approach is to call `HA.pictures.draw` / `HA.pictures.dream` on a 320x180 canvas in the page; `HA.endings.epilogue(id, state)` gives an ending's cards.

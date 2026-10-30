@@ -851,9 +851,9 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 
 ### 3.10 Cody's calls on the story audit
 Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through dreams; upgrades are option B (spare shards bank as scrap); the main path stays at 4–6 hours plus side content, and a first-time player's photo doesn't block the build; deaths and choices can lock a main path so the hero goes round a harder way, and can close side content; the epilogue gets pictures now. Difficulty modes, and making upgrades matter more in them, come later. `HANDOFF.md` says where the work stands between sessions.
-- [ ] A picture layer behind cards and dream scenes (pixel art drawn in code)
+- [x] A picture layer behind cards and dream scenes (pixel art drawn in code: `js/pictures.js`; a card takes `pic`, a scene can `yield { dream }`)
 - [ ] Mara: the opening voice, the turn to 0418 and the refused thaw, Shim's "NOT A GHOST.", four dreams on the story's four nights, the list items while awake, the lines from Wick, the Tallyman and Gasket, the LATE line, the reveal in the First Night hall and in every epilogue
-- [ ] Pictures behind the epilogue cards, all five endings
+- [x] Pictures behind the epilogue cards, all five endings (and each ending's Mara card says "sister")
 - [ ] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades
 - [ ] Routes that close: a death or a choice shuts a main way and a harder way round opens (design first, in `DECISIONS.md`)
 - [ ] The rest of the audit's story fixes: Shim on every path (4), the villains set up early (6), the small payoffs (7)

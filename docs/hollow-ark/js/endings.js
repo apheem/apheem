@@ -37,21 +37,23 @@
   }
   const count = (...lines) => ({ lines: lines.map((l) => [l, COUNT]) });
   const voice = (...lines) => ({ lines: lines.map((l) => [l, VOICE]) });
+  // A picture behind a card (pictures.js), with its variant.
+  const pic = (c, name, opts = {}) => Object.assign(c, { pic: name, picOpts: opts });
+  const BLOOM = '#f27ad8'; // what the Bloom left of the hero
 
-  function warrensCard(s, whole, fell) {
-    if (s.warrensRaid === 'fell') return card(fell);
-    return card(whole);
+  function warrensCard(s, whole, fell, opts) {
+    return pic(card(s.warrensRaid === 'fell' ? fell : whole), 'warrens', Object.assign({ few: s.warrensRaid === 'fell' }, opts));
   }
 
-  function shimCard(s, line) {
+  function shimCard(s, line, opts) {
     const lantern = s.toldShim === 'truth' || s.shimKnows === true;
-    return lantern ? card(line, ["HE CARRIED HIS MOTHER'S LANTERN.", DIM]) : card(line);
+    return pic(lantern ? card(line, ["HE CARRIED HIS MOTHER'S LANTERN.", DIM]) : card(line), 'shim', Object.assign({ lantern }, opts));
   }
 
   function wardensCount(s) {
     const n = released(s);
-    if (n === 3) return [count('COUNT: WARDENS, 3.', 'NAMES: REMEMBERED.'), count('MY NAME WAS USHER.', 'I SHOWED THEM TO THEIR BEDS.')];
-    if (n > 0) return [count('COUNT: WARDENS, ' + n + '.', 'NAMES: REMEMBERED.')];
+    if (n === 3) return [pic(count('COUNT: WARDENS, 3.', 'NAMES: REMEMBERED.'), 'wardens', { n }), pic(count('MY NAME WAS USHER.', 'I SHOWED THEM TO THEIR BEDS.'), 'wardens', { n })];
+    if (n > 0) return [pic(count('COUNT: WARDENS, ' + n + '.', 'NAMES: REMEMBERED.'), 'wardens', { n })];
     return [count('COUNT: WARDENS, 0.', 'NAMES: NOT RECORDED.')];
   }
 
@@ -146,31 +148,35 @@
   const EPILOGUES = {
     homecoming(s) {
       const stayed = s.people.navigator === 'stay';
+      // Mara's cards say at last what she is to the hero (STORYBOARD.md, "Mara, and the dreams").
+      const mara = stayed
+        ? [pic(card('MARA WOKE ALONE. THEY TOLD HER:', ['THE ONE IN 0417 STAYED WITH THE SHIP.', DIM]), 'mara', { alone: true, night: true }), pic(voice('SHE HAS HER SKY. I KEPT THE SHIP COMPANY.', 'FORGIVE ME FOR BEING LATE, LITTLE SISTER.'), 'mara', { alone: true, night: true })]
+        : [pic(voice('MARA WOKE UNDER A REAL SKY.', "I WAS THE FIRST THING SHE SAW. I WASN'T LATE."), 'mara', { hero: true, list: true }), pic(card('THAT NIGHT WE SLEPT OUTSIDE.', ['MY SISTER AND ME. WE LEFT ROOM FOR A THIRD.', DIM]), 'mara', { hero: true, night: true })];
       const out = [
         shimCard(s, 'SHIM STOOD ON THE GROUND. NOT A FLOOR.'),
-        card('OLD GASKET BREATHED OUT.'),
-        card("SOLDER BUILT THE FIRST CITY'S FIRST GATE.", 'IT OPENS FROM BOTH SIDES.'),
+        pic(card('OLD GASKET BREATHED OUT.'), 'gasket'),
+        pic(card("SOLDER BUILT THE FIRST CITY'S FIRST GATE.", 'IT OPENS FROM BOTH SIDES.'), 'gate'),
         warrensCard(s, 'THE WARRENS CAME DOWN WHOLE, LANTERNS AND ALL.', 'THE ONES WHO HID IN THE DEEP WALLS CAME DOWN TOO.'),
         ...wardensCount(s),
-        card('THE PODS OPENED UNDER A REAL SKY.'),
-        stayed ? card('MARA WOKE ALONE. THEY TOLD HER:', ['THE ONE IN 0417 STAYED WITH THE SHIP.', DIM]) : voice('MARA WOKE UNDER A REAL SKY.', 'I WAS THERE, LIKE I PROMISED.'),
+        pic(card('THE PODS OPENED UNDER A REAL SKY.'), 'sleepers'),
+        ...mara,
       ];
-      if (stayed) out.push({ lines: [['NOT ALONE.', NAV]] });
-      else if (s.people.navigator === 'core') out.push(card("THE NAVIGATOR'S CORE LIT A SCHOOL.", 'IT HUMMED AT NIGHT.'));
-      else out.push({ lines: [['THE NAVIGATOR SLEPT.', NAV]] });
+      if (stayed) out.push(pic({ lines: [['NOT ALONE.', NAV]] }, 'navigator'));
+      else if (s.people.navigator === 'core') out.push(pic(card("THE NAVIGATOR'S CORE LIT A SCHOOL.", 'IT HUMMED AT NIGHT.'), 'navigator', { school: true }));
+      else out.push(pic({ lines: [['THE NAVIGATOR SLEPT.', NAV]] }, 'navigator'));
       return out.concat(others(s));
     },
 
     crash(s) {
       const pods = s.podsLaunched > 0;
       return [
-        count('COUNT: SURVIVORS, ' + (landed(s, 'crash').hullfolk + 1) + '.'),
-        pods ? card('THE PODS CAME DOWN LIKE SEEDS.', 'MOST OF THEM OPENED.') : card('THE POD STACKS WENT DOWN WITH THE ARK.'),
-        pods ? voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE SHE WOKE.') : voice("I PROMISED I'D BE THERE WHEN MARA WOKE."),
-        shimCard(s, 'SHIM STOOD ON THE GROUND. IT WAS STILL BURNING.'),
-        card('OLD GASKET COUNTED THEM AT LIGHTS-OUT, LIKE ALWAYS.'),
-        solderAlive(s) ? card('SOLDER STARTED ON A GATE', 'BEFORE THE FIRES WERE OUT.') : card("SOLDER'S GATE WENT DOWN WITH THE ARK."),
-        warrensCard(s, 'THE WARRENS RODE THE SLEDS DOWN TOGETHER.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.'),
+        pic(count('COUNT: SURVIVORS, ' + (landed(s, 'crash').hullfolk + 1) + '.'), 'warrens', { sleds: true, few: s.warrensRaid === 'fell' }),
+        pods ? pic(card('THE PODS CAME DOWN LIKE SEEDS.', 'MOST OF THEM OPENED.'), 'sleepers', { falling: true }) : pic(card('THE POD STACKS WENT DOWN WITH THE ARK.'), 'sleepers', { dark: true }),
+        pods ? pic(voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE MY SISTER WOKE.'), 'mara', { grass: true, hero: true }) : voice("I PROMISED I'D BE THERE WHEN MARA WOKE.", 'MY LITTLE SISTER. SHE NEVER DID.'),
+        shimCard(s, 'SHIM STOOD ON THE GROUND. IT WAS STILL BURNING.', { burning: true }),
+        pic(card('OLD GASKET COUNTED THEM AT LIGHTS-OUT, LIKE ALWAYS.'), 'gasket', { fire: true }),
+        solderAlive(s) ? pic(card('SOLDER STARTED ON A GATE', 'BEFORE THE FIRES WERE OUT.'), 'gate') : card("SOLDER'S GATE WENT DOWN WITH THE ARK."),
+        warrensCard(s, 'THE WARRENS RODE THE SLEDS DOWN TOGETHER.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', { sleds: true }),
         ...wardensCount(s),
         ...others(s),
         { lines: [], space: true, ark: { x: 124, y: 78, s: 2, broken: 1 } },
@@ -179,12 +185,13 @@
 
     dominion(s) {
       return [
-        card('THE HULLFOLK SEALED THEIR GATE', 'AND HELD THEIR BREATH.'),
+        pic(card('THE HULLFOLK SEALED THEIR GATE', 'AND HELD THEIR BREATH.'), 'shaft'),
         card('OLD GASKET NEVER SAID MY NAME AGAIN.'),
-        solderAlive(s) ? card('SOLDER BUILT A GATE THAT OPENED', 'FROM ONE SIDE ONLY. THEIRS.') : card('NO ONE BUILT THE WARRENS A NEW GATE.'),
-        count('COUNT: WARDENS, ALL.', 'FOR THE NEW HOLDER.'),
+        solderAlive(s) ? pic(card('SOLDER BUILT A GATE THAT OPENED', 'FROM ONE SIDE ONLY. THEIRS.'), 'gate', { shut: true }) : card('NO ONE BUILT THE WARRENS A NEW GATE.'),
+        pic(count('COUNT: WARDENS, ALL.', 'FOR THE NEW HOLDER.'), 'wardens', { holder: true }),
         voice('THEY ARE SAFER ASLEEP.'),
-        card('THE SLEEPERS STAYED ASLEEP.', ['MARA AMONG THEM.', DIM]),
+        pic(card('THE SLEEPERS STAYED ASLEEP.', ['MARA AMONG THEM.', DIM]), 'sleepers', { dark: true }),
+        pic(voice('I HAD THE KEY. I COULD HAVE WOKEN MY SISTER.', 'I TOLD MYSELF SHE WAS SAFER ASLEEP.'), 'sleepers', { dark: true }),
         ...others(s),
         { lines: ['THE SHIP KEPT CIRCLING.'], space: true, ark: { x: 124, y: 104, s: 1 } },
       ];
@@ -194,9 +201,10 @@
       const fighter = solderAlive(s) ? 'SOLDER' : 'OLD GASKET';
       return [
         card(fighter + ' WALKED OUT OF THE HELM ALIVE.', "SHE DIDN'T TALK ABOUT IT."),
-        card('SHIM STOPPED ASKING ABOUT THE GROUND.'),
+        pic(card('SHIM STOPPED ASKING ABOUT THE GROUND.'), 'shaft'),
         card('THE WARRENS WENT BACK INTO HIDING.'),
-        card('PINK FUNGUS GREW ON THE POD GLASS.', ['ON 0418 FIRST.', DIM]),
+        pic(card('PINK FUNGUS GREW ON THE POD GLASS.', ['ON 0418 FIRST.', DIM]), 'mara', { pink: true }),
+        pic({ lines: [["I'M RIGHT HERE, LITTLE SISTER.", BLOOM], ["I'M NOT LATE.", BLOOM]] }, 'mara', { pink: true, hero: true }),
         ...wardensCount(s),
         ...others(s),
         { lines: [['NOT YET.', NAV]] },
@@ -214,9 +222,9 @@
         count(solder),
         count(...shim),
         { lines: [['...', COUNT]], hold: 90 },
-        voice('I LANDED ALONE. THE FIRST PERSON ON THE NEW WORLD,', '232 YEARS LATE, WITH NO ONE TO TELL.'),
-        voice('I STOOD ON THE GROUND. NOT A FLOOR.'),
-        voice('I LEFT MARA IN 0418.'),
+        pic(voice('I LANDED ALONE. THE FIRST PERSON ON THE NEW WORLD,', '232 YEARS LATE, WITH NO ONE TO TELL.'), 'boat'),
+        pic(voice('I STOOD ON THE GROUND. NOT A FLOOR.'), 'boat'),
+        pic(voice('I LEFT MARA IN 0418.', "MY LITTLE SISTER. SHE'LL WAKE WITHOUT ME."), 'sleepers', { dark: true }),
       ];
     },
   };
@@ -249,7 +257,7 @@
     ['THANK YOU FOR PLAYING.'],
   ];
 
-  const step = (c, top) => ({ card: c.lines, hold: c.hold || 200, space: c.space, ark: c.ark, world: c.world, top: c.top !== undefined ? c.top : top });
+  const step = (c, top) => ({ card: c.lines, hold: c.hold || (c.pic ? 240 : 200), space: c.space, ark: c.ark, world: c.world, pic: c.pic, picOpts: c.picOpts, top: c.top !== undefined ? c.top : top });
 
   function record(s, id) {
     s.ending = id;
@@ -300,5 +308,5 @@
     return all.flatMap((c) => c.lines.map((l) => (Array.isArray(l) ? l[0] : l)));
   }
 
-  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, play, lines, seenLine, runCard, resultCard, closedCard, landed };
+  HA.endings = { NAMES, ORDER, REQUIREMENTS, missing, afterSteward, run, play, lines, seenLine, runCard, resultCard, closedCard, landed, epilogue: (id, s) => EPILOGUES[id](s), step };
 })(window.HA);
