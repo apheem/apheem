@@ -1,5 +1,6 @@
 'use strict';
 // The Hullfolk Warrens: the village inside the ship's walls. Warm lanterns, patched cloth, scrawled walls.
+// Map legend beyond the shared one: 1-6 the Hullfolk   D the gate   L the Garden Lift's stop   h the floor hatch
 (function (HA) {
   HA.rooms.area('warrens', { name: 'HULLFOLK WARRENS', theme: 'warrens', music: 'warrens', mapColor: '#ffb84d' });
 
@@ -74,26 +75,44 @@
     legend: {
       1: { type: 'npc', id: 'gasket', name: 'Old Gasket' },
       2: { type: 'npc', id: 'wick', name: 'Wick', when: (s) => !s.flags.goodbye },
-      3: { type: 'npc', id: 'solder', name: 'Solder' },
+      // Solder goes down the floor hatch the night after the hero comes home from the Gardens.
+      3: { type: 'npc', id: 'solder', name: 'Solder', when: (s) => !s.flags.solderLeft },
       4: { type: 'npc', id: 'shim', name: 'Shim', when: (s) => !s.flags.raid || s.flags.reunion },
       5: { type: 'npc', id: 'tamp', name: 'a villager' },
       6: { type: 'npc', id: 'brine', name: 'a villager' },
-      D: { type: 'door', id: 'gate', open: (s) => !!s.flags.raid },
+      // The raid blew the gate open. Solder's new one opens from the Hullfolk's side: Tamp lets the hero through.
+      D: { type: 'door', id: 'gate', open: (s) => !!s.flags.raid, kept: (s) => !!s.flags.newGate },
+      // The old crew's lift up to the Gardens, locked by the Steward until the cradles open.
+      L: { type: 'lift', name: 'the Garden Lift', to: 'garden-lift' },
+      // Down to the sump and the keel tram. Solder opens it the night she leaves.
+      h: { type: 'hatch', name: 'the floor hatch', to: 'sump', open: (s) => !!s.flags.hatch },
     },
     noRespawn: true,
     scenery: [
       { kind: 'homes', at: [[22, 9], [28, 9], [52, 8], [60, 8], [82, 9], [90, 9], [8, 15], [70, 15]] },
+      { kind: 'liftshaft', x: 65, y: 19, color: '#1a120c' },
       { kind: 'lanterns', y: 4, every: 12 },
       { kind: 'fire', x: 41, y: 18 },
       { kind: 'workbench', x: 86, y: 18 },
       { kind: 'scrawl', x: 66, y: 5, text: 'COUNT THE CHILDREN AT LIGHTS-OUT' },
       { kind: 'scrawl', x: 102, y: 6, text: 'NO FURTHER' },
+      { kind: 'scrawl', x: 8, y: 6, text: 'MANY HANDS. COUNT THEM.' },
       { kind: 'hazard', x: 110, y: 15, w: 5, h: 4 },
     ],
     // Solder explains shards in her own words. The exact rule sits on the wall above her bench.
     hints: [{ x: 64, y: 14, text: 'A HIT COSTS SHARDS · NEVER MORE THAN ONE LEVEL', when: (w) => w.state.flags.metHullfolk && w.player.weapons.length > 0 }],
-    triggers: [{ x0: 3, x1: 14, when: (s) => !s.flags.metHullfolk, run: 'meetHullfolk' }],
-    onRest: (world) => world.state.flags.metHullfolk && !world.state.flags.raid && 'raid',
+    triggers: [
+      { x0: 3, x1: 14, when: (s) => !s.flags.metHullfolk, run: 'meetHullfolk' },
+      // Home from the Gardens, without Wick.
+      { x0: 30, x1: 76, when: (s) => !!s.flags.wickDead && !s.flags.homeAgain, run: 'homeAgain' },
+    ],
+    // Resting here starts the night of the raid, and later the night Solder leaves.
+    onRest(world) {
+      const f = world.state.flags;
+      if (f.metHullfolk && !f.raid) return 'raid';
+      if (f.pistolDone && !f.climbPlanned) return 'solderLeaves';
+      return null;
+    },
     map: [
       '########################################################################################################################',
       '########################################################################################################################',
@@ -113,11 +132,60 @@
       '............................................=====...............................................................DD......',
       '...............=====..........................................................................=====.............DD......',
       '................................................................................................................DD......',
-      '...............................4....1...............................................3...............S...........DD......',
+      '...............................4....1............................L............h.....3...............S...........DD......',
       '########################################################################################################################',
       '########################################################################################################################',
       '########################################################################################################################',
       '########################################################################################################################',
+    ],
+  });
+
+  // The sump, under the village: the old crew's keel tram, dead at its platform, and the way on into the Cargo
+  // Labyrinth. Reached by the floor hatch by Solder's bench, once she opens it.
+  HA.rooms.add({
+    id: 'sump',
+    area: 'warrens',
+    name: 'THE SUMP',
+    gx: 80,
+    gy: 69,
+    music: 'warrensEdge',
+    legend: {
+      T: { type: 'log', id: 'tram' },
+      h: { type: 'hatch', name: 'the ladder up', to: 'warrens', up: true },
+    },
+    unbuilt: { left: 'THE CARGO LABYRINTH' },
+    scenery: [
+      { kind: 'pipes', y: 4 },
+      { kind: 'tram', x: 50, y: 18, tunnel: 68, x1: 78 },
+      { kind: 'chalk', x: 3, y: 11, text: 'GONE FOR A MOTOR.' },
+      { kind: 'chalk', x: 3, y: 12.2, text: 'FOLLOW THE CHALK. S' },
+      { kind: 'chalk', x: 3, y: 14, text: '←' },
+      { kind: 'hazard', x: 66, y: 19, w: 12, h: 1 },
+    ],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
+      '##########............................................................##########',
+      '######....................................................................######',
+      '####........................................................................####',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##..........................f.................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##.......................................................=====................##',
+      '##............................................................................##',
+      '##..............======..............................................=====.....##',
+      '##..................B.........................................................##',
+      '..........................................................=====...............##',
+      '...........=====..........................=====...............................##',
+      '..............................................................................##',
+      '..............c.......................h.......T.................c.............##',
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
     ],
   });
 })(window.HA);

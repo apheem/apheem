@@ -12,6 +12,16 @@
         { cd: 8, speed: 5.5, range: 165, dmg: 3, pierce: 2, len: 6, twin: true },
       ],
     },
+    // Solder's upgrade of the pistol (choice 5): twin bolts from level 1, piercing from level 2, twice the rate at 3.
+    repeater: {
+      name: 'RIVET REPEATER',
+      caps: [8, 18, 30],
+      levels: [
+        { cd: 9, speed: 4.6, range: 110, dmg: 2, pierce: 0, len: 4, twin: true },
+        { cd: 8, speed: 5.2, range: 140, dmg: 3, pierce: 1, len: 6, twin: true },
+        { cd: 4, speed: 5.6, range: 170, dmg: 3, pierce: 2, len: 6, twin: true },
+      ],
+    },
     cannon: {
       name: 'PURGE CANNON',
       caps: [10, 22, 36],
@@ -134,7 +144,7 @@
     const L = def.levels[w.level - 1];
     if (p.cooldown > 0) p.cooldown--;
 
-    if (w.id === 'pistol') {
+    if (w.id === 'pistol' || w.id === 'repeater') {
       if (p.cooldown <= 0 && (fire.pressed || fire.held)) {
         firePistol(world, L, w.level);
         p.cooldown = fire.pressed ? L.cd : Math.round(L.cd * 1.6);

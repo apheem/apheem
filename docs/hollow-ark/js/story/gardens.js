@@ -365,7 +365,8 @@
       yield* gardenerOffer(world);
     },
 
-    // The Garden Lift: locked until the cradles open, then the hero won't leave without Wick.
+    // The Garden Lift, between the Gardens and the Warrens: locked until the cradles open, and the hero won't
+    // ride it home without Wick. Then it runs both ways.
     *lift(world) {
       const s = world.state;
       if (!s.flags.cradles) {
@@ -373,12 +374,17 @@
         yield say('GARDEN LIFT', 'LOCKED. CREW ONLY. AUTHORITY: THE STEWARD.', STEWARD);
         return;
       }
-      if (!s.flags.wickDead) {
+      const down = world.def.id === 'garden-lift';
+      if (down && !s.flags.wickDead) {
         yield me('NOT WITHOUT WICK.');
         return;
       }
-      yield me('HOME. I HAVE TO TELL THEM.');
-      world.toast('THE WARRENS RETURN · COMING IN THE NEXT BUILD', 220);
+      if (down && !s.flags.homeAgain) yield me('HOME. I HAVE TO TELL THEM.');
+      HA.audio.play('lift');
+      yield { fade: 'out', frames: 30 };
+      yield { wait: 40 };
+      world.travel(world.link);
+      yield { fade: 'in', frames: 30 };
     },
   };
 
@@ -557,12 +563,13 @@
       }
     },
 
-    // No music from Wick's collapse until the hero is home. The Pruner and Wick each have their own track.
+    // No music from Wick's collapse until the hero is home (Phase 3.2). The Pruner and Wick each have their own
+    // track.
     music(world) {
       const s = world.state;
       const f = s.flags;
       const id = world.def.id;
-      if (f.wickFought && (world.def.area === 'gardens' || world.def.area === 'lockup')) return null;
+      if (f.wickFought && !f.homeAgain && (world.def.area === 'gardens' || world.def.area === 'lockup')) return null;
       const b = world.boss;
       if (id === 'seal-room' && b && !s.wardens.pruner) return b.fighting ? 'pruner' : b.active || b.broken ? null : undefined;
       if (id === 'vat-house' && b) return b.fighting ? 'wick' : b.active ? null : undefined;

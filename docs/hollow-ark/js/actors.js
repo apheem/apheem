@@ -219,6 +219,8 @@
     ctx.save();
     ctx.translate(cx, top);
     ctx.scale(p.facing, 1);
+    // Wick's lantern hangs at the hero's back hip from the cradles until it's given to Shim (once it's off the floor).
+    if (world.state.flags.lantern && !flash && !world.actors.some((a) => a.kind === 'lantern')) HA.scenery.miniLantern(ctx, -8, 9 + (spr === H.kneel ? 2 : 0));
     ctx.drawImage(img, -6, 0);
     // A bulb's rush: the suit glows pink while the double damage lasts, and flickers as it runs out.
     if (p.rush > 0 && !flash && (p.rush > 180 || Math.floor(p.rush / 8) % 2)) {

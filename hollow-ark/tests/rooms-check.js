@@ -4,8 +4,9 @@
 // tries runs, jumps, drops, swims and, where a room asks for them, Purge Cannon hovers, thruster burns and
 // grapple pulls from each one, and checks that:
 //   - every opening at a room's edge lines up with an opening in the next room, with a floor to land on;
-//   - from any entrance, every other entrance and every item, person, terminal and rest pod can be reached
-//     with the abilities the hero always has by then (the room's `abilities`);
+//   - from any entrance (an edge, or a lift or hatch from another room), every other entrance and every item,
+//     person, terminal and rest pod can be reached with the abilities the hero always has by then (the room's
+//     `abilities`);
 //   - secrets that need something (`secret: n` for a level n Purge Cannon, or `needs: { thruster, grapple,
 //     boots }`) can't be reached without it, and can with it; a door with `needs` (a hatch the grapple pulls)
 //     keeps the exit behind it shut without the ability, and open with it;
@@ -430,6 +431,10 @@ function checkRoom(def) {
   }
   const entries = exits.map((e) => ({ exit: e, x: e.side === 'left' ? 0 : def.w * 8 - 8, y: (e.b + 1) * 8 - 14 }));
   for (const s of room.spawns) if (s.type === 'P') entries.push({ start: true, x: s.x, y: s.y + 8 - 14 });
+  // A lift or a hatch from another room is a way in, and a way out that must stay in reach from every other way in.
+  const linkChars = legendChars(def, (l) => l.type === 'lift' || l.type === 'hatch');
+  const links = targets.filter((t) => linkChars.includes(t.id[0]));
+  for (const t of links) entries.push({ link: t, x: t.x + 4, y: t.y + 16 - 14 });
   if (!entries.length) {
     fail(def, 'has no way in');
     return;
@@ -444,9 +449,10 @@ function checkRoom(def) {
       return side === e.side && +row >= e.a && +row <= e.b;
     });
   for (const entry of entries) {
-    const from = entry.start ? 'start' : entry.exit.id;
+    const from = entry.start ? 'start' : entry.link ? entry.link.name.replace(/^the /, '') : entry.exit.id;
     const gate = entry.exit && entry.exit.needs;
-    const { exitsHit } = reachability(def, gate ? room : shut, gate ? Object.assign({}, base, gate) : base, [entry], []);
+    const { exitsHit, reached } = reachability(def, gate ? room : shut, gate ? Object.assign({}, base, gate) : base, [entry], links);
+    for (const t of links) if (t !== entry.link && !reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id} from the ${from}`);
     for (const e of exits) {
       if (e === entry.exit) continue;
       const ok = reaches(exitsHit, e);

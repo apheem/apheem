@@ -186,6 +186,13 @@
     };
 
     world.save = () => HA.save.write(world);
+    // A lift or a hatch takes the hero to its other end, in another room: the spot whose legend leads back here.
+    world.travel = (link) => {
+      const def = HA.rooms.byId[link.legend.to];
+      const ch = Object.keys(def.legend || {}).find((c) => def.legend[c].to === world.def.id);
+      const ty = def.map.findIndex((row) => row.includes(ch));
+      enterRoom(world, def.id, def.map[ty].indexOf(ch) * 8, ty * 8 + 8 - world.player.h, { facing: world.player.facing });
+    };
     world.refreshMusic = () => HA.music.play(musicFor(world));
     world.enterRoom = (id, x, y, opts) => enterRoom(world, id, x, y, opts);
   }
@@ -213,7 +220,7 @@
     world.logs = [];
     world.doors = [];
     world.hooks = [];
-    world.lifts = [];
+    world.links = [];
     world.glass = [];
     world.barks = [];
     world.actors = [];
@@ -250,7 +257,8 @@
       else if (legend.type === 'glass') {
         world.room.set(sp.tx, sp.ty, HA.room.SOLID);
         world.glass.push({ tx: sp.tx, ty: sp.ty });
-      } else if (legend.type === 'lift') world.lifts.push({ x: sp.x - 8, y: sp.y + 8 - 22, w: 24, h: 22 });
+      } else if (legend.type === 'lift') world.links.push({ legend, tx: sp.tx, ty: sp.ty, x: sp.x - 8, y: sp.y + 8 - 22, w: 24, h: 22 });
+      else if (legend.type === 'hatch') world.links.push({ legend, tx: sp.tx, ty: sp.ty, x: sp.x - 4, y: sp.y + 8 - 16, w: 16, h: 16 });
       else if (ch === 'o') world.hooks.push({ x: sp.x + 4, y: sp.y + 4 });
       else if (legend.type === 'boss') world.bossSpawn = { x: sp.x + 4, y: sp.y + 8 };
       else if (legend.type === 'cage') world.cage = { x: sp.x - 8, y: sp.y - 8, w: 24, h: 22, open: false, t: 0 };
@@ -264,7 +272,6 @@
       const x1 = (Math.max(...xs) + 1) * 8;
       world.hooks.push({ x: (x0 + x1) / 2, y: c.ty * 8 + 4, hatch: d.legend.ring, x0, x1 });
     }
-    updateDoors(world, true);
 
     const p = world.player;
     p.x = x;
@@ -276,6 +283,7 @@
       p.vy = 0;
     }
     if (opts.facing) p.facing = opts.facing;
+    updateDoors(world, true);
     s.room = id;
     if (areaChanged) world.areaBanner = 160;
     HA.story.enterRoom(world);
@@ -306,14 +314,31 @@
     door.cells.push({ tx: sp.tx, ty: sp.ty });
   }
 
+  // A gate someone keeps (legend `kept`, like Solder's new gate) opens as the hero comes near it from either side,
+  // and shuts again once they're well past.
+  function nearDoor(world, d) {
+    const p = world.player;
+    const xs = d.cells.map((c) => c.tx * 8 + 4);
+    const ys = d.cells.map((c) => c.ty * 8);
+    const reach = d.open ? 48 : 32;
+    const dx = Math.abs(p.x + p.w / 2 - (Math.min(...xs) + Math.max(...xs)) / 2);
+    return dx < reach && p.y + p.h > Math.min(...ys) - 8 && p.y < Math.max(...ys) + 16;
+  }
+
   function updateDoors(world, instant) {
     for (const d of world.doors) {
-      const open = !!d.legend.open(world.state, world);
+      const kept = !!(d.legend.kept && d.legend.kept(world.state));
+      const open = !!d.legend.open(world.state, world) && (!kept || nearDoor(world, d));
       if (open === d.open) continue;
       d.open = open;
       for (const c of d.cells) world.room.set(c.tx, c.ty, open ? HA.room.EMPTY : HA.room.SOLID);
       if (instant) continue;
       const c = d.cells[Math.floor(d.cells.length / 2)];
+      if (kept) {
+        world.burst(c.tx * 8 + 4, c.ty * 8, ['#a8743a', '#6c7894'], 6, 1);
+        HA.audio.play(open ? 'unlock' : 'doorShut');
+        continue;
+      }
       world.burst(c.tx * 8 + 4, c.ty * 8, open ? ['#ffb84d', '#fff0a8', '#6c7894'] : ['#6c7894', '#a9b6cc'], open ? 30 : 10, open ? 2.4 : 1.2);
       world.shake(open ? 4 : 2);
       HA.audio.play(open ? 'blast' : 'doorShut');
@@ -331,14 +356,14 @@
     const gy = def.gy * 8 + p.y + p.h - 4;
     const next = HA.rooms.at(gx, gy);
     const side = cx < 0 ? 'left' : 'right';
-    // A way back into an area whose next chapter isn't built yet is held shut, with a note.
+    // A way the story holds shut for now (the hero won't go home without Wick) says why, in its own words.
     const held = def.holdBack && def.holdBack[side] && def.holdBack[side](world.state);
     if (!next || world.scene || p.dead || held) {
       p.x = HA.clamp(p.x, -p.w / 2, room.pw - p.w / 2);
       p.vx = 0;
       // An opening into an area that isn't built yet says so instead of just stopping the hero.
-      const unbuilt = held || (!next && def.unbuilt && def.unbuilt[side]);
-      const note = unbuilt && unbuilt + ' · COMING IN THE NEXT BUILD';
+      const unbuilt = !next && def.unbuilt && def.unbuilt[side];
+      const note = held || (unbuilt && unbuilt + ' · COMING IN THE NEXT BUILD');
       if (note && (world.toastText !== note || world.toastTime < 30)) world.toast(note, 150);
       return;
     }
@@ -457,33 +482,38 @@
     HA.save.reveal(world, false);
   }
 
-  // Rest pods, people and ship logs all answer to Up. The closest one in reach shows its prompt.
+  // Rest pods, people, ship logs and lifts answer to Up, and an open floor hatch to Down. The closest one in
+  // reach shows its prompt.
   function updateInteractions(world, input) {
     const p = world.player;
     let best = null;
     let bestD = 999;
-    const consider = (kind, o, label) => {
+    const consider = (kind, o, label, key = 'up') => {
       const reach = { x: o.x - 6, y: o.y - 4, w: o.w + 12, h: o.h + 8 };
       if (!HA.overlap(p, reach)) return;
       const d = Math.abs(p.x + p.w / 2 - (o.x + o.w / 2));
       if (d < bestD) {
         bestD = d;
-        best = { kind, o, label };
+        best = { kind, o, label, key };
       }
     };
     if (!p.dead && !world.scene) {
       for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, '{up} REST');
       for (const n of world.npcs) if (n.talkable && n.talkable(world, n)) consider('npc', n, '{up} TALK');
       for (const l of world.logs) consider('log', l, '{up} READ');
-      for (const l of world.lifts) consider('lift', l, '{up} USE THE LIFT');
+      for (const l of world.links) {
+        if (l.legend.type === 'lift') consider('link', l, '{up} USE THE LIFT');
+        else if (l.legend.up) consider('link', l, '{up} CLIMB UP');
+        else if (l.legend.open(world.state)) consider('link', l, '{down} CLIMB DOWN', 'down');
+      }
     }
     for (const pod of world.pods) if (pod.cool > 0) pod.cool--;
     world.near = best;
-    if (!best || !input.pressed.up) return;
+    if (!best || !input.pressed[best.key]) return;
     if (best.kind === 'pod') rest(world, best.o);
     else if (best.kind === 'npc') HA.story.talk(world, best.o);
     else if (best.kind === 'log') HA.story.readLog(world, best.o);
-    else if (best.kind === 'lift') HA.story.run(world, 'lift');
+    else if (best.kind === 'link') HA.story.useLink(world, best.o);
   }
 
   // Story moments that start when the hero reaches a spot (tiles x0-x1, and between rows y0 and y1 if given).
@@ -540,13 +570,14 @@
     HA.scenery.drawBack(g, world, cam);
 
     for (const pod of world.pods) drawPod(g, world, pod, cam);
-    for (const l of world.lifts) HA.scenery.drawLift(g, world, l, cam);
+    for (const l of world.links) if (l.legend.type === 'lift' || l.legend.up) HA.scenery.drawLink(g, world, l, cam);
     for (const l of world.logs) if (!l.scene) HA.scenery.drawTerminal(g, world, l, cam);
     HA.abilities.drawHooks(g, world, cam);
     drawHints(g, world, cam);
     for (const n of world.npcs) HA.story.drawNpc(g, world, n, cam);
     g.drawImage(world.layers.tiles, -cam.x, -cam.y);
     for (const d of world.doors) if (!d.open) HA.scenery.drawDoor(g, world, d, cam);
+    for (const l of world.links) if (l.legend.type === 'hatch' && !l.legend.up) HA.scenery.drawLink(g, world, l, cam);
     if (world.glass.length) HA.scenery.drawGlass(g, world, cam);
     if (world.cage) HA.scenery.drawCage(g, world, world.cage, cam);
     for (const c of world.crates.values()) if (!c.broken) drawCrate(g, c, cam);
