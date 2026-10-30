@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.0-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.1-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.0-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.1-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -35,6 +35,7 @@ No mouse is needed anywhere. On-screen prompts switch between keyboard keys and 
 | Fire | X or K | X, B or RT |
 | Aim | Hold Up; hold Down while in the air | Stick or D-pad |
 | Switch weapon | Q / E (or C / V) | LB / RB |
+| Eat a Bloom bulb (never on touch) | F or L | Y |
 | Drop through a catwalk | Down + Jump | Down + A |
 | Talk, read a ship log, rest at a rest pod | Up | Up |
 | Next line of dialogue | Z, Space, Enter or X | A or X |
@@ -79,7 +80,7 @@ Phase 2 gate (from the brief): *three first-time testers finish it without help.
 
 The groundwork every later area stands on. The checklist is at the bottom of [STORYBOARD.md](STORYBOARD.md).
 
-- **The slice no longer ends at the reunion.** Gasket says where the taken really go ("THEY GO UP, TO THE GARDENS"), and the new lead is **FIND THE TAKEN IN THE GARDENS**. That night, with no music, Wick sits with Shim at the fire, promises to be back by lights-out, and asks to come along: "THE ONES THEY TOOK ARE MY PATIENTS." In the morning she has gone ahead to the Bailiff's Hall, whose east wall now has a door. Past it, for now, a note says the Gardens come in the next build.
+- **The slice no longer ends at the reunion.** Gasket says where the taken really go ("THEY GO UP, TO THE GARDENS"), and the new lead is **FIND THE TAKEN IN THE GARDENS**. That night, with no music, Wick sits with Shim at the fire, promises to be back by lights-out, and asks to come along: "THE ONES THEY TOOK ARE MY PATIENTS." In the morning she has gone ahead to the Bailiff's Hall, whose east wall now has a door up to the Gardens.
 - **Mara's pod (0418)** hangs beside the hero's empty clamps in the Cryo Bay. Its plate can be read, and it's the first line in the hero's own voice: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE."
 - **The Steward speaks first** over the Lockup's intercom: "WHOEVER YOU ARE, YOU ARE NOT IN THE COUNT. THAT CAN BE FIXED."
 - **The Hullfolk's lines after the reunion** point to the Gardens, and differ by what you did to the Bailiff. Solder explains shards in her own voice; the exact rule ("A HIT COSTS SHARDS · NEVER MORE THAN ONE LEVEL") is on the wall above her bench.
@@ -88,9 +89,24 @@ The groundwork every later area stands on. The checklist is at the bottom of [ST
 - **Movement abilities for later areas** (the thruster pack, the grapple's pull and hang, pressure boots, swimming) live in one place, `js/abilities.js`, which both the hero and the room checker use. None is handed out yet.
 - **The ending runner** plays any of the five endings: its closing scene, an epilogue built from what you did (Shim, Gasket, Solder, the Warrens, the Wardens in their own counts, the sleepers and Mara, the Navigator, and whoever else still matters), the credits, then back to the title. Endings you've reached show on the title screen and survive a new game. No ending can be reached in play yet; the first, Deserter, arrives with the Cargo Labyrinth.
 
+## Phase 3.1: the Hydroponic Gardens
+
+The third story beat, and the first new area of Phase 3: ten rooms under the ship's glass dome, green and warm, with the Bloom creeping through all of it.
+
+- **Wick comes with you.** She waits in the Bailiff's Hall, walks into the Gardens a step behind you, and names the plants as you go. In the Root Cellar the taken lie asleep in old cryo cradles, dosed as they sleep, pink at the seams. Sorrel's cradle is empty. The seals are locked from above, so Wick stays to keep them breathing and sends you up.
+- **The rooms:** the Root Cellar, the Garden Lift (a stairwell down to a sealed vault hatch and the vats), the Terraces (stepped farm decks), the Irrigation Works (pools to swim), the Spore Beds (a tall greenhouse), the Seal Room (a long deck under the glass, then the Pruner's hall), the Dome Stair (a switchback down, ending in a shutter that opens a shortcut back into the Terraces), the Seed Vault (a secret behind a hatch only the grapple can pull, from the Cargo Labyrinth on), the Vat Walk and the Vat House.
+- **New enemies:** spore pods that swell, then burst into a stinging cloud; Warden pickers, slow on their stilts, with a picking arm that glows before it shoots out a long way; and the Bloomsworn, the Steward's dosed soldiers, who roar, charge in a frenzy for up to eight seconds, then stagger.
+- **The Scatter Launcher** (on the Terraces) lobs grenades that bounce, then roll along floors and off ledges and down stairs. They're weak against flyers.
+- **Bloom bulbs and the Bloom track.** Bulbs are picked up and carried (three at most) and are only ever eaten on a press of their own button (F or L, Y on a controller): full health and double damage for 20 seconds, but the Bloom grows in you, for good. The first bulb, and any that would close an ending, asks first and says what it costs. The Bloom shows on the hero as it grows: a pink visor and veins, then a thorn through the shoulder, then eyes that glow, and a voice that sings along with the music, slightly flat. Each stage adds a line to the journal.
+- **The Pruner,** the Warden that keeps the seals: a short, sharp fight. Its snips come at two heights, and the arm about to cut glows first; it grows thorn hedges around you, and in its second half it drops from the ceiling rail, with its shadow on the floor showing where. Then it asks you to finish it. Release it and it cuts the Bloom from the cradles: **eleven come home**. Finish it and its core opens the seals: **seven come home**, and the Scatter Launcher never drops below level 2.
+- **The cradles open,** the taken wake and go home by the Garden Lift, but Wick is gone. Her lantern is on the floor, still lit.
+- **The Vat House.** The Gardener watches from behind thick glass. Wick is on her knees in the Bloom, and you have to fight her: fast, lunging, throwing fans of her own lancets, bursting into spores when hit hard. She speaks between phases, and at a quarter of her health she falls on her own; you never land the last blow. Her last words are for Shim, and she gives you her lancets (a fan of thrown blades; at level 3 every sixth hit heals you). Then the Gardener offers the Bloom Thorn for them. Keep them, and she says she'll ask again in the Tower.
+- **The music:** a waltz in F for the Gardens, which turns sour near the vats; the Pruner's own fight track; for Wick, the Warrens' song, broken, with a heartbeat for a drum. From her fall there's no music until you're home.
+- **Home is the next build.** The Garden Lift, and the walk back through the Lockup, both stop at a note: "THE WARRENS RETURN · COMING IN THE NEXT BUILD".
+
 ## How the rooms are checked
 
-Every gap on the main path can be jumped with room to spare: 5 tiles or less (a running jump reaches 7, but only with a pixel-perfect run-up). Gaps that aren't meant to be jumped are 9 tiles or more, with another route in view. `hollow-ark/tests/rooms-check.js` plays every room with the game's own movement code, swimming, thruster and grapple included. It fails the build if any entrance, item, person or rest pod can't be reached with the abilities the hero has by then, if a secret meant for an ability can be reached without it, if a gap is exactly 7 tiles wide, or if a hint runs into a wall. Before the real rooms it plays four small test rooms, one per ability, to prove each one opens exactly what it should.
+Every gap on the main path can be jumped with room to spare: 5 tiles or less (a running jump reaches 7, but only with a pixel-perfect run-up). Gaps that aren't meant to be jumped are 9 tiles or more, with another route in view. `hollow-ark/tests/rooms-check.js` plays every room with the game's own movement code, swimming, thruster and grapple included. It fails the build if any entrance, item, person or rest pod can't be reached with the abilities the hero has by then, if a secret meant for an ability can be reached without it (that includes a way through a door only an ability opens, like the Seed Vault's hatch), if a gap is exactly 7 tiles wide, or if a hint runs into a wall. Before the real rooms it plays four small test rooms, one per ability, to prove each one opens exactly what it should.
 
 ## How it's built
 
@@ -99,7 +115,8 @@ Every gap on the main path can be jumped with room to spare: 5 tiles or less (a 
 | `docs/hollow-ark/` | The game: HTML5 canvas and plain JavaScript, with no engine and no build step. GitHub Pages serves it from here. |
 | `hollow-ark/desktop/` | Electron shell that packages those same files as Windows, macOS and Linux apps (Steam-ready in Phase 5). |
 | `docs/hollow-ark/js/areas/` | The rooms, one file per area, drawn as text maps (the legend is at the top of each file). |
-| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far, upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
+| `docs/hollow-ark/js/story/`, `js/bosses/` | Each area's story (scenes, lines, logs) and each boss, one file each, from Phase 3 on. |
+| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens included), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
 | `.github/workflows/hollow-ark.yml` | CI. On Windows, macOS and Linux it checks the rooms, plays the slice in all three browser engines, builds each desktop app, launches it, plays a few seconds and uploads it. |
 
 Run the desktop app from source:

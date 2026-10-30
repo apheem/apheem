@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations) is built** (version 0.3.0); the next job is 3.1, the Hydroponic Gardens. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations) and 3.1 (the Hydroponic Gardens) are built** (version 0.3.1); the next job is 3.2, the Warrens return. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -28,8 +28,11 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/abilities.js` | The thruster pack, the grapple's pull and hang, pressure boots and swimming. The hero's update and `rooms-check.js` both call it. Water is `~` in a map, a grapple hook ring is `o` |
 | `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to) |
 | `js/weapons.js` | Weapon definitions, levels and XP, and shots |
-| `js/boss.js` | The Bailiff. Each new boss gets its own file (`js/bosses/<name>.js` from Phase 3 on) |
-| `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls. Split it per area once it passes ~1000 lines (`js/story/<area>.js`) |
+| `js/boss.js` | The Bailiff, plus what every boss shares: shard vents, the health bar, and the `HA.bosses` registry the world looks bosses up in |
+| `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
+| `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls, up to the Gardens. Also barks (short lines over someone's head that don't stop play) and companions (`npc.follow`) |
+| `js/story/*.js` | Each later area's story: `gardens.js` adds its scenes, lines and logs to the tables in `story.js` and pushes its own `{ enterRoom, update, music }` hook onto `HA.story.areas` |
+| `js/bloom.js` | The Bloom track: bulbs (carried, eaten on their own button), the stages (3, 5, 7, 8) with their journal lines, what a rise would close (`closes`), and the Thorn's kill count |
 | `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card`, `fade`, `walk` |
 | `js/save.js` | Save state (the Phase 3 fields and what each value means are listed in `newState`), the upgrade for older saves, autosave, the explored-map bitsets, and talk history |
 | `js/music.js` | Every music track as note data plus a `play(step, out)` function. `js/audio.js` holds the sound effects |
@@ -44,7 +47,8 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 - From every way into a room, every exit, item, person, terminal and rest pod must be reachable. Secrets that need an ability must not be reachable without it.
 - Hints sit in open air, never against a wall.
 - New abilities go in `js/abilities.js`, which the checker already runs. A room lists what the hero always has by the time they reach it as `abilities: { thruster: 'odell', grapple: true, ... }`, and a secret that needs one says so in its legend as `needs: { grapple: true }`. The checker proves the secret can't be reached without it and can with it.
-- An exit into an area that isn't built yet must be named in the room's `unbuilt: { right: 'AREA NAME' }`. The game shows a "coming in the next build" note there. Remove it when the area lands.
+- An exit into an area that isn't built yet must be named in the room's `unbuilt: { right: 'AREA NAME' }`. The game shows a "coming in the next build" note there. Remove it when the area lands. A way back into an area whose next chapter isn't built yet can be held the same way with `holdBack: { left: (state) => 'AREA NAME' or null }` (the Lockup's west exit uses it once the cradles open).
+- A door only an ability opens (the Seed Vault's hatch) says so in its legend as `needs: { grapple: true }`, with `ring: 'flag'` for the ring the grapple pulls. The checker proves the exit behind it is shut without the ability and open with it.
 - The Grapple Harpoon weapon (3.3) should fire `HA.abilities.fireGrapple`. When it lands, switch the checker's grapple moves from asking for the grapple directly to pressing Fire with the harpoon.
 
 ### Rules every scene follows
@@ -245,6 +249,8 @@ It vents shards every 15% of its health. Keep the fight to about two minutes.
 **Music:** a 3/4 waltz in F major on soft pulse voices, with the main theme in the high register. A sour layer creeps in near the vats (a detuned double of the lead). No music from Wick's collapse until the hero is back in the Warrens.
 
 **Flags:** `gardens`, `wardens.pruner`, `takenHome` (11 or 7), `wickDead`, `lantern`, `thornOffered`, `thorn`.
+
+**As built (3.1).** The rooms on the ship grid (tiles): the Root Cellar (280, 46, two screens wide), the Garden Lift (360, 46, two screens tall: the lift hall above, a stairwell down to the Seed Vault's hatch and the vats' seal), the Terraces (400, 23, two tall), the Irrigation Works (320, 23, two wide), the Spore Beds (280, 0, two tall), the Seal Room (320, 0, three wide, the Pruner's hall at its east end), the Dome Stair (440, 0, three tall), the Seed Vault (320, 69), the Vat Walk (400, 69) and the Vat House (440, 69). The route is a loop: up the west side to the Seal Room, then down the Dome Stair, whose shutter opens a shortcut back into the Terraces. Rest pods: the Root Cellar, outside the Pruner's hall, and outside the Vat House. Extra flags: `wickWith` (Wick is walking with the hero), `cradlesSeen`, `prunerSeen`, `prunerDown`, `shutter`, `cradles` (opened), `wickSeen`, `wickFought` (she has fallen), `gardenerGone`, `vaultHatch`, `bulbSeen`, `ateBulb`. Save fields: `bulbs` (carried) and `thornKills`.
 
 ### Interlude: telling them. Warrens return (3.2)
 
@@ -712,17 +718,18 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 - [x] A test harness that plays each ending's choice path with the debug helpers (extends `browser-check.js`). Today it sets each path's flags directly, checks the branch `afterSteward` picks and the epilogue lines, and plays each ending to the title. As areas land, swap each flag for the real choice played through.
 
 ### 3.1 Hydroponic Gardens
-- [ ] Remove the arena's `unbuilt` note; Wick (waiting in the arena, legend `2`) walks into the Root Cellar with the hero and sets `flags.gardens`
-- [ ] Theme, palette, props, music (the waltz plus the sour layer)
-- [ ] Rooms, checked by `rooms-check.js`
-- [ ] Enemies: spore pods, Warden pickers, Bloomsworn
-- [ ] The Scatter Launcher; carried Bloom bulbs and the Bloom track; the hero's Bloom sprite stages and journal lines
-- [ ] The cradles, Wick as an escort, scenes 1–7, logs `blight` and `clean`
-- [ ] The Pruner (a short fight) and choice 2, with `takenHome`
-- [ ] Wick's boss fight; Wick's Lancets; choice 3 (the Gardener behind glass)
+- [x] Remove the arena's `unbuilt` note; Wick (waiting in the arena, legend `2`) walks into the Root Cellar with the hero and sets `flags.gardens`
+- [x] Theme, palette, props, music (the waltz plus the sour layer)
+- [x] Rooms, checked by `rooms-check.js`
+- [x] Enemies: spore pods, Warden pickers, Bloomsworn
+- [x] The Scatter Launcher; carried Bloom bulbs and the Bloom track; the hero's Bloom sprite stages and journal lines
+- [x] The cradles, Wick as an escort, scenes 1–7, logs `blight` and `clean`
+- [x] The Pruner (a short fight) and choice 2, with `takenHome`
+- [x] Wick's boss fight; Wick's Lancets; choice 3 (the Gardener behind glass)
 
 ### 3.2 Warrens return
-- [ ] The woken taken at home; Gasket's grief; choice 4 (three options)
+- [ ] Remove the Lockup's `holdBack` and the Garden Lift's next-build note: the lift goes down to the Warrens (a new lift stop there), and walking home works again
+- [ ] The woken taken at home (`takenHome` of them); Gasket's grief; choice 4 (three options); Wick's lantern (`flags.lantern`) for Shim on the truth path
 - [ ] The Steward's broadcast; the plan; Solder's gate and the floor hatch; the sump and tram station
 - [ ] Choice 5 (the pistol) and the hub's name bands (LATE / SLEEPER / COUNTER)
 

@@ -33,6 +33,39 @@
         { charge: 28, len: 220, dmg: 6, chain: 2, pierce: true },
       ],
     },
+    // Grenades lobbed in an arc that bounce, then roll along floors and off ledges and down stairs until the
+    // fuse runs out or they meet something on the ground. Weak against flyers (half damage).
+    scatter: {
+      name: 'SCATTER LAUNCHER',
+      caps: [10, 22, 36],
+      // Finishing the Pruner (choice 2) keeps it at level 2 or better for good.
+      floor: (world) => (world.state.wardens.pruner === 'salvage' ? 2 : 1),
+      levels: [
+        { cd: 26, n: 1, speed: 2.4, dmg: 4, blast: 15, fuse: 90 },
+        { cd: 22, n: 2, speed: 2.6, dmg: 5, blast: 17, fuse: 90 },
+        { cd: 18, n: 3, speed: 2.8, dmg: 6, blast: 20, fuse: 90 },
+      ],
+    },
+    // Wick's own blades, thrown in a fan. At level 3 every sixth hit stitches the hero up a little.
+    lancets: {
+      name: "WICK'S LANCETS",
+      caps: [10, 22, 36],
+      levels: [
+        { cd: 14, n: 2, spread: 0.13, speed: 4.6, range: 110, dmg: 2 },
+        { cd: 12, n: 3, spread: 0.14, speed: 5, range: 130, dmg: 2 },
+        { cd: 10, n: 3, spread: 0.12, speed: 5.4, range: 150, dmg: 3, heal: 6 },
+      ],
+    },
+    // The Gardener's gift: a thorn lance that hits very hard, harder the more Bloom is in the hero.
+    thorn: {
+      name: 'BLOOM THORN',
+      caps: [12, 26, 40],
+      levels: [
+        { cd: 22, dmg: 8, len: 34, speed: 6 },
+        { cd: 20, dmg: 10, len: 42, speed: 6.5 },
+        { cd: 18, dmg: 12, len: 50, speed: 7 },
+      ],
+    },
   };
   const XP_LOSS = 4;
   const XP_LOCK = 150;
@@ -69,9 +102,10 @@
     const w = p.weapons[p.wi];
     if (!w) return;
     if (DEFS[w.id].keepsXp || p.xpLock > 0 || world.assist.noXpLoss) return;
+    const floor = DEFS[w.id].floor ? DEFS[w.id].floor(world) : 1;
     if (w.xp >= XP_LOSS) {
       w.xp -= XP_LOSS;
-    } else if (w.level > 1) {
+    } else if (w.level > floor) {
       const rest = XP_LOSS - w.xp;
       w.level -= 1;
       w.xp = Math.max(1, cap(w) - rest);
@@ -117,6 +151,11 @@
             HA.audio.play('empty');
           }
         }
+      }
+    } else if (w.id === 'scatter' || w.id === 'lancets' || w.id === 'thorn') {
+      if (p.cooldown <= 0 && (fire.pressed || fire.held)) {
+        ({ scatter: fireScatter, lancets: fireLancets, thorn: fireThorn })[w.id](world, L, w.level);
+        p.cooldown = fire.pressed ? L.cd : Math.round(L.cd * 1.3);
       }
     } else if (w.id === 'coil') {
       if (fire.held) {
@@ -204,6 +243,92 @@
     HA.audio.play('cannon', level);
   }
 
+  // Grenades leave in a lob: forward, higher when aimed up, dropped when aimed down in the air.
+  function fireScatter(world, L, level) {
+    const p = world.player;
+    const m = muzzle(p);
+    for (let i = 0; i < L.n; i++) {
+      const spread = (i - (L.n - 1) / 2) * 0.55;
+      let vx = p.facing * (L.speed + spread * p.facing) + p.vx * 0.4;
+      let vy = -2.1 - Math.abs(spread) * 0.3;
+      if (p.aim === 'up') {
+        vx *= 0.45;
+        vy = -3.6;
+      } else if (p.aim === 'down') {
+        vx = p.facing * 0.6 + spread * 0.4;
+        vy = 1;
+      }
+      world.shots.push({ owner: 'player', kind: 'grenade', level, x: m.x, y: m.y, w: 4, h: 4, vx, vy, life: L.fuse + i * 4, dmg: L.dmg, blast: L.blast, pierce: 0, hits: new Set(), t: 0 });
+    }
+    world.muzzleFlash(m.x, m.y, 1);
+    HA.audio.play('lob', level);
+  }
+
+  function fireLancets(world, L, level) {
+    const p = world.player;
+    const m = muzzle(p);
+    const base = Math.atan2(m.dy, m.dx);
+    for (let i = 0; i < L.n; i++) {
+      const a = base + (i - (L.n - 1) / 2) * L.spread;
+      world.shots.push({ owner: 'player', kind: 'lancet', level, x: m.x, y: m.y, vx: Math.cos(a) * L.speed, vy: Math.sin(a) * L.speed, life: Math.round(L.range / L.speed), dmg: L.dmg, pierce: 0, heal: L.heal, hits: new Set() });
+    }
+    HA.audio.play('lancet', level);
+  }
+
+  function fireThorn(world, L, level) {
+    const p = world.player;
+    const m = muzzle(p);
+    const dmg = L.dmg + world.state.bloom;
+    world.shots.push({ owner: 'player', kind: 'thorn', level, x: m.x, y: m.y, vx: m.dx * L.speed, vy: m.dy * L.speed, life: Math.round(L.len / L.speed), dmg, pierce: 99, hits: new Set() });
+    world.shake(1);
+    HA.audio.play('thorn', level);
+  }
+
+  // A grenade bursts: everything near takes the blast, flyers half of it, and crates break.
+  function explode(world, s) {
+    s.life = 0;
+    const r = s.blast;
+    for (const e of world.enemies) {
+      if (e.dead) continue;
+      const d = Math.hypot(e.x + e.w / 2 - s.x, e.y + e.h / 2 - s.y);
+      if (d > r + Math.max(e.w, e.h) / 2) continue;
+      const flyer = e.type === 'drifter' || e.type === 'warden';
+      world.hurtEnemy(e, flyer ? Math.ceil(s.dmg / 2) : s.dmg, HA.sign(e.x + e.w / 2 - s.x));
+    }
+    for (let ty = Math.floor((s.y - r) / 8); ty <= Math.floor((s.y + r) / 8); ty++) {
+      for (let tx = Math.floor((s.x - r) / 8); tx <= Math.floor((s.x + r) / 8); tx++) {
+        if (world.room.tile(tx, ty) === HA.room.CRATE && Math.hypot(tx * 8 + 4 - s.x, ty * 8 + 4 - s.y) < r + 4) world.damageCrate(tx, ty, 3);
+      }
+    }
+    world.burst(s.x, s.y, ['#ffb84d', '#fff0a8', '#ff9b3d', '#9fb6c8'], 18, 2.2);
+    world.flashes.push({ x: s.x, y: s.y, life: 3, r: 4 });
+    world.shake(2);
+    HA.audio.play('blast');
+  }
+
+  // Grenades fall, bounce off walls, and roll along floors (and off them) until they go off.
+  function updateGrenade(world, s) {
+    s.t++;
+    s.life--;
+    s.vy = Math.min(s.vy + 0.2, 4);
+    const body = { x: s.x - 2, y: s.y - 2, w: 4, h: 4 };
+    const hit = HA.room.move(world.room, body, s.vx, s.vy);
+    s.x = body.x + 2;
+    s.y = body.y + 2;
+    if (hit.left || hit.right) s.vx = -s.vx * 0.55;
+    if (hit.up) s.vy = Math.abs(s.vy) * 0.3;
+    if (hit.down) {
+      if (s.vy > 1.2) HA.audio.play('tink');
+      s.vy = s.vy > 1.2 ? -s.vy * 0.35 : 0;
+      s.vx *= s.vy === 0 ? 0.99 : 0.8;
+      if (Math.abs(s.vx) < 0.35 && s.vy === 0) s.vx = HA.sign(s.vx || 1) * 0.35; // it keeps rolling
+    }
+    for (const e of world.enemies) {
+      if (!e.dead && HA.overlap(body, e) && s.t > 4) return explode(world, s);
+    }
+    if (s.life <= 0) explode(world, s);
+  }
+
   // The Arc Coil is a hitscan beam: it travels until it meets a wall (or an enemy, below level 3).
   function fireBeam(world, L, level, len, dmg) {
     const p = world.player;
@@ -276,6 +401,10 @@
         updateWave(world, s);
         continue;
       }
+      if (s.kind === 'grenade') {
+        updateGrenade(world, s);
+        continue;
+      }
       s.x += s.vx;
       s.y += s.vy;
       s.life--;
@@ -297,6 +426,7 @@
           if (e.dead || s.hits.has(e) || !HA.overlap(box, e)) continue;
           s.hits.add(e);
           world.hurtEnemy(e, s.dmg, HA.sign(s.vx || 0.01));
+          if (s.heal) lancetHeal(world);
           if (s.pierce > 0) s.pierce--;
           else {
             s.life = 0;
@@ -312,11 +442,21 @@
           }
         }
       } else if (HA.overlap({ x: s.x - 3, y: s.y - 3, w: 6, h: 6 }, world.player)) {
-        world.hurtPlayer(2, s.x);
+        world.hurtPlayer(s.dmg || 2, s.x);
         s.life = 0;
       }
     }
     world.shots = world.shots.filter((s) => s.life > 0);
+  }
+
+  // Wick's Lancets at level 3: every sixth hit heals the hero by one.
+  function lancetHeal(world) {
+    const p = world.player;
+    p.lancetHits = (p.lancetHits || 0) + 1;
+    if (p.lancetHits % 6 || p.hp >= p.maxHp) return;
+    p.hp++;
+    world.floatText(p.x + 4, p.y - 6, '+1', '#7ad1a0');
+    HA.audio.play('heart');
   }
 
   // A shockwave runs along the floor until it meets a wall or an edge. Jump over it.

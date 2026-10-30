@@ -4,6 +4,7 @@
 // tests/rooms-check.js runs exactly the same code, so a room the checker passes really can be crossed with
 // the abilities it was checked with. p.abilities is the save's { thruster, grapple, boots } table.
 // Map legend these add to every room: ~ water   o grapple hook (a ring the harpoon can bite)
+// A door whose legend has a ring (the Seed Vault's hatch) is torn open by the grapple instead.
 (function (HA) {
   const { approach } = HA;
 
@@ -120,7 +121,9 @@
       const d = Math.hypot(dx, dy);
       if (d < 6 || d > GRAPPLE.range) continue;
       const off = 1 - (dx * ax + dy * ay) / d; // 0 when dead on the line of aim
-      if (off > GRAPPLE.cone || !clearLine(world.room, ox, oy, h.x, h.y)) continue;
+      // A hatch's ring sits in the hatch itself, so the line only has to reach the hatch's face.
+      const ex = h.hatch ? (dx < 0 ? h.x1 + 1 : h.x0 - 1) : h.x;
+      if (off > GRAPPLE.cone || !clearLine(world.room, ox, oy, ex, h.y)) continue;
       const score = off * 200 + d;
       if (score < bestScore) {
         bestScore = score;
@@ -129,6 +132,13 @@
     }
     HA.audio.play(best ? 'harpoon' : 'empty');
     if (!best) return false;
+    if (best.hatch) {
+      // A ring on a hatch: the harpoon bites, and the winch tears the hatch open instead of pulling the hero.
+      world.state.flags[best.hatch] = true;
+      world.hooks = world.hooks.filter((h) => h !== best);
+      world.shake(3);
+      return true;
+    }
     p.grapple = { x: best.x, y: best.y, phase: 'pull' };
     p.vx = 0;
     p.vy = 0;

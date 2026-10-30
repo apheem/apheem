@@ -1,12 +1,15 @@
 'use strict';
 // The story so far: the Hullfolk, ship logs, cutscenes, the raid, the Bailiff's fate, the night after, and the
 // journal entries and leads they leave behind. All text is original to Hollow Ark.
+// Each later area keeps its own story in js/story/<area>.js, which adds its scenes, logs and lines to the tables
+// here and pushes a hook object ({ enterRoom, update, music }) onto HA.story.areas.
 (function (HA) {
   const W = HA.VIEW_W;
   const run = (world, name) => HA.scenes.run(world, SCENES[name], { name });
   const npcOf = (world, id) => world.npcs.find((n) => n.id === id);
   const FLOOR = (ty) => ty * 8; // feet on top of map row ty
   const VOICE = '#f2c88a'; // the hero's own thoughts, never spoken aloud
+  const AREAS = []; // each area's story hooks
 
   // ---- Journal and leads ----
   function setLead(world, text) {
@@ -62,6 +65,7 @@
     shim: { name: 'SHIM', sprite: 'shim' },
     tamp: { name: 'TAMP', sprite: 'tamp' },
     brine: { name: 'BRINE', sprite: 'brine' },
+    gardener: { name: 'THE GARDENER', sprite: 'gardener' },
   };
 
   function makeNpc(world, id, sp) {
@@ -80,7 +84,7 @@
       t: Math.floor(Math.random() * 200),
       walking: false,
       state: npcState(world, id),
-      talkable: (w, self) => self.state === 'out',
+      talkable: (w, self) => self.state === 'out' && !!TALK[self.id],
     };
     return n;
   }
@@ -101,11 +105,16 @@
     const p = world.player;
     if (n.state === 'hidden') return;
     if (n.state !== 'out' || n.carriedBy) return;
+    // A companion walks a little behind the hero, on the floor, and catches up when left behind.
+    if (n.follow && !world.scene) {
+      const want = p.x - p.facing * 14;
+      if (Math.abs(want - n.x) > 10) n.homeX = HA.clamp(want, 8, world.room.pw - 16);
+    }
     const inScene = world.scene && world.scene.step && world.scene.step.walk === n;
     if (!inScene && !world.scene) {
       if (Math.abs(n.x - n.homeX) > 1) {
         n.facing = Math.sign(n.homeX - n.x);
-        n.x += n.facing * 0.6;
+        n.x += n.facing * (n.follow ? HA.clamp(Math.abs(n.homeX - n.x) / 20, 0.6, 1.6) : 0.6);
         n.walking = true;
       } else {
         n.walking = false;
@@ -142,9 +151,41 @@
     if (n.sleeping && n.t % 90 < 60) HA.font.draw(g, 'z', cx + 4 + Math.floor((n.t % 90) / 20), cy - 6 - Math.floor((n.t % 90) / 12), '#9fb6c8');
   }
 
+  // ---- Barks: short lines someone says in passing, over their head, without stopping play ----
+  function bark(world, n, text, frames) {
+    world.barks.push({ n, text, life: frames || 90 + text.length * 3, wait: world.barks.filter((b) => b.n === n).reduce((t, b) => t + b.life + b.wait, 0) });
+    HA.save.addTalk(world.state, n.name, text);
+  }
+  function updateBarks(world) {
+    for (const b of world.barks) {
+      if (b.wait > 0) b.wait--;
+      else b.life--;
+    }
+    world.barks = world.barks.filter((b) => b.life > 0 && (!b.n.state || b.n.state !== 'gone'));
+  }
+  function drawBarks(g, world, cam) {
+    if (world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice)) return;
+    for (const b of world.barks) {
+      if (b.wait > 0) continue;
+      const lines = HA.scenes.paginate(b.text, 24, 9)[0];
+      const w = Math.max(...lines.map((l) => HA.font.measure(l))) + 8;
+      const h = lines.length * 9 + 4;
+      const x = HA.clamp(Math.round(b.n.x + 4 - cam.x - w / 2), 2, HA.VIEW_W - w - 2);
+      const y = Math.max(12, Math.round(b.n.y - cam.y) - h - 6);
+      g.globalAlpha = Math.min(1, b.life / 15);
+      g.fillStyle = 'rgba(5,6,13,0.85)';
+      g.fillRect(x, y, w, h);
+      g.fillStyle = '#ffb84d';
+      g.fillRect(x, y + h - 1, w, 1);
+      lines.forEach((l, i) => HA.font.draw(g, l, x + 4, y + 3 + i * 9, '#eef4f6'));
+      g.globalAlpha = 1;
+    }
+  }
+
   // ---- What each person says, by how far the story has come ----
   function phase(world) {
     const f = world.state.flags;
+    if (world.def.area === 'gardens') return 'cellar';
     if (f.reunion) return world.state.wardens.bailiff === 'release' ? 'after-release' : 'after-salvage';
     if (f.raid) return 'taken';
     return 'night';
@@ -819,6 +860,7 @@
     // A game quit in the middle of the homecoming picks it up again.
     if (id === 'warrens' && f.reunion && !f.homeDone && !world.scene) run(world, 'reunion');
     else if (id === 'warrens' && f.homeDone && !f.goodbye && !world.scene) run(world, 'goodbye');
+    for (const a of AREAS) if (a.enterRoom) a.enterRoom(world);
     if (id === 'arena' && world.bossSpawn) {
       const place = () => {
         world.boss = HA.boss.make(world, world.bossSpawn.x, world.bossSpawn.y);
@@ -841,6 +883,8 @@
 
   function update(world) {
     for (const n of world.npcs) updateNpc(world, n);
+    updateBarks(world);
+    for (const a of AREAS) if (a.update) a.update(world);
     if (world.leadBanner > 0) world.leadBanner--;
     const f = world.state.flags;
     if (world.alarm && world.time % 90 === 0) HA.audio.play('alarm');
@@ -855,12 +899,13 @@
       pistol: 'I FOUND A RIVET PISTOL IN A SECURITY LOCKER. SOMEONE LEFT IN A HURRY.',
       coil: 'I FOUND AN ARC COIL IN THE POD STACKS. IT HUMS WHEN I HOLD IT.',
       cannon: 'I FOUND A PURGE CANNON IN THE COOLANT HALL. IT KICKS HARD ENOUGH TO HOLD ME IN THE AIR.',
+      scatter: 'I FOUND A SCATTER LAUNCHER ON THE TERRACES. THE GARDENERS USED IT ON PESTS.',
     }[id];
     if (text) addStory(world, text);
   }
 
   function onBossDefeated(world) {
-    run(world, 'bossDefeated');
+    run(world, world.boss.type === 'bailiff' ? 'bossDefeated' : world.boss.type + 'Defeated');
   }
 
   // Music the story asks for, or undefined to let the room choose.
@@ -875,8 +920,12 @@
       if (f.reunion) return world.state.wardens.bailiff === 'release' ? 'warrens' : 'warrensHush';
     }
     if (id === 'arena') return world.boss && world.boss.fighting && !world.boss.broken ? 'boss' : null;
+    for (const a of AREAS) {
+      const m = a.music && a.music(world);
+      if (m !== undefined) return m;
+    }
     return undefined;
   }
 
-  HA.story = { LOGS, PEOPLE, SCENES, run, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, setLead, addStory, addChoice };
+  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, setLead, addStory, addChoice, bark, drawBarks };
 })(window.HA);

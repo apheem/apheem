@@ -181,6 +181,86 @@
     },
   };
   const chord = (name, third) => ({ root: midi(name), third });
+
+  // The Gardens: a waltz in F major on soft pulse voices, the Ark's theme high above it. Near the vats a
+  // second layer comes in: the same melody doubled a little out of tune, souring it.
+  TRACKS.gardens = {
+    step: 60 / 132 / 2,
+    steps: 96,
+    layers: 2,
+    play(s, out) {
+      const bar = Math.floor(s / 6) % 16;
+      const at = s % 6;
+      const c = G_CHORDS[bar % 8];
+      // oom, pah, pah
+      if (at === 0) out.note(0, 'triangle', c.root, 1.8, 0.26);
+      if (at === 2 || at === 4) for (const iv of [12 + c.third, 19]) out.note(0, 0.25, c.root + iv, 1.4, 0.03);
+      if (at === 0) out.drum(0, 'hand', 0.12);
+      if (at === 3) out.drum(0, 'shaker', 0.012);
+      if (bar < 8) {
+        if (at % 2 === 1) out.note(0, 0.125, c.root + 24 + [12, 12 + c.third, 19][(at - 1) / 2], 0.8, 0.02);
+      } else {
+        for (const [st, n, len] of G_THEME[bar % 8]) {
+          if (st !== at) continue;
+          out.note(0, 0.25, n, len, 0.06, 0.02);
+          out.note(1, 0.5, midi(n) + 0.42, len, 0.03, 0.04); // the sour double
+          out.note(1, 'sine', midi(n) - 11.6, len, 0.02, 0.1);
+        }
+      }
+    },
+  };
+
+  // The Pruner: the waltz turned hard and fast, in D minor, with shears for a snare. The second half brings
+  // the Ark's theme in over the top.
+  TRACKS.pruner = {
+    step: 60 / 188 / 2,
+    steps: 48,
+    layers: 2,
+    fadeIn: 0.1,
+    play(s, out) {
+      const bar = Math.floor(s / 6) % 8;
+      const at = s % 6;
+      const c = P_CHORDS[bar % 4];
+      if (at === 0) {
+        out.note(0, 'triangle', c.root, 1.6, 0.32);
+        out.drum(0, 'kick', 0.3);
+      }
+      if (at === 2 || at === 4) {
+        out.note(0, 0.25, c.root + 12 + c.third, 0.8, 0.05);
+        out.drum(0, 'clank', 0.07);
+      }
+      if (at % 2 === 1) out.drum(0, 'hat', 0.025);
+      out.note(0, 0.125, c.root + 24 + [0, 7, c.third, 12, 7, c.third][at], 0.7, 0.03);
+      for (const [st, n, len] of P_THEME[bar]) {
+        if (st !== at) continue;
+        out.note(1, 0.5, n, len, 0.065, 0.005);
+        out.note(1, 0.125, midi(n) + 12, len, 0.02, 0.005);
+      }
+    },
+  };
+
+  // Wick: the Warrens' song, broken and detuned, with a heartbeat for a drum. Later phases add the melody.
+  TRACKS.wick = {
+    step: 0.34,
+    steps: 96,
+    layers: 3,
+    fadeIn: 0.2,
+    play(s, out) {
+      const bar = Math.floor(s / 6) % 16;
+      const at = s % 6;
+      const c = HUSH_CHORDS[bar % 8];
+      // the heartbeat: lub-dub, then a rest
+      if (at === 0) out.drum(0, 'kick', 0.3);
+      if (at === 1) out.drum(0, 'kick', 0.18);
+      if (at === 0) out.note(0, 'triangle', c.root - 0.3, 5.5, 0.18, 0.05);
+      if (at % 2 === 0) out.note(1, 0.25, c.root + 12 + [12, 12 + c.third, 19][at / 2] + (bar % 3 === 2 ? 0.5 : 0), 1.5, 0.03);
+      for (const [st, n, len] of W_THEME[bar % 8]) {
+        if (st !== at) continue;
+        out.note(2, 0.25, midi(n) - 0.35, len, 0.05, 0.03);
+        out.note(2, 'sine', midi(n) + 0.3, len, 0.025, 0.06, 0.25);
+      }
+    },
+  };
   const W_CHORDS = [chord('D3', 4), chord('D3', 4), chord('B2', 3), chord('B2', 3), chord('G2', 4), chord('A2', 4), chord('A2', 4), chord('A2', 4)];
   const W_THEME = [
     [[0, 'A5', 2], [2, 'G5', 1], [3, 'F#5', 2], [5, 'E5', 1]],
@@ -211,6 +291,29 @@
   const HUSH_CHORDS = [chord('D3', 3), chord('D3', 3), chord('Bb2', 4), chord('Bb2', 4), chord('G2', 3), chord('A2', 4), chord('A2', 4), chord('A2', 4)];
   const HUSH_THEME = [[[0, 'A5', 2], [2, 'G5', 1], [3, 'F5', 2]], [[0, 'E5', 6]], [[0, 'D5', 3], [3, 'F5', 3]], [[0, 'Bb5', 6]]];
   const BOSS_CHORDS = [chord('E2', 3), chord('C2', 4), chord('D2', 4), chord('B1', 4)];
+  const G_CHORDS = [chord('F2', 4), chord('D2', 3), chord('Bb1', 4), chord('C2', 4), chord('F2', 4), chord('A1', 3), chord('G1', 3), chord('C2', 4)];
+  // The Ark's theme as a waltz, in F, an octave up.
+  const G_THEME = [
+    [[0, 'A5', 2], [2, 'G5', 1], [3, 'F5', 2], [5, 'E5', 1]],
+    [[0, 'F5', 3], [3, 'C5', 3]],
+    [[0, 'D5', 2], [2, 'E5', 1], [3, 'F5', 2], [5, 'A5', 1]],
+    [[0, 'G5', 6]],
+    [[0, 'A5', 2], [2, 'G5', 1], [3, 'F5', 2], [5, 'E5', 1]],
+    [[0, 'D5', 3], [3, 'F5', 3]],
+    [[0, 'Bb5', 2], [2, 'A5', 1], [3, 'G5', 2], [5, 'E5', 1]],
+    [[0, 'F5', 6]],
+  ];
+  const P_CHORDS = [chord('D2', 3), chord('Bb1', 4), chord('G1', 3), chord('A1', 4)];
+  const P_THEME = [
+    [[0, 'A5', 2], [2, 'G5', 1], [3, 'F5', 2], [5, 'E5', 1]],
+    [[0, 'F5', 3], [3, 'D5', 3]],
+    [[0, 'Bb5', 2], [2, 'A5', 1], [3, 'G5', 2], [5, 'D5', 1]],
+    [[0, 'C#5', 6]],
+    [[0, 'A5', 2], [2, 'Bb5', 1], [3, 'A5', 2], [5, 'G5', 1]],
+    [[0, 'F5', 3], [3, 'E5', 3]],
+    [[0, 'D5', 2], [2, 'E5', 1], [3, 'F5', 2], [5, 'G5', 1]],
+    [[0, 'A5', 6]],
+  ];
   const BOSS_THEME = transpose(THEME, 7);
 
   // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
@@ -267,6 +370,8 @@
       const out = {
         note(layer, wave, n, len, vol, attack, offset = 0) {
           A.tone({ wave, f: freq(n), dur: len * dt * 0.92, vol, attack: attack || 0.004, bus: p.layers[layer], delay: t + offset * dt - ctx.currentTime });
+          // At Bloom 7 a voice that isn't the hero's sings along, slightly flat (see bloom.js).
+          if (music.bloomVoice && vol >= 0.05 && midi(n) > 60) A.tone({ wave: 'sine', f: freq(midi(n) - 0.45), dur: len * dt * 0.95, vol: vol * 0.45, attack: 0.08, bus: p.layers[layer], delay: t + (offset + 0.2) * dt - ctx.currentTime });
         },
         drum(layer, kind, vol) {
           drum(p.layers[layer], kind, vol, t - ctx.currentTime);
@@ -309,5 +414,6 @@
   }
   setInterval(pump, 30);
 
-  HA.music = { TRACKS, play, setLayers, get playing() { return wanted; } };
+  const music = { TRACKS, play, setLayers, bloomVoice: false, get playing() { return wanted; } };
+  HA.music = music;
 })(window.HA);

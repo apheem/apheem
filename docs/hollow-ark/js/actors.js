@@ -65,7 +65,8 @@
     const p = world.player;
     const room = world.room;
     if (p.dead) {
-      if (--p.deadTimer <= 0) world.respawn();
+      // The suit reboots once any scene running when it failed is over, never in the middle of one.
+      if (--p.deadTimer <= 0 && !world.scene) world.respawn();
       return;
     }
     const { held, pressed } = input;
@@ -79,6 +80,10 @@
       HA.audio.play('switch');
       world.weaponBanner = 90;
     }
+
+    // A Bloom bulb is eaten only on a press of its own button (see bloom.js).
+    if (pressed.item) HA.bloom.eat(world);
+    if (p.rush > 0) p.rush--;
 
     // Water, the boots and the grapple change how the hero moves (see abilities.js).
     const AB = HA.abilities;
@@ -194,7 +199,7 @@
     const p = world.player;
     if (p.dead || p.hidden) return;
     if (p.invuln > 0 && p.invuln < 60 && Math.floor(p.invuln / 3) % 2) return;
-    const H = HA.art.hero;
+    const H = HA.art.heroFor(HA.bloom.stage(world.state));
     let spr = H.idle;
     let bob = 0;
     if (!p.onGround) spr = p.vy < 0 ? H.jump : H.fall;
@@ -215,6 +220,12 @@
     ctx.translate(cx, top);
     ctx.scale(p.facing, 1);
     ctx.drawImage(img, -6, 0);
+    // A bulb's rush: the suit glows pink while the double damage lasts, and flickers as it runs out.
+    if (p.rush > 0 && !flash && (p.rush > 180 || Math.floor(p.rush / 8) % 2)) {
+      ctx.globalAlpha = 0.22 + 0.18 * Math.sin(world.time * 0.15);
+      ctx.drawImage(spr.pink, -6, 0);
+      ctx.globalAlpha = 1;
+    }
     // Gun in hand, pointed where the hero aims
     const weapon = p.weapons[p.wi];
     if (!weapon) {
@@ -243,8 +254,15 @@
     drifter: { w: 10, h: 10, hp: 3, dmg: 2, drops: { small: 2, big: 0, heart: 0.25 } },
     warden: { w: 14, h: 12, hp: 9, dmg: 2, drops: { small: 2, big: 1, heart: 0.4 } },
     walker: { w: 12, h: 18, hp: 14, dmg: 3, drops: { small: 3, big: 1, heart: 0.5 } },
+    // The Gardens: spore pods that burst into a stinging cloud, slow Warden pickers with a long reach, and the
+    // Bloomsworn, the Steward's dosed soldiers, who charge in a frenzy and then stagger.
+    pod: { w: 10, h: 9, hp: 2, dmg: 0, drops: { small: 1, big: 0, heart: 0.05 } },
+    picker: { w: 12, h: 26, hp: 12, dmg: 2, drops: { small: 3, big: 1, heart: 0.4 } },
+    bloomsworn: { w: 10, h: 16, hp: 20, dmg: 3, drops: { small: 3, big: 1, heart: 0.5 } },
   };
-  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker' };
+  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn' };
+  // What the Bloomsworn are thinking. Only a hero with the Bloom in them (stage 3 or more) can hear it.
+  const THOUGHTS = ['SO LOUD', 'WHERE IS MY GIRL', 'IT HURTS WHEN IT STOPS', 'COUNT ME', 'SO WARM', 'I HAD A NAME', 'KEEP MOVING'];
 
   function makeEnemy(spawn) {
     const type = TYPES[spawn.type];
@@ -272,7 +290,7 @@
   }
 
   function updateEnemy(world, e) {
-    if (e.boss) return HA.boss.update(world, e);
+    if (e.boss) return HA.bosses[e.type].update(world, e);
     const p = world.player;
     const room = world.room;
     e.t++;
@@ -351,20 +369,188 @@
         e.vx = 0;
       }
       if (hit.left || hit.right) e.vx = 0;
+    } else if (e.type === 'pod') {
+      updatePod(world, e, px, py);
+    } else if (e.type === 'picker') {
+      updatePicker(world, e, px, py, dist);
+    } else if (e.type === 'bloomsworn') {
+      updateBloomsworn(world, e, px, py, dist);
     }
 
     // Touch damage
-    if (!p.dead && HA.overlap(e, p)) world.hurtPlayer(ENEMY[e.type].dmg, ex);
+    if (!p.dead && ENEMY[e.type].dmg && HA.overlap(e, p)) world.hurtPlayer(ENEMY[e.type].dmg, ex);
+  }
+
+  // Gravity and footing for things that walk, stopping short of ledges. Returns the move's hits.
+  function walk(world, e) {
+    const room = world.room;
+    e.vy = Math.min(e.vy + 0.3, 4);
+    const hit = HA.room.move(room, e, e.vx, e.vy);
+    if (hit.down) e.vy = 0;
+    const aheadX = e.vx > 0 ? e.x + e.w + 1 : e.x - 1;
+    const t = room.tile(Math.floor(aheadX / 8), Math.floor((e.y + e.h + 2) / 8));
+    hit.ledge = hit.down && e.vx && t !== HA.room.SOLID && t !== HA.room.ONEWAY && t !== HA.room.CRATE;
+    if (hit.ledge) {
+      e.x -= e.vx;
+      e.vx = 0;
+    }
+    if (hit.left || hit.right) e.vx = 0;
+    return hit;
+  }
+
+  // A spore pod swells when the hero comes close (or is shot), then bursts into a cloud that stings while
+  // anyone stands in it. A burst pod grows back after a while.
+  function updatePod(world, e, px, py) {
+    const near = Math.abs(px - (e.x + e.w / 2)) < 30 && Math.abs(py - (e.y + e.h / 2)) < 26;
+    if (e.state === 'spent') {
+      if (--e.timer <= 0) e.state = 'shut';
+      return;
+    }
+    if (e.state === 'swell') {
+      if (--e.timer <= 0) burstPod(world, e);
+      return;
+    }
+    if (near && !world.player.dead) {
+      e.state = 'swell';
+      e.timer = 40;
+      HA.audio.play('swell');
+    }
+  }
+
+  function burstPod(world, e) {
+    e.state = 'spent';
+    e.timer = 420;
+    sporeCloud(world, e.x + e.w / 2, e.y + e.h, 30, 22, 180);
+    HA.audio.play('spores');
+  }
+
+  // A stinging cloud of Bloom spores (from pods, and from Wick). It hurts while the hero stands in it.
+  function sporeCloud(world, cx, floorY, w, h, life) {
+    const c = { kind: 'cloud', x: cx - w / 2, y: floorY - h, w, h, life, max: life };
+    c.update = (wd, self) => {
+      if (--self.life <= 0) wd.actors = wd.actors.filter((a) => a !== self);
+      const inner = { x: self.x + 3, y: self.y + 4, w: self.w - 6, h: self.h - 4 };
+      if (self.life > 20 && HA.overlap(inner, wd.player)) wd.hurtPlayer(1, self.x + self.w / 2);
+      if (wd.time % 3 === 0) {
+        wd.particles.push({ x: self.x + Math.random() * self.w, y: self.y + self.h - Math.random() * self.h, vx: HA.rand(-0.2, 0.2), vy: HA.rand(-0.4, -0.1), life: 24, max: 24, color: Math.random() < 0.5 ? '#f27ad8' : '#b04ad0', size: Math.random() < 0.3 ? 2 : 1, grav: 0 });
+      }
+    };
+    c.draw = (g, wd, self, cam) => {
+      const a = Math.min(1, self.life / 30) * 0.32;
+      g.globalAlpha = a;
+      g.fillStyle = '#b04ad0';
+      g.fillRect(Math.round(self.x + 2 - cam.x), Math.round(self.y + 4 - cam.y), self.w - 4, self.h - 4);
+      g.fillStyle = '#f27ad8';
+      g.fillRect(Math.round(self.x + 5 - cam.x), Math.round(self.y + 7 - cam.y), self.w - 10, self.h - 10);
+      g.globalAlpha = 1;
+    };
+    world.actors.push(c);
+    return c;
+  }
+
+  // A Warden picker: slow on its stilts, but its picking arm reaches far. The arm glows before it shoots out.
+  function updatePicker(world, e, px, py, dist) {
+    const p = world.player;
+    const ex = e.x + e.w / 2;
+    const level = Math.abs(py - (e.y + 12)) < 22;
+    if (e.state === 'reach') {
+      e.vx = 0;
+      if (--e.timer === 0) {
+        e.state = 'pick';
+        e.timer = 14;
+        HA.audio.play('snip');
+      }
+    } else if (e.state === 'pick') {
+      const arm = { x: e.facing > 0 ? e.x + e.w : e.x - 44, y: e.y + 9, w: 44, h: 5 };
+      if (!p.dead && HA.overlap(arm, p)) world.hurtPlayer(2, ex);
+      if (--e.timer === 0) {
+        e.state = 'rest';
+        e.timer = 50;
+      }
+    } else {
+      if (e.state === 'rest' && --e.timer <= 0) e.state = null;
+      const awake = dist < 150 && Math.abs(py - (e.y + e.h / 2)) < 50 && !p.dead;
+      if (awake && !e.state) e.facing = HA.sign(px - ex);
+      const want = awake && !e.state && Math.abs(px - ex) > 30 ? e.facing * 0.3 : 0;
+      e.vx = approach(e.vx, want, 0.03);
+      if (awake && !e.state && level && Math.abs(px - ex) < 52) {
+        e.state = 'reach';
+        e.timer = 34;
+        HA.audio.play('telegraph');
+      }
+    }
+    walk(world, e);
+  }
+
+  // The Bloomsworn: a dosed soldier. On seeing the hero it roars, charges in a frenzy for up to 8 seconds,
+  // then staggers, spent, and takes extra damage while it sways.
+  function updateBloomsworn(world, e, px, py, dist) {
+    const p = world.player;
+    const ex = e.x + e.w / 2;
+    const sees = dist < 150 && Math.abs(py - (e.y + e.h / 2)) < 30 && !p.dead;
+    if (world.state.bloom >= 3 && dist < 120 && e.t % 240 === 0) world.floatText(ex, e.y - 6, THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)], 'rgba(242,122,216,0.6)');
+    switch (e.state) {
+      case 'roar':
+        e.vx = 0;
+        if (--e.timer === 0) {
+          e.state = 'charge';
+          e.timer = 480;
+          e.turn = 0;
+        }
+        break;
+      case 'charge': {
+        // It turns toward the hero only now and then, so a jump over it buys time.
+        if (--e.turn <= 0) {
+          e.turn = 40;
+          e.facing = HA.sign(px - ex);
+        }
+        e.vx = approach(e.vx, e.facing * 2, 0.12);
+        if (world.time % 6 === 0) world.particles.push({ x: ex - e.facing * 4, y: e.y + e.h - 1, vx: -e.facing * 0.4, vy: -0.3, life: 12, max: 12, color: '#b04ad0', size: 1, grav: 0 });
+        if (--e.timer <= 0) {
+          e.state = 'stagger';
+          e.timer = 120;
+        }
+        break;
+      }
+      case 'stagger':
+        e.vx = approach(e.vx, 0, 0.1);
+        if (--e.timer <= 0) {
+          e.state = 'rest';
+          e.timer = 60;
+        }
+        break;
+      default:
+        if (e.state === 'rest' && --e.timer <= 0) e.state = null;
+        e.vx = approach(e.vx, Math.sin(e.t * 0.01) * 0.3, 0.02);
+        if (e.vx) e.facing = HA.sign(e.vx);
+        if (sees && !e.state) {
+          e.state = 'roar';
+          e.timer = 30;
+          e.facing = HA.sign(px - ex);
+          e.alert = 30;
+          HA.audio.play('roar');
+        }
+    }
+    const hit = walk(world, e);
+    if (e.state === 'charge' && (hit.ledge || hit.left || hit.right)) {
+      e.facing = -e.facing;
+      e.turn = 40;
+    }
   }
 
   function hurtEnemy(world, e, dmg, dir) {
     if (e.dead) return;
-    if (e.boss) return HA.boss.hurt(world, e, dmg, dir);
+    if (e.boss) return HA.bosses[e.type].hurt(world, e, dmg, dir);
+    if (e.type === 'bloomsworn' && e.state === 'stagger') dmg = Math.ceil(dmg * 1.5);
     e.hp -= dmg;
     e.flash = 5;
     if (e.type === 'crawler') e.vx = 0.45 * sign(e.vx) || 0.45;
     else if (e.type === 'walker') e.angry = true;
-    else {
+    else if (e.type === 'pod') {
+      if (e.hp <= 0 && e.state !== 'spent') burstPod(world, e);
+    } else if (e.type === 'picker' || e.type === 'bloomsworn') {
+      if (!e.state) e.facing = -dir || e.facing;
+    } else {
       e.x += dir * 1.5;
     }
     world.burst(e.x + e.w / 2, e.y + e.h / 2, ['#f27ad8', '#ffffff'], 3, 1.2);
@@ -378,6 +564,7 @@
       for (let i = 0; i < d.small; i++) world.pickups.push(makeShard(cx, cy, false));
       for (let i = 0; i < d.big; i++) world.pickups.push(makeShard(cx, cy, true));
       if (Math.random() < d.heart && world.player.hp < world.player.maxHp) world.pickups.push(makeHeart(cx, cy));
+      HA.bloom.onKill(world);
       world.shake(2);
       world.freeze(3);
       HA.audio.play('kill');
@@ -387,10 +574,12 @@
   }
 
   function drawEnemy(ctx, world, e, cam) {
-    if (e.boss) return HA.boss.draw(ctx, world, e, cam);
+    if (e.boss) return HA.bosses[e.type].draw(ctx, world, e, cam);
+    if (e.type === 'pod') return drawPod(ctx, world, e, cam);
     const frames = HA.art.enemies[e.type];
-    const walking = e.type !== 'walker' || Math.abs(e.vx) > 0.05;
-    const spr = frames[walking ? Math.floor(e.t / (e.type === 'crawler' ? 10 : 14)) % frames.length : 0];
+    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn') || Math.abs(e.vx) > 0.05;
+    let spr = frames[walking ? Math.floor(e.t / (e.type === 'crawler' ? 10 : e.state === 'charge' ? 5 : 14)) % frames.length : 0];
+    if (e.type === 'bloomsworn' && e.state === 'stagger') spr = HA.art.enemies.bloomswornStagger;
     const img = e.flash > 0 ? spr.white : spr.img;
     const x = Math.round(e.x + e.w / 2 - cam.x);
     const y = Math.round(e.y + e.h - spr.h - cam.y);
@@ -408,6 +597,56 @@
       ctx.fillStyle = '#fff0a8';
       ctx.fillRect(x + (e.facing > 0 ? 0 : -4), y + 3, 4, 2);
     }
+    if (e.type === 'picker') drawPickerArm(ctx, world, e, x, y);
+    if (e.type === 'bloomsworn' && (e.state === 'roar' || e.alert > 0)) {
+      if (e.alert > 0) e.alert--;
+      HA.font.draw(ctx, '!', x, y - 10, '#f27ad8', { align: 'center' });
+    }
+  }
+
+  // The picker's arm: folded, glowing while it winds up, then shot out to its full reach.
+  function drawPickerArm(ctx, world, e, x, y) {
+    const f = e.facing;
+    const ay = y + 9;
+    const glow = e.state === 'reach' && Math.floor(e.timer / 4) % 2 === 0;
+    const len = e.state === 'pick' ? 44 : 6;
+    ctx.fillStyle = '#10121c';
+    ctx.fillRect(f > 0 ? x + 4 : x - 4 - len, ay - 1, len, 4);
+    ctx.fillStyle = glow ? '#fff0a8' : '#a9b6cc';
+    ctx.fillRect(f > 0 ? x + 4 : x - 4 - len, ay, len, 2);
+    // the pickers' pincers
+    ctx.fillStyle = glow ? '#fff0a8' : '#6c7894';
+    const tip = f > 0 ? x + 4 + len : x - 4 - len - 3;
+    ctx.fillRect(tip, ay - 2, 3, 2);
+    ctx.fillRect(tip, ay + 2, 3, 2);
+  }
+
+  // A spore pod: a bulb on a short stalk that breathes, swells pink before it bursts, and lies flat once spent.
+  function drawPod(ctx, world, e, cam) {
+    const x = Math.round(e.x - cam.x);
+    const y = Math.round(e.y + e.h - cam.y);
+    const flash = e.flash > 0;
+    if (e.state === 'spent') {
+      ctx.fillStyle = '#3d1850';
+      ctx.fillRect(x + 1, y - 2, 8, 2);
+      ctx.fillStyle = '#5c2479';
+      ctx.fillRect(x + 3, y - 3, 4, 1);
+      return;
+    }
+    const swell = e.state === 'swell' ? Math.min(3, Math.floor((40 - e.timer) / 10)) : Math.floor(e.t / 30) % 2;
+    const r = 3 + swell;
+    const cx = x + 5;
+    const cy = y - 3 - r;
+    ctx.fillStyle = '#2a4a33';
+    ctx.fillRect(cx, y - 3, 1, 3);
+    ctx.fillStyle = flash ? '#ffffff' : '#10121c';
+    ctx.fillRect(cx - r - 1, cy - r, r * 2 + 3, r * 2 + 1);
+    ctx.fillStyle = flash ? '#ffffff' : e.state === 'swell' && Math.floor(e.timer / 4) % 2 ? '#f27ad8' : '#b04ad0';
+    ctx.fillRect(cx - r, cy - r + 1, r * 2 + 1, r * 2 - 1);
+    ctx.fillStyle = flash ? '#ffffff' : '#ffc2dc';
+    ctx.fillRect(cx - 1, cy - r + 2, 2, 1);
+    ctx.fillStyle = '#5c2479';
+    ctx.fillRect(cx - r + 1, cy + r - 2, r * 2 - 1, 1);
   }
 
   // ---- Pickups ----
@@ -460,12 +699,20 @@
       HA.audio.play('heart');
     } else if (k.kind === 'weapon') {
       k.life = 0;
-      p.weapons.push(HA.weapons.make(k.id));
+      const w = HA.weapons.make(k.id);
+      const floor = HA.weapons.DEFS[k.id].floor;
+      if (floor) w.level = Math.max(w.level, floor(world)); // a launcher found after the Pruner was finished
+      p.weapons.push(w);
       p.wi = p.weapons.length - 1;
       p.charge = 0;
       world.burst(k.x + 6, k.y, ['#fff0a8', '#5fd4e8'], 20, 2);
       HA.audio.play('pickup');
       world.toast(k.message, 360);
+      if (world.collected) world.collected(k);
+    } else if (k.kind === 'bulb') {
+      if (!HA.bloom.pickUp(world, k)) return;
+      k.life = 0;
+      world.burst(k.x + 4, k.y + 4, ['#f27ad8', '#b04ad0'], 10, 1.2);
       if (world.collected) world.collected(k);
     } else if (k.kind === 'capsule') {
       k.life = 0;
@@ -496,6 +743,13 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(x + 9, y - 4 + bob, 1, 1);
       }
+    } else if (k.kind === 'bulb') {
+      const bob = Math.round(Math.sin(k.t * 0.05) * 1);
+      ctx.drawImage(I.bulb.img, x, y + bob);
+      if (Math.floor(k.t / 16) % 4 === 0) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 2, y + 1 + bob, 1, 1);
+      }
     } else if (k.kind === 'capsule') {
       const bob = Math.round(Math.sin(k.t * 0.06) * 1.5);
       ctx.drawImage(I.capsule.img, x, y - 2 + bob);
@@ -518,5 +772,5 @@
     ctx.fillRect(x + 3, y + 3, 10, 1);
   }
 
-  HA.actors = { MOVE, ENEMY, makePlayer, updatePlayer, drawPlayer, makeEnemy, updateEnemy, hurtEnemy, drawEnemy, makeShard, makeHeart, updatePickup, drawPickup, drawPedestal };
+  HA.actors = { MOVE, ENEMY, sporeCloud, makePlayer, updatePlayer, drawPlayer, makeEnemy, updateEnemy, hurtEnemy, drawEnemy, makeShard, makeHeart, updatePickup, drawPickup, drawPedestal };
 })(window.HA);

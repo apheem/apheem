@@ -165,6 +165,7 @@
     ui.stack = [titleMenu()];
     HA.audio.setPaused(false);
     HA.audio.charge(0);
+    HA.music.bloomVoice = false;
     HA.music.play('title');
   }
 
@@ -377,7 +378,7 @@
 
   function drawControls(g, m) {
     const pw = 300;
-    const ph = 146;
+    const ph = 156;
     const px = Math.round(W / 2 - pw / 2);
     const py = Math.round(H / 2 - ph / 2);
     drawPanel(g, px, py, pw, ph);
@@ -388,6 +389,7 @@
       ['FIRE', 'X / K', 'X / B / RT'],
       ['AIM', 'UP / DOWN IN AIR', 'STICK / D-PAD'],
       ['WEAPON', 'Q E  (OR C V)', 'LB / RB'],
+      ['EAT A BLOOM BULB', 'F / L', 'Y'],
       ['DROP DOWN', 'DOWN + JUMP', 'DOWN + A'],
       ['TALK, READ, REST', 'UP', 'UP'],
       ['MAP, JOURNAL', 'TAB / M', 'VIEW / BACK'],
