@@ -474,6 +474,83 @@
     },
   };
 
+  // The Engine Spine: a driving 7/8 (two, two, three) on machine percussion, the Ark's theme bent to fit the bar.
+  // It starts as only the engine; each lift the crew builds behind the hero adds a voice (layers 2 to 4), so the
+  // music grows as the people climb.
+  const SP_CHORDS = [chord('A1', 3), chord('F1', 4), chord('G1', 4), chord('E1', 4)];
+  const SP_THEME = [
+    [[0, 'E5', 2], [2, 'D5', 1], [3, 'C5', 1], [4, 'B4', 2], [6, 'C5', 1]],
+    [[0, 'A4', 4], [4, 'C5', 2], [6, 'F5', 1]],
+    [[0, 'D5', 2], [2, 'E5', 1], [3, 'D5', 1], [4, 'B4', 2], [6, 'G4', 1]],
+    [[0, 'G#4', 4], [4, 'B4', 2], [6, 'E5', 1]],
+  ];
+  TRACKS.spine = {
+    step: 60 / 152 / 2,
+    steps: 56,
+    layers: 4,
+    play(s, out) {
+      const bar = Math.floor(s / 7) % 8;
+      const at = s % 7;
+      const c = SP_CHORDS[bar % 4];
+      // the engine: kick on each group, a clank on the long one, a hiss of steam between
+      if (at === 0 || at === 2 || at === 4) out.drum(0, 'kick', at === 0 ? 0.3 : 0.2);
+      if (at === 5) out.drum(0, 'clank', 0.06);
+      if (at % 2 === 1) out.drum(0, 'hat', 0.02);
+      out.note(0, 'triangle', c.root + [0, 0, 0, 12, 7, 10, 12][at], 0.9, at === 0 ? 0.3 : 0.2);
+      // the first lift: an arpeggio over it
+      out.note(1, 0.125, c.root + 24 + [0, c.third, 7, 12, 7, c.third, 7][at], 0.8, 0.035);
+      // the second: the theme
+      for (const [st, n, len] of SP_THEME[bar % 4]) if (st === at && bar >= 4) out.note(2, 0.25, n, len, 0.07, 0.006);
+      for (const [st, n, len] of SP_THEME[bar % 4]) if (st === at && bar < 4) out.note(2, 0.25, midi(n) - 12, len, 0.06, 0.006);
+      // the third: a backbeat, and the theme an octave up over everything
+      if (at === 2 || at === 5) out.drum(3, 'snare', 0.11);
+      for (const [st, n, len] of SP_THEME[bar % 4]) if (st === at) out.note(3, 0.125, midi(n) + 12, len, 0.03, 0.004);
+      if (at === 0) out.note(3, 'triangle', c.root + 12 + c.third, 6.5, 0.05, 0.2);
+    },
+  };
+
+  // Abel, the Stoker: the Spine's engine slowed to a shovel's swing, a scrape and a roar, with the theme dragged
+  // low under it. Layer 2 (the second half) doubles the drums and lifts the theme an octave, burning.
+  TRACKS.abel = {
+    step: 60 / 120 / 4,
+    steps: 64,
+    layers: 2,
+    fadeIn: 0.2,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 4;
+      const at = s % 16;
+      const c = SP_CHORDS[bar];
+      // the shovel: in, scrape, throw
+      if (at === 0 || at === 6) out.drum(0, 'kick', 0.34);
+      if (at === 4 || at === 12) out.drum(0, 'hand', 0.14);
+      if (at === 10) out.drum(0, 'clank', 0.08);
+      if (at % 4 === 0) out.note(0, 'triangle', c.root + [0, 0, 7, 3][at / 4], 3, 0.28);
+      if (at === 0) out.note(0, 0.5, c.root + 12, 14, 0.03, 0.3);
+      themeAt(B_THEME[bar], at, (n, len) => out.note(0, 0.25, midi(n) + 12, len, 0.05, 0.02));
+      if (at % 2 === 0) out.drum(1, 'hat', 0.03);
+      if (at === 4 || at === 12) out.drum(1, 'snare', 0.13);
+      out.note(1, 0.125, c.root + 24 + [0, 7, c.third, 12][at % 4], 0.7, 0.03);
+      themeAt(B_THEME[bar], at, (n, len) => out.note(1, 0.125, midi(n) + 24, len, 0.04, 0.005));
+    },
+  };
+
+  // The Crew Camp: the theme slow on a soft voice, as someone might hum it by the stove, and the reactor's hum
+  // under the floor.
+  TRACKS.camp = {
+    step: 0.4,
+    steps: 64,
+    fadeIn: 2,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 4;
+      const at = s % 16;
+      const c = CRYO_CHORDS[bar];
+      if (at === 0) out.note(0, 'sine', c.root - 12, 16, 0.14, 0.8);
+      if (at === 0 || at === 8) out.note(0, 'triangle', c.root + 12 + c.third, 7, 0.03, 0.3);
+      themeAt(THEME[bar], at, (n, len) => out.note(0, 'triangle', midi(n) - 12, len, 0.07, 0.06));
+      if (at === 12) out.drum(0, 'hand', 0.04);
+    },
+  };
+
   // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
   let current = null;
   const fading = [];

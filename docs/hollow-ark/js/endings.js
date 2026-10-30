@@ -137,11 +137,14 @@
 
     // The hero is gone, so the news comes as the Wardens' counts on the boat's radio, fading out.
     deserter(s) {
-      const solder = s.people.solder === 'alive' ? 'COUNT: SOLDER. AT THE GATE.' : s.people.solder === 'dead' ? 'COUNT: SOLDER, 0.' : 'COUNT: SOLDER. NOT RECORDED.';
+      // From the Crew Camp (the Purser's last call), the climbers are up the Spine, and Shim may be in the vents.
+      const climbing = !!s.flags.crewCame;
+      const solder = s.people.solder === 'alive' ? (climbing ? 'COUNT: SOLDER. LOCATION: THE SPINE.' : 'COUNT: SOLDER. AT THE GATE.') : s.people.solder === 'dead' ? 'COUNT: SOLDER, 0.' : 'COUNT: SOLDER. NOT RECORDED.';
+      const shim = s.flags.shimRanOff ? ['COUNT: SHIM. LOCATION: THE VENTS.', 'CLIMBING.'] : ['COUNT: SHIM. LOCATION: THE WARRENS.', 'WATCHING THE GATE.'];
       return [
         count('COUNT: HULLFOLK, ' + hullfolkCount(s) + '.'),
         count(solder),
-        count('COUNT: SHIM. LOCATION: THE WARRENS.', 'WATCHING THE GATE.'),
+        count(...shim),
         { lines: [['...', COUNT]], hold: 90 },
         voice('I LANDED ALONE. THE FIRST PERSON ON THE NEW WORLD,', '232 YEARS LATE, WITH NO ONE TO TELL.'),
         voice('I STOOD ON THE GROUND. NOT A FLOOR.'),

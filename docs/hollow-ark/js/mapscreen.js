@@ -59,7 +59,8 @@
           const ch = r.map[ty][tx];
           const solid = ch === '#' || ch === '%';
           if (!solid) {
-            g.fillStyle = ch === '^' ? '#5c2479' : ch === '=' ? '#3a4258' : ch === '~' ? '#16343a' : ch === 's' ? '#3a1834' : '#141a2c';
+            const thorns = r.area === 'spine' ? '#7a2e16' : '#5c2479'; // the Spine's are hot grilles, not Bloom
+            g.fillStyle = ch === '^' ? thorns : ch === '=' ? '#3a4258' : ch === '~' ? '#16343a' : ch === 's' ? '#3a1834' : '#141a2c';
             g.fillRect(ox + tx, oy + ty, 1, 1);
             continue;
           }
@@ -81,11 +82,13 @@
           }
         }
       }
-      // rest pods
+      // rest pods, and each stop of the crew's lift up the Engine Spine once they've built it
       r.map.forEach((row, ty) => {
         for (let tx = 0; tx < row.length; tx++) {
-          if (row[tx] === 'S' && HA.save.isSeen(world, r, tx, ty)) {
-            g.fillStyle = '#5fd4e8';
+          const L = r.legend && r.legend[row[tx]];
+          const lift = L && L.crew && L.when(world.state);
+          if ((row[tx] === 'S' || lift) && HA.save.isSeen(world, r, tx, ty)) {
+            g.fillStyle = lift ? '#c98a4a' : '#5fd4e8';
             g.fillRect(ox + tx - 1, oy + ty - 1, 3, 3);
           }
         }

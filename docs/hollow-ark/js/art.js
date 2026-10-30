@@ -312,6 +312,27 @@
     sprite(DROWNED_TOP.concat(['..0k0..0k0..', '.0k0....0k0.', '.0K0....0K0.', '0KK0....0KK0', '0000....0000'])),
   ];
 
+  // The Engine Spine: Bloomsworn climbers in the Steward's colours, gripping the shaft wall or running at the hero;
+  // steam drones, little boilers on a rotor with a nozzle underneath; and heat slugs, glowing orange.
+  const CLIMBER_TOP = ['...0000...', '..0uuuu0..', '..0hPhP0..', '..0hhhh0..', '...0hp0...', '.00uuuu00.', '0hPuUUuuh0'];
+  enemies.climber = [
+    sprite(CLIMBER_TOP.concat(['0h0uUUu00.', '...0uuu0..', '...0uPu0..', '..0uu0uu0.', '..0u0.0u0.', '.0Uu0.0uU0', '.000...000'])),
+    sprite(CLIMBER_TOP.concat(['.00uUUu0h0', '...0uuu0..', '...0uPu0..', '..0uu0u0..', '.0uu0..0u0', '.0U0...0U0', '.000....00'])),
+  ];
+  // gripping the wall on its left, facing out
+  enemies.climberGrip = [
+    sprite(['0h.0000...', '0h0uuuu0..', '0h0hPhP0..', '.00hhhh0..', '...0hp0...', '..0uuuu0..', '.0uUUuuh0.', '0huUUuu0h0', '0h0uuu0.0.', '...0uPu0..', '..0uu0uu0.', '.0uu00uu0.', '.0U0..0U0.', '.00....00.']),
+    sprite(['...0000...', '0h0uuuu0..', '0h0hPhP0..', '0h0hhhh0..', '.0.0hp0...', '..0uuuu0..', '.0uUUuuh0.', '0huUUuu0h0', '0h0uuu00..', '...0uPu0..', '..0uu0uu0.', '..0u00uu0.', '.0U0.0U0..', '.00..00...']),
+  ];
+  enemies.steamer = [
+    sprite(['0000....0000', '...0KKKK0...', '..0kLLLLk0..', '.0kLyLLLLk0.', '.0kLLLLoLk0.', '.0kkLLLLkk0.', '..0kkkkkk0..', '...00kk00...', '....0LL0....', '.....00.....']),
+    sprite(['..00000000..', '...0KKKK0...', '..0kLLLLk0..', '.0kLyLLLLk0.', '.0kLLLLoLk0.', '.0kkLLLLkk0.', '..0kkkkkk0..', '...00kk00...', '....0LL0....', '.....00.....']),
+  ];
+  enemies.slug = [
+    sprite(['....00000...', '..00oooyo0..', '.0ooyooooo0.', '0rooooooooo0', '0rrrrrrrrrr0', '.0000000000.']),
+    sprite(['............', '...000000...', '.00oooyoo00.', '0roooooooyo0', '0rrrrrrrrrr0', '.0000000000.']),
+  ];
+
   // ---- Pickups and HUD icons ----
   const items = {
     shardSmall: [sprite(['.y.', 'yoy', '.y.']), sprite(['.o.', 'oyo', '.o.'])],

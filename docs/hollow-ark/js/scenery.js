@@ -82,6 +82,21 @@
       walk: ['#c98a4a', '#7a5030', '#3a2a1c', '#2a1e14'],
       edge: 'rgba(1,4,4,0.62)',
     },
+    // The Engine Spine: steel grey and soot, lit white-orange by the reactor up its middle, steam everywhere.
+    // Its thorns are hot grilles.
+    spine: {
+      bg: '#0b0a0c',
+      panel: '#121114',
+      panelEdge: '#18161a',
+      panelMark: '#201c1f',
+      conduit: ['#1e1a1c', '#33282a', '#4a3226'],
+      light: 'rgba(255,176,112,0.16)',
+      lamp: '#ffb070',
+      tile: { deep: '#141317', deep2: '#18171c', face: '#34343c', inner: '#44444e', speck: '#5e5e6a', lip: '#ffb070', lip2: '#9a5a32', under: '#08080a', left: '#585864', right: '#1c1c22' },
+      walk: ['#c9d0d8', '#7a8090', '#3e4250', '#2a2c36'],
+      edge: 'rgba(6,3,2,0.6)',
+      heat: true,
+    },
   };
   // Container colours: rust, teal, olive, ochre, slate and plum, each with a lit top edge and a dark rib.
   const CONTAINERS = [
@@ -896,6 +911,155 @@
       g.globalAlpha = 1;
     },
 
+    // ---- The Engine Spine ----
+    // The reactor up the middle of the Spine: a casing banded every few metres, its core glowing through.
+    reactor(g, s, rnd, T, room) {
+      const x = s.x * 8;
+      const H = room.ph;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 2, 0, 36, H);
+      g.fillStyle = '#221e20';
+      g.fillRect(x, 0, 32, H);
+      g.fillStyle = '#3a2218';
+      g.fillRect(x + 8, 0, 16, H);
+      const core = g.createLinearGradient(x + 8, 0, x + 24, 0);
+      core.addColorStop(0, 'rgba(255,143,74,0)');
+      core.addColorStop(0.5, 'rgba(255,214,160,0.4)');
+      core.addColorStop(1, 'rgba(255,143,74,0)');
+      g.fillStyle = core;
+      g.fillRect(x + 8, 0, 16, H);
+      g.fillStyle = 'rgba(255,240,200,0.5)';
+      g.fillRect(x + 15, 0, 2, H);
+      for (let y = 10 + Math.floor(rnd() * 20); y < H; y += 56) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 2, y, 36, 6);
+        g.fillStyle = '#4a4a56';
+        g.fillRect(x - 1, y + 1, 34, 2);
+        g.fillStyle = '#ffb070';
+        g.fillRect(x + 4, y + 4, 2, 1);
+        g.fillRect(x + 26, y + 4, 2, 1);
+      }
+    },
+    // Boilers: riveted tanks with a gauge, sitting on their feet (each at [x, y], the tile under its middle).
+    boilers(g, s) {
+      for (const [bx, by] of s.at) {
+        const x = bx * 8 - 22;
+        const y = by * 8 - 34;
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y + 2, 44, 30);
+        g.fillRect(x + 2, y, 40, 34);
+        g.fillStyle = '#3a3036';
+        g.fillRect(x + 2, y + 2, 40, 30);
+        g.fillStyle = '#4a4048';
+        g.fillRect(x + 3, y + 3, 38, 3);
+        g.fillStyle = '#2a2428';
+        for (let i = 8; i < 40; i += 8) g.fillRect(x + i, y + 4, 1, 26);
+        g.fillStyle = '#6a5a5e';
+        for (let i = 5; i < 40; i += 8) g.fillRect(x + i, y + 8, 1, 1);
+        // the gauge
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 16, y + 10, 12, 12);
+        g.fillStyle = '#d8cfc0';
+        g.fillRect(x + 17, y + 11, 10, 10);
+        g.fillStyle = '#e8434f';
+        g.fillRect(x + 22, y + 13, 1, 5);
+        g.fillRect(x + 23, y + 13, 2, 1);
+        // feet
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 6, y + 32, 4, 2);
+        g.fillRect(x + 34, y + 32, 4, 2);
+      }
+    },
+    // The crew's lift shaft: two rails and their cross-ties, from row y0 down to row y1, either side of column x.
+    shaft(g, s) {
+      const x = s.x * 8 + 4;
+      const y0 = s.y0 * 8;
+      const y1 = (s.y1 + 1) * 8;
+      for (const dx of [-14, 11]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + dx, y0, 3, y1 - y0);
+        g.fillStyle = '#5a4028';
+        g.fillRect(x + dx + 1, y0, 1, y1 - y0);
+      }
+      g.fillStyle = '#2a1e14';
+      for (let y = y0 + 6; y < y1; y += 12) g.fillRect(x - 12, y, 23, 1);
+    },
+    // A bulkhead into the Gardens, sealed, with the Bloom grown thick through its seams.
+    bulkhead(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y, 30, 52);
+      g.fillStyle = '#3a3a44';
+      g.fillRect(x + 1, y + 1, 28, 50);
+      for (let i = 0; i < 28; i += 6) {
+        g.fillStyle = HAZARD[1];
+        g.fillRect(x + 1 + i, y + 1, 3, 3);
+        g.fillRect(x + 1 + i, y + 47, 3, 3);
+      }
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 14, y + 4, 2, 44);
+      // the Bloom, pushing out through the seam and over the plates
+      const B = ['#5c2479', '#b04ad0', '#f27ad8'];
+      for (let i = 0; i < 40; i++) {
+        const by = y + 4 + ((i * 17) % 44);
+        const bx = x + 10 + ((i * 7) % 12);
+        g.fillStyle = B[i % 3];
+        g.fillRect(bx, by, 2 + (i % 3), 2);
+      }
+      g.globalAlpha = 0.6;
+      HA.font.draw(g, 'GARDENS', x + 34, y + 18, '#a9b6cc', { shadow: null });
+      HA.font.draw(g, 'SEALED', x + 34, y + 27, '#e8434f', { shadow: null });
+      g.globalAlpha = 1;
+    },
+    // The old crew's bunks, three high, at the top of the Spine.
+    bunks(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      for (let i = 0; i < 3; i++) {
+        const bx = x + i * 26;
+        g.fillStyle = '#10121c';
+        g.fillRect(bx, y - 4, 2, 52);
+        g.fillRect(bx + 22, y - 4, 2, 52);
+        for (const ly of [y + 6, y + 22, y + 38]) {
+          g.fillStyle = '#10121c';
+          g.fillRect(bx, ly, 24, 4);
+          g.fillStyle = '#4a3a2e';
+          g.fillRect(bx + 2, ly, 20, 2);
+          g.fillStyle = '#7a5a3a';
+          g.fillRect(bx + 3, ly - 2, 7, 2);
+        }
+      }
+    },
+    // The line phone the crew strung along the keel tram's cable, down to the Warrens.
+    phone(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8 - 6;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 4, y - 12, 10, 14);
+      g.fillStyle = '#5a4028';
+      g.fillRect(x - 3, y - 11, 8, 12);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 6, y - 10, 2, 8);
+      g.fillStyle = '#a8743a';
+      g.fillRect(x - 1, y - 8, 4, 1);
+      g.fillRect(x - 1, y - 5, 4, 1);
+      g.fillStyle = '#3a2818';
+      g.fillRect(x + 1, y + 2, 1, 6);
+      g.fillRect(x + 1, -8, 1, y - 4);
+    },
+    // An intercom speaker on the wall.
+    intercom(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 6, y - 6, 13, 13);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x - 5, y - 5, 11, 11);
+      g.fillStyle = '#10121c';
+      for (let i = -3; i <= 3; i += 2) g.fillRect(x - 3, y + i, 7, 1);
+    },
+
     // The Gardener's gallery, behind the glass: clean white tiles, a bench, and her own door out.
     gallery(g, s) {
       const x0 = s.x0 * 8;
@@ -1022,6 +1186,18 @@
           g.fillStyle = d;
           g.fillRect(x + 1, y + 3, 1, 2);
           g.fillRect(x + 5, y + 3, 1, 2);
+        } else if (t === HA.room.THORNS && T.heat) {
+          // a grille over the heat, its bars glowing
+          g.fillStyle = '#3a1a10';
+          g.fillRect(x, y + 3, 8, 5);
+          g.fillStyle = '#e8434f';
+          g.fillRect(x, y + 6, 8, 1);
+          for (const sx of [0, 3, 6]) {
+            g.fillStyle = '#ff9b3d';
+            g.fillRect(x + sx, y + 2, 2, 5);
+            g.fillStyle = '#fff0a8';
+            g.fillRect(x + sx, y + 2, 2, 1);
+          }
         } else if (t === HA.room.THORNS) {
           g.fillStyle = '#2a0f36';
           g.fillRect(x, y + 5, 8, 3);
@@ -1061,7 +1237,9 @@
       if (s.kind === 'toolbag' && !world.state.flags.toolbag) drawToolbag(g, s, cam);
       if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
       if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
-      if (s.kind === 'tramcar' && (!world.state.flags.tram || (world.tramGo || 0) > 0)) drawTramCar(g, world, s, cam);
+      // The keel tram: at the Ballast's station until it leaves, and at the Spine Foot once the climbers come in on it.
+      const tram = s.at === 'spine' ? !!world.state.flags.crewCame : !world.state.flags.tram || (world.tramGo || 0) > 0;
+      if (s.kind === 'tramcar' && tram) drawTramCar(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -1316,21 +1494,34 @@
     g.fillRect(x + 6, y, 4, 1);
   }
 
+  // A lift car: the old crew's grey cage, the Hullfolk's own (the crew's lift up the Spine, patched in brown, which
+  // rises into place as they finish it), or the great Tower Lift.
   function drawLift(g, world, l, cam) {
-    const x = Math.round(l.x - cam.x);
-    const y = Math.round(l.y - cam.y);
+    const big = l.legend.big;
+    const w = big ? 40 : 24;
+    const h = big ? 30 : 22;
+    const x = Math.round(l.x - (big ? 8 : 0) - cam.x);
+    const y = Math.round(l.y - (big ? 8 : 0) + (l.rise || 0) - cam.y);
+    const crew = l.legend.crew;
     g.fillStyle = '#10121c';
-    g.fillRect(x, y, 24, 22);
-    g.fillStyle = '#3a4258';
-    g.fillRect(x + 1, y + 1, 22, 2);
-    g.fillRect(x + 1, y + 19, 22, 3);
-    g.fillStyle = '#6c7894';
-    for (let b = 2; b < 23; b += 4) g.fillRect(x + b, y + 3, 1, 16);
-    g.fillStyle = '#a9b6cc';
-    g.fillRect(x + 1, y + 1, 22, 1);
+    g.fillRect(x, y, w, h);
+    g.fillStyle = crew ? '#5a4028' : '#3a4258';
+    g.fillRect(x + 1, y + 1, w - 2, 2);
+    g.fillRect(x + 1, y + h - 3, w - 2, 3);
+    g.fillStyle = crew ? '#a8743a' : '#6c7894';
+    for (let b = 2; b < w - 1; b += 4) g.fillRect(x + b, y + 3, 1, h - 6);
+    g.fillStyle = crew ? '#c98a4a' : '#a9b6cc';
+    g.fillRect(x + 1, y + 1, w - 2, 1);
+    if (crew) {
+      // patched: a plate bolted across, and the cable it hangs from
+      g.fillStyle = '#7a5a3a';
+      g.fillRect(x + 4, y + 9, 9, 5);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 11, y - 40, 2, 40);
+    }
     const lit = l.legend.lit ? l.legend.lit(world.state) : world.state.flags.cradles;
     g.fillStyle = lit ? '#7ad1a0' : '#e8434f';
-    g.fillRect(x + 11, y + 5, 2, 2);
+    g.fillRect(x + w / 2 - 1, y + 5, 2, 2);
   }
 
   // Thick glass: the Gardener's gallery is behind it. Nothing gets through.

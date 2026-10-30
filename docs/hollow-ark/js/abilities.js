@@ -1,8 +1,10 @@
 'use strict';
 // Movement the hero gains on the way down and up the ship: the thruster pack, the grapple's pull, the
-// pressure boots, and water (swimming is built in). The hero's update calls these hooks, and
-// tests/rooms-check.js runs exactly the same code, so a room the checker passes really can be crossed with
-// the abilities it was checked with. p.abilities is the save's { thruster, grapple, boots } table.
+// pressure boots, and water (swimming is built in), plus the Engine Spine's steam vents, which carry the hero
+// up (a room's `vents: [{ x0, x1, y0, y1 }]`, in tiles, from the grate under row y1 up to row y0). The hero's
+// update calls these hooks, and tests/rooms-check.js runs exactly the same code, so a room the checker passes
+// really can be crossed with the abilities it was checked with. p.abilities is the save's { thruster, grapple,
+// boots } table.
 // Map legend these add to every room: ~ water   o grapple hook (a ring the harpoon can bite)
 // A door whose legend has a ring (the Seed Vault's hatch) is torn open by the grapple instead.
 (function (HA) {
@@ -19,6 +21,8 @@
   const BOOTS = { run: 0.75, gravity: 0.16, maxFall: 2.2, jump: 3.9 };
   // The harpoon bites a hook within range near the line of aim, then winches the hero up to hang from it.
   const GRAPPLE = { range: 96, cone: 0.42, speed: 4.5, cooldown: 12 };
+  // The Engine Spine's steam vents: a column of steam that carries whoever is in it up to its top.
+  const VENT = { rise: 2.2, push: 0.3 };
 
   const has = (p, k) => !!(p.abilities && p.abilities[k]);
   const waterAt = (room, px, py) => room.tile(Math.floor(px / 8), Math.floor(py / 8)) === HA.room.WATER;
@@ -56,9 +60,22 @@
     return true;
   }
 
-  // Replaces normal gravity while in water or on the grapple. Returns true if it handled the fall.
+  // Is the body in one of the room's steam vents ({ x0, x1, y0, y1 }, in tiles)? Its middle and its feet count.
+  function inVent(room, p) {
+    if (!room.vents || !room.vents.length) return false;
+    const cx = (p.x + p.w / 2) / 8;
+    const fy = (p.y + p.h) / 8;
+    return room.vents.some((v) => cx >= v.x0 && cx < v.x1 + 1 && fy > v.y0 && fy <= v.y1 + 1);
+  }
+
+  // Replaces normal gravity while in water, in steam or on the grapple. Returns true if it handled the fall.
   function gravity(world, p, input) {
     if (p.grapple) return true;
+    if (inVent(world.room, p)) {
+      p.vy = approach(p.vy, -VENT.rise, VENT.push);
+      p.jumping = false;
+      return true;
+    }
     if (!p.wet) return false;
     if (has(p, 'boots')) {
       p.vy = Math.min(p.vy + BOOTS.gravity, BOOTS.maxFall);
@@ -305,5 +322,5 @@
     }
   }
 
-  HA.abilities = { THRUSTERS, SWIM, BOOTS, GRAPPLE, inWater, surfaceY, runSpeed, jump, jumpPower, gravity, thruster, fireGrapple, updateGrapple, draw, drawHooks, drawWater };
+  HA.abilities = { THRUSTERS, SWIM, BOOTS, GRAPPLE, VENT, inWater, inVent, surfaceY, runSpeed, jump, jumpPower, gravity, thruster, fireGrapple, updateGrapple, draw, drawHooks, drawWater };
 })(window.HA);

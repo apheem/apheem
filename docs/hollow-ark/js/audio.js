@@ -249,6 +249,21 @@
       noise({ f: 3000, f2: 5000, dur: 0.25, vol: 0.07, q: 1.5 });
       tone({ wave: 'sine', f: 300, f2: 500, dur: 0.12, vol: 0.05 });
     },
+    // The Engine Spine: a piston's slam, a drone's steam, the Stoker's fire jet and his slag.
+    piston: () => {
+      noise({ f: 500, f2: 70, dur: 0.22, vol: 0.28, filter: 'lowpass' });
+      noise({ f: 2600, dur: 0.05, vol: 0.1, q: 6 });
+    },
+    steam: () => noise({ f: 4200, f2: 1600, dur: 0.6, vol: 0.16, q: 0.5, filter: 'highpass' }),
+    fire: () => {
+      noise({ f: 600, f2: 1400, dur: 0.9, vol: 0.22, filter: 'lowpass' });
+      noise({ f: 3000, f2: 1800, dur: 0.9, vol: 0.06, q: 0.7 });
+    },
+    slag: () => {
+      noise({ f: 300, f2: 60, dur: 0.18, vol: 0.24, filter: 'lowpass' });
+      noise({ f: 5000, f2: 2500, dur: 0.4, vol: 0.05, q: 0.6, filter: 'highpass', delay: 0.05 });
+    },
+    grate: () => [0, 0.08, 0.16].forEach((d) => noise({ f: 1500, dur: 0.05, vol: 0.09, q: 5, delay: d })),
     bulb: () => [523, 659, 494].forEach((f, i) => tone({ wave: 'sine', f, dur: 0.2, vol: 0.08, delay: i * 0.08 })),
     bloom: () => {
       tone({ wave: 'sine', f: 220, f2: 233, dur: 1.2, vol: 0.12, attack: 0.2 });
@@ -256,7 +271,7 @@
     },
   };
   // Each speaker's text blips at its own pitch.
-  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700, 'THE PURSER': 280, 'THE DESERTER': 230, FLUX: 230, 'THE TALLYMAN': 135, TERMINAL: 1100, 'COLD STORE LIFT': 700, 'BALLAST CONTROL': 1000 };
+  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700, 'THE PURSER': 280, 'THE DESERTER': 230, FLUX: 230, 'THE TALLYMAN': 135, TERMINAL: 1100, 'COLD STORE LIFT': 700, 'BALLAST CONTROL': 1000, ABEL: 95, 'THE LINE': 300, 'SECURITY': 1000, 'LIFT NOTICES': 1000 };
 
   function play(name, arg) {
     if (!live() || !SFX[name]) return;
