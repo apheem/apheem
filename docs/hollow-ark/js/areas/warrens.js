@@ -120,11 +120,13 @@
       // Home from the Gardens, without Wick.
       { x0: 30, x1: 76, when: (s) => !!s.flags.wickDead && !s.flags.homeAgain, run: 'homeAgain' },
     ],
-    // Resting here starts the night of the raid, and later the night Solder leaves.
+    // Resting here starts the night of the raid, and later the night Solder leaves. With Flux home (choice 6), the
+    // first rest after is a morning with him and Shim.
     onRest(world) {
       const f = world.state.flags;
       if (f.metHullfolk && !f.raid) return 'raid';
       if (f.pistolDone && !f.climbPlanned) return 'solderLeaves';
+      if (f.fluxHome && !f.fluxMorning && world.state.people.flux === 'home') return 'fluxMorning';
       return null;
     },
     map: [

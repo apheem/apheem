@@ -224,9 +224,10 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
 
-## 0.3.11: the second route that closes
+## 0.3.11: the second route that closes, and a morning
 
 - **The gate's cave-in.** If you upgraded the pistol instead of giving it to the gate, the Bloomsworn break the gate while you're in the Ballast, and the west end of the Warrens' hall comes down with it. The way out to the Way Down is buried. The way round is the hole by the homes, down into **the deep walls**, where the Hullfolk hid: a vent too low to stand in, a shaft, and Bloomsworn nests on the way back to a door low in the Way Down. On the run for the sleds it's the long way, with the same clock. Gasket tells you where to go, and so does the bar under the clock. With the gate held, the hall stays whole, and the deep walls stay shut.
+- **A morning that a choice can take away.** Let Flux fly home in the Labyrinth, and the first time you rest at home after, it's morning: Shim shows you his father, and Flux strips his spent pack for Solder's bench (30 scrap). Take his pack instead, and that morning never comes, and the journal says so.
 
 ## 0.3.10: Cody's calls on the story audit
 

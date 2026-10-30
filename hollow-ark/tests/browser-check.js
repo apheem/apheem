@@ -1721,6 +1721,45 @@ async function play(browserType, url, label) {
     expect(caveIn.fell.rubble && !caveIn.fell.wayWest && caveIn.fell.hole && caveIn.fell.gateRubble && caveIn.fell.deepDoor, `with the gate fallen, the way west should be under rubble and the deep walls open (${JSON.stringify(caveIn.fell)})`);
     expect(caveIn.line === 1 && caveIn.room === 'deep-walls', `the cave-in's journal line, or the hole down into the deep walls, went wrong (${JSON.stringify(caveIn)})`);
 
+    // ---- Lock 3 (3.10): with Flux home, a rest in the Warrens brings a morning with him and Shim; with his pack
+    // taken, it never comes ----
+    const morning = await get(() => {
+      const w = HA.debug.world;
+      const s = w.state;
+      const was = { flux: s.people.flux, f: { ...s.flags }, scrap: s.scrap, room: w.def.id, x: w.player.x, y: w.player.y };
+      Object.assign(s.flags, { fluxHome: true, fluxMorning: false, raidSeen: true, climbPlanned: true });
+      const rest = HA.rooms.byId.warrens.onRest;
+      s.people.flux = 'stripped';
+      HA.debug.goto('warrens', 100, 18);
+      const out = { stripped: rest(w) };
+      s.people.flux = 'home';
+      HA.debug.goto('warrens', 100, 18);
+      HA.debug.step(2);
+      out.home = rest(w);
+      const before = s.journal.story.length;
+      if (out.home === 'fluxMorning') HA.story.run(w, out.home);
+      const said = [];
+      for (let i = 0; i < 400 && w.scene; i++) {
+        const st = w.scene.step;
+        if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+        HA.debug.step(4);
+        HA.debug.step(1, { confirm: true });
+      }
+      out.said = said.join(' / ');
+      out.scrap = s.scrap - was.scrap;
+      out.journal = s.journal.story.slice(before).join(' / ');
+      out.done = !!s.flags.fluxMorning && !w.scene;
+      out.again = rest(w);
+      s.people.flux = was.flux;
+      s.flags = Object.assign(s.flags, was.f);
+      for (const k of ['fluxHome', 'fluxMorning', 'raidSeen', 'climbPlanned']) if (!(k in was.f)) delete s.flags[k];
+      s.scrap = was.scrap;
+      w.enterRoom(was.room, was.x, was.y, { noSave: true });
+      return out;
+    });
+    expect(morning.stripped === null && morning.home === 'fluxMorning' && morning.again === null, `Flux's morning should come once, and only with him home (${JSON.stringify(morning)})`);
+    expect(/THIS IS MY DAD/.test(morning.said) && /STRIPPED IT/.test(morning.said) && morning.scrap === 30 && /STRIPPED HIS PACK/.test(morning.journal) && morning.done, `Flux's morning went wrong (${JSON.stringify(morning)})`);
+
     // ---- The five endings, each from the flags its path would set, played to the title and recorded ----
     const PATHS = {
       deserter: { takenHome: 11, people: { solder: null } },
