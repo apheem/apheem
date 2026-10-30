@@ -526,7 +526,8 @@
     music: 'dock',
     legend: {
       F: { type: 'npc', id: 'flux', name: 'the deserter', when: (s) => !s.people.flux },
-      p: { type: 'npc', id: 'purser', name: 'the Purser' },
+      // The Purser waits by his boat until the climb begins; his last offer comes over the Crew Camp's intercom.
+      p: { type: 'npc', id: 'purser', name: 'the Purser', when: (s) => !s.flags.spine },
     },
     scenery: [
       { kind: 'berths', at: [4, 22], y: 12 },

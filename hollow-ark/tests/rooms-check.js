@@ -17,7 +17,7 @@
 //   - the Foam Sprayer's platforms are set and stood on as in the game, and a room with water is crossed again
 //     in the pressure boots, which sink where the hero used to float;
 //   - nowhere the hero can get to is a dead end they can't climb back out of;
-//   - belts carry the hero as they do in the game, and containers (%) are walls;
+//   - belts carry the hero as they do in the game, steam vents lift them, and containers (%) are walls;
 //   - no gap is 7 tiles wide: that width looks jumpable but needs a pixel-perfect run-up;
 //   - every on-screen hint sits in open air, so no wall hides part of it.
 // It first runs a few small test rooms that prove each ability opens exactly what it should. Each room's floors
@@ -44,7 +44,7 @@ HA.input = { promptWidth: (a) => ({ confirm: 34, pause: 22, map: 22, prev: 16, n
 const { SOLID, ONEWAY, THORNS, CRATE, EMPTY, WATER, FOAM, SLUDGE } = HA.room;
 
 // Spawns that are things to reach, as opposed to enemies, crates and doors.
-const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'q', 'j', 'b', 'r', 'd', 'v', 'u', 'i', 'x', 'B', 'D', 'P', 'o']);
+const NOT_TARGETS = new Set([...Object.keys(HA.actors.TYPES), 'B', 'D', 'P', 'o']);
 // Door cells: D everywhere, and any other character a room's legend calls a door.
 const legendChars = (def, test) => Object.keys(def.legend || {}).filter((c) => test(def.legend[c]));
 const doorChars = (def) => ['D', ...legendChars(def, (l) => l.type === 'door')];
@@ -80,6 +80,9 @@ function checkShape(def) {
   if (!HEIGHTS.includes(def.h)) fail(def, `height ${def.h} should be one of ${HEIGHTS.join(', ')} tiles`);
   def.map.forEach((row, y) => row.length !== def.w && fail(def, `row ${y} is ${row.length} wide, not ${def.w}`));
   for (const y of [0, def.h - 1]) if (/[^#%]/.test(def.map[y])) fail(def, `the ${y ? 'bottom' : 'top'} edge must be solid; rooms join only at their sides`);
+  // A map letter that means an enemy everywhere can't mean something else in one room's legend: the game would
+  // spawn the enemy there instead (the Stacks' crane door was a steam drone for a while).
+  for (const ch of Object.keys(def.legend || {})) if (HA.actors.TYPES[ch]) fail(def, `its legend uses '${ch}', which is the ${HA.actors.TYPES[ch]} in every room`);
   for (const r of HA.rooms.list) {
     if (r === def) continue;
     const overlapX = def.gx < r.gx + r.w && r.gx < def.gx + def.w;
@@ -278,7 +281,7 @@ function input(dir, extra) {
 
 // The moves tried from every spot: jumps of several heights with steering, walking off ledges,
 // dropping through catwalks, and (with the cannon) hovering by firing down.
-function programs(abilities, onCatwalk, wet, shore, rings) {
+function programs(abilities, onCatwalk, wet, shore, rings, vent) {
   const list = [];
   for (const hold of [3, 7, 11, 15, 60]) {
     list.push({ runup: 0, prog: (f) => (f > 80 ? null : { jump: f < hold }) });
@@ -434,7 +437,32 @@ function programs(abilities, onCatwalk, wet, shore, rings) {
       }
     }
   }
+  // Steam: walk into a vent (or stand in one), let it carry the hero up, to its top or partway, then steer off to
+  // one side onto whatever is there.
+  if (vent) {
+    for (const inDir of DIRS) {
+      for (const dir of [-1, 1]) {
+        for (const ride of ['top', 25, 60]) {
+          list.push({
+            runup: 0,
+            long: true,
+            prog: (f, p) => {
+              if (p.vy < -1.2) p.rising = (p.rising || 0) + 1;
+              if (!p.rising) return f > 120 ? null : input(inDir);
+              if (ride === 'top' ? p.vy > -0.6 : p.rising >= ride) p.off = true;
+              return p.off ? input(dir) : {};
+            },
+          });
+        }
+      }
+    }
+  }
   return list;
+}
+
+// Is this floor by a steam vent: beside its column, anywhere from its grate to its top?
+function nearVent(room, tx, ty) {
+  return (room.vents || []).some((v) => tx >= v.x0 - 8 && tx <= v.x1 + 8 && ty >= v.y0 && ty <= v.y1 + 2);
 }
 
 // Is there silt near this floor (a little below it, within a dozen tiles either way)? Water can be swum, so only
@@ -458,9 +486,9 @@ function buildGraph(def, room, abilities, targets) {
   const touch = segs.map(() => new Set());
   const lists = new Map();
   const rings = (room.hooks || (room.hooks = hooksOf(room))).length > 0;
-  const progsFor = (catwalk, wet, shore) => {
-    const k = catwalk + ':' + wet + ':' + shore;
-    if (!lists.has(k)) lists.set(k, programs(abilities, catwalk, wet, shore, rings));
+  const progsFor = (catwalk, wet, shore, vent) => {
+    const k = catwalk + ':' + wet + ':' + shore + ':' + vent;
+    if (!lists.has(k)) lists.set(k, programs(abilities, catwalk, wet, shore, rings, vent));
     return lists.get(k);
   };
   for (const seg of segs) {
@@ -482,7 +510,7 @@ function buildGraph(def, room, abilities, targets) {
       const catwalk = room.tile(tx, seg.ty) === ONEWAY;
       const wet = room.tile(tx, seg.ty - 1) === WATER;
       const shore = !!abilities.foam && !wet && nearSilt(room, tx, seg.ty);
-      for (const pr of progsFor(catwalk, wet, shore)) {
+      for (const pr of progsFor(catwalk, wet, shore, nearVent(room, tx, seg.ty))) {
         if (pr.walk && x !== (pr.walk < 0 ? seg.x0 * 8 - 5 : seg.x1 * 8 + 5)) continue;
         let vx = 0;
         if (pr.runup) {
@@ -523,6 +551,7 @@ function shapeOf(def, flags, gatesOpen) {
   );
   const room = HA.room.load(rows);
   room.belts = def.belts || [];
+  room.vents = def.vents || [];
   return room;
 }
 

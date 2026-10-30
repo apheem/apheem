@@ -535,7 +535,6 @@
       T: { type: 'log', id: 'valves', name: 'the ballast control terminal' },
       V: { type: 'log', scene: 'winch', name: 'the winch' },
     },
-    unbuilt: { right: 'THE ENGINE SPINE' },
     scenery: [
       { kind: 'winch', x: 34, y: 18 },
       { kind: 'tramcar', x: 21, y: 18, tunnel: 2 },

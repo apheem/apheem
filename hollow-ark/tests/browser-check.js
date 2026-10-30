@@ -893,6 +893,241 @@ async function play(browserType, url, label) {
     expect(bl.home.raidSeen && bl.home.story && bl.home.solder, `home after the raid went wrong (${JSON.stringify(bl.home)})`);
     await shot('ballast');
 
+    // ---- The Engine Spine (Phase 3.5), from a save at the tram station once the tram has gone for the climbers ----
+    await get(() => {
+      const s = HA.save.newState();
+      Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'fire', cargo: true, chalkStops: true, deserterMet: true, deserterOffered: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true, ballast: true, solderFound: true, toolbagBack: true, siltSeen: true, siltDown: true, floodSeen: true, flooded: true, hatchOpen: true, tram: true, raidSeen: true });
+      Object.assign(s.wardens, { bailiff: 'release', pruner: 'release', tallyman: 'release' });
+      Object.assign(s.people, { wick: 'dead', flux: 'home', solder: 'alive' });
+      Object.assign(s.abilities, { thruster: 'odell', grapple: true, boots: true });
+      Object.assign(s, { toldShim: 'lie', warrensRaid: 'held', mercy: 6, takenHome: 11, room: 'tram-station', x: 34 * 8, y: 19 * 8 - 14, facing: 1, fresh: false, lead: 'FOLLOW THE KEEL LINE EAST TO THE FOOT OF THE ENGINE SPINE' });
+      s.weapons = ['cannon', 'harpoon', 'foam', 'lancets'].map((id) => HA.weapons.make(id));
+      localStorage.setItem('hollow-ark.save.v1', JSON.stringify(s));
+    });
+    await page.reload();
+    await page.waitForFunction(() => window.HA && HA.debug && HA.debug.frames > 20, null, { timeout: 15000 });
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => HA.ui.mode === 'play', null, { timeout: 5000 });
+    const sp = await get(() => {
+      const out = {};
+      const w = () => HA.debug.world;
+      const s = w().state;
+      const p = w().player;
+      const talkThrough = () => {
+        for (let i = 0; i < 6000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          HA.debug.skipScene();
+          HA.debug.step(1);
+        }
+      };
+      const choose = (i) => {
+        for (let k = 0; k < i; k++) {
+          HA.debug.step(1, { down: true });
+          HA.debug.step(1);
+        }
+        const asks = !!w().scene.step.choice.options[i].confirm;
+        HA.debug.step(1, { confirm: true });
+        HA.debug.step(1);
+        if (asks) {
+          HA.debug.step(1, { up: true });
+          HA.debug.step(1);
+          HA.debug.step(1, { confirm: true });
+        }
+        talkThrough();
+      };
+      const press = (key) => {
+        HA.debug.step(1, { [key]: true });
+        HA.debug.step(1);
+      };
+      const options = () => w().scene && w().scene.step && w().scene.step.choice && w().scene.step.choice.options;
+      w().assist.invincible = true;
+      // Along the keel tunnel into the Spine Foot.
+      for (let i = 0; i < 200 && w().def.id === 'tram-station'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(30);
+      talkThrough();
+      out.foot = { room: w().def.id, area: w().area.name, music: HA.music.playing, lead: s.lead };
+      // The vent at the platform's end carries the hero up; off it to the left, onto the deck by the ladder.
+      HA.debug.goto('spine-foot', 28, 37);
+      for (let i = 0; i < 60; i++) HA.debug.step(1, { right: true });
+      let top = 99;
+      for (let i = 0; i < 200; i++) {
+        HA.debug.step(1, p.vy > -0.6 && i > 40 && p.x > 26 * 8 ? { left: true } : {});
+        top = Math.min(top, (p.y + p.h) / 8);
+      }
+      out.vent = { top: Math.floor(top), row: Math.round((p.y + p.h) / 8), ground: p.onGround };
+      // The Boiler Landing: the tram comes in below and the crew build the first lift up to it.
+      HA.debug.goto('boiler-stair', 18, 8);
+      HA.debug.step(30);
+      out.arrive = w().scene && w().scene.name;
+      talkThrough();
+      HA.debug.step(60);
+      out.lift1 = { lifts: s.flags.lifts, link: w().links.some((l) => l.legend.crew), layers: w().def.musicLayers(s) };
+      // Down in it to the Foot, where the tram now waits.
+      const L = w().links.find((l) => l.legend.crew);
+      p.x = L.x + 8;
+      HA.debug.step(3);
+      press('up');
+      out.liftTo = (options() || []).map((o) => o.label).join('/');
+      choose(0);
+      HA.debug.step(80);
+      out.down = { room: w().def.id, minder: w().npcs.some((n) => n.state === 'out') };
+      // The heat: a slug's embers, a climber on the wall, and the pistons of the Piston Run.
+      HA.debug.goto('boiler-stair', 23, 85);
+      HA.debug.step(400);
+      out.embers = w().hazards.some((h) => h.kind === 'ember');
+      out.gripping = w().enemies.some((e) => e.type === 'climber' && e.grip);
+      HA.debug.goto('piston-run', 16, 81); // on the catwalk the first ram sweeps
+      w().assist.invincible = false;
+      const hp = p.hp;
+      for (let i = 0; i < 400 && p.hp === hp; i++) HA.debug.step(1);
+      out.rammed = p.hp < hp;
+      w().assist.invincible = true;
+      p.hp = p.maxHp;
+      // The Piston Landing: the second lift (seven of them is hands enough).
+      HA.debug.goto('piston-run', 10, 8);
+      HA.debug.step(30);
+      out.landing2 = w().scene && w().scene.name;
+      talkThrough();
+      out.lift2 = s.flags.lifts;
+      // Abel: up the ladder from the landing into the Reactor Throat.
+      HA.debug.goto('piston-run', 4, 8);
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      HA.debug.step(30);
+      talkThrough();
+      const b = w().boss;
+      out.throat = { room: w().def.id, fighting: b.fighting, music: HA.music.playing, shut: w().doors.find((d) => d.id === 'throatShutter').open };
+      const states = new Set();
+      let fire = false;
+      for (let i = 0; i < 1400; i++) {
+        HA.debug.step(1);
+        states.add(b.state);
+        p.x = b.slag.length ? 22 * 8 : 4 * 8; // out from under it once it's thrown, so it lands and burns
+        if (w().hazards.some((h) => h.kind === 'fire')) fire = true;
+      }
+      out.states = [...states].join(' ');
+      out.fire = fire;
+      b.lean = 0;
+      HA.bosses.abel.hurt(w(), b, 50);
+      out.barred = b.hp === b.maxHp;
+      b.state = 'hold';
+      b.timer = 999;
+      HA.debug.step(30);
+      HA.bosses.abel.hurt(w(), b, 140);
+      out.phase = b.phase;
+      b.state = 'idle';
+      b.timer = 0;
+      let opened = false;
+      for (let i = 0; i < 1400 && !opened; i++) {
+        HA.debug.step(1);
+        opened = b.grates.some((g) => g.open) && w().room.tile(b.grates[0].x0, 19) === HA.room.EMPTY;
+      }
+      out.grates = opened;
+      // In the fire under an open grate: burnt, and thrown back out onto the floor.
+      w().assist.invincible = false;
+      p.x = b.grates[1].x0 * 8 + 8;
+      p.y = 19 * 8 - p.h;
+      const before = p.hp;
+      for (let i = 0; i < 40 && p.y + p.h < 19 * 8 + 4 + 8; i++) HA.debug.step(1);
+      HA.debug.step(2);
+      out.burnt = p.hp < before && p.y + p.h <= 19 * 8 + 1;
+      w().assist.invincible = true;
+      p.hp = p.maxHp;
+      b.state = 'hold';
+      b.timer = 999;
+      HA.debug.step(30);
+      HA.bosses.abel.hurt(w(), b, 999);
+      HA.debug.step(5);
+      out.defeated = w().scene && w().scene.name;
+      talkThrough();
+      out.ten = (options() || []).map((o) => o.label).join('/');
+      const mercy = s.mercy;
+      choose(0);
+      HA.debug.step(60);
+      out.abel = { fate: s.people.abel, mercy: s.mercy - mercy, open: w().doors.find((d) => d.id === 'throatShutter').open, floor: w().room.tile(b.grates[0].x0, 19) === HA.room.SOLID };
+      // Up behind the shutter to the camp: the climbers come up the third lift.
+      p.x = 3 * 8 - 4;
+      p.y = 7 * 8 + 8 - p.h;
+      HA.debug.step(5);
+      press('up');
+      talkThrough();
+      HA.debug.step(40);
+      talkThrough();
+      out.camp = { room: w().def.id, crew: s.crew, lifts: s.flags.lifts, people: w().npcs.filter((n) => n.state === 'out').length, music: HA.music.playing };
+      // Wick's Lancets, for Toller's arm.
+      const toller = HA.story.npcOf(w(), 'toller');
+      p.x = toller.x + 6; // his side away from the rest pod
+
+      HA.debug.step(3);
+      press('up');
+      out.stitch = w().scene && w().scene.name;
+      talkThrough();
+      // The ladder up waits for the morning; resting at the pod brings the night.
+      p.x = 34 * 8 - 4;
+      HA.debug.step(3);
+      press('up');
+      out.notYet = w().scene && w().scene.step && w().scene.step.text;
+      talkThrough();
+      p.x = w().pods[0].x + 4;
+      HA.debug.step(3);
+      press('up');
+      HA.debug.step(3);
+      out.night = w().scene && w().scene.name;
+      talkThrough();
+      out.call = (options() || []).map((o) => o.label).join('/');
+      out.shim = !!s.flags.shimRanOff;
+      choose(0);
+      talkThrough();
+      HA.debug.step(30);
+      out.morning = { done: !!s.flags.campDone, purser: !!s.flags.purserGone, lead: s.lead };
+      // The crew count themselves off by the Tower Lift.
+      p.x = 34 * 8 - 4;
+      p.y = 19 * 8 - p.h;
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      HA.debug.step(10);
+      for (let i = 0; i < 120 && !w().scene; i++) HA.debug.step(1, { left: true });
+      const counts = [];
+      for (let i = 0; i < 3000 && w().scene; i++) {
+        const st = w().scene.step;
+        if (st && st.say !== undefined && /^COUNT:/.test(st.text) && counts[counts.length - 1] !== st.text) counts.push(st.text);
+        HA.debug.step(1, { confirm: i % 2 === 0 });
+      }
+      out.verdict = { room: w().def.id, counts: counts.length, crew: s.crew, lead: s.lead };
+      const Z = w().links.find((l) => l.legend.big);
+      p.x = Z.x + 8;
+      HA.debug.step(3);
+      press('up');
+      out.tower = w().toastText;
+      HA.debug.goto('tower-lift', 24, 18);
+      HA.debug.step(3);
+      press('up');
+      out.sealed = w().scene && w().scene.step && w().scene.step.text;
+      talkThrough();
+      // Home: those who climbed are gone from the village, and so is Shim.
+      HA.debug.goto('warrens', 40, 18);
+      HA.debug.step(10);
+      talkThrough();
+      out.home = { gasket: w().npcs.some((n) => n.id === 'gasket' && n.state === 'out'), shim: w().npcs.some((n) => n.id === 'shim' && n.state === 'out'), tamp: w().npcs.some((n) => n.id === 'tamp' && n.state === 'out') };
+      return out;
+    });
+    expect(sp.foot.room === 'spine-foot' && sp.foot.area === 'ENGINE SPINE' && sp.foot.music === 'spine' && /CLIMB THE ENGINE SPINE/.test(sp.foot.lead), `the keel tunnel did not lead to the Spine Foot (${JSON.stringify(sp.foot)})`);
+    expect(sp.vent.top <= 8 && sp.vent.row === 10 && sp.vent.ground, `the Foot's steam vent did not carry the hero up to the deck (${JSON.stringify(sp.vent)})`);
+    expect(sp.arrive === 'crewArrives' && sp.lift1.lifts === 1 && sp.lift1.link && sp.lift1.layers === 2, `the crew's arrival and first lift went wrong (${sp.arrive}, ${JSON.stringify(sp.lift1)})`);
+    expect(sp.liftTo === 'DOWN TO THE FOOT/STAY' && sp.down.room === 'spine-foot' && sp.down.minder, `the crew's lift did not run down to the Foot (${sp.liftTo}, ${JSON.stringify(sp.down)})`);
+    expect(sp.embers && sp.gripping && sp.rammed, `the Spine's heat slugs, climbers or pistons went wrong (${sp.embers}, ${sp.gripping}, ${sp.rammed})`);
+    expect(sp.landing2 === 'liftTwo' && sp.lift2 === 2, `the second lift was not built (${sp.landing2}, ${sp.lift2})`);
+    expect(sp.throat.room === 'reactor-throat' && sp.throat.fighting && sp.throat.music === 'abel' && !sp.throat.shut, `Abel's fight did not start with the shutter shut (${JSON.stringify(sp.throat)})`);
+    expect(/throw/.test(sp.states) && /blow/.test(sp.states) && sp.fire && sp.barred && sp.phase === 2 && sp.grates && sp.burnt, `Abel's moves went wrong (${JSON.stringify(sp)})`);
+    expect(sp.defeated === 'abelDefeated' && sp.ten === 'LEAVE HIM HIS FIRES/PUT THE FIRES OUT OF HIM' && sp.abel.fate === 'spared' && sp.abel.mercy === 1 && sp.abel.open && sp.abel.floor, `choice 10 went wrong (${sp.defeated}, ${sp.ten}, ${JSON.stringify(sp.abel)})`);
+    expect(sp.camp.room === 'crew-camp' && sp.camp.crew === 8 && sp.camp.lifts === 3 && sp.camp.people === 8 && sp.camp.music === 'camp', `the climbers did not reach the camp (${JSON.stringify(sp.camp)})`);
+    expect(sp.stitch === 'stitch' && /REST FIRST/.test(sp.notYet) && sp.night === 'lightsOut' && sp.call === 'STAY/TAKE THE BOAT' && sp.shim, `the camp's night went wrong (${JSON.stringify(sp)})`);
+    expect(sp.morning.done && sp.morning.purser && /TOWER LIFT/.test(sp.morning.lead), `the morning at the camp went wrong (${JSON.stringify(sp.morning)})`);
+    expect(sp.verdict.room === 'tower-lift' && sp.verdict.counts === 8 && sp.verdict.crew === 8 && /STEWARD/.test(sp.verdict.lead) && /COMMAND TOWER/.test(sp.tower) && /WARDENS ONLY/.test(sp.sealed), `the crew's verdict, the Tower Lift or the sealed log went wrong (${JSON.stringify(sp.verdict)}, ${sp.tower}, ${sp.sealed})`);
+    expect(!sp.home.gasket && !sp.home.shim && sp.home.tamp, `home after the climb went wrong (${JSON.stringify(sp.home)})`);
+    await shot('spine');
+
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {
       const old = { v: 1, room: 'warrens', x: 400, y: 138, facing: 1, hp: 12, maxHp: 12, weapons: [{ id: 'pistol', level: 1, xp: 0, ammo: 0 }], wi: 0, mercy: 2, bloom: 0 };

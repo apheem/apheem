@@ -286,8 +286,13 @@
     eel: { w: 14, h: 6, hp: 4, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
     jelly: { w: 10, h: 10, hp: 2, dmg: 2, drops: { small: 1, big: 0, heart: 0.1 } },
     drowned: { w: 12, h: 18, hp: 6, dmg: 2, drops: { small: 3, big: 1, heart: 0.4 } },
+    // The Engine Spine: Bloomsworn climbers who cling to the shaft's walls and throw themselves at the hero,
+    // steam drones that hang overhead and blast straight down, and heat slugs that leave a burning trail.
+    climber: { w: 10, h: 14, hp: 8, dmg: 2, drops: { small: 2, big: 1, heart: 0.3 } },
+    steamer: { w: 12, h: 10, hp: 4, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
+    slug: { w: 12, h: 6, hp: 5, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
   };
-  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper', u: 'eel', i: 'jelly', x: 'drowned' };
+  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper', u: 'eel', i: 'jelly', x: 'drowned', m: 'climber', 8: 'steamer', 0: 'slug' };
   // What the Bloomsworn are thinking. Only a hero with the Bloom in them (stage 3 or more) can hear it.
   const THOUGHTS = ['SO LOUD', 'WHERE IS MY GIRL', 'IT HURTS WHEN IT STOPS', 'COUNT ME', 'SO WARM', 'I HAD A NAME', 'KEEP MOVING'];
 
@@ -347,7 +352,8 @@
     }
     if (e.stun > 0) {
       e.stun--;
-      if (e.type !== 'drifter' && e.type !== 'drone' && e.type !== 'eel' && e.type !== 'jelly') {
+      e.grip = false; // a stunned climber loses its hold on the wall
+      if (e.type !== 'drifter' && e.type !== 'drone' && e.type !== 'eel' && e.type !== 'jelly' && e.type !== 'steamer') {
         e.vx = 0;
         walk(world, e);
       }
@@ -361,6 +367,9 @@
       if (updateDrowned(world, e, px, py, dist)) return;
     }
     else if (e.type === 'drone') updateDrone(world, e, px, py);
+    else if (e.type === 'climber') updateClimber(world, e, px, py, dist);
+    else if (e.type === 'steamer') updateSteamer(world, e, px, py, dist);
+    else if (e.type === 'slug') updateSlug(world, e);
     else if (e.type === 'dropper') updateDropper(world, e, px, py, dist);
     else if (e.type === 'crawler') {
       e.vy = Math.min(e.vy + 0.3, 4);
@@ -635,6 +644,144 @@
     e.facing = e.dir;
   }
 
+  const wallAt = (room, tx, ty) => {
+    const t = room.tile(tx, ty);
+    return t === HA.room.SOLID || t === HA.room.CRATE;
+  };
+
+  // A Bloomsworn climber clings to the shaft wall beside its spot, and climbs toward the hero's height. Level
+  // with them and out from the wall, it tenses (its '!'), then throws itself off at them, and rushes along the
+  // floor where it lands. Running into a wall again, it climbs back up.
+  function updateClimber(world, e, px, py, dist) {
+    const room = world.room;
+    const p = world.player;
+    const ex = e.x + e.w / 2;
+    if (e.wall === undefined) {
+      e.wall = wallAt(room, e.spawn.tx - 1, e.spawn.ty) ? -1 : wallAt(room, e.spawn.tx + 1, e.spawn.ty) ? 1 : 0;
+      e.grip = e.wall !== 0;
+      if (e.grip) e.x = e.wall < 0 ? e.spawn.tx * 8 : (e.spawn.tx + 1) * 8 - e.w;
+      e.homeY = e.y;
+    }
+    if (e.grip) {
+      e.facing = -e.wall;
+      e.vx = 0;
+      e.vy = 0;
+      if (e.tele > 0) {
+        if (--e.tele === 0) {
+          e.grip = false;
+          e.vx = -e.wall * 2.2;
+          e.vy = -2.2;
+          e.state = 'leap';
+          HA.audio.play('lunge');
+        }
+        return;
+      }
+      // Along the wall toward the hero's height, as far as the wall goes.
+      const wx = e.wall < 0 ? Math.floor(e.x / 8) - 1 : Math.floor((e.x + e.w) / 8);
+      const holds = (y) => {
+        for (let ty = Math.floor(y / 8); ty <= Math.floor((y + e.h - 1) / 8); ty++) if (!wallAt(room, wx, ty)) return false;
+        return true;
+      };
+      const want = clamp(py - e.h / 2, e.homeY - 72, e.homeY + 72);
+      const dy = clamp(want - e.y, -0.55, 0.55);
+      const clear = (y) => {
+        for (let ty = Math.floor(y / 8); ty <= Math.floor((y + e.h - 1) / 8); ty++) {
+          for (let tx = Math.floor(e.x / 8); tx <= Math.floor((e.x + e.w - 1) / 8); tx++) if (wallAt(room, tx, ty)) return false;
+        }
+        return true;
+      };
+      e.climbing = Math.abs(dy) > 0.1 && holds(e.y + dy) && clear(e.y + dy);
+      if (e.climbing) e.y += dy;
+      const level = Math.abs(py - (e.y + e.h / 2)) < 16;
+      const out = (px - ex) * e.facing > 6;
+      if (--e.cool <= 0 && level && out && Math.abs(px - ex) < 120 && !p.dead) {
+        e.cool = 110;
+        e.tele = 28;
+        e.alert = 28;
+        HA.audio.play('telegraph');
+      }
+      return;
+    }
+    // Off the wall: in the air from a leap or a fall, then a rush along the floor.
+    if (e.state === 'leap') {
+      e.vy = Math.min(e.vy + 0.22, 4);
+      const hit = HA.room.move(room, e, e.vx, e.vy);
+      if (hit.left || hit.right) e.vx = 0;
+      if (hit.down) {
+        e.vy = 0;
+        e.state = 'rush';
+        e.timer = 150;
+        e.turn = 0;
+      }
+      return;
+    }
+    if (e.state === 'rush') {
+      if (--e.turn <= 0) {
+        e.turn = 40;
+        e.facing = sign(px - ex) || e.facing;
+      }
+      e.vx = approach(e.vx, e.facing * 1.4, 0.1);
+      if (--e.timer <= 0) e.state = 'prowl';
+    } else {
+      e.state = 'prowl';
+      e.vx = approach(e.vx, e.facing * 0.4, 0.05);
+    }
+    const hit = walk(world, e);
+    if (hit.left || hit.right) {
+      // a wall: up it again
+      const side = hit.left ? -1 : 1;
+      e.wall = side;
+      e.grip = true;
+      e.homeY = e.y;
+      e.cool = 60;
+      e.state = null;
+    } else if (hit.ledge) e.facing = -e.facing;
+  }
+
+  // A steam drone hangs over the hero, drifting to stay above them, and when it's right overhead it hisses, then
+  // blasts a column of steam straight down.
+  function updateSteamer(world, e, px, py, dist) {
+    const p = world.player;
+    const ex = e.x + e.w / 2;
+    if (e.tele > 0) {
+      e.vx = approach(e.vx, 0, 0.1);
+      e.vy = approach(e.vy, 0, 0.1);
+      if (--e.tele === 0) {
+        HA.audio.play('steam');
+        HA.hazards.add(world, { kind: 'steam', x: ex - 5, y: e.y + e.h, w: 10, h: 48, life: 36, armed: true, dmg: 2 });
+        e.cool = 140;
+      }
+      return;
+    }
+    const chase = dist < 150 && py > e.y && !p.dead;
+    const tx = chase ? px - e.w / 2 : e.homeX;
+    const ty = chase ? Math.max(e.homeY - 48, Math.min(e.homeY + 48, p.y - 34)) : e.homeY;
+    e.vx = clamp(e.vx + sign(tx - e.x) * 0.03, -0.7, 0.7);
+    e.vy = clamp(e.vy + sign(ty - e.y) * 0.03, -0.5, 0.5);
+    const hit = HA.room.move(world.room, e, e.vx, e.vy + Math.sin(e.t * 0.08) * 0.15);
+    if (hit.left || hit.right) e.vx = 0;
+    if (hit.up || hit.down) e.vy = 0;
+    e.facing = sign(px - ex) || 1;
+    if (--e.cool <= 0 && chase && Math.abs(px - ex) < 10 && p.y > e.y + e.h && p.y - e.y < 64) {
+      e.tele = 30;
+      HA.audio.play('hiss');
+      HA.hazards.add(world, { kind: 'steam', x: ex - 5, y: e.y + e.h, w: 10, h: 48, life: 30, armed: false, dmg: 0 });
+    }
+  }
+
+  // A heat slug crawls its floor, turning at walls and ledges, and leaves embers behind it that burn for a while.
+  function updateSlug(world, e) {
+    if (!e.dir) e.dir = Math.random() < 0.5 ? -1 : 1;
+    e.vx = e.dir * 0.3;
+    const hit = walk(world, e);
+    if (hit.left || hit.right || hit.ledge) e.dir = -e.dir;
+    e.facing = e.dir;
+    if (hit.down && e.t % 26 === 0) {
+      const tail = e.facing > 0 ? e.x - 6 : e.x + e.w - 2;
+      HA.hazards.add(world, { kind: 'ember', x: tail, y: e.y + e.h - 4, w: 8, h: 4, life: 150, dmg: 2 });
+    }
+  }
+
   // A stack-crawler hangs under a container until the hero passes below. It shakes loose, drops, and then
   // crawls after them.
   function updateDropper(world, e, px, py, dist) {
@@ -791,6 +938,9 @@
     } else if (e.type === 'dropper') {
       // shot down from its perch
       if (e.cling) Object.assign(e, { cling: false, tele: 0, x: e.homeX, vy: 0.5 });
+    } else if (e.type === 'climber') {
+      // shot off the wall, it drops and comes at the hero from the floor
+      if (e.grip) Object.assign(e, { grip: false, tele: 0, state: 'leap', vx: 0, vy: 0.5 });
     } else {
       e.x += dir * 1.5;
     }
@@ -819,9 +969,9 @@
   function drawEnemy(ctx, world, e, cam) {
     if (e.boss) return HA.bosses[e.type].draw(ctx, world, e, cam);
     if (e.type === 'pod') return drawPod(ctx, world, e, cam);
-    const frames = HA.art.enemies[e.type];
-    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn' && !e.cling) || Math.abs(e.vx) > 0.05;
-    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9, eel: 8, jelly: 12, drowned: 18 }[e.type] || (e.state === 'charge' ? 5 : 14);
+    const frames = e.grip ? HA.art.enemies.climberGrip : HA.art.enemies[e.type];
+    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn' && !e.cling && !e.grip) || Math.abs(e.vx) > 0.05 || (e.grip && e.climbing);
+    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9, eel: 8, jelly: 12, drowned: 18, climber: e.state === 'rush' ? 5 : 10, steamer: 4, slug: 14 }[e.type] || (e.state === 'charge' ? 5 : 14);
     let spr = frames[walking && !(e.stun > 0) ? Math.floor(e.t / pace) % frames.length : 0];
     if (e.type === 'bloomsworn' && e.state === 'stagger') spr = HA.art.enemies.bloomswornStagger;
     const img = e.flash > 0 ? spr.white : spr.img;
@@ -870,7 +1020,11 @@
       ctx.fillRect(x + (e.facing > 0 ? 0 : -4), y + 3, 4, 2);
     }
     if (e.type === 'picker') drawPickerArm(ctx, world, e, x, y);
-    if (e.type === 'bloomsworn' && (e.state === 'roar' || e.alert > 0)) {
+    if (e.type === 'steamer' && e.tele > 0 && Math.floor(e.tele / 3) % 2 === 0) {
+      ctx.fillStyle = '#eef4f6';
+      ctx.fillRect(x - 1, y + spr.h, 2, 2);
+    }
+    if ((e.type === 'bloomsworn' && e.state === 'roar') || (e.type === 'climber' && e.alert > 0) || (e.type === 'bloomsworn' && e.alert > 0)) {
       if (e.alert > 0) e.alert--;
       HA.font.draw(ctx, '!', x, y - 10, '#f27ad8', { align: 'center' });
     }
@@ -1046,5 +1200,5 @@
     ctx.fillRect(x + 3, y + 3, 10, 1);
   }
 
-  HA.actors = { MOVE, ENEMY, sporeCloud, makePlayer, updatePlayer, drawPlayer, makeEnemy, updateEnemy, hurtEnemy, drawEnemy, makeShard, makeHeart, updatePickup, drawPickup, drawPedestal };
+  HA.actors = { MOVE, ENEMY, TYPES, sporeCloud, makePlayer, updatePlayer, drawPlayer, makeEnemy, updateEnemy, hurtEnemy, drawEnemy, makeShard, makeHeart, updatePickup, drawPickup, drawPedestal };
 })(window.HA);

@@ -8,7 +8,6 @@
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
   const FADE = 10; // frames for each half of a room change
 
-  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1, q: 1, j: 1, b: 1, r: 1, d: 1, v: 1, u: 1, i: 1, x: 1 };
   // Weapons placed by a map character everywhere, or by a room's legend ({ type: 'weapon', id }).
   const WEAPON_CHARS = { G: 'pistol', U: 'cannon', A: 'coil', Q: 'scatter' };
   const WEAPON_TEXT = {
@@ -247,7 +246,7 @@
       const id = def.id + ':' + ch + (n > 1 ? n : '');
       if (ch === 'P') world.start = { x: sp.x, y: sp.y + 8 - 14 };
       else if (ch === 'S') world.pods.push({ x: sp.x - 4, y: sp.y + 8 - 24, w: 16, h: 24, cool: 0 });
-      else if (ENEMY_CHARS[ch]) {
+      else if (A.TYPES[ch]) {
         sp.respawn = def.noRespawn ? -1 : 0;
         world.enemies.push(A.makeEnemy(sp));
       } else if (ch === 'B') world.crates.set(key(sp.tx, sp.ty), { tx: sp.tx, ty: sp.ty, hp: 3, broken: false, timer: 0, flash: 0 });
@@ -267,8 +266,10 @@
       else if (legend.type === 'glass') {
         world.room.set(sp.tx, sp.ty, HA.room.SOLID);
         world.glass.push({ tx: sp.tx, ty: sp.ty });
-      } else if (legend.type === 'lift') world.links.push({ legend, tx: sp.tx, ty: sp.ty, x: sp.x - 8, y: sp.y + 8 - 22, w: 24, h: 22 });
-      else if (legend.type === 'hatch') world.links.push({ legend, tx: sp.tx, ty: sp.ty, x: sp.x - 4, y: sp.y + 8 - 16, w: 16, h: 16 });
+      } else if (legend.type === 'lift') {
+        // A lift someone still has to build (the crew's, up the Engine Spine) isn't there until they have.
+        if (!legend.when || legend.when(s)) world.links.push({ legend, tx: sp.tx, ty: sp.ty, x: sp.x - 8, y: sp.y + 8 - 22, w: 24, h: 22 });
+      } else if (legend.type === 'hatch') world.links.push({ legend, tx: sp.tx, ty: sp.ty, x: sp.x - 4, y: sp.y + 8 - 16, w: 16, h: 16 });
       else if (ch === 'o') world.hooks.push({ x: sp.x + 4, y: sp.y + 4 });
       else if (legend.type === 'boss') world.bossSpawn = { x: sp.x + 4, y: sp.y + 8 };
       else if (legend.type === 'cage') world.cage = { x: sp.x - 8, y: sp.y - 8, w: 24, h: 22, open: false, t: 0 };
@@ -284,6 +285,8 @@
     }
 
     world.room.belts = def.belts || [];
+    world.room.vents = def.vents || [];
+    HA.hazards.enter(world);
 
     const p = world.player;
     p.x = x;
@@ -301,7 +304,8 @@
     if (areaChanged) world.areaBanner = 160;
     HA.story.enterRoom(world);
     HA.music.play(musicFor(world));
-    HA.music.setLayers(def.musicLayers || 1); // near the vats, the Gardens' track turns sour
+    // Near the vats, the Gardens' track turns sour; up the Spine, each lift the crew builds adds a voice.
+    HA.music.setLayers(typeof def.musicLayers === 'function' ? def.musicLayers(s) : def.musicLayers || 1);
     updateCamera(world, true);
     HA.save.reveal(world, true);
     // Where a continued game starts: always the latest room entrance, even when this entry doesn't save.
@@ -493,6 +497,7 @@
 
     HA.weapons.updateShots(world);
     HA.weapons.updateFoam(world);
+    HA.hazards.update(world);
 
     for (const k of world.pickups) A.updatePickup(world, k);
     world.pickups = world.pickups.filter((k) => k.life > 0);
@@ -651,6 +656,7 @@
     for (const k of world.pickups) A.drawPickup(g, world, k, cam);
     for (const e of world.enemies) if (!e.dead) A.drawEnemy(g, world, e, cam);
     for (const a of world.actors) if (a.draw) a.draw(g, world, a, cam);
+    HA.hazards.draw(g, world, cam);
     A.drawPlayer(g, world, cam);
     HA.abilities.draw(g, world, cam);
     HA.abilities.drawWater(g, world, cam);
