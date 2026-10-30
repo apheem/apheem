@@ -3,7 +3,7 @@
 window.HA = window.HA || {};
 
 (function (HA) {
-  HA.VERSION = '0.3.7';
+  HA.VERSION = '0.3.8';
   HA.VIEW_W = 320;
   HA.VIEW_H = 180;
   HA.TILE = 8;
@@ -14,6 +14,14 @@ window.HA = window.HA || {};
   HA.rand = (lo, hi) => lo + Math.random() * (hi - lo);
   HA.randInt = (lo, hi) => Math.floor(HA.rand(lo, hi + 1));
   HA.sign = (v) => (v < 0 ? -1 : 1);
+  // A play time in frames, as H:MM:SS (or M:SS under an hour).
+  HA.clock = (frames) => {
+    const t = Math.floor(frames / 60);
+    const pad = (n) => String(n).padStart(2, '0');
+    const h = Math.floor(t / 3600);
+    const m = Math.floor(t / 60) % 60;
+    return (h ? h + ':' + pad(m) : m) + ':' + pad(t % 60);
+  };
   HA.overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
   // Seeded random numbers, so generated art looks the same on every machine.

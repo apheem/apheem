@@ -39,7 +39,8 @@
       lead: '',
       rest: null,
       rested: {}, // every room whose rest pod the hero has rested at: the pods travel runs between (3.3)
-      time: 0,
+      time: 0, // frames played, scenes and endings included (not paused)
+      areaTime: {}, // the same, area by area ('endings' for the ending itself): the run's splits (3.8)
       deaths: 0,
       mercy: 0,
       bloom: 0,

@@ -117,7 +117,7 @@
     items.push({ label: 'SETTINGS', action: () => push(settingsMenu()) });
     items.push({ label: 'CONTROLS', action: () => push(controlsMenu()) });
     items.push({ label: 'QUIT TO TITLE', action: toTitle });
-    return { title: 'PAUSED', lead: world.state.lead, items, sel: 0, pause: true };
+    return { title: 'PAUSED', lead: world.state.lead, note: 'PLAY TIME ' + HA.clock(world.state.time), items, sel: 0, pause: true };
   }
 
   function screen(tab) {
