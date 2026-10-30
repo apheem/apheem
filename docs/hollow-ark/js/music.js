@@ -1,0 +1,282 @@
+'use strict';
+// Music: every area has its own track, written here as note patterns and played live on chiptune voices.
+// The Ark's main theme (the lead first heard on the Cryo Deck) comes back in each track in a different
+// mood: warm and lilting in the Warrens, bare in grief, and loud in the boss fight. Some moments have
+// no music at all on purpose. Tracks crossfade when the player changes area.
+(function (HA) {
+  const A = HA.audio;
+  const midi = (name) => {
+    if (typeof name === 'number') return name;
+    const m = /^([A-G])(#|b)?(\d)$/.exec(name);
+    const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]];
+    return 12 * (Number(m[3]) + 1) + base + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  };
+  const freq = (n) => 440 * Math.pow(2, (midi(n) - 69) / 12);
+
+  // ---- The tracks. play(step, out) is called for every step; out.note / out.drum schedule sounds. ----
+  const THEME = [
+    [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 2], [8, 'B4', 4], [12, 'C5', 4]],
+    [[0, 'A4', 8], [8, 'C5', 4], [12, 'F5', 4]],
+    [[0, 'D5', 4], [4, 'E5', 2], [6, 'D5', 2], [8, 'B4', 4], [12, 'G4', 4]],
+    [[0, 'G#4', 8], [8, 'B4', 4], [12, 'E5', 4]],
+  ];
+  const transpose = (bars, by) => bars.map((bar) => bar.map(([s, n, l]) => [s, midi(n) + by, l]));
+  const CRYO_CHORDS = [
+    { root: midi('A2'), third: 3 },
+    { root: midi('F2'), third: 4 },
+    { root: midi('G2'), third: 4 },
+    { root: midi('E2'), third: 4 },
+  ];
+  const ARP = [0, 1, 2, 3, 2, 1, 2, 3];
+
+  const TRACKS = {
+    // Cryo Deck: the Ark's theme, A minor, cold and alone. (Unchanged from the Phase 1 prototype.)
+    cryo: {
+      step: 60 / 92 / 4,
+      steps: 128,
+      play(s, out) {
+        const bar = Math.floor(s / 16) % 8;
+        const at = s % 16;
+        const chord = CRYO_CHORDS[bar % 4];
+        const full = bar >= 4;
+        const bass = { 0: [0, 3], 6: [0, 2], 8: [7, 2], 10: [12, 2], 12: [0, 3], 15: [7, 1] }[at];
+        if (bass) out.note(0, 'triangle', chord.root + bass[0], bass[1] * 1.03, 0.32);
+        const tones = [12, 12 + chord.third, 19, 24];
+        out.note(0, 0.125, chord.root + 12 + tones[ARP[at % 8]], 0.87, full ? 0.05 : 0.07);
+        if (full) {
+          for (const [st, n, len] of THEME[bar % 4]) if (st === at) out.note(0, 0.25, n, len, 0.09, 0.01);
+          if (at % 4 === 2) out.drum(0, 'hat', 0.04);
+          if (at === 0 || at === 10) out.drum(0, 'kick', 0.28);
+        }
+      },
+    },
+
+    // Title: the same theme, slow, on soft voices, with sustained chords.
+    title: {
+      step: 60 / 70 / 4,
+      steps: 128,
+      fadeIn: 2,
+      play(s, out) {
+        const bar = Math.floor(s / 16) % 8;
+        const at = s % 16;
+        const c = CRYO_CHORDS[bar % 4];
+        if (at === 0) for (const iv of [12, 12 + c.third, 19]) out.note(0, 'triangle', c.root + iv, 15, 0.045, 0.4);
+        if (at === 0 || at === 8) out.note(0, 'sine', c.root, 7.5, 0.22, 0.05);
+        if (at % 4 === 0) out.note(0, 0.125, c.root + 24 + [0, c.third, 7, 12][at / 4], 1.5, 0.025);
+        if (bar >= 4) for (const [st, n, len] of THEME[bar % 4]) if (st === at) out.note(0, 'triangle', n, len, 0.11, 0.03);
+      },
+    },
+
+    // The Warrens: the theme in D major, in a lilting 6/8, with a hand drum. Home.
+    warrens: {
+      step: 0.3,
+      steps: 96,
+      play(s, out) {
+        const bar = Math.floor(s / 6) % 16;
+        const at = s % 6;
+        const c = W_CHORDS[bar % 8];
+        if (at === 0) out.note(0, 'triangle', c.root, 2.8, 0.28);
+        if (at === 3) out.note(0, 'triangle', c.root + 7, 2.8, 0.2);
+        out.note(0, 0.25, c.root + 12 + [12, 12 + c.third, 19, 24, 19, 12 + c.third][at], 0.9, 0.035);
+        if (at === 0) out.drum(0, 'hand', 0.26);
+        if (at === 3) out.drum(0, 'hand', 0.14);
+        if (at !== 0 && at !== 3) out.drum(0, 'shaker', 0.018);
+        if (bar < 8) {
+          if (at === 0 && bar % 2 === 0) out.note(0, 'triangle', c.root + 31, 2, 0.04);
+          if (at === 4) out.note(0, 'triangle', c.root + 24 + c.third, 1.5, 0.03);
+        } else {
+          for (const [st, n, len] of W_THEME[bar % 8]) {
+            if (st !== at) continue;
+            out.note(0, 0.25, n, len, 0.075, 0.02);
+            out.note(0, 0.125, n, len, 0.025, 0.02, 0.5); // a soft echo half a step behind
+          }
+        }
+      },
+    },
+
+    // The Warrens after the Bailiff's core was torn out: the same song, in D minor, nearly silent.
+    warrensHush: {
+      step: 0.42,
+      steps: 96,
+      play(s, out) {
+        const bar = Math.floor(s / 6) % 16;
+        const at = s % 6;
+        const c = HUSH_CHORDS[bar % 8];
+        if (at === 0) out.note(0, 'triangle', c.root, 5.5, 0.2, 0.05);
+        if (at % 2 === 0) out.note(0, 0.25, c.root + 12 + [12, 12 + c.third, 19][at / 2], 1.6, 0.025);
+        if (bar >= 8 && bar < 12) for (const [st, n, len] of HUSH_THEME[bar - 8]) if (st === at) out.note(0, 'triangle', n, len, 0.07, 0.05);
+      },
+    },
+
+    // The way down into the walls: a drone, drips, and the Warrens song half-remembered.
+    warrensEdge: {
+      step: 0.19,
+      steps: 64,
+      play(s, out) {
+        if (s === 0) out.note(0, 'triangle', 'D2', 30, 0.2, 0.3);
+        if (s === 32) out.note(0, 'triangle', 'A1', 30, 0.18, 0.3);
+        const motif = { 0: 'A5', 6: 'G5', 12: 'F#5', 20: 'E5' }[s];
+        if (motif) out.note(0, 'triangle', motif, 5, 0.045, 0.02);
+        if ([9, 27, 41, 50, 58].includes(s)) out.drum(0, 'drip', 0.05);
+      },
+    },
+
+    // The Warden Lockup: E Phrygian, a pulse like a machine's, metal on metal.
+    lockup: {
+      step: 60 / 100 / 4,
+      steps: 64,
+      play(s, out) {
+        const bar = Math.floor(s / 16);
+        const at = s % 16;
+        if (at % 2 === 0) out.note(0, 'triangle', (bar % 2 === 1 && at >= 12) ? 'F2' : 'E2', 1.5, 0.24);
+        if (at === 0 || at === 8) out.drum(0, 'kick', 0.18);
+        if (at === 4 || at === 12) out.drum(0, 'clank', 0.08);
+        if (s === 0) out.note(0, 'triangle', 'E3', 30, 0.05, 0.4);
+        if (s === 32) out.note(0, 'triangle', 'F3', 14, 0.05, 0.4);
+        if (at === 0 && bar % 2 === 0) {
+          out.note(0, 0.125, 'B5', 2, 0.04);
+          out.note(0, 0.125, 'B5', 2, 0.015, 0, 6);
+        }
+      },
+    },
+
+    // The Bailiff: E minor, 140 BPM. Layer 1 drums and bass; layer 2 adds the arpeggio; layer 3 brings
+    // in the main theme, loud, for the last third of the fight.
+    boss: {
+      step: 60 / 140 / 4,
+      steps: 64,
+      layers: 3,
+      fadeIn: 0.1,
+      play(s, out) {
+        const bar = Math.floor(s / 16) % 4;
+        const at = s % 16;
+        const c = BOSS_CHORDS[bar];
+        if (at % 2 === 0) out.note(0, 'triangle', c.root + [0, 0, 12, 0, 0, 12, 0, 7][at / 2], 1.6, 0.3);
+        if (at === 0 || at === 8) out.drum(0, 'kick', 0.32);
+        if (at === 4 || at === 12) out.drum(0, 'snare', 0.15);
+        if (at % 2 === 1) out.drum(0, 'hat', 0.03);
+        out.note(1, 0.125, c.root + 24 + [0, c.third, 7, 12, 7, c.third, 0, 7][at % 8], 0.9, 0.045);
+        if (at === 6 || at === 14) out.drum(1, 'kick', 0.2);
+        for (const [st, n, len] of BOSS_THEME[bar]) {
+          if (st !== at) continue;
+          out.note(2, 0.5, n, len, 0.07, 0.005);
+          out.note(2, 0.125, n + 12, len, 0.025, 0.005);
+        }
+      },
+    },
+  };
+  const chord = (name, third) => ({ root: midi(name), third });
+  const W_CHORDS = [chord('D3', 4), chord('D3', 4), chord('B2', 3), chord('B2', 3), chord('G2', 4), chord('A2', 4), chord('A2', 4), chord('A2', 4)];
+  const W_THEME = [
+    [[0, 'A5', 2], [2, 'G5', 1], [3, 'F#5', 2], [5, 'E5', 1]],
+    [[0, 'F#5', 6]],
+    [[0, 'D5', 3], [3, 'F#5', 3]],
+    [[0, 'B5', 6]],
+    [[0, 'G5', 2], [2, 'A5', 1], [3, 'G5', 2], [5, 'E5', 1]],
+    [[0, 'C#5', 6]],
+    [[0, 'C#5', 3], [3, 'E5', 3]],
+    [[0, 'A5', 6]],
+  ];
+  const HUSH_CHORDS = [chord('D3', 3), chord('D3', 3), chord('Bb2', 4), chord('Bb2', 4), chord('G2', 3), chord('A2', 4), chord('A2', 4), chord('A2', 4)];
+  const HUSH_THEME = [[[0, 'A5', 2], [2, 'G5', 1], [3, 'F5', 2]], [[0, 'E5', 6]], [[0, 'D5', 3], [3, 'F5', 3]], [[0, 'Bb5', 6]]];
+  const BOSS_CHORDS = [chord('E2', 3), chord('C2', 4), chord('D2', 4), chord('B1', 4)];
+  const BOSS_THEME = transpose(THEME, 7);
+
+  // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
+  let current = null;
+  const fading = [];
+  let wanted = null;
+  let layerCount = 1;
+
+  function play(id) {
+    if (id && !TRACKS[id]) id = null;
+    if (id !== wanted) layerCount = 1;
+    wanted = id;
+  }
+
+  function setLayers(n) {
+    layerCount = n;
+    if (!current || !A.ready) return;
+    const now = A.ctx.currentTime;
+    current.layers.forEach((g, i) => g.gain.setTargetAtTime(i < n ? 1 : 0, now, 0.35));
+  }
+
+  function start(id) {
+    const ctx = A.ctx;
+    const track = TRACKS[id];
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(1, ctx.currentTime + (track.fadeIn !== undefined ? track.fadeIn : 0.8));
+    gain.connect(A.musicBus);
+    const layers = [];
+    for (let i = 0; i < (track.layers || 1); i++) {
+      const g = ctx.createGain();
+      g.gain.value = i < layerCount ? 1 : 0;
+      g.connect(gain);
+      layers.push(g);
+    }
+    return { id, track, gain, layers, step: 0, nextTime: ctx.currentTime + 0.06 };
+  }
+
+  function stop(p) {
+    const now = A.ctx.currentTime;
+    p.gain.gain.cancelScheduledValues(now);
+    p.gain.gain.setValueAtTime(p.gain.gain.value, now);
+    p.gain.gain.linearRampToValueAtTime(0.0001, now + 1.2);
+    p.endTime = now + 1.3;
+    fading.push(p);
+  }
+
+  function schedule(p, horizon) {
+    const ctx = A.ctx;
+    if (p.nextTime < ctx.currentTime) p.nextTime = ctx.currentTime + 0.03;
+    while (p.nextTime < horizon && (!p.endTime || p.nextTime < p.endTime)) {
+      const t = p.nextTime;
+      const dt = p.track.step;
+      const out = {
+        note(layer, wave, n, len, vol, attack, offset = 0) {
+          A.tone({ wave, f: freq(n), dur: len * dt * 0.92, vol, attack: attack || 0.004, bus: p.layers[layer], delay: t + offset * dt - ctx.currentTime });
+        },
+        drum(layer, kind, vol) {
+          drum(p.layers[layer], kind, vol, t - ctx.currentTime);
+        },
+      };
+      p.track.play(p.step, out);
+      p.step = (p.step + 1) % p.track.steps;
+      p.nextTime += dt;
+    }
+  }
+
+  function drum(bus, kind, vol, delay) {
+    if (kind === 'kick') A.tone({ wave: 'sine', f: 130, f2: 40, dur: 0.12, vol, bus, delay });
+    else if (kind === 'snare') A.noise({ f: 1800, f2: 900, dur: 0.1, vol, q: 0.7, bus, delay });
+    else if (kind === 'hat') A.noise({ f: 7000, dur: 0.03, vol, q: 1, bus, delay });
+    else if (kind === 'hand') A.noise({ f: 420, f2: 150, dur: 0.14, vol, filter: 'lowpass', bus, delay });
+    else if (kind === 'shaker') A.noise({ f: 6000, dur: 0.05, vol, q: 0.8, filter: 'highpass', bus, delay });
+    else if (kind === 'clank') {
+      A.noise({ f: 2500, dur: 0.08, vol, q: 8, bus, delay });
+      A.tone({ wave: 0.125, f: 1900, dur: 0.05, vol: vol * 0.3, bus, delay });
+    } else if (kind === 'drip') A.tone({ wave: 'sine', f: 1900, f2: 1100, dur: 0.06, vol, bus, delay });
+  }
+
+  function pump() {
+    if (!A.ready) return;
+    const now = A.ctx.currentTime;
+    if ((current ? current.id : null) !== wanted) {
+      if (current) stop(current);
+      current = wanted ? start(wanted) : null;
+    }
+    const horizon = now + 0.15;
+    if (current) schedule(current, horizon);
+    for (let i = fading.length - 1; i >= 0; i--) {
+      const p = fading[i];
+      if (now > p.endTime) {
+        p.gain.disconnect();
+        fading.splice(i, 1);
+      } else schedule(p, horizon);
+    }
+  }
+  setInterval(pump, 30);
+
+  HA.music = { TRACKS, play, setLayers, get playing() { return wanted; } };
+})(window.HA);

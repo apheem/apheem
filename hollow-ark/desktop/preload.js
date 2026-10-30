@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('hollowArkDesktop', {
   onFullscreenChange: (fn) => ipcRenderer.on('fullscreen:changed', (e, on) => fn(!!on)),
   quit: () => ipcRenderer.send('app:quit'),
   ready: (info) => ipcRenderer.send('app:ready', info),
+  // One save file in the app-data folder. Reading happens once, at the title screen, so it can be synchronous.
+  readSave: () => ipcRenderer.sendSync('save:read'),
+  writeSave: (text) => ipcRenderer.send('save:write', String(text)),
 });

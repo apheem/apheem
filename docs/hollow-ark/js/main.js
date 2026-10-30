@@ -166,5 +166,31 @@
     requestAnimationFrame(frame);
   });
   canvas.focus();
-  HA.debug = { get world() { return HA.ui.world; }, view, get frames() { return frames; } };
+  // Helpers for the automated checks (and for testers who open the browser console).
+  HA.debug = {
+    get world() {
+      return HA.ui.world;
+    },
+    view,
+    get frames() {
+      return frames;
+    },
+    // Run the game forward n updates at once, with these actions held (for scripted playthroughs).
+    step(n, hold = {}) {
+      HA.input.force = hold;
+      for (let i = 0; i < n; i++) {
+        HA.input.update();
+        HA.ui.update();
+      }
+      HA.input.force = null;
+    },
+    skipScene() {
+      const w = HA.ui.world;
+      if (w && w.scene) HA.scenes.skip(w);
+    },
+    goto(room, tx, ty) {
+      const w = HA.ui.world;
+      w.enterRoom(room, tx * 8, ty * 8 + 8 - w.player.h);
+    },
+  };
 })(window.HA);

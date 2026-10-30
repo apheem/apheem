@@ -181,6 +181,26 @@
     ],
   };
 
+  // A Warden on foot: the Steward's collectors.
+  const WALKER_TOP = [
+    '...000000...',
+    '..0KKLLKK0..',
+    '.0KLkkkkLK0.',
+    '.0Lk0rRr0K0.',
+    '.0Lkkkkkk0..',
+    '..0KKKKKK0..',
+    '.0KLLLLLLK0.',
+    '0KLkKKKKkLK0',
+    '0Kk0KooK0kK0',
+    '0K00KKKK00K0',
+    '.0..0kk0..0.',
+    '....0KK0....',
+  ];
+  enemies.walker = [
+    sprite(WALKER_TOP.concat(['...0K00K0...', '...0k00k0...', '...0k00k0...', '..0KK00KK0..', '..0kk00kk0..', '..000..000..'])),
+    sprite(WALKER_TOP.concat(['...0K00K0...', '..0k0..0k0..', '..0k0..0k0..', '.0KK0..0KK0.', '.0kk0..0kk0.', '.000....000.'])),
+  ];
+
   // ---- Pickups and HUD icons ----
   const items = {
     shardSmall: [sprite(['.y.', 'yoy', '.y.']), sprite(['.o.', 'oyo', '.o.'])],
@@ -205,220 +225,79 @@
     coil: sprite(['............', '.000000000..', '0bcCCcCcc0..', '0bbbbbbbb0..', '0b0000000...', '00..........', '............']),
   };
 
-  // ---- Room layers (drawn once when the room loads) ----
-  function buildRoomLayers(room) {
-    const W = room.w * 8;
-    const H = room.h * 8;
-    return { bg: buildBackground(room, W, H), tiles: buildTiles(room, W, H) };
+  // ---- The Hullfolk: small, pale, big-eyed, hooded against the cold of the walls ----
+  // Template letters: H hood, e skin, E skin shade, x eyes, C cloth, c cloth shade, D lower cloth, G goggles, A apron
+  const ADULT = [
+    '..00000..',
+    '.0HHHHH0.',
+    '0HHeeeee0',
+    '0Hexexee0',
+    '0Hexexee0',
+    '0HHeeeEe0',
+    '.0CCCCC0.',
+    '0CcCCCCC0',
+    '0CcCCCcC0',
+    '.0CCCCC0.',
+    '.0DDDDD0.',
+    '.0DD0DD0.',
+    '.00..00..',
+  ];
+  const ADULT_WALK = ['.0DD0DD0.', '0DD0..0D0', '00....00.'];
+  const CHILD = [
+    '..0000..',
+    '.0HHHH0.',
+    '0Heeeee0',
+    '0Hexexe0',
+    '0Hexexe0',
+    '.0eeEe0.',
+    '.0CCCC0.',
+    '0CcCCC0.',
+    '.0CCCC0.',
+    '.0D00D0.',
+    '.00..00.',
+  ];
+  const CHILD_WALK = ['.0D0.0D0', '.00...00'];
+
+  function personSprite(rows, colors) {
+    const base = Object.assign({ 0: '#10121c', e: '#e9e4d8', E: '#bfb6a6', x: '#10121c' }, colors);
+    const img = canvas(rows[0].length, rows.length);
+    const c = img.getContext('2d');
+    rows.forEach((row, y) => {
+      if (row.length !== rows[0].length) throw new Error('Person row width mismatch');
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch === '.') continue;
+        c.fillStyle = base[ch] || PAL[ch];
+        c.fillRect(x, y, 1, 1);
+      }
+    });
+    return { img, white: tinted(img, '#ffffff'), w: img.width, h: img.height };
   }
 
-  function buildBackground(room, W, H) {
-    const img = canvas(W, H);
-    const g = img.getContext('2d');
-    const rnd = HA.seeded(7);
-    g.fillStyle = '#0a0d18';
-    g.fillRect(0, 0, W, H);
-    // wall panels
-    for (let y = 0; y < H; y += 24) {
-      for (let x = (y / 24) % 2 ? -16 : 0; x < W; x += 32) {
-        g.fillStyle = '#0d1120';
-        g.fillRect(x + 1, y + 1, 30, 22);
-        g.fillStyle = '#10152a';
-        g.fillRect(x + 1, y + 1, 30, 1);
-        if (rnd() < 0.18) {
-          g.fillStyle = '#121a30';
-          g.fillRect(x + 6, y + 8, 18, 2);
-          g.fillRect(x + 6, y + 12, 12, 2);
-        }
-      }
-    }
-    // conduits
-    for (const py of [44, 196, 284]) {
-      g.fillStyle = '#121a2e';
-      g.fillRect(0, py, W, 6);
-      g.fillStyle = '#18223b';
-      g.fillRect(0, py, W, 1);
-      for (let x = 12; x < W; x += 56) {
-        g.fillStyle = '#1c2742';
-        g.fillRect(x, py - 1, 4, 8);
-      }
-    }
-    // windows onto space, one showing the world the Ark never reached
-    for (const [wx, wy, planet] of [
-      [72, 52, false],
-      [264, 60, false],
-      [472, 48, true],
-    ]) {
-      g.fillStyle = '#1c2540';
-      g.fillRect(wx - 3, wy - 3, 62, 36);
-      g.fillStyle = '#02030a';
-      g.fillRect(wx, wy, 56, 30);
-      for (let i = 0; i < 26; i++) {
-        g.fillStyle = rnd() < 0.2 ? '#ffffff' : rnd() < 0.5 ? '#8aa0c8' : '#3b4a72';
-        g.fillRect(wx + Math.floor(rnd() * 56), wy + Math.floor(rnd() * 30), 1, 1);
-      }
-      if (planet) {
-        g.save();
-        g.beginPath();
-        g.rect(wx, wy, 56, 30);
-        g.clip();
-        g.fillStyle = '#1d4b5e';
-        g.beginPath();
-        g.arc(wx + 44, wy + 40, 22, 0, Math.PI * 2);
-        g.fill();
-        g.fillStyle = '#2f7f7a';
-        g.beginPath();
-        g.arc(wx + 40, wy + 38, 15, Math.PI, Math.PI * 1.7);
-        g.fill();
-        g.restore();
-      }
-      g.fillStyle = '#26314f';
-      g.fillRect(wx + 27, wy, 2, 30);
-    }
-    // cryo pods near the start, one broken open
-    for (let i = 0; i < 6; i++) {
-      const px = 40 + i * 18;
-      const py = 306;
-      g.fillStyle = '#1a2238';
-      g.fillRect(px, py, 14, 30);
-      g.fillStyle = i === 2 ? '#0c1120' : '#1d3b52';
-      g.fillRect(px + 2, py + 3, 10, 22);
-      if (i !== 2) {
-        g.fillStyle = '#3f6f8a';
-        g.fillRect(px + 3, py + 4, 2, 12);
-        g.fillStyle = '#2a4d64';
-        g.fillRect(px + 5, py + 10, 5, 9);
-      } else {
-        g.fillStyle = '#3f6f8a';
-        g.fillRect(px + 2, py + 22, 3, 2);
-        g.fillRect(px + 9, py + 3, 3, 2);
-      }
-      g.fillStyle = i === 2 ? '#e8434f' : '#5fd4e8';
-      g.fillRect(px + 6, py + 27, 2, 1);
-    }
-    // Bloom growth creeping over the walls
-    for (const [bx, by, n] of [
-      [270, 330, 40],
-      [300, 250, 18],
-      [40, 120, 26],
-      [560, 90, 14],
-    ]) {
-      for (let i = 0; i < n; i++) {
-        const x = bx + Math.floor((rnd() - 0.5) * 70);
-        const y = by + Math.floor((rnd() - 0.5) * 36);
-        const r = rnd();
-        g.fillStyle = r < 0.55 ? '#2a1238' : r < 0.85 ? '#3d1850' : '#6a2a86';
-        g.fillRect(x, y, r < 0.85 ? 2 : 1, r < 0.85 ? 2 : 1);
-      }
-    }
-    // ceiling lights
-    for (let x = 40; x < W; x += 96) {
-      for (const ly of [16, 144]) {
-        const grad = g.createRadialGradient(x, ly + 2, 0, x, ly + 2, 26);
-        grad.addColorStop(0, 'rgba(95,212,232,0.18)');
-        grad.addColorStop(1, 'rgba(95,212,232,0)');
-        g.fillStyle = grad;
-        g.fillRect(x - 26, ly - 24, 52, 52);
-        g.fillStyle = '#5fd4e8';
-        g.fillRect(x - 4, ly, 8, 1);
-      }
-    }
-    // hazard stripes behind the thorn pit
-    for (let x = 264; x < 360; x += 8) {
-      g.fillStyle = (x / 8) % 2 ? '#3a2a10' : '#151018';
-      g.fillRect(x, 322, 8, 4);
-    }
-    return img;
+  function person(colors, child, extra) {
+    let rows = (child ? CHILD : ADULT).slice();
+    if (extra) rows = extra(rows);
+    const walkRows = rows.slice(0, rows.length - (child ? 2 : 3)).concat(child ? CHILD_WALK : ADULT_WALK);
+    const blinkRows = rows.map((r) => r.replace(/x/g, 'e'));
+    const kneelRows = rows.slice(0, rows.length - 3).concat(['0DDDDDDD0', '.0000000.']);
+    return {
+      idle: personSprite(rows, colors),
+      blink: personSprite(blinkRows, colors),
+      walk: personSprite(walkRows, colors),
+      kneel: child ? null : personSprite(kneelRows, colors),
+      h: rows.length,
+    };
   }
-
-  const isSolidTile = (t) => t === 1;
-  function buildTiles(room, W, H) {
-    const img = canvas(W, H);
-    const g = img.getContext('2d');
-    const solid = (tx, ty) => isSolidTile(room.tile(tx, ty));
-    for (let ty = 0; ty < room.h; ty++) {
-      for (let tx = 0; tx < room.w; tx++) {
-        const t = room.tile(tx, ty);
-        const x = tx * 8;
-        const y = ty * 8;
-        if (t === 1) {
-          const up = solid(tx, ty - 1);
-          const down = solid(tx, ty + 1);
-          const left = solid(tx - 1, ty);
-          const right = solid(tx + 1, ty);
-          if (up && down && left && right) {
-            g.fillStyle = '#141827';
-            g.fillRect(x, y, 8, 8);
-            if ((tx + ty) % 2 === 0) {
-              g.fillStyle = '#171c2d';
-              g.fillRect(x + 2, y + 2, 4, 4);
-            }
-            continue;
-          }
-          g.fillStyle = '#262e44';
-          g.fillRect(x, y, 8, 8);
-          g.fillStyle = '#323b56';
-          g.fillRect(x + 1, y + 1, 6, 6);
-          g.fillStyle = '#46526e';
-          if ((tx + ty) % 3 === 0) {
-            g.fillRect(x + 1, y + 2, 1, 1);
-            g.fillRect(x + 6, y + 5, 1, 1);
-          }
-          if (!up) {
-            g.fillStyle = '#b8f4ff';
-            g.fillRect(x, y, 8, 1);
-            g.fillStyle = '#5f8fae';
-            g.fillRect(x, y + 1, 8, 1);
-          }
-          if (!down) {
-            g.fillStyle = '#0d101b';
-            g.fillRect(x, y + 7, 8, 1);
-          }
-          if (!left) {
-            g.fillStyle = '#4a5674';
-            g.fillRect(x, y + (up ? 0 : 1), 1, up ? 8 : 7);
-          }
-          if (!right) {
-            g.fillStyle = '#181d2d';
-            g.fillRect(x + 7, y + (up ? 0 : 1), 1, up ? 8 : 7);
-          }
-        } else if (t === 2) {
-          g.fillStyle = '#c9d6e8';
-          g.fillRect(x, y, 8, 1);
-          g.fillStyle = '#6c7894';
-          g.fillRect(x, y + 1, 8, 1);
-          g.fillStyle = '#3a4258';
-          g.fillRect(x, y + 2, 8, 1);
-          g.fillStyle = '#262c3e';
-          g.fillRect(x + 1, y + 3, 1, 2);
-          g.fillRect(x + 5, y + 3, 1, 2);
-        } else if (t === 3) {
-          g.fillStyle = '#2a0f36';
-          g.fillRect(x, y + 5, 8, 3);
-          for (const sx of [1, 5]) {
-            g.fillStyle = '#b04ad0';
-            g.fillRect(x + sx, y + 2, 2, 3);
-            g.fillStyle = '#f27ad8';
-            g.fillRect(x + sx, y, 1, 3);
-            g.fillStyle = '#5c2479';
-            g.fillRect(x + sx - 1, y + 4, 4, 1);
-          }
-        }
-      }
-    }
-    return img;
-  }
-
-  function buildVignette() {
-    const img = canvas(HA.VIEW_W, HA.VIEW_H);
-    const g = img.getContext('2d');
-    const grad = g.createRadialGradient(160, 90, 70, 160, 90, 200);
-    grad.addColorStop(0, 'rgba(2,3,8,0)');
-    grad.addColorStop(1, 'rgba(2,3,8,0.55)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, HA.VIEW_W, HA.VIEW_H);
-    return img;
-  }
+  const goggles = (rows) => rows.map((r, i) => (i === 1 ? '.0HGGGH0.' : r));
+  const apron = (rows) => rows.map((r, i) => (i === 7 ? '0CcAAACC0' : i === 8 ? '0CcAAAcC0' : r));
+  const people = {
+    gasket: person({ H: '#8a8f99', C: '#7a3a3a', c: '#5a2a2a', D: '#4a3a2e' }),
+    wick: person({ H: '#a85a4a', C: '#5a6a3a', c: '#3d4a28', D: '#4a3a2e' }),
+    solder: person({ H: '#4a3a2e', C: '#5f7f6a', c: '#3d5a4a', D: '#2b2420', G: '#5fd4e8', A: '#7a5a3a' }, false, (r) => apron(goggles(r))),
+    shim: person({ H: '#c9a070', C: '#3d5a8a', c: '#2a3d5e', D: '#4a3a2e' }, true),
+    tamp: person({ H: '#5a6a3a', C: '#7a5a3a', c: '#5a4028', D: '#2b2420' }),
+    brine: person({ H: '#3d5a8a', C: '#a85a4a', c: '#7a3a3a', D: '#4a3a2e' }),
+  };
 
   HA.art = {
     PAL,
@@ -429,7 +308,7 @@
     enemies,
     items,
     icons,
-    buildRoomLayers,
-    vignette: buildVignette(),
+    people,
+    tinted,
   };
 })(window.HA);

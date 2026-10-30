@@ -8,6 +8,7 @@
   let noiseBuffer;
   const pulse = {};
   const lastPlayed = {};
+  let paused = false;
 
   function init() {
     if (ctx) return ctx;
@@ -140,7 +141,61 @@
     menuMove: () => tone({ wave: 0.25, f: 740, dur: 0.035, vol: 0.07 }),
     menuOk: () => [880, 1320].forEach((f, i) => tone({ wave: 0.25, f, dur: 0.05, vol: 0.08, delay: i * 0.045 })),
     menuBack: () => tone({ wave: 0.25, f: 520, f2: 330, dur: 0.06, vol: 0.08 }),
+    // Story and the world
+    blip: (who) => tone({ wave: 0.5, f: VOICE[who] || 440, dur: 0.025, vol: 0.035 }),
+    lead: () => [523, 784].forEach((f, i) => tone({ wave: 'triangle', f, dur: 0.18, vol: 0.12, delay: i * 0.1 })),
+    terminal: () => [1200, 1600, 1200].forEach((f, i) => tone({ wave: 0.125, f, dur: 0.04, vol: 0.05, delay: i * 0.05 })),
+    hiss: () => noise({ f: 5000, f2: 2000, dur: 0.4, vol: 0.12, q: 0.6, filter: 'highpass' }),
+    podOpen: () => {
+      noise({ f: 3000, f2: 400, dur: 0.6, vol: 0.18, q: 0.7 });
+      tone({ wave: 0.5, f: 110, f2: 55, dur: 0.3, vol: 0.12 });
+    },
+    gasp: () => tone({ wave: 0.25, f: 900, f2: 1500, dur: 0.08, vol: 0.06 }),
+    vent: () => noise({ f: 900, f2: 300, dur: 0.18, vol: 0.12 }),
+    rumble: () => noise({ f: 160, f2: 60, dur: 0.9, vol: 0.4, filter: 'lowpass' }),
+    blast: () => {
+      noise({ f: 1800, f2: 60, dur: 0.8, vol: 0.4, filter: 'lowpass' });
+      tone({ wave: 0.5, f: 90, f2: 30, dur: 0.5, vol: 0.2 });
+    },
+    doorShut: () => {
+      noise({ f: 400, f2: 80, dur: 0.25, vol: 0.3, filter: 'lowpass' });
+      tone({ wave: 0.5, f: 70, dur: 0.12, vol: 0.14 });
+    },
+    alarm: () => [0, 0.25].forEach((d) => tone({ wave: 0.5, f: 620, f2: 480, dur: 0.22, vol: 0.05, delay: d })),
+    grab: () => {
+      tone({ wave: 0.5, f: 200, f2: 90, dur: 0.12, vol: 0.12 });
+      noise({ f: 1200, dur: 0.06, vol: 0.12, q: 2 });
+    },
+    stomp: () => noise({ f: 140, f2: 50, dur: 0.12, vol: 0.22, filter: 'lowpass' }),
+    swipe: () => noise({ f: 2400, f2: 500, dur: 0.14, vol: 0.18, q: 1.5 }),
+    slam: () => {
+      noise({ f: 300, f2: 40, dur: 0.5, vol: 0.4, filter: 'lowpass' });
+      tone({ wave: 0.5, f: 80, f2: 35, dur: 0.3, vol: 0.18 });
+    },
+    bossHit: () => tone({ wave: 0.5, f: 180, f2: 110, dur: 0.04, vol: 0.07 }),
+    roar: () => {
+      tone({ wave: 0.5, f: 140, f2: 70, dur: 0.6, vol: 0.14 });
+      tone({ wave: 0.25, f: 147, f2: 72, dur: 0.6, vol: 0.1 });
+      noise({ f: 700, f2: 200, dur: 0.6, vol: 0.12 });
+    },
+    summon: () => [300, 450, 675].forEach((f, i) => tone({ wave: 0.125, f, dur: 0.12, vol: 0.07, delay: i * 0.06 })),
+    boom: () => {
+      noise({ f: 900, f2: 50, dur: 0.45, vol: 0.32, filter: 'lowpass' });
+      tone({ wave: 0.5, f: 120, f2: 40, dur: 0.3, vol: 0.12 });
+    },
+    unlock: () => [660, 880, 1320].forEach((f, i) => tone({ wave: 'triangle', f, dur: 0.14, vol: 0.1, delay: i * 0.09 })),
+    cage: () => {
+      noise({ f: 2500, f2: 800, dur: 0.2, vol: 0.14, q: 3 });
+      tone({ wave: 0.25, f: 300, f2: 200, dur: 0.15, vol: 0.08 });
+    },
+    salvage: () => {
+      noise({ f: 3000, f2: 100, dur: 0.7, vol: 0.3, q: 1 });
+      [392, 330, 262, 196].forEach((f, i) => tone({ wave: 0.5, f, dur: 0.18, vol: 0.08, delay: 0.2 + i * 0.1 }));
+    },
+    choice: () => tone({ wave: 'triangle', f: 220, dur: 0.5, vol: 0.14 }),
   };
+  // Each speaker's text blips at its own pitch.
+  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120 };
 
   function play(name, arg) {
     if (!live() || !SFX[name]) return;
@@ -176,80 +231,28 @@
     chargeGain.gain.setTargetAtTime(0.025 + amount * 0.03, ctx.currentTime, 0.03);
   }
 
-  // ---- Music: the Ark's theme, A minor, Am F G E ----
-  const midi = (name) => {
-    const m = /^([A-G])(#?)(\d)$/.exec(name);
-    const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]];
-    return 12 * (Number(m[3]) + 1) + base + (m[2] ? 1 : 0);
-  };
-  const freq = (n) => 440 * Math.pow(2, (n - 69) / 12);
-  const CHORDS = [
-    { root: midi('A2'), third: 3 },
-    { root: midi('F2'), third: 4 },
-    { root: midi('G2'), third: 4 },
-    { root: midi('E2'), third: 4 },
-  ];
-  // [step, note, length in steps], one 16-step bar per chord
-  const LEAD = [
-    [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 2], [8, 'B4', 4], [12, 'C5', 4]],
-    [[0, 'A4', 8], [8, 'C5', 4], [12, 'F5', 4]],
-    [[0, 'D5', 4], [4, 'E5', 2], [6, 'D5', 2], [8, 'B4', 4], [12, 'G4', 4]],
-    [[0, 'G#4', 8], [8, 'B4', 4], [12, 'E5', 4]],
-  ];
-  const BPM = 92;
-  const STEP_TIME = 60 / BPM / 4;
-  const ARP = [0, 1, 2, 3, 2, 1, 2, 3];
-  let musicOn = false;
-  let paused = false;
-  let step = 0;
-  let nextTime = 0;
-  let timer = null;
-
-  function scheduleStep(s, t) {
-    const bar = Math.floor(s / 16) % 8;
-    const inBar = s % 16;
-    const chord = CHORDS[bar % 4];
-    const full = bar >= 4;
-    const bus = musicBus;
-    // bass
-    const bass = { 0: [0, 3], 6: [0, 2], 8: [7, 2], 10: [12, 2], 12: [0, 3], 15: [7, 1] }[inBar];
-    if (bass) tone({ wave: 'triangle', f: freq(chord.root + bass[0]), dur: bass[1] * STEP_TIME * 0.95, vol: 0.32, bus, delay: t - ctx.currentTime });
-    // arpeggio
-    const tones = [12, 12 + chord.third, 19, 24];
-    const n = chord.root + 12 + tones[ARP[inBar % 8]];
-    tone({ wave: 0.125, f: freq(n), dur: STEP_TIME * 0.8, vol: full ? 0.05 : 0.07, bus, delay: t - ctx.currentTime });
-    // lead on the second half of the loop
-    if (full) {
-      for (const [at, note, len] of LEAD[bar % 4]) {
-        if (at === inBar) tone({ wave: 0.25, f: freq(midi(note)), dur: len * STEP_TIME * 0.92, vol: 0.09, attack: 0.01, bus, delay: t - ctx.currentTime });
-      }
-      if (inBar % 4 === 2) noise({ f: 7000, dur: 0.03, vol: 0.04, q: 1, bus, delay: t - ctx.currentTime });
-      if (inBar === 0 || inBar === 10) tone({ wave: 'sine', f: 130, f2: 40, dur: 0.12, vol: 0.28, bus, delay: t - ctx.currentTime });
-    }
-  }
-
-  function pump() {
-    if (!live()) return;
-    if (nextTime < ctx.currentTime) nextTime = ctx.currentTime + 0.05;
-    while (nextTime < ctx.currentTime + 0.15) {
-      scheduleStep(step, nextTime);
-      step = (step + 1) % 128;
-      nextTime += STEP_TIME;
-    }
-  }
-
-  function startMusic() {
-    if (musicOn) return;
-    musicOn = true;
-    step = 0;
-    nextTime = 0;
-    timer = setInterval(pump, 30);
-  }
-
   function setPaused(p) {
     paused = p;
     applyVolumes();
   }
 
-  HA.audio = { init, unlock, play, charge, startMusic, setPaused, applyVolumes, get ready() { return live(); } };
+  HA.audio = {
+    init,
+    unlock,
+    play,
+    charge,
+    setPaused,
+    applyVolumes,
+    tone,
+    noise,
+    get ready() {
+      return live();
+    },
+    get ctx() {
+      return ctx;
+    },
+    get musicBus() {
+      return musicBus;
+    },
+  };
 })(window.HA);

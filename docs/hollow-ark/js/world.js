@@ -1,29 +1,30 @@
 'use strict';
-// The running game: one room, its actors, effects, camera and HUD.
+// The running game: the room the hero is in and everything in it, moving between rooms, effects, camera and HUD.
 (function (HA) {
   const W = HA.VIEW_W;
   const H = HA.VIEW_H;
   const A = HA.actors;
   const key = (tx, ty) => tx + ',' + ty;
-
-  // Tutorial lines painted on the walls. They show the keys or buttons of whatever the player last used.
-  const HINTS = [
-    { x: 140, y: 294, text: '{left}{right} MOVE   {jump} JUMP' },
-    { x: 140, y: 304, text: 'HOLD {jump} LONGER TO JUMP HIGHER' },
-    { x: 236, y: 258, text: '{down}+{jump} DROPS THROUGH CATWALKS' },
-    { x: 236, y: 270, text: '{fire} FIRE   HOLD {up} TO AIM UP' },
-    { x: 236, y: 246, text: 'IN THE AIR, HOLD {down} TO AIM DOWN', when: (w) => has(w, 'cannon') },
-    { x: 250, y: 120, text: 'A LEVEL 3 PURGE CANNON CAN LIFT YOU', when: (w) => has(w, 'cannon') && !w.capsuleTaken },
-  ];
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
+  const FADE = 10; // frames for each half of a room change
 
-  function create() {
-    const room = HA.room.load();
+  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1 };
+  const WEAPON_CHARS = { G: 'pistol', U: 'cannon', A: 'coil' };
+  const WEAPON_TEXT = {
+    pistol: 'RIVET PISTOL · {fire} TO FIRE',
+    cannon: 'PURGE CANNON · IN THE AIR, HOLD {down}+{fire} TO HOVER',
+    coil: 'ARC COIL · HOLD {fire} TO CHARGE, LET GO TO FIRE',
+  };
+
+  function create(state) {
     const world = {
-      room,
-      layers: HA.art.buildRoomLayers(room),
+      state,
       time: 0,
-      player: null,
+      player: A.makePlayer(0, 0),
+      def: null,
+      area: null,
+      room: null,
+      layers: null,
       enemies: [],
       shots: [],
       beams: [],
@@ -32,7 +33,13 @@
       flashes: [],
       texts: [],
       crates: new Map(),
-      restPods: [],
+      pods: [],
+      npcs: [],
+      logs: [],
+      doors: [],
+      actors: [],
+      boss: null,
+      cage: null,
       cam: { x: 0, y: 0, look: 0 },
       shakeAmt: 0,
       shakeX: 0,
@@ -44,24 +51,23 @@
       toastText: '',
       toastTime: 0,
       weaponBanner: 0,
+      areaBanner: 0,
+      fade: 1,
+      transition: null,
+      scene: null,
+      near: null,
+      alarm: 0,
       assist: {},
-      capsuleTaken: false,
     };
+    addEffects(world);
+    HA.save.toPlayer(state, world.player);
+    enterRoom(world, state.room, state.x, state.y, { noSave: true, facing: state.facing });
+    HA.story.begin(world);
+    return world;
+  }
 
-    for (const s of room.spawns) {
-      if (s.type === 'P') world.player = A.makePlayer(s.x, s.y + 8 - 14);
-      else if (s.type === 'S') world.restPods.push({ x: s.x - 4, y: s.y + 8 - 24, w: 16, h: 24, glow: 0, cool: 0 });
-      else if (s.type === 'U') world.pickups.push({ kind: 'weapon', id: 'cannon', x: s.x - 2, y: s.y - 8, w: 12, h: 10, life: Infinity, t: 0, message: 'PURGE CANNON · IN THE AIR, HOLD {down}+{fire} TO HOVER' });
-      else if (s.type === 'A') world.pickups.push({ kind: 'weapon', id: 'coil', x: s.x - 2, y: s.y - 8, w: 12, h: 10, life: Infinity, t: 0, message: 'ARC COIL · HOLD {fire} TO CHARGE, LET GO TO FIRE' });
-      else if (s.type === 'H') world.pickups.push({ kind: 'capsule', x: s.x, y: s.y - 2, w: 8, h: 10, life: Infinity, t: 0 });
-      else if (s.type === 'B') world.crates.set(key(s.tx, s.ty), { tx: s.tx, ty: s.ty, hp: 3, broken: false, timer: 0, flash: 0 });
-      else {
-        s.respawn = 0;
-        world.enemies.push(A.makeEnemy(s));
-      }
-    }
-
-    // ---- Effects and events other modules call ----
+  // ---- Effects and events other modules call ----
+  function addEffects(world) {
     world.shake = (amount) => {
       world.shakeAmt = Math.max(world.shakeAmt, amount * HA.shakeScale());
     };
@@ -97,7 +103,7 @@
 
     world.hurtPlayer = (dmg, srcX) => {
       const p = world.player;
-      if (p.dead || p.invuln > 0 || world.assist.invincible) return;
+      if (p.dead || p.invuln > 0 || world.assist.invincible || world.scene) return;
       p.hp = Math.max(0, p.hp - dmg);
       p.invuln = 70;
       p.stun = 10;
@@ -122,11 +128,16 @@
       }
     };
 
+    // After a defeat the suit reboots at the last rest pod (or, before any rest, where the hero entered the room).
     world.respawn = () => {
+      const s = world.state;
       const p = world.player;
-      Object.assign(p, { x: p.restX, y: p.restY, vx: 0, vy: 0, hp: p.maxHp, dead: false, invuln: 90, stun: 0, charge: 0, fireToggle: false });
-      world.toast('SUIT REBOOTED AT THE REST POD', 150);
-      updateCamera(world, true);
+      s.deaths++;
+      const rest = s.rest || { room: s.room, x: s.x, y: s.y };
+      Object.assign(p, { vx: 0, vy: 0, hp: p.maxHp, dead: false, invuln: 90, stun: 0, charge: 0, fireToggle: false });
+      enterRoom(world, rest.room, rest.x, rest.y, { noSave: true });
+      world.fade = 1;
+      world.toast(s.rest ? 'SUIT REBOOTED AT THE REST POD' : 'SUIT REBOOTED', 150);
     };
 
     world.damageCrate = (tx, ty, dmg) => {
@@ -140,7 +151,7 @@
       }
       c.broken = true;
       c.timer = 2400;
-      room.set(tx, ty, HA.room.EMPTY);
+      world.room.set(tx, ty, HA.room.EMPTY);
       const cx = tx * 8 + 4;
       const cy = ty * 8 + 4;
       world.burst(cx, cy, ['#b5793a', '#8a5a2b', '#5a3a1c', '#fff0a8'], 12, 1.8);
@@ -149,8 +160,146 @@
       HA.audio.play('crate');
     };
 
+    // A weapon or capsule was picked up: it stays gone for good.
+    world.collected = (k) => {
+      world.state.taken[k.key] = true;
+      if (k.kind === 'weapon') {
+        world.weaponBanner = 120;
+        HA.story.onWeapon(world, k.id);
+      }
+      HA.save.write(world);
+    };
+
+    world.save = () => HA.save.write(world);
+    world.refreshMusic = () => HA.music.play(musicFor(world));
+    world.enterRoom = (id, x, y, opts) => enterRoom(world, id, x, y, opts);
+  }
+
+  // ---- Rooms ----
+  function enterRoom(world, id, x, y, opts = {}) {
+    const def = HA.rooms.byId[id];
+    if (!def) throw new Error('No room called ' + id);
+    const s = world.state;
+    const areaChanged = !world.def || world.def.area !== def.area;
+    world.def = def;
+    world.area = HA.rooms.AREAS[def.area];
+    world.room = HA.room.load(def.map);
+    world.layers = HA.scenery.layers(def, world.room);
+    world.enemies = [];
+    world.shots = [];
+    world.beams = [];
+    world.pickups = [];
+    world.particles = [];
+    world.flashes = [];
+    world.texts = [];
+    world.crates = new Map();
+    world.pods = [];
+    world.npcs = [];
+    world.logs = [];
+    world.doors = [];
+    world.actors = [];
+    world.boss = null;
+    world.cage = null;
+    world.start = null;
+    world.bossSpawn = null;
+    world.near = null;
+    world.fired = new Set();
+
+    const counts = {};
+    for (const sp of world.room.spawns) {
+      const ch = sp.type;
+      const legend = (def.legend && def.legend[ch]) || {};
+      const n = (counts[ch] = (counts[ch] || 0) + 1);
+      const id = def.id + ':' + ch + (n > 1 ? n : '');
+      if (ch === 'P') world.start = { x: sp.x, y: sp.y + 8 - 14 };
+      else if (ch === 'S') world.pods.push({ x: sp.x - 4, y: sp.y + 8 - 24, w: 16, h: 24, cool: 0 });
+      else if (ENEMY_CHARS[ch]) {
+        sp.respawn = def.noRespawn ? -1 : 0;
+        world.enemies.push(A.makeEnemy(sp));
+      } else if (ch === 'B') world.crates.set(key(sp.tx, sp.ty), { tx: sp.tx, ty: sp.ty, hp: 3, broken: false, timer: 0, flash: 0 });
+      else if (WEAPON_CHARS[ch]) {
+        const wid = WEAPON_CHARS[ch];
+        if (!s.taken[id] && !has(world, wid)) world.pickups.push({ kind: 'weapon', id: wid, key: id, x: sp.x - 2, y: sp.y - 8, w: 12, h: 10, life: Infinity, t: 0, message: WEAPON_TEXT[wid] });
+      } else if (ch === 'H') {
+        if (!s.taken[id]) world.pickups.push({ kind: 'capsule', key: id, x: sp.x, y: sp.y - 2, w: 8, h: 10, life: Infinity, t: 0 });
+      } else if (legend.type === 'log') world.logs.push({ id: legend.id, x: sp.x - 1, y: sp.y + 8 - 12, w: 10, h: 12, read: !!s.logs[legend.id] });
+      else if (legend.type === 'npc') {
+        if (!legend.when || legend.when(s, world)) world.npcs.push(HA.story.makeNpc(world, legend.id, sp));
+      } else if (legend.type === 'door') addDoorCell(world, legend, sp);
+      else if (legend.type === 'boss') world.bossSpawn = { x: sp.x + 4, y: sp.y + 8 };
+      else if (legend.type === 'cage') world.cage = { x: sp.x - 8, y: sp.y - 8, w: 24, h: 22, open: false, t: 0 };
+    }
+    updateDoors(world, true);
+
+    const p = world.player;
+    p.x = x;
+    p.y = y;
+    if (!opts.keepVelocity) {
+      p.vx = 0;
+      p.vy = 0;
+    }
+    if (opts.facing) p.facing = opts.facing;
+    s.room = id;
+    if (areaChanged) world.areaBanner = 160;
+    HA.story.enterRoom(world);
+    HA.music.play(musicFor(world));
     updateCamera(world, true);
-    return world;
+    HA.save.reveal(world, true);
+    if (!opts.noSave) {
+      s.x = x;
+      s.y = y;
+      s.facing = p.facing;
+      HA.save.write(world);
+    }
+  }
+
+  function musicFor(world) {
+    const story = HA.story.music(world);
+    if (story !== undefined) return story;
+    return world.def.music !== undefined ? world.def.music : world.area.music;
+  }
+
+  // Doors are columns of cells marked D. A closed door is solid; the room's legend says when it opens.
+  function addDoorCell(world, legend, sp) {
+    let door = world.doors.find((d) => d.id === legend.id);
+    if (!door) {
+      door = { id: legend.id, legend, cells: [], open: null };
+      world.doors.push(door);
+    }
+    door.cells.push({ tx: sp.tx, ty: sp.ty });
+  }
+
+  function updateDoors(world, instant) {
+    for (const d of world.doors) {
+      const open = !!d.legend.open(world.state, world);
+      if (open === d.open) continue;
+      d.open = open;
+      for (const c of d.cells) world.room.set(c.tx, c.ty, open ? HA.room.EMPTY : HA.room.SOLID);
+      if (instant) continue;
+      const c = d.cells[Math.floor(d.cells.length / 2)];
+      world.burst(c.tx * 8 + 4, c.ty * 8, open ? ['#ffb84d', '#fff0a8', '#6c7894'] : ['#6c7894', '#a9b6cc'], open ? 30 : 10, open ? 2.4 : 1.2);
+      world.shake(open ? 4 : 2);
+      HA.audio.play(open ? 'blast' : 'doorShut');
+    }
+  }
+
+  // Walking off an open edge leads into the next room on the ship grid.
+  function checkEdges(world) {
+    const p = world.player;
+    const room = world.room;
+    const cx = p.x + p.w / 2;
+    if (cx >= 0 && cx <= room.pw) return;
+    const def = world.def;
+    const gx = def.gx * 8 + (cx < 0 ? -4 : room.pw + 4);
+    const gy = def.gy * 8 + p.y + p.h - 4;
+    const next = HA.rooms.at(gx, gy);
+    if (!next || world.scene || p.dead) {
+      p.x = HA.clamp(p.x, -p.w / 2, room.pw - p.w / 2);
+      p.vx = 0;
+      return;
+    }
+    world.transition = { t: 0, to: next.id, x: def.gx * 8 + p.x - next.gx * 8, y: def.gy * 8 + p.y - next.gy * 8 };
+    HA.audio.charge(0);
   }
 
   const onScreen = (world, x, y, margin = 16) => {
@@ -158,8 +307,25 @@
     return x > c.x - margin && x < c.x + W + margin && y > c.y - margin && y < c.y + H + margin;
   };
 
-  function update(world, input) {
+  // ---- One update (1/60 s) ----
+  function update(world, rawInput) {
     world.time++;
+    world.state.time++;
+
+    // Room change: fade out with the world held still, swap rooms, fade back in while play goes on.
+    const tr = world.transition;
+    if (tr) {
+      tr.t++;
+      world.fade = Math.min(1, tr.t / FADE);
+      if (tr.t < FADE) return;
+      world.transition = null;
+      enterRoom(world, tr.to, tr.x, tr.y, { keepVelocity: true });
+    }
+    if (world.fade > 0 && !world.holdFade) world.fade = Math.max(0, world.fade - 1 / FADE);
+
+    // Scenes (talk, cutscenes, choices) take the controls while they run.
+    const input = HA.scenes.update(world, rawInput);
+
     // Hit-stop: a few frozen frames sell big hits. Presses made during it still count afterwards.
     if (world.freezeTime > 0) {
       world.freezeTime--;
@@ -171,35 +337,31 @@
 
     const p = world.player;
     A.updatePlayer(world, input);
+    checkEdges(world);
+    if (world.transition) return;
 
-    // Rest pod: heal, and come back here after a defeat.
-    for (const pod of world.restPods) {
-      if (pod.cool > 0) pod.cool--;
-      pod.near = !p.dead && HA.overlap(p, pod);
-      if (pod.near && input.pressed.up && pod.cool === 0) {
-        pod.cool = 60;
-        p.hp = p.maxHp;
-        p.restX = pod.x + 4;
-        p.restY = pod.y + pod.h - p.h;
-        world.burst(pod.x + 8, pod.y + 10, ['#5fd4e8', '#b8f4ff', '#ffffff'], 16, 1.4);
-        world.toast('RESTED · HEALTH RESTORED', 150);
-        HA.audio.play('rest');
-      }
+    updateDoors(world, false);
+    updateInteractions(world, input);
+    checkTriggers(world);
+    HA.story.update(world);
+
+    for (const e of world.enemies) {
+      if (e.dead) continue;
+      A.updateEnemy(world, e);
+      if (!e.boss) e.x = HA.clamp(e.x, 0, world.room.pw - e.w);
     }
-
-    for (const e of world.enemies) if (!e.dead) A.updateEnemy(world, e);
-    // Defeated enemies come back after a while, out of sight, so there is always something to shoot.
+    // Defeated enemies come back after a while, out of sight, so there is always energy to collect.
     for (let i = 0; i < world.enemies.length; i++) {
       const e = world.enemies[i];
-      if (!e.dead) continue;
+      if (!e.dead || e.spawn.respawn < 0) continue;
       if (e.spawn.respawn > 0) e.spawn.respawn--;
       else if (!onScreen(world, e.spawn.x + 4, e.spawn.y + 4, 40)) world.enemies[i] = A.makeEnemy(e.spawn);
     }
+    for (const a of world.actors) if (a.update) a.update(world, a);
 
     HA.weapons.updateShots(world);
 
     for (const k of world.pickups) A.updatePickup(world, k);
-    if (world.pickups.some((k) => k.kind === 'capsule' && k.life <= 0)) world.capsuleTaken = true;
     world.pickups = world.pickups.filter((k) => k.life > 0);
 
     for (const c of world.crates.values()) {
@@ -234,24 +396,85 @@
 
     if (world.toastTime > 0) world.toastTime--;
     if (world.weaponBanner > 0) world.weaponBanner--;
+    if (world.areaBanner > 0) world.areaBanner--;
     if (world.flashTime > 0) world.flashTime--;
     world.shakeAmt *= 0.84;
     if (world.shakeAmt < 0.1) world.shakeAmt = 0;
     world.shakeX = (Math.random() - 0.5) * 2 * world.shakeAmt;
     world.shakeY = (Math.random() - 0.5) * 2 * world.shakeAmt;
     updateCamera(world, false);
+    HA.save.reveal(world, false);
+  }
+
+  // Rest pods, people and ship logs all answer to Up. The closest one in reach shows its prompt.
+  function updateInteractions(world, input) {
+    const p = world.player;
+    let best = null;
+    let bestD = 999;
+    const consider = (kind, o, label) => {
+      const reach = { x: o.x - 6, y: o.y - 4, w: o.w + 12, h: o.h + 8 };
+      if (!HA.overlap(p, reach)) return;
+      const d = Math.abs(p.x + p.w / 2 - (o.x + o.w / 2));
+      if (d < bestD) {
+        bestD = d;
+        best = { kind, o, label };
+      }
+    };
+    if (!p.dead && !world.scene) {
+      for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, '{up} REST');
+      for (const n of world.npcs) if (n.talkable && n.talkable(world, n)) consider('npc', n, '{up} TALK');
+      for (const l of world.logs) consider('log', l, '{up} READ');
+    }
+    for (const pod of world.pods) if (pod.cool > 0) pod.cool--;
+    world.near = best;
+    if (!best || !input.pressed.up) return;
+    if (best.kind === 'pod') rest(world, best.o);
+    else if (best.kind === 'npc') HA.story.talk(world, best.o);
+    else if (best.kind === 'log') HA.story.readLog(world, best.o);
+  }
+
+  // Story moments that start when the hero reaches a spot (tiles x0-x1, and above row y1 if given).
+  function checkTriggers(world) {
+    if (world.scene || world.player.dead) return;
+    const p = world.player;
+    const tx = (p.x + p.w / 2) / 8;
+    const ty = (p.y + p.h - 1) / 8;
+    (world.def.triggers || []).forEach((t, i) => {
+      if (world.fired.has(i) || world.scene) return;
+      if (tx < t.x0 || tx > t.x1 + 1 || (t.y1 !== undefined && ty > t.y1 + 1)) return;
+      if (t.when && !t.when(world.state, world)) return;
+      world.fired.add(i); // once per visit to the room
+      HA.story.run(world, t.run);
+    });
+  }
+
+  function rest(world, pod) {
+    const p = world.player;
+    const s = world.state;
+    pod.cool = 90;
+    p.hp = p.maxHp;
+    s.rest = { room: world.def.id, x: pod.x + 4, y: pod.y + pod.h - p.h };
+    s.x = s.rest.x;
+    s.y = s.rest.y;
+    world.burst(pod.x + 8, pod.y + 10, ['#5fd4e8', '#b8f4ff', '#ffffff'], 16, 1.4);
+    world.toast('RESTED · HEALTH RESTORED · GAME SAVED', 150);
+    HA.audio.play('rest');
+    HA.save.write(world);
+    const then = world.def.onRest && world.def.onRest(world);
+    if (then) HA.story.run(world, then);
   }
 
   function updateCamera(world, snap) {
     const p = world.player;
     const c = world.cam;
+    const target = world.camTarget;
     c.look = snap ? p.facing * 26 : HA.approach(c.look, p.facing * 26, 0.9);
-    const tx = p.x + p.w / 2 + c.look - W / 2;
-    const ty = p.y + p.h / 2 - H / 2 - 8 + HA.clamp(p.vy * 5, 0, 26);
+    const tx = target ? target.x - W / 2 : p.x + p.w / 2 + c.look - W / 2;
+    const ty = target ? target.y - H / 2 : p.y + p.h / 2 - H / 2 - 8 + HA.clamp(p.vy * 5, 0, 26);
     c.x = snap ? tx : c.x + (tx - c.x) * 0.12;
     c.y = snap ? ty : c.y + (ty - c.y) * 0.1;
-    c.x = HA.clamp(c.x, 0, world.room.pw - W);
-    c.y = HA.clamp(c.y, 0, world.room.ph - H);
+    c.x = HA.clamp(c.x, 0, Math.max(0, world.room.pw - W));
+    c.y = HA.clamp(c.y, 0, Math.max(0, world.room.ph - H));
   }
 
   // ---- Drawing ----
@@ -260,14 +483,20 @@
     g.fillStyle = '#05060d';
     g.fillRect(0, 0, W, H);
     g.drawImage(world.layers.bg, -cam.x, -cam.y);
+    HA.scenery.drawBack(g, world, cam);
 
-    for (const pod of world.restPods) drawPod(g, world, pod, cam);
+    for (const pod of world.pods) drawPod(g, world, pod, cam);
+    for (const l of world.logs) HA.scenery.drawTerminal(g, world, l, cam);
     drawHints(g, world, cam);
+    for (const n of world.npcs) HA.story.drawNpc(g, world, n, cam);
     g.drawImage(world.layers.tiles, -cam.x, -cam.y);
+    for (const d of world.doors) if (!d.open) HA.scenery.drawDoor(g, world, d, cam);
+    if (world.cage) HA.scenery.drawCage(g, world, world.cage, cam);
     for (const c of world.crates.values()) if (!c.broken) drawCrate(g, c, cam);
 
     for (const k of world.pickups) A.drawPickup(g, world, k, cam);
     for (const e of world.enemies) if (!e.dead) A.drawEnemy(g, world, e, cam);
+    for (const a of world.actors) if (a.draw) a.draw(g, world, a, cam);
     A.drawPlayer(g, world, cam);
     for (const s of world.shots) drawShot(g, world, s, cam);
     for (const b of world.beams) drawBeam(g, b, cam);
@@ -282,10 +511,11 @@
     }
     for (const t of world.texts) HA.font.draw(g, t.text, t.x - cam.x, t.y - cam.y, t.color, { align: 'center' });
 
-    // Coil charge ring around the muzzle
+    // Coil charge spark at the muzzle once fully charged
     const p = world.player;
-    if (!p.dead && p.charge > 6) {
-      const L = HA.weapons.DEFS.coil.levels[p.weapons[p.wi].level - 1];
+    const w = p.weapons[p.wi];
+    if (!p.dead && w && w.id === 'coil' && p.charge > 6) {
+      const L = HA.weapons.DEFS.coil.levels[w.level - 1];
       if (p.charge >= L.charge && Math.floor(world.time / 3) % 2) {
         const m = HA.weapons.muzzle(p);
         g.fillStyle = '#ffffff';
@@ -293,7 +523,11 @@
       }
     }
 
-    g.drawImage(HA.art.vignette, 0, 0);
+    HA.scenery.drawLight(g, world);
+    if (world.alarm > 0 && Math.floor(world.time / 20) % 2 === 0 && HA.settings.flashes !== 'reduced') {
+      g.fillStyle = 'rgba(232,67,79,0.13)';
+      g.fillRect(0, 0, W, H);
+    }
     if (world.flashTime > 0 && world.flashColor) {
       g.globalAlpha = 0.18 * (world.flashTime / 5);
       g.fillStyle = world.flashColor;
@@ -307,17 +541,32 @@
       g.globalAlpha = 1;
       if (p.deadTimer < 70) HA.font.draw(g, 'SUIT FAILURE', W / 2, H / 2 - 4, '#ff8a8a', { align: 'center' });
     }
-    drawHud(g, world);
+    if (world.near && !world.scene) {
+      const o = world.near.o;
+      HA.font.draw(g, world.near.label, Math.round(o.x + o.w / 2 - cam.x), Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
+    }
+    if (!world.scene || world.scene.showHud) drawHud(g, world);
+    if (world.boss && world.boss.active) HA.boss.drawBar(g, world, world.boss);
+    HA.scenes.draw(world, g);
+    if (world.fade > 0) {
+      g.globalAlpha = world.fade;
+      g.fillStyle = '#05060d';
+      g.fillRect(0, 0, W, H);
+      g.globalAlpha = 1;
+    }
+    HA.scenes.drawCard(world, g);
   }
 
   function drawHints(g, world, cam) {
     const p = world.player;
-    for (const h of HINTS) {
+    for (const h of world.def.hints || []) {
       if (h.when && !h.when(world)) continue;
-      const d = Math.hypot(p.x - h.x - 40, p.y - h.y);
-      if (d > 190 || !onScreen(world, h.x + 40, h.y, 120)) continue;
+      const hx = h.x * 8;
+      const hy = h.y * 8;
+      const d = Math.hypot(p.x - hx - 40, p.y - hy);
+      if (d > 190 || !onScreen(world, hx + 40, hy, 120)) continue;
       g.globalAlpha = HA.clamp((190 - d) / 70, 0, 0.85);
-      HA.font.draw(g, h.text, h.x - cam.x, h.y - cam.y, '#9fb6c8');
+      HA.font.draw(g, h.text, hx - cam.x, hy - cam.y, '#9fb6c8');
       g.globalAlpha = 1;
     }
   }
@@ -340,7 +589,6 @@
     g.fillRect(x + 2, y + 19, 12, 2);
     g.fillStyle = '#7ad1a0';
     g.fillRect(x + 7, y + 20, 2, 1);
-    if (pod.near) HA.font.draw(g, '{up} REST', x + 8, y - 12, '#eef4f6', { align: 'center' });
   }
 
   function drawCrate(g, c, cam) {
@@ -365,6 +613,7 @@
   }
 
   function drawShot(g, world, s, cam) {
+    if (s.delay > 0) return;
     const x = Math.round(s.x - cam.x);
     const y = Math.round(s.y - cam.y);
     if (s.kind === 'bolt') {
@@ -390,6 +639,13 @@
       g.fillRect(x - 2, y - 2, 5, 5);
       g.fillStyle = big ? '#ffffff' : '#ff8a8a';
       g.fillRect(x - 1, y - 1, 3, 3);
+    } else if (s.kind === 'wave') {
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 3, y - s.h, 7, s.h);
+      g.fillStyle = Math.floor(world.time / 3) % 2 ? '#ffb84d' : '#ff8a8a';
+      g.fillRect(x - 2, y - s.h + 1, 5, s.h - 1);
+      g.fillStyle = '#fff0a8';
+      g.fillRect(x - 1, y - s.h + 2, 3, 2);
     }
   }
 
@@ -425,8 +681,6 @@
   // ---- HUD: health, weapon level and XP are always readable at a glance ----
   function drawHud(g, world) {
     const p = world.player;
-    const w = p.weapons[p.wi];
-    const def = HA.weapons.DEFS[w.id];
     // health
     HA.font.draw(g, '♥', 6, 6, '#e8434f');
     const barW = 4 * p.maxHp;
@@ -438,44 +692,45 @@
     g.fillRect(14, 7, 4 * p.hp, 5);
     g.fillStyle = '#ff8a8a';
     g.fillRect(14, 7, 4 * p.hp, 1);
-    for (let i = 1; i < p.maxHp; i++) {
-      if (i % 4 === 0) {
-        g.fillStyle = '#10121c';
-        g.fillRect(14 + i * 4, 7, 1, 5);
-      }
+    for (let i = 4; i < p.maxHp; i += 4) {
+      g.fillStyle = '#10121c';
+      g.fillRect(14 + i * 4, 7, 1, 5);
     }
     HA.font.draw(g, String(p.hp), 18 + barW, 6, '#eef4f6');
 
-    // weapon, level, XP
-    g.drawImage(HA.art.icons[w.id].img, 4, 16);
-    HA.font.draw(g, 'LV' + w.level, 18, 17, '#fff0a8');
-    const xpX = 39;
-    const xpW = 44;
-    const max = HA.weapons.isMax(w);
-    const locked = p.xpLock > 0 && !def.keepsXp;
-    g.fillStyle = locked && Math.floor(world.time / 6) % 2 ? '#5fd4e8' : '#10121c';
-    g.fillRect(xpX - 1, 17, xpW + 2, 7);
-    g.fillStyle = '#2a2236';
-    g.fillRect(xpX, 18, xpW, 5);
-    const fill = max ? xpW : Math.floor((xpW * w.xp) / HA.weapons.cap(w));
-    g.fillStyle = max ? (Math.floor(world.time / 8) % 2 ? '#fff0a8' : '#ffb84d') : '#ffb84d';
-    g.fillRect(xpX, 18, fill, 5);
-    g.fillStyle = '#fff0a8';
-    g.fillRect(xpX, 18, fill, 1);
-    if (max) HA.font.draw(g, 'MAX', xpX + xpW + 4, 17, '#fff0a8');
-    if (w.id === 'cannon') {
-      g.fillStyle = '#10121c';
-      g.fillRect(xpX - 1, 25, xpW + 2, 4);
-      g.fillStyle = w.ammo > 0 ? '#5fd4e8' : '#e8434f';
-      g.fillRect(xpX, 26, Math.round((xpW * w.ammo) / def.ammoMax), 2);
-    } else if (w.id === 'coil' && p.charge > 0) {
-      const L = def.levels[w.level - 1];
-      g.fillStyle = '#10121c';
-      g.fillRect(xpX - 1, 25, xpW + 2, 4);
-      g.fillStyle = p.charge >= L.charge ? '#ffffff' : '#b8f4ff';
-      g.fillRect(xpX, 26, Math.round((xpW * p.charge) / L.charge), 2);
+    const w = p.weapons[p.wi];
+    if (w) {
+      const def = HA.weapons.DEFS[w.id];
+      g.drawImage(HA.art.icons[w.id].img, 4, 16);
+      HA.font.draw(g, 'LV' + w.level, 18, 17, '#fff0a8');
+      const xpX = 39;
+      const xpW = 44;
+      const max = HA.weapons.isMax(w);
+      const locked = p.xpLock > 0 && !def.keepsXp;
+      g.fillStyle = locked && Math.floor(world.time / 6) % 2 ? '#5fd4e8' : '#10121c';
+      g.fillRect(xpX - 1, 17, xpW + 2, 7);
+      g.fillStyle = '#2a2236';
+      g.fillRect(xpX, 18, xpW, 5);
+      const fill = max ? xpW : Math.floor((xpW * w.xp) / HA.weapons.cap(w));
+      g.fillStyle = max ? (Math.floor(world.time / 8) % 2 ? '#fff0a8' : '#ffb84d') : '#ffb84d';
+      g.fillRect(xpX, 18, fill, 5);
+      g.fillStyle = '#fff0a8';
+      g.fillRect(xpX, 18, fill, 1);
+      if (max) HA.font.draw(g, 'MAX', xpX + xpW + 4, 17, '#fff0a8');
+      if (w.id === 'cannon') {
+        g.fillStyle = '#10121c';
+        g.fillRect(xpX - 1, 25, xpW + 2, 4);
+        g.fillStyle = w.ammo > 0 ? '#5fd4e8' : '#e8434f';
+        g.fillRect(xpX, 26, Math.round((xpW * w.ammo) / def.ammoMax), 2);
+      } else if (w.id === 'coil' && p.charge > 0) {
+        const L = def.levels[w.level - 1];
+        g.fillStyle = '#10121c';
+        g.fillRect(xpX - 1, 25, xpW + 2, 4);
+        g.fillStyle = p.charge >= L.charge ? '#ffffff' : '#b8f4ff';
+        g.fillRect(xpX, 26, Math.round((xpW * p.charge) / L.charge), 2);
+      }
+      if (world.weaponBanner > 0) HA.font.draw(g, def.name, 4, 31, '#9fb6c8');
     }
-    if (world.weaponBanner > 0) HA.font.draw(g, def.name, 4, 31, '#9fb6c8');
 
     // owned weapons, top right
     if (p.weapons.length > 1) {
@@ -492,10 +747,19 @@
       HA.font.draw(g, '{prev}{next}', W - 6, 17, '#9fb6c8', { align: 'right' });
     }
 
+    // area name, when arriving in a new part of the ship
+    if (world.areaBanner > 0) {
+      const a = Math.min(1, world.areaBanner / 30, (160 - world.areaBanner) / 20);
+      g.globalAlpha = Math.max(0, a);
+      HA.font.draw(g, world.area.name, W / 2, 30, world.area.mapColor, { align: 'center' });
+      HA.font.draw(g, world.def.name, W / 2, 40, '#9fb6c8', { align: 'center' });
+      g.globalAlpha = 1;
+    }
+
     // toast
     if (world.toastTime > 0) {
       const tw = HA.font.measure(world.toastText) + 14;
-      const ty = 42;
+      const ty = 54;
       g.globalAlpha = Math.min(1, world.toastTime / 20);
       g.fillStyle = '#10121c';
       g.fillRect(Math.round(W / 2 - tw / 2), ty - 5, tw, 18);
@@ -507,5 +771,5 @@
     }
   }
 
-  HA.world = { create, update, draw };
+  HA.world = { create, update, draw, musicFor };
 })(window.HA);

@@ -1,5 +1,6 @@
 'use strict';
-// Title screen, pause menu, settings and controls. Everything is reachable with keyboard or controller alone.
+// Title screen, pause menu, map and journal, settings and controls. Everything is reachable with keyboard
+// or controller alone.
 (function (HA) {
   const W = HA.VIEW_W;
   const H = HA.VIEW_H;
@@ -45,6 +46,7 @@
         option('SCREEN SHAKE', ['full', 'reduced', 'off'], ['FULL', 'REDUCED', 'OFF'], () => S.shake, (v) => (S.shake = v)),
         option('FLASHING', ['full', 'reduced'], ['FULL', 'REDUCED'], () => S.flashes, (v) => (S.flashes = v)),
         option('FIRE BUTTON', ['hold', 'toggle'], ['HOLD', 'TOGGLE'], () => S.held, (v) => (S.held = v)),
+        option('TEXT SPEED', ['slow', 'normal', 'fast', 'instant'], ['SLOW', 'NORMAL', 'FAST', 'INSTANT'], () => S.textSpeed, (v) => (S.textSpeed = v)),
         volume('MUSIC', 'music'),
         volume('SOUND', 'sfx'),
         option('SHOW FPS', [false, true], ['OFF', 'ON'], () => S.fps, (v) => (S.fps = v)),
@@ -59,28 +61,34 @@
   }
 
   function titleMenu() {
-    const items = [
-      { label: 'START', action: startGame },
-      { label: 'SETTINGS', action: () => push(settingsMenu()) },
-      { label: 'CONTROLS', action: () => push(controlsMenu()) },
-    ];
+    const saved = HA.save.exists();
+    const items = [];
+    if (saved) items.push({ label: 'CONTINUE', action: continueGame });
+    items.push({ label: 'NEW GAME', action: () => (saved ? push(confirmMenu('START A NEW GAME?', 'YOUR SAVE WILL BE REPLACED.', newGame)) : newGame()) });
+    items.push({ label: 'SETTINGS', action: () => push(settingsMenu()) });
+    items.push({ label: 'CONTROLS', action: () => push(controlsMenu()) });
     if (HA.desktop) items.push({ label: 'QUIT', action: () => HA.desktop.quit() });
     return { title: null, items, sel: 0, root: true };
   }
 
+  function confirmMenu(title, note, yes) {
+    return { title, note, items: [{ label: 'NO', action: pop }, { label: 'YES', action: yes }], sel: 0 };
+  }
+
   function pauseMenu() {
-    return {
-      title: 'PAUSED',
-      items: [
-        { label: 'RESUME', action: resume },
-        { label: 'SETTINGS', action: () => push(settingsMenu()) },
-        { label: 'CONTROLS', action: () => push(controlsMenu()) },
-        { label: 'RESTART ROOM', action: startGame },
-        { label: 'QUIT TO TITLE', action: toTitle },
-      ],
-      sel: 0,
-      pause: true,
-    };
+    const world = ui.world;
+    const items = [{ label: 'RESUME', action: resume }];
+    if (world.scene && world.scene.skippable) items.push({ label: 'SKIP SCENE', action: skipScene });
+    items.push({ label: 'MAP', action: () => push(screen('map')) });
+    items.push({ label: 'JOURNAL', action: () => push(screen('journal')) });
+    items.push({ label: 'SETTINGS', action: () => push(settingsMenu()) });
+    items.push({ label: 'CONTROLS', action: () => push(controlsMenu()) });
+    items.push({ label: 'QUIT TO TITLE', action: toTitle });
+    return { title: 'PAUSED', lead: world.state.lead, items, sel: 0, pause: true };
+  }
+
+  function screen(tab) {
+    return { screen: HA.mapscreen.create(ui.world, tab), items: [], sel: 0 };
   }
 
   function push(menu) {
@@ -98,18 +106,33 @@
     ui.stack = [];
     HA.audio.setPaused(false);
   }
-  function startGame() {
-    ui.world = HA.world.create();
+  function skipScene() {
+    HA.scenes.skip(ui.world);
+    resume();
+  }
+  function begin(state) {
+    ui.world = HA.world.create(state);
     ui.mode = 'play';
     ui.stack = [];
     HA.audio.setPaused(false);
   }
+  function newGame() {
+    HA.save.clear();
+    begin(HA.save.newState());
+  }
+  function continueGame() {
+    const state = HA.save.load();
+    if (state) begin(state);
+    else newGame();
+  }
   function toTitle() {
+    if (ui.world && !ui.world.state.fresh) HA.save.write(ui.world);
     ui.mode = 'title';
     ui.world = null;
     ui.stack = [titleMenu()];
     HA.audio.setPaused(false);
     HA.audio.charge(0);
+    HA.music.play('title');
   }
 
   ui.pause = () => {
@@ -136,6 +159,14 @@
 
   function updateMenu(input) {
     const m = ui.stack[ui.stack.length - 1];
+    if (m.screen) {
+      if (HA.mapscreen.update(m.screen, input) === 'close') {
+        ui.stack.pop();
+        HA.audio.play('menuBack');
+        if (ui.mode === 'play' && !ui.stack.length) HA.audio.setPaused(false);
+      }
+      return;
+    }
     if (navPressed(input, 'up')) {
       m.sel = (m.sel - 1 + m.items.length) % m.items.length;
       HA.audio.play('menuMove');
@@ -171,17 +202,26 @@
   ui.update = () => {
     const input = HA.input;
     ui.time++;
-    if (HA.audio.ready) HA.audio.startMusic();
     if (ui.stack.length) {
       updateMenu(input);
       return;
     }
     if (ui.mode === 'play') {
-      if (input.pressed.pause) {
+      const world = ui.world;
+      // Enter both pauses and confirms; while someone is talking it confirms.
+      const talking = world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice);
+      if (input.pressed.pause && !(talking && input.pressed.confirm)) {
         ui.pause();
         return;
       }
-      HA.world.update(ui.world, input);
+      if (input.pressed.map && !world.scene && !world.transition && !world.player.dead) {
+        push(screen('map'));
+        HA.audio.setPaused(true);
+        HA.audio.charge(0);
+        HA.audio.play('menuOk');
+        return;
+      }
+      HA.world.update(world, input);
     }
   };
 
@@ -231,11 +271,13 @@
   }
 
   function drawMenu(g, m) {
+    if (m.screen) return HA.mapscreen.draw(m.screen, g);
     if (m.controls) return drawControls(g, m);
     const rowH = 12;
     const hasValues = m.items.some((it) => it.value);
-    const pw = hasValues ? 240 : 140;
-    const ph = m.items.length * rowH + (m.title ? 30 : 14);
+    const extra = (m.lead ? 22 : 0) + (m.note ? 12 : 0);
+    const pw = hasValues ? 240 : m.lead || m.note ? 260 : 140;
+    const ph = m.items.length * rowH + (m.title ? 30 : 14) + extra;
     const px = Math.round(W / 2 - pw / 2);
     const py = m.root ? 96 : Math.round(H / 2 - ph / 2);
     if (!m.root) drawPanel(g, px, py, pw, ph);
@@ -243,6 +285,15 @@
     if (m.title) {
       HA.font.draw(g, m.title, W / 2, y, '#ffb84d', { align: 'center' });
       y += 18;
+    }
+    if (m.lead) {
+      HA.font.draw(g, 'LEAD', W / 2, y - 4, '#6c7894', { align: 'center' });
+      HA.font.draw(g, m.lead, W / 2, y + 6, '#fff0a8', { align: 'center' });
+      y += 22;
+    }
+    if (m.note) {
+      HA.font.draw(g, m.note, W / 2, y - 4, '#9fb6c8', { align: 'center' });
+      y += 12;
     }
     m.items.forEach((it, i) => {
       const sel = i === m.sel;
@@ -274,12 +325,12 @@
   }
 
   function drawControls(g, m) {
-    const pw = 296;
-    const ph = 146;
+    const pw = 300;
+    const ph = 164;
     const px = Math.round(W / 2 - pw / 2);
     const py = Math.round(H / 2 - ph / 2);
     drawPanel(g, px, py, pw, ph);
-    HA.font.draw(g, 'CONTROLS', W / 2, py + 8, '#ffb84d', { align: 'center' });
+    HA.font.draw(g, 'CONTROLS', W / 2, py + 7, '#ffb84d', { align: 'center' });
     const rows = [
       ['MOVE', 'ARROWS / WASD', 'STICK / D-PAD'],
       ['JUMP', 'Z / SPACE / J', 'A'],
@@ -287,25 +338,26 @@
       ['AIM', 'UP / DOWN IN AIR', 'STICK / D-PAD'],
       ['WEAPON', 'Q E  (OR C V)', 'LB / RB'],
       ['DROP DOWN', 'DOWN + JUMP', 'DOWN + A'],
-      ['REST', 'UP AT A REST POD', 'UP AT A REST POD'],
-      ['PAUSE', 'ESC / ENTER / P', 'START / BACK'],
+      ['TALK, READ, REST', 'UP', 'UP'],
+      ['MAP, JOURNAL', 'TAB / M', 'VIEW / BACK'],
+      ['PAUSE', 'ESC / ENTER / P', 'START'],
       ['FULLSCREEN', 'ALT+ENTER' + (HA.desktop ? ' / F11' : ''), 'SETTINGS MENU'],
     ];
-    HA.font.draw(g, 'KEYBOARD', px + 86, py + 24, '#6c7894');
-    HA.font.draw(g, 'CONTROLLER', px + 196, py + 24, '#6c7894');
+    HA.font.draw(g, 'KEYBOARD', px + 104, py + 21, '#6c7894');
+    HA.font.draw(g, 'CONTROLLER', px + 206, py + 21, '#6c7894');
     rows.forEach((r, i) => {
-      const y = py + 35 + i * 10;
+      const y = py + 32 + i * 11;
       HA.font.draw(g, r[0], px + 8, y, '#9fb6c8');
-      HA.font.draw(g, r[1], px + 86, y, '#eef4f6');
-      HA.font.draw(g, r[2], px + 196, y, '#eef4f6');
+      HA.font.draw(g, r[1], px + 104, y, '#eef4f6');
+      HA.font.draw(g, r[2], px + 206, y, '#eef4f6');
     });
-    HA.font.draw(g, '> BACK <', W / 2, py + ph - 13, '#fff0a8', { align: 'center' });
+    HA.font.draw(g, '> BACK <', W / 2, py + ph - 12, '#fff0a8', { align: 'center' });
   }
 
   ui.draw = (g) => {
     if (ui.mode === 'play' && ui.world) {
       HA.world.draw(ui.world, g);
-      if (ui.stack.length) {
+      if (ui.stack.length && !ui.stack[ui.stack.length - 1].screen) {
         g.fillStyle = 'rgba(5,6,13,0.55)';
         g.fillRect(0, 0, W, H);
       }
@@ -313,13 +365,13 @@
       drawTitleBackground(g);
       if (ui.stack.length <= 1) {
         HA.font.draw(g, 'HOLLOW ARK', W / 2, 30, '#eef4f6', { align: 'center', scale: 3, shadow: '#2f5fb3' });
-        HA.font.draw(g, 'PHASE 1 · FEEL PROTOTYPE', W / 2, 62, '#ffb84d', { align: 'center' });
+        HA.font.draw(g, 'PHASE 2 · VERTICAL SLICE', W / 2, 62, '#ffb84d', { align: 'center' });
       }
     }
-    if (ui.stack.length) drawMenu(g, ui.stack[ui.stack.length - 1]);
-    if (ui.stack.length) {
-      const m = ui.stack[ui.stack.length - 1];
-      const hint = m.root ? '{confirm} SELECT' : '{confirm} SELECT   {back} BACK';
+    const top = ui.stack[ui.stack.length - 1];
+    if (top) drawMenu(g, top);
+    if (top && !top.screen) {
+      const hint = top.root ? '{confirm} SELECT' : '{confirm} SELECT   {back} BACK';
       HA.font.draw(g, hint, W / 2, H - 12, '#6c7894', { align: 'center' });
     }
     if (ui.mode === 'title') {
@@ -329,7 +381,9 @@
   };
 
   ui.toTitle = toTitle;
-  ui.startGame = startGame;
+  ui.newGame = newGame;
+  ui.continueGame = continueGame;
   ui.stack.push(titleMenu());
+  HA.music.play('title');
   HA.ui = ui;
 })(window.HA);
