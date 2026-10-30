@@ -696,7 +696,7 @@
         if (f.key) b.keyGone = true;
       }
     }
-    if (f.stewardSeen) placeCrew(world, HELM_AT, 19);
+    if (f.stewardSeen && !f.deckDown) placeCrew(world, HELM_AT, 19); // until they ride Lift B down
     if (f.scuttle) {
       world.alarm = 1;
       world.wardensHold = !!f.liftB;

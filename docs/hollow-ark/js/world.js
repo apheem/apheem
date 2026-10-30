@@ -841,6 +841,14 @@
       g.fillRect(x - 2, y - 2, 5, 5);
       g.fillStyle = big ? '#ffffff' : '#ff8a8a';
       g.fillRect(x - 1, y - 1, 3, 3);
+    } else if (s.kind === 'mote') {
+      // the Navigator's: a spark of its course, cyan, with a tail
+      g.fillStyle = '#1a4a58';
+      g.fillRect(Math.round(x - s.vx * 2) - 1, Math.round(y - s.vy * 2) - 1, 2, 2);
+      g.fillStyle = '#5fd4e8';
+      g.fillRect(x - 2, y - 2, 4, 4);
+      g.fillStyle = Math.floor(world.time / 4) % 2 ? '#ffffff' : '#b8f4ff';
+      g.fillRect(x - 1, y - 1, 2, 2);
     } else if (s.kind === 'round') {
       // a sidearm's or a turret's round: a short bright streak
       g.fillStyle = '#ffb84d';

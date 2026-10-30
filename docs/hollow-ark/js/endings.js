@@ -155,7 +155,10 @@
 
   // ---- Closing scenes: what plays between the last choice and the epilogue ----
   const CLOSING = {
-    homecoming: [{ lines: ['THE ARK TURNED.'], space: 'in', ark: { x: 124, y: 88, s: 2, drive: 1 }, hold: 260 }],
+    homecoming: [
+      { lines: ['THE ARK TURNED.'], space: 'in', ark: { x: 96, y: 60, s: 2, drive: 1, turn: 0.35 }, world: { x: 262, y: 140, r: 16 }, hold: 300, top: 24 },
+      { lines: ['FOR THE FIRST TIME IN 274 YEARS,', 'IT WAS ON ITS WAY IN.'], space: true, ark: { x: 120, y: 92, s: 1, drive: 1 }, world: { x: 250, y: 130, r: 22 }, hold: 240, top: 24 },
+    ],
     crash: [
       { lines: ['THE SLEDS FELL AWAY.'], space: 'in', ark: { x: 124, y: 88, s: 2, broken: 0.2 }, hold: 200 },
       { lines: ['THE ARK CAME APART AGAINST THE STARS.'], space: true, ark: { x: 124, y: 88, s: 2, broken: 0.7 }, hold: 220 },
@@ -178,7 +181,7 @@
     ['THANK YOU FOR PLAYING.'],
   ];
 
-  const step = (c, top) => ({ card: c.lines, hold: c.hold || 200, space: c.space, ark: c.ark, top });
+  const step = (c, top) => ({ card: c.lines, hold: c.hold || 200, space: c.space, ark: c.ark, world: c.world, top: c.top !== undefined ? c.top : top });
 
   function record(s, id) {
     s.ending = id;

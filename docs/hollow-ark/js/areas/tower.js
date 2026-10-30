@@ -225,7 +225,7 @@
     legend: {
       e: Object.assign(down('bridge-stair'), { scene: 'helmDown' }),
       M: { type: 'boss', reach: false },
-      Y: { type: 'lift', to: 'lift-down', unbuilt: 'THE DREAMING DECK', name: 'Lift B', big: true, when: (s) => !!s.flags.liftB, lit: () => true },
+      Y: { type: 'lift', to: 'lift-down', name: 'Lift B', big: true, scene: 'liftBDown', when: (s) => !!s.flags.liftB, lit: () => true },
     },
     scenery: [
       { kind: 'viewport', x0: 50, x1: 78 },

@@ -295,9 +295,26 @@
       noise({ f: 300, f2: 2400, dur: 0.7, vol: 0.18, filter: 'lowpass' });
       tone({ wave: 0.5, f: 110, f2: 330, dur: 0.6, vol: 0.06 });
     },
+    // The Dreaming Deck
+    seal: () => {
+      tone({ wave: 'sine', f: 300, f2: 1500, dur: 0.9, vol: 0.07, attack: 0.1 });
+      noise({ f: 5000, f2: 2000, dur: 0.8, vol: 0.04, q: 3 });
+    },
+    mote: () => tone({ wave: 'sine', f: 1400, f2: 700, dur: 0.1, vol: 0.06 }),
+    cut: () => {
+      noise({ f: 6000, f2: 1500, dur: 0.3, vol: 0.16, q: 2 });
+      [1319, 988, 659].forEach((f, i) => tone({ wave: 'triangle', f, dur: 0.12, vol: 0.07, delay: i * 0.05 }));
+    },
+    redraw: () => [440, 554, 659, 880, 1109, 1319].forEach((f, i) => tone({ wave: 'triangle', f, dur: 0.2, vol: 0.05, delay: i * 0.08 })),
+    burn: () => noise({ f: 3000, f2: 6000, dur: 0.5, vol: 0.1, q: 4 }),
+    strain: () => tone({ wave: 'sine', f: 80, f2: 58, dur: 0.7, vol: 0.12, attack: 0.1 }),
+    drive: () => {
+      noise({ f: 120, f2: 60, dur: 3, vol: 0.3, filter: 'lowpass' });
+      tone({ wave: 'triangle', f: 55, f2: 110, dur: 3, vol: 0.14, attack: 0.6 });
+    },
   };
   // Each speaker's text blips at its own pitch.
-  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700, 'THE PURSER': 280, 'THE DESERTER': 230, FLUX: 230, 'THE TALLYMAN': 135, TERMINAL: 1100, 'COLD STORE LIFT': 700, 'BALLAST CONTROL': 1000, ABEL: 95, 'THE LINE': 300, 'SECURITY': 1000, 'LIFT NOTICES': 1000, 'THE STEWARD': 175, 'THE NAVIGATOR': 1250, 'THE WARDENS': 125, 'HELM KEY': 1000, 'POD STACKS': 1000, 'HULL ALARM': 1000 };
+  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700, 'THE PURSER': 280, 'THE DESERTER': 230, FLUX: 230, 'THE TALLYMAN': 135, TERMINAL: 1100, 'COLD STORE LIFT': 700, 'BALLAST CONTROL': 1000, ABEL: 95, 'THE LINE': 300, 'SECURITY': 1000, 'LIFT NOTICES': 1000, 'THE STEWARD': 175, 'THE NAVIGATOR': 1250, 'THE WARDENS': 125, 'HELM KEY': 1000, 'POD STACKS': 1000, 'HULL ALARM': 1000, 'THE SEAL': 1000 };
 
   function play(name, arg) {
     if (!live() || !SFX[name]) return;
