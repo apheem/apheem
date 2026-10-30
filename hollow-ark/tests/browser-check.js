@@ -1255,9 +1255,11 @@ async function play(browserType, url, label) {
       talkThrough();
       out.gardener = { fate: s.people.gardener, mercy: s.mercy - m2, shimWith: s.flags.shimWith, lead: s.lead };
       // Up the Bridge Stair's ladder into the Helm: the speech, and the fight.
-      HA.debug.goto('bridge-stair', 6, 8);
+      HA.debug.goto('bridge-stair', 12, 8);
       HA.debug.step(3);
       out.podPrompt = w().near && w().near.label;
+      HA.debug.goto('bridge-stair', 5, 8);
+      HA.debug.step(3);
       press('up');
       talkThrough();
       out.helm = w().def.id;
