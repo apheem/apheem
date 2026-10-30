@@ -487,6 +487,8 @@
         S.setLead(world, 'FIT THE MOTOR IN THE WINCH WITH SOLDER');
       } else {
         yield me('THE HATCH SHUT BEHIND ME. THE WATER WAS RIGHT BEHIND IT.');
+        // A route that closes (STORYBOARD.md): nobody held the culvert, so the keel line's shutter is down.
+        yield me("AND THE KEEL LINE'S SHUTTER HAS COME DOWN. THE WATER GOT IN AHEAD OF ME.");
         S.setLead(world, 'FIT THE MOTOR IN THE WINCH');
       }
       world.save();
@@ -518,12 +520,18 @@
       if (s.people.solder === 'alive' && n) {
         yield say('SOLDER', "IT'LL RUN TO THE SUMP AND STOP. I'M GOING WITH IT. SOMEONE HAS TO TELL THEM IT'S SAFE TO GET IN.");
         yield say('SOLDER', "EVERYONE WHO CAN CLIMB. WE'LL MEET YOU AT THE FOOT OF THE SPINE. DON'T START WITHOUT ME.");
+        yield say('SOLDER', 'AND KEEP OUT OF THE OVERFLOW PIPES UNDER THE PLATFORM. THEY FLOOD.');
         n.state = 'gone';
         world.tramRider = true;
       }
       yield { until: () => world.tramGo > 260 };
-      S.addStory(world, s.people.solder === 'alive' ? 'SOLDER AND I FITTED THE MOTOR. THE KEEL TRAM WENT OFF TO THE WARRENS FOR THE CLIMBERS, WITH SOLDER ON IT.' : 'I FITTED THE MOTOR ALONE. THE KEEL TRAM WENT OFF TO THE WARRENS FOR THE CLIMBERS.');
-      S.setLead(world, 'FOLLOW THE KEEL LINE EAST TO THE FOOT OF THE ENGINE SPINE');
+      if (s.people.solder === 'alive') {
+        S.addStory(world, 'SOLDER AND I FITTED THE MOTOR. THE KEEL TRAM WENT OFF TO THE WARRENS FOR THE CLIMBERS, WITH SOLDER ON IT.');
+        S.setLead(world, 'FOLLOW THE KEEL LINE EAST TO THE FOOT OF THE ENGINE SPINE');
+      } else {
+        S.addStory(world, 'I FITTED THE MOTOR ALONE. THE KEEL TRAM WENT OFF TO THE WARRENS FOR THE CLIMBERS. THE KEEL LINE FLOODED BEHIND ME: WITHOUT SOLDER, NOBODY HELD THE CULVERT. THE WAY TO THE SPINE IS THROUGH THE OVERFLOW PIPES.');
+        S.setLead(world, 'THE KEEL IS SHUT. GO DOWN THROUGH THE OVERFLOW PIPES TO THE SPINE');
+      }
       world.save();
     },
 

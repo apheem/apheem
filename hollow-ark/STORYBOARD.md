@@ -864,7 +864,7 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [x] Pictures behind the epilogue cards, all five endings (and each ending's Mara card says "sister")
 - [x] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades (`js/story/bench.js`: Plating, Magnet, Steady Hands; benches in the Warrens and, with Solder alive, the Crew Camp)
 - [x] Routes that close: the design (below, "Routes that close")
-- [ ] Routes that close, lock 1: Solder left under the beam floods the keel, and the way to the Spine is the Overflow Pipes
+- [x] Routes that close, lock 1: Solder left under the beam floods the keel, and the way to the Spine is the Overflow Pipes (the station's `Z` shutter and `e` hatch; `overflow-pipes`; the Spine Foot's `e`)
 - [ ] Routes that close, lock 2: the gate fell, and the Warrens' hall is rubble; the way through is the deep walls
 - [ ] Routes that close, lock 3: side content each choice shuts (the greenhouse wing and Sorrel; Flux's morning with Shim), with a journal line for each
 - [ ] The rest of the audit's story fixes: Shim on every path (4), the villains set up early (6), the small payoffs (7)
