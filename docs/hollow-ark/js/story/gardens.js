@@ -189,6 +189,8 @@
 
     *prunerDefeated(world) {
       const boss = world.boss;
+      world.state.flags.prunerDown = true;
+      world.save();
       HA.music.play(null);
       for (let i = 0; i < 5; i++) {
         world.burst(boss.x + Math.random() * boss.w, boss.y + Math.random() * boss.h, ['#ffb84d', '#fff0a8', '#7ad1a0', '#ffffff'], 12, 2.2);
@@ -198,8 +200,6 @@
       }
       boss.broken = true;
       boss.active = false;
-      world.state.flags.prunerDown = true;
-      world.save();
       yield { wait: 60 };
       yield* prunerFate(world);
     },
@@ -246,7 +246,12 @@
         HA.audio.play(release ? 'snip' : 'hiss');
         yield { wait: 12 };
       }
+      // What happened is recorded now, so a game quit during the rest of the scene keeps it.
       s.flags.cradles = true;
+      s.flags.lantern = true;
+      s.takenHome = release ? 11 : 7;
+      s.lead = 'FIND WICK IN THE VATS';
+      S.addStory(world, (release ? 'ELEVEN OF THE TAKEN WOKE' : 'SEVEN OF THE TAKEN WOKE, AND FOUR NEVER DID') + '. THEY WENT HOME BY THE GARDEN LIFT. THE GARDENER HAS TAKEN WICK TO THE VATS. I HAVE HER LANTERN.');
       world.cradlesOpening = 0;
       // The woken climb down from the racks: eleven, or seven, with four cradles gone dark.
       const dark = [2, 4, 7, 9];
@@ -259,7 +264,6 @@
         world.burst(a.x + 4, a.y + 6, ['#d8f4ff', '#9fd8e8'], 6, 1);
         woken.push(a);
       }
-      s.takenHome = woken.length;
       yield { wait: 70 };
       const first = woken[0];
       first.facing = -1;
@@ -270,7 +274,6 @@
       p.kneel = 50;
       yield { wait: 40 };
       world.actors = world.actors.filter((a) => a !== lantern);
-      s.flags.lantern = true;
       p.kneel = 0;
       yield me('HER LANTERN WAS STILL LIT.');
       yield say('A WOKEN VILLAGER', "WE'LL TAKE THE LIFT DOWN TO THE WARRENS. GO. BRING HER BACK.");
@@ -289,7 +292,6 @@
       yield { wait: 40 };
       yield { card: [release ? 'ELEVEN CAME HOME.' : 'SEVEN CAME HOME.'], hold: 140 };
       S.setLead(world, 'FIND WICK IN THE VATS');
-      S.addStory(world, (release ? 'ELEVEN OF THE TAKEN WOKE' : 'SEVEN OF THE TAKEN WOKE, AND FOUR NEVER DID') + ". THEY WENT HOME BY THE GARDEN LIFT. THE GARDENER HAS TAKEN WICK TO THE VATS. I HAVE HER LANTERN.");
       if (pruner) {
         pruner.leaving = true;
         yield { wait: 60 };
@@ -385,6 +387,7 @@
     const s = world.state;
     const p = world.player;
     const boss = world.boss;
+    if (!boss) return;
     // Frame the hero and the Pruner together while it asks.
     world.camTarget = { x: (p.x + boss.x + boss.w / 2) / 2, y: boss.floorY - 40 };
     yield say('THE PRUNER', 'I WAS BUILT TO CUT. I CANNOT STOP.', '#9fb6c8');
@@ -398,9 +401,12 @@
         ],
       },
     };
+    // The choice is recorded at once; what follows only plays it out.
+    s.wardens.pruner = pick === 0 ? 'release' : 'salvage';
+    s.mercy += pick === 0 ? 2 : -1;
+    s.lead = 'GO BACK DOWN TO THE CRADLES';
+    S.addChoice(world, pick === 0 ? 'I RELEASED THE PRUNER. IT WENT DOWN TO CUT THE BLOOM FROM THE CRADLES.' : 'I FINISHED THE PRUNER, AS IT ASKED, AND TOOK THE SEAL CODES FROM ITS CORE. FOUR OF THE TAKEN WILL NEVER WAKE.');
     if (pick === 0) {
-      s.wardens.pruner = 'release';
-      s.mercy += 2;
       HA.audio.play('unlock');
       world.burst(boss.x + boss.w / 2, boss.y + 10, ['#b8f4ff', '#5fd4e8', '#ffffff'], 18, 1.6);
       boss.freed = true;
@@ -415,10 +421,7 @@
       boss.leaving = true;
       yield { wait: 60 };
       boss.gone = true;
-      S.addChoice(world, 'I RELEASED THE PRUNER. IT WENT DOWN TO CUT THE BLOOM FROM THE CRADLES.');
     } else {
-      s.wardens.pruner = 'salvage';
-      s.mercy -= 1;
       HA.audio.play('salvage');
       world.flash('#ffffff', 6);
       world.shake(4);
@@ -428,7 +431,6 @@
       if (sc && sc.level < 2) Object.assign(sc, { level: 2, xp: 0 });
       world.toast('THE SEAL CODES · THE CRADLES WILL OPEN', 220);
       yield { wait: 80 };
-      S.addChoice(world, 'I FINISHED THE PRUNER, AS IT ASKED, AND TOOK THE SEAL CODES FROM ITS CORE. FOUR OF THE TAKEN WILL NEVER WAKE.');
     }
     world.camTarget = null;
     S.setLead(world, 'GO BACK DOWN TO THE CRADLES');
@@ -473,7 +475,10 @@
         options: [{ label: "KEEP WICK'S LANCETS" }, { label: 'TRADE THEM FOR THE THORN', confirm: { title: 'TRADE THE LANCETS FOR THE THORN?', gain: 'THE BLOOM THORN, A HEAVY HITTER', lose } }],
       },
     };
+    // The choice is recorded at once; what follows only plays it out.
     s.flags.thornOffered = true;
+    s.flags.gardenerGone = true;
+    s.lead = 'TAKE THE GARDEN LIFT HOME TO THE WARRENS';
     if (pick === 1) {
       const i = p.weapons.findIndex((w) => w.id === 'lancets');
       if (i >= 0) p.weapons.splice(i, 1);
@@ -481,25 +486,25 @@
       p.wi = p.weapons.length - 1;
       world.weaponBanner = 160;
       s.flags.thorn = true;
-      world.flash('#f27ad8', 8);
-      HA.bloom.add(world, 2);
-      world.toast('BLOOM THORN · IT HITS HARDER AS THE BLOOM GROWS', 300);
-      yield say('THE GARDENER', 'THERE. NOW SOMETHING OF HER GROWS WITH YOU.');
       S.addChoice(world, "I GAVE WICK'S LANCETS TO THE GARDENER FOR THE BLOOM THORN.");
+      S.addStory(world, 'I HAVE TO TELL SHIM.');
+      world.flash('#f27ad8', 8);
+      world.toast('BLOOM THORN · IT HITS HARDER AS THE BLOOM GROWS', 300);
+      HA.bloom.add(world, 2);
+      yield say('THE GARDENER', 'THERE. NOW SOMETHING OF HER GROWS WITH YOU.');
     } else {
-      yield say('THE GARDENER', "KEEP THEM, THEN. WHEN THEY GET TOO HEAVY, I'LL BE IN THE TOWER'S GARDEN GALLERY.");
       S.addChoice(world, "I KEPT WICK'S LANCETS. THE GARDENER SAID SHE'D ASK AGAIN, IN THE TOWER.");
+      S.addStory(world, 'I HAVE TO TELL SHIM.');
+      yield say('THE GARDENER', "KEEP THEM, THEN. WHEN THEY GET TOO HEAVY, I'LL BE IN THE TOWER'S GARDEN GALLERY.");
     }
     // She leaves, up toward the Tower, by her own door.
     if (gardener) {
       yield { walk: gardener, x: 36 * 8, speed: 0.6 };
       gardener.state = 'gone';
     }
-    s.flags.gardenerGone = true;
     world.camTarget = null;
     if (world.boss) world.boss.active = false;
     S.setLead(world, 'TAKE THE GARDEN LIFT HOME TO THE WARRENS');
-    S.addStory(world, 'I HAVE TO TELL SHIM.');
     world.save();
   }
 

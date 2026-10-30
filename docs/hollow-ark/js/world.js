@@ -81,7 +81,13 @@
     world.freeze = (frames) => {
       world.freezeTime = Math.max(world.freezeTime, frames);
     };
+    // A toast during a scene that hides the HUD waits until the scene is over, so it isn't missed.
+    world.pendingToasts = [];
     world.toast = (text, frames = 180) => {
+      if (world.scene && !world.scene.showHud) {
+        world.pendingToasts.push([text, frames]);
+        return;
+      }
       world.toastText = text;
       world.toastTime = frames;
     };
@@ -101,8 +107,12 @@
       }
     };
     world.muzzleFlash = (x, y, level) => world.flashes.push({ x, y, life: 3, r: 1 + level });
-    // While a Bloom bulb's rush lasts, the hero hits twice as hard.
-    world.hurtEnemy = (e, dmg, dir) => A.hurtEnemy(world, e, world.player.rush > 0 ? dmg * 2 : dmg, dir);
+    // While a Bloom bulb's rush lasts, the hero hits twice as hard. Shots still flying after the hero falls
+    // do nothing, so a boss can't be beaten (and its scene start) while the suit reboots.
+    world.hurtEnemy = (e, dmg, dir) => {
+      if (world.player.dead) return;
+      A.hurtEnemy(world, e, world.player.rush > 0 ? dmg * 2 : dmg, dir);
+    };
 
     world.hurtPlayer = (dmg, srcX) => {
       const p = world.player;
@@ -139,7 +149,7 @@
       const p = world.player;
       s.deaths++;
       const rest = s.rest || { room: s.room, x: s.x, y: s.y };
-      Object.assign(p, { vx: 0, vy: 0, hp: p.maxHp, dead: false, invuln: 90, stun: 0, charge: 0, fireToggle: false });
+      Object.assign(p, { vx: 0, vy: 0, hp: p.maxHp, dead: false, invuln: 90, stun: 0, charge: 0, fireToggle: false, rush: 0 });
       enterRoom(world, rest.room, rest.x, rest.y, { noSave: true });
       world.fade = 1;
       world.toast(s.rest ? 'SUIT REBOOTED AT THE REST POD' : 'SUIT REBOOTED', 150);
@@ -359,6 +369,13 @@
 
     // Scenes (talk, cutscenes, choices) take the controls while they run.
     const input = HA.scenes.update(world, rawInput);
+    // Toasts held back during a scene: the first replaces whatever is showing when it ends, the rest follow.
+    const sceneEnded = world.sceneWas && !world.scene;
+    world.sceneWas = !!world.scene;
+    if (!world.scene && world.pendingToasts.length && (sceneEnded || world.toastTime < 30)) {
+      const [text, frames] = world.pendingToasts.shift();
+      world.toast(text, frames);
+    }
 
     // Hit-stop: a few frozen frames sell big hits. Presses made during it still count afterwards.
     if (world.freezeTime > 0) {
@@ -469,7 +486,7 @@
     else if (best.kind === 'lift') HA.story.run(world, 'lift');
   }
 
-  // Story moments that start when the hero reaches a spot (tiles x0-x1, and above row y1 if given).
+  // Story moments that start when the hero reaches a spot (tiles x0-x1, and between rows y0 and y1 if given).
   function checkTriggers(world) {
     if (world.scene || world.player.dead) return;
     const p = world.player;
@@ -477,7 +494,7 @@
     const ty = (p.y + p.h - 1) / 8;
     (world.def.triggers || []).forEach((t, i) => {
       if (world.fired.has(i) || world.scene) return;
-      if (tx < t.x0 || tx > t.x1 + 1 || (t.y1 !== undefined && ty > t.y1 + 1)) return;
+      if (tx < t.x0 || tx > t.x1 + 1 || (t.y1 !== undefined && ty > t.y1 + 1) || (t.y0 !== undefined && ty < t.y0)) return;
       if (t.when && !t.when(world.state, world)) return;
       world.fired.add(i); // once per visit to the room
       HA.story.run(world, t.run);

@@ -65,7 +65,8 @@
     const p = world.player;
     const room = world.room;
     if (p.dead) {
-      if (--p.deadTimer <= 0) world.respawn();
+      // The suit reboots once any scene running when it failed is over, never in the middle of one.
+      if (--p.deadTimer <= 0 && !world.scene) world.respawn();
       return;
     }
     const { held, pressed } = input;
@@ -487,7 +488,7 @@
     const p = world.player;
     const ex = e.x + e.w / 2;
     const sees = dist < 150 && Math.abs(py - (e.y + e.h / 2)) < 30 && !p.dead;
-    if (world.state.bloom >= 3 && dist < 120 && world.time % 240 === e.t % 240) world.floatText(ex, e.y - 6, THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)], 'rgba(242,122,216,0.6)');
+    if (world.state.bloom >= 3 && dist < 120 && e.t % 240 === 0) world.floatText(ex, e.y - 6, THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)], 'rgba(242,122,216,0.6)');
     switch (e.state) {
       case 'roar':
         e.vx = 0;
@@ -698,7 +699,10 @@
       HA.audio.play('heart');
     } else if (k.kind === 'weapon') {
       k.life = 0;
-      p.weapons.push(HA.weapons.make(k.id));
+      const w = HA.weapons.make(k.id);
+      const floor = HA.weapons.DEFS[k.id].floor;
+      if (floor) w.level = Math.max(w.level, floor(world)); // a launcher found after the Pruner was finished
+      p.weapons.push(w);
       p.wi = p.weapons.length - 1;
       p.charge = 0;
       world.burst(k.x + 6, k.y, ['#fff0a8', '#5fd4e8'], 20, 2);

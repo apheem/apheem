@@ -366,7 +366,7 @@
       { kind: 'vines', x0: 4, x1: 37, y: 20, n: 10 },
       { kind: 'bloom', x: 20, y: 50, n: 40 },
     ],
-    triggers: [{ x0: 4, x1: 9, y1: 64, when: (s) => !s.flags.shutter, run: 'shutter' }],
+    triggers: [{ x0: 4, x1: 9, y0: 58, y1: 64, when: (s) => !s.flags.shutter, run: 'shutter' }],
     map: [
       '########################################',
       '########################################',

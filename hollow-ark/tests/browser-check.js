@@ -279,8 +279,8 @@ async function play(browserType, url, label) {
     const gd = await get(() => {
       const out = {};
       const w = () => HA.debug.world;
-      const s = w().state;
-      const p = w().player;
+      let s = w().state;
+      let p = w().player;
       const talkThrough = () => {
         for (let i = 0; i < 4000 && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
           HA.debug.skipScene();
@@ -334,6 +334,12 @@ async function play(browserType, url, label) {
       out.prunerFighting = !!(w().boss && w().boss.fighting && w().boss.type === 'pruner');
       out.hallShut = w().doors.every((d) => !d.open);
       HA.debug.step(200);
+      // Shots still flying after the hero falls can't finish a boss.
+      const hp0 = w().boss.hp;
+      p.dead = true;
+      w().hurtEnemy(w().boss, 999, 1);
+      out.deadCantWin = w().boss.hp === hp0 && !w().scene;
+      p.dead = false;
       w().hurtEnemy(w().boss, 999, 1);
       talkThrough();
       out.prunerChoice = !!(w().scene && w().scene.step && w().scene.step.choice);
@@ -348,10 +354,18 @@ async function play(browserType, url, label) {
       HA.debug.goto('root-cellar', 40, 18);
       HA.debug.step(5);
       out.wakeScene = w().scene && w().scene.name;
+      // Quit to the title as soon as the cradles open, then continue: what the scene decided is kept.
+      for (let i = 0; i < 2000 && !s.flags.cradles; i++) HA.debug.step(1, i % 20 === 0 ? { confirm: true } : {});
+      HA.ui.toTitle();
+      HA.ui.continueGame();
+      s = w().state;
+      p = w().player;
+      w().assist.invincible = true;
       talkThrough();
       out.takenHome = s.takenHome;
       out.lantern = !!s.flags.lantern;
       out.lead2 = s.lead;
+      out.wakeReplayed = !!w().scene;
       // The vats: the seal is open now. Wick's fight, her collapse at a quarter health, and her lancets.
       HA.debug.goto('garden-lift', 30, 41);
       HA.debug.step(3);
@@ -400,7 +414,8 @@ async function play(browserType, url, label) {
     expect(gd.prunerFighting && gd.hallShut && gd.prunerChoice, `the Pruner fight and its choice did not play (${JSON.stringify(gd)})`);
     expect(gd.pruner === 'release' && /LAUNCHER/.test(gd.prunerLose) && gd.mercy === 0, `releasing the Pruner went wrong (${gd.pruner}, ${gd.prunerLose}, mercy ${gd.mercy})`);
     expect(gd.shortcut === 'terraces', `the Dome Stair's shutter did not open into the Terraces (${gd.shortcut})`);
-    expect(gd.wakeScene === 'wake' && gd.takenHome === 11 && gd.lantern && gd.lead2 === 'FIND WICK IN THE VATS', `the taken did not wake and go home (${JSON.stringify(gd)})`);
+    expect(gd.wakeScene === 'wake' && gd.takenHome === 11 && gd.lantern && gd.lead2 === 'FIND WICK IN THE VATS' && !gd.wakeReplayed, `the taken did not wake and go home, or quitting mid-scene lost it (${JSON.stringify(gd)})`);
+    expect(gd.deadCantWin, 'a shot landing after the hero fell finished the Pruner');
     expect(gd.vatSeal && gd.wickFighting && gd.wickHp === 40 && gd.offer, `Wick's fight did not end in her collapse and the Gardener's offer (${JSON.stringify(gd)})`);
     expect(gd.wick === 'dead' && gd.lancets && gd.kept.lancets && !gd.kept.thorn && gd.kept.offered, `Wick's lancets were not given, or keeping them went wrong (${JSON.stringify(gd)})`);
     expect(gd.music === null && /GARDEN LIFT/.test(gd.lead3), `after Wick, the Gardens should be silent with the lead home (${gd.music}, ${gd.lead3})`);
