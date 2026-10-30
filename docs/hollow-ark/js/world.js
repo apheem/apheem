@@ -160,7 +160,7 @@
       HA.audio.play('crate');
     };
 
-    // A weapon or capsule was picked up: it stays gone for good.
+    // A weapon or suit cell was picked up: it stays gone for good.
     world.collected = (k) => {
       world.state.taken[k.key] = true;
       if (k.kind === 'weapon') {

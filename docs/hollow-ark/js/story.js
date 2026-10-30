@@ -164,7 +164,7 @@
     solder: {
       night: [
         ['A RIVET PISTOL. CHARMING. FEED IT SHARDS, THE GLOWING BITS THAT FALL OUT OF THINGS YOU KILL. THE MORE IT EATS, THE MORE IT DOES.', 'GET HIT AND IT SPITS SOME BACK UP. NEVER MORE THAN ONE LEVEL, THOUGH. AND RIGHT AFTER IT DROPS ONE, IT HOLDS ON FOR A MOMENT.'],
-        { capsule: ['THERE IS A LIFE CAPSULE UP IN THE COOLANT HALL. NO WAY UP BUT AIR.', 'A PURGE CANNON THAT HAS EATEN ENOUGH WILL HOLD YOU UP THERE. LEVEL TWO, AT LEAST.'] },
+        { capsule: ['THERE IS A SUIT CELL UP IN THE COOLANT HALL. NO WAY UP BUT AIR.', 'A PURGE CANNON THAT HAS EATEN ENOUGH WILL HOLD YOU UP THERE. LEVEL TWO, AT LEAST.'] },
         ['BRING ME SOMETHING BROKEN SOMETIME. I GET BORED.'],
       ],
       taken: [['THE COUNTERS ARE STRONG, BUT THEY ARE SLOW TO TURN. GET BEHIND THEM.', 'AND WATCH THEIR EYES. THEY GLOW BEFORE THEY SHOOT.']],
@@ -278,7 +278,7 @@
       yield { card: ['VOYAGE YEAR 312.'], hold: 150, top: 40, space: 'in', ark: far };
       yield { card: ['THE ARK WAS DUE TO ARRIVE', 'IN YEAR 80.'], hold: 170, top: 40, space: true, ark: far };
       HA.audio.play('alarm');
-      yield { card: ['CRYO POD 0417', 'EMERGENCY THAW'], hold: 160, top: 40, space: 'out', ark: { x: 84, y: 92, s: 2, alarm: true } };
+      yield { card: ['CRYO POD 0417', 'EMERGENCY THAW', ['AUTHORITY: NAV', '#3b4a72']], hold: 160, top: 40, space: 'out', ark: { x: 84, y: 92, s: 2, alarm: true } };
       // Inside: the pod hangs from the rack's clamps, frosted over, until they let go.
       const pod = world.heroPod;
       yield { fade: 'in', frames: 50 };

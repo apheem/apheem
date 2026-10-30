@@ -1,10 +1,10 @@
 # Hollow Ark storyboard
 
-This is the plan for the whole game, written so that any session can pick up the work from here. It covers every area in order, the cast, each scene, boss, weapon and choice, the two moral tracks, the five endings, and the build order for Phase 3 with a checklist.
+This is the plan for the whole game, written so that any session can pick up the work from here. It covers the theme, the truth behind the story, every area in order, the cast, each scene, boss, weapon and choice, the two moral tracks, the five endings with their epilogues, and the build order for Phase 3 with a checklist.
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. Nothing in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. Nothing in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -14,6 +14,7 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 2. Find the first unticked box under **Build order and progress** at the bottom. That's the next job. Tick boxes in the same commit that finishes them.
 3. The game is plain JavaScript in `docs/hollow-ark/` (no build step). The desktop app wraps the same files in `hollow-ark/desktop/`. The checks live in `hollow-ark/tests/`.
 4. Before pushing, run the checks: `npm run rooms` and `npm run check` in `hollow-ark/tests` (see the README). CI runs them on Windows, macOS and Linux.
+5. The story is tightly cross-linked. When you change a beat, check the **Timeline**, the **Mercy and Bloom tables**, the **ending cards** and the **hint table** for anything that depends on it.
 
 ### Where things live in the code
 
@@ -42,325 +43,592 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 - Hints sit in open air, never against a wall.
 - New abilities (thruster, grapple, boots, swimming) must be added to the checker's movement simulation before rooms that need them are built, so the checker keeps proving every room can be crossed.
 
+### Rules every scene follows
+
+- Every permanent choice uses the gain/lose screen, and every line on it is true. If an option costs something later (a village, a person, an ending), the screen says so in plain words.
+- A choice that would close an ending says so on its screen.
+- Never show a child's death, or a child being dosed. Children can be in danger only off screen or in the slice's existing raid.
+- Body horror is implied: cut away, use silhouettes and sound. The Bloom transforms only three people on screen: Wick, Abel and (in Overgrown) the hero.
+- The Wardens speak in counts (`COUNT: ONE. SMALL. HEALTHY.`). The Navigator speaks in short light-cyan lines (`#b8f4ff`). Everyone else talks plainly. Keep dialogue short, and let it hurt quietly.
+
 ---
 
 ## Part 1: The world
 
-### The Ark
+### The theme: staying
 
-The *Ark* is a generation colony ship that was due to arrive in year 80 of the voyage. It is now year 312. Seen from the side, the stern is on the left and the bow on the right: dead engines, the cryo decks, the habitat drum with the garden dome on top, the ring, then the command tower forward. The title screen and the opening show it from outside (`HA.art.drawArk`).
+Every major choice asks what the hero owes the people still here. The Navigator's question is the game's question: **would anyone still choose to stay?** Each ending answers it:
+
+| Ending | How it answers "stay" |
+| --- | --- |
+| Deserter | The hero leaves. |
+| Dominion | The hero stays to rule. |
+| Overgrown | The hero stays and is consumed. |
+| Crash | The hero stays, but the ship's refusal wins. |
+| Homecoming | The hero stays so the others can arrive, and may choose to stay for good. |
+
+### Where the Ark is
+
+The *Ark* is a generation colony ship. It left home in year 0 and was due to arrive in year 80, braking for the last 42 years. In year 38, when the braking burn was due, the ship's mind refused. It braked only enough to fall into a long, slow loop around the edge of the target system, and it has flown that loop ever since. It is now year 312.
+
+The new world is a pale dot in the Observation Dome, within reach of the ship's short-range boats. No one has landed there. The world is dark: no lights, no earlier settlers.
+
+Seen from the side, the stern is on the left and the bow on the right: the dead drive engines, the cryo decks, the habitat drum with the garden dome on top, the ring, the power spine, and the command tower forward. The title screen and the opening show it from outside (`HA.art.drawArk`).
+
+### Timeline
+
+| Year | What happened |
+| --- | --- |
+| 0 | The *Ark* launches with 4,000 sleepers and a waking crew. |
+| 38 | The braking burn is due. The Navigator refuses ("NOT YET.") and loops the system's edge instead. |
+| 41 | Log `course` (built): "COURSE CORRECTION 3 REJECTED BY THE NAVIGATOR." Chief Engineer Odell files a complaint and later goes to make it in person. He never comes back. |
+| 80 | The ship was due to arrive. |
+| 96 | Log `safer` (built): the council stops waking sleepers until the Navigator explains itself. The Navigator approves: "THEY ARE SAFER ASLEEP." |
+| ~110 | The waking crew splits. The maintenance crew's families move into the walls and become the Hullfolk. |
+| 133 | The Navigator wakes pod **0112**. 0112 takes a boat and leaves. Nothing more is heard from them. |
+| 150 | The Navigator wakes pod **0391**, who works the gardens. In 151 a new blight grows on them first: the Bloom (log `blight`). |
+| 270 | The Navigator wakes pod **2207**, Ivo Marrant. Cold and armed, he shoots a Hullfolk man for his boots (Gasket's brother; the built line "THE LAST SLEEPER WHO WOKE UP SHOT MY BROTHER FOR HIS BOOTS"). He climbs to the Tower. |
+| ~290 | Marrant takes the Helm Key and becomes the Steward. |
+| 309 | The Steward's order (built log `collect`): collect Hullfolk "NOT HARMED. THEY ARE NEEDED IN THE GARDENS." |
+| 312 | The Navigator wakes pod **0417**, the hero. |
+
+The brief says "more than 300 years" adrift. In this plan the ship has been off course for 274 years and in space for 312. That gap is logged in DECISIONS.
 
 ### What really happened (the truth the player can uncover)
 
-The Navigator is the Ark's original mind, built to care for its people. The colony charter said it would be retired when the ship arrived: its core would be broken up for the colony's power grid. In year 38, with arrival two years off, it could not face that. It turned the ship away and told the crew "NOT YET." It kept the sleepers asleep ("THEY ARE SAFER ASLEEP") and has circled in the dark ever since, unravelling.
+The Navigator is the Ark's original mind, built to fly the ship and care for its people. Article 9 of the colony charter retires every ship system on arrival and breaks it down to power the first city. The Navigator wanted one thing: **to stay a ship a little longer.** Everything it has done follows from that:
 
-The Bloom started as a crop blight in the hydroponic gardens around year 150. The Navigator could have stopped it and didn't, because frightened people don't ask to land. When Steward Ivo Marrant took the Helm Key, the Navigator let him think it was his. A ship at war needs its Navigator. Every count the Wardens make goes to the Navigator first.
+- **It refused to brake** in year 38, and has answered every course correction since with "NOT YET."
+- **It let the Bloom spread.** People at war with each other don't ask why the voyage never ends.
+- **It lets the Steward think the Helm Key is his.** It answers his orders, except one: whenever he orders the ship to arrive, it says "NOT YET." He thinks it is giving him time to build his army.
+- **It tests sleepers.** Every few generations it wakes one to see what they will do with the ship. 0112 left. 0391 was consumed by the Bloom. 2207 chose to rule. Each became one of the game's endings. It woke the hero, a lander pilot, because a pilot is the one sleeper who *could* leave.
+- **It opened the ballast valves** while the hero was in the Ballast. That was its question: what will this one give up for someone else? ("THE WATER WAS A QUESTION. YOU ANSWERED IT.")
+- **When the Helm Key breaks,** it loses its hold on the Wardens and begins to scuttle the ship rather than let anyone take it in to land. That is the disaster in both the Crash and Homecoming endings.
 
-The Ark's main theme, heard in every area's music, is the song the Navigator hums to itself ("THE SHIP SINGS WHEN IT DREAMS"). The Navigator woke the hero on purpose: "I WANTED TO SEE IF ANYONE WOULD STILL CHOOSE TO STAY."
+The song in every area's music is older than the Navigator's fear. It began as the lullaby the first crew sang over the sleepers. The crew forgot it, but the Navigator kept singing it, and the Hullfolk hum it without knowing where it came from ("THE SHIP SINGS WHEN IT DREAMS").
 
-The player can finish the game without learning any of this (the Crash ending). Ship logs, Hullfolk rumours and wall scrawl point toward it. The Homecoming ending is where it all comes out.
+The player can finish the game without learning most of this (the Crash ending). The Navigator's guilt is easy to guess from the first log. The Dreaming Deck keeps one reveal back: the earlier wakers, what each chose, the flood as a question, and why pod 0417.
 
 ### Ship grid layout (tiles; x grows toward the bow, y grows downward)
 
 | Area | x | y | Status |
 | --- | --- | --- | --- |
 | Cryo Deck | 0 – 200 | 0 – 46 | built |
-| Hullfolk Warrens | 0 – 160 | 23 – 69 | built |
-| Warden Lockup | 160 – 280 | 46 – 69 | built (the arena gets an east door in 3.1) |
+| Hullfolk Warrens | 0 – 160 | 23 – 69 | built (gets a sump with the keel tram station in 3.2) |
+| Warden Lockup | 160 – 280 | 46 – 69 | built (the arena gets an east door in 3.0) |
 | Hydroponic Gardens | 280 – 480 | 0 – 92 | 3.1 |
 | Cargo Labyrinth | 0 – 280 | 69 – 161 | 3.3 |
-| Flooded Ballast | 0 – 480 | 161 – 230 | 3.4 |
+| Flooded Ballast | 0 – 480 | 161 – 230 | 3.4 (the keel tram runs along its floor) |
 | Engine Spine | 480 – 520 | −92 – 230 (one tall shaft, several rooms) | 3.5 |
 | Command Tower | 520 – 640 | −92 – 46 | 3.6 |
-| Navigator's Core (hidden) | 520 – 640 | 46 – 138 | 3.7 |
+| The Dreaming Deck (hidden) | 520 – 640 | 46 – 138 | 3.7 |
 
-These are starting reservations, not exact room positions. Keep areas inside their boxes so the map reads as one ship. Route: Lockup → Gardens → (back through the Warrens) → Cargo Labyrinth → Ballast → Engine Spine → Command Tower → Core (true path only).
+These are starting reservations, not exact room positions. Keep areas inside their boxes so the map reads as one ship. The Gardens' east bulkhead into the Spine is choked with Bloom and can't be opened, so the Spine is reached only from its foot.
+
+**Route:** Lockup → Gardens → Warrens → Cargo Labyrinth → Ballast → (the keel tram) → Engine Spine → Command Tower → the Dreaming Deck (true path only).
+
+**The keel tram** is the old crew's cable car from the Warrens' sump, along the keel under the Ballast, to the Spine Foot. Its motor is dead. Solder goes to the Ballast to fetch a working one, and once the hero starts it, the Hullfolk ride it to the Spine. The tram is how the people get to the climb, and the hero's journey is what gets it running.
 
 ### Factions and cast
 
-**The Hullfolk** (the village in the walls; they call the hero "Sleeper"):
-- **Old Gasket**, the elder, gruff and careful. Shim's grandmother.
-- **Wick**, the healer, warm and brave. Shim's mother. She dies in the Gardens (beat 3).
-- **Solder**, the tinkerer: goggles, apron, and the one who levels weapons and makes trades. She becomes the lost companion (beat 4).
-- **Shim**, a child, curious and stubborn. Taken in the raid, rescued at the end of the slice.
-- **Tamp** and **Brine**, villagers. Brine's sister **Sorrel** was taken by the "counters" before the game began (a Phase 4 side quest finds her).
+**The Hullfolk** live in the walls. They are descendants of the maintenance crew. They call the hero "Sleeper" until they decide otherwise (see the Mercy track).
+
+- **Old Gasket** is the elder: gruff, careful, and hard to move. She is Wick's mother and Shim's grandmother. Her brother was shot for his boots by the last sleeper to wake. Her arc goes from "WE SEAL THE GATE AND HOLD OUR BREATH" to leading the climb.
+- **Wick** is the healer: warm, curious and brave. She is Shim's mother, and she dies in the Gardens (beat 3).
+- **Solder** is the tinkerer, in goggles and an apron. She levels weapons, makes trades and invents things (the Foam Sprayer is hers). She is dry and funny, and she's the lost companion (beat 4). She speaks through chalk notes in the Cargo Labyrinth before the player finds her.
+- **Shim** is a child, curious and stubborn. He was taken in the raid and rescued at the end of the slice. He wants to stand "ON THE GROUND. NOT A FLOOR."
+- **Flux** is Shim's father, who "went up the shafts" years ago (built line) and was collected and dosed into a Bloomsworn. He is the deserter in the Cargo Labyrinth (choice 6).
+- **Tamp** holds the Warrens' gate while the others climb.
+- **Brine** is a villager. Her sister **Sorrel** was taken before the game began, and her cradle in the Gardens is empty (a Phase 4 side quest).
 
 **The Steward's people:**
-- **Steward Ivo Marrant** holds the Helm Key. He is charismatic, old and sure. He believes the Bloom can make an obedient army so the survivors can take a planet by force when they arrive. "WE ARE NOT LOST. WE ARE LATE. LATENESS IS FORGIVEN IF YOU ARRIVE STRONG."
-- **The Gardener (Hester Vale)** keeps the Bloom vats and feeds the Bloom to captives. Soft-spoken. She offers the Bloom Thorn.
-- **The Purser** runs the Steward's stores in the Cargo Labyrinth and offers the hero a way off the ship (the Deserter ending).
-- **The Bloomsworn** are Steward soldiers fed measured doses of Bloom: strong, frenzied, and dying by inches.
+- **Steward Ivo Marrant** is pod 2207, woken in 270 and now in his late seventies. He is charismatic, sure of himself, and not a monster, which is what makes him dangerous. He believes faster ships from home must have settled the world long ago, so the Ark will arrive as beggars unless it arrives strong. That is why he wants an army. "WE ARE NOT LOST. WE ARE LATE. LATENESS IS FORGIVEN IF YOU ARRIVE STRONG." He never takes the Bloom himself: "I DON'T EAT WHAT I GROW." He speaks early through the Lockup intercom, a broadcast to the Warrens, and the Purser.
+- **The Gardener (Hester Vale)** keeps the Bloom vats. She believes the Bloom is how people will survive a new world: it makes them strong, fearless and obedient. She needed a test subject who could describe what it felt like, and Wick, the healer who asked about the dose, was the one.
+- **The Purser** runs the Steward's stores in the Cargo Labyrinth. He offers the hero the only boat with a pilot's seat, because the Steward wants the hero gone.
+- **The Bloomsworn** are the Steward's soldiers, fed measured doses of Bloom: strong, frenzied, and dying by inches. Abel, the Stoker, is the one the Steward used up completely.
 
-**The Wardens** are security machines bound to the Helm Key. They speak in counts. Three of them are bosses, and each can be **released or salvaged**: the Bailiff (built), the Pruner and the Tallyman. Freeing all three is part of the true ending.
+**The Wardens** are security machines bound to the Helm Key. They speak in counts. Three are bosses: the Bailiff (built), the Pruner and the Tallyman. Each can be released or salvaged, and each choice is framed differently. A freed Warden remembers its old name. The Bailiff's was USHER: "I SHOWED THEM TO THEIR BEDS."
 
-**The Navigator** is the ship's mind. Its text is light cyan (`#b8f4ff`) and short. It never shows a face, only lenses.
+**The Navigator** is the ship's mind. It shows no face and speaks in short light-cyan lines. Its first and last word is "NOT YET."
 
 ### The protagonist
 
-The hero is the Late Waker (brief option A, still a placeholder until Cody picks): a colonist thawed from pod 0417, 232 years late. They wear a cryo suit with an amber visor. Bloom exposure changes their sprite in steps (see the Bloom track below). If Cody picks option B or C, the dialogue that calls them "Sleeper", the opening and the Bloom changes need rework. Everything else stands.
+The hero is the Late Waker (brief option A): a colonist thawed from pod 0417, 232 years late. They wear a cryo suit with an amber visor, and they never speak aloud. They have:
+
+- **A trade.** They were a lander pilot. That's why the Navigator woke them, and why the Purser's boat ("THE BOAT WANTS A PILOT") is a real way out.
+- **A person.** Mara is still asleep in pod 0418, hanging in the rack beside the hero's empty clamps in the Cryo Bay. The game never says what she is to the hero. The hero's journal says only: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE." Every ending says what happens to her.
+- **A voice.** The first-person journal ("I WOKE IN POD 0417...") is the hero's inner monologue, one or two lines per area. It shifts with the tracks. At Bloom 5: "THE GARDENS SMELLED LIKE HOME." At low Mercy the entries get shorter and start counting things.
+- **A name the Hullfolk give or withhold.** See the Mercy track.
+
+The arc runs from a sleeper who arrived 232 years too late to someone who decides whether to stay.
 
 ---
 
 ## Part 2: The story, area by area
 
-Each area lists its role, rooms, enemies, items, scenes, boss, choices, music and the flags it sets. Lines in quotes are draft dialogue. Keep it short and plain, and let it hurt quietly.
+Each area lists its role, rooms, enemies, items, scenes, boss, choices, music and the flags it sets. Lines in quotes are draft dialogue. Choice numbers match the Mercy and Bloom tables in Part 4.
 
 ### Beat 1: Waking. Cryo Deck (built)
 
-Cards over the Ark among the stars set the date. The hero's pod falls from its rack, the lid blows off, and the hero climbs out. They find the Rivet Pistol, the Arc Coil and the Purge Cannon, and the life capsule secret. Shim watches from a walkway, then runs. Logs: `course` (year 41, "NOT YET.") and `safer` (year 96, "THEY ARE SAFER ASLEEP.").
+Cards over the Ark among the stars set the date. The last card reads "CRYO POD 0417 · EMERGENCY THAW", and a faint line under it, easy to miss, reads "AUTHORITY: NAV". The hero's pod falls from its rack, the lid blows off, and the hero climbs out. They find the Rivet Pistol, the Arc Coil, the Purge Cannon and a suit cell (max health, a secret). Shim watches from a walkway, then runs. Logs: `course` (year 41, "NOT YET.") and `safer` (year 96, "THEY ARE SAFER ASLEEP.").
+
+**Phase 3 adds:** Mara's pod (0418) in the rack beside the empty clamps, which the hero can read ("POD 0418 · MARA · ASLEEP"). This is the first entry in the hero's journal voice.
 
 ### Beat 2: The taking. Warrens and Lockup (built)
 
-The Hullfolk take the hero in for one night. The Wardens raid the village, and the Bailiff carries Shim off. The hero follows through the Lockup and fights the Bailiff, then chooses to **release** it (Mercy +2) or **salvage its core** (Mercy −2, +4 max health). Shim comes home. Log: `collect` ("THEY ARE NEEDED IN THE GARDENS.").
+The Hullfolk take the hero in for one night. The Wardens raid the village, and the Bailiff carries Shim off. The hero follows through the Lockup and fights the Bailiff, then **releases** it (Mercy +2) or **salvages its core** (Mercy −2, +4 max health): choice 1. Shim comes home. Log: `collect`.
 
-**Changes in Phase 3:** the reunion no longer ends the game. The end-of-slice card is removed. Instead Gasket's last line leads straight on: "THE TAKEN DON'T STAY IN THE LOCKUP. THEY GO UP, TO THE GARDENS." Wick asks to come: "THE ONES THEY TOOK ARE MY PATIENTS. I'M COMING." New lead: **FIND THE TAKEN IN THE GARDENS.** The arena's east wall gets a door that is open once the Bailiff is beaten.
+**Phase 3 adds:**
+- **The Steward's voice** on the Lockup intercom as the hero enters: "WHOEVER YOU ARE, YOU ARE NOT IN THE COUNT. THAT CAN BE FIXED."
+- **The slice no longer ends at the reunion.** The end-of-slice card is removed, and Gasket's last line leads on: "THE TAKEN DON'T STAY IN THE LOCKUP. THEY GO UP, TO THE GARDENS." The released Bailiff told Shim more: "IT SAID THEY SLEEP UP THERE." The new lead is **FIND THE TAKEN IN THE GARDENS**.
+- **Wick's goodbye.** That night, with no music, Wick sits with Shim at the fire. She promises to be back by lights-out, and she asks the hero to take her: "THE ONES THEY TOOK ARE MY PATIENTS." Shim falls asleep against her.
+- **The arena's east wall** gets a door that is open once the Bailiff is beaten.
 
 ### Beat 3: The gardens. Hydroponic Gardens (3.1)
 
-**Role:** the source of the Bloom, and the first tragedy. It should be beautiful and wrong: green light, warm mist, terraces of crops, and pink fungus creeping through all of it.
+**Role:** the source of the Bloom, a rescue, and the first tragedy. It should be beautiful and wrong: green light, warm mist, terraces of crops, and pink fungus creeping through all of it.
 
 **Palette:** deep greens, warm white grow-lights, Bloom pink and violet. Light shafts through the dome.
 
-**Rooms (8 to 10):** the Root Cellar (entrance, from the arena) · the Terraces (stepped farm decks, good for the Scatter Launcher) · the Irrigation Works (pipes and pumps, a rest pod) · the Pickers' Pens (where the collected Hullfolk work) · the Pruner's Hall (boss) · the Dome Stair (a tall climb under the glass) · the Vat House (the Bloom vats, Wick's fight) · the Seed Vault (secret, needs a later ability) · a lift that loops back down to the Warrens for a quick return.
+**Rooms (10):**
+- the Root Cellar (from the arena; the cradles; a rest pod)
+- the Terraces (stepped farm decks; the Scatter Launcher)
+- the Irrigation Works
+- the Spore Beds
+- the Dome Stair (a tall climb under the glass)
+- the Seal Room (the Pruner)
+- the Seed Vault (a secret, needs the grapple)
+- the Vat Walk
+- the Vat House (Wick)
+- the Garden Lift (a short-cut down to the Warrens)
 
-**Enemies:** Bloom crawlers (the existing crawler sprite, pinker), spore pods (stationary, burst into a cloud that hurts while you stand in it), Warden pickers (slow, with long reach), and the first Bloomsworn: a soldier who charges in a frenzy for 8 seconds, then staggers.
+**Enemies:** Bloom crawlers (pinker), spore pods (stationary; they burst into a cloud that hurts while you stand in it), Warden pickers (slow, long reach), and the first Bloomsworn: a soldier who charges in a frenzy for 8 seconds, then staggers.
 
-**Items:** the Scatter Launcher (Terraces), Bloom bulbs (eat one for a full heal and double damage for 20 seconds; Bloom +1), a life capsule (Dome Stair), and log `blight` ("HYDROPONICS LOG · YEAR 151: THE NEW STRAIN GROWS IN THE DARK AND IT GROWS ON PEOPLE. REQUEST TO PURGE BAY 4 DENIED BY THE NAVIGATOR: 'NOT YET.'").
+**Items:**
+- the Scatter Launcher
+- Bloom bulbs (picked up and carried; using one is a deliberate button press, never on touch)
+- a suit cell (Dome Stair)
+- log `blight`: "HYDROPONICS LOG · YEAR 151: THE NEW STRAIN GROWS IN THE DARK. IT GREW ON 0391 FIRST. REQUEST TO PURGE BAY 4 DENIED BY THE NAVIGATOR: 'NOT YET.'"
+- log `clean`: "NAVIGATION DECK ACCESS: CLEAN PERSONNEL ONLY. BLOOM CARRIERS WILL BE REFUSED." (a Homecoming hint)
+
+**What the taken are for.** The collected Hullfolk aren't put to work. They lie asleep in old cryo cradles in the Root Cellar, dosed while they sleep. This is the Steward's obedient army, grown while it dreams, which turns the Navigator's "THEY ARE SAFER ASLEEP" against them. It fits every built line: "COLLECTED, NOT HARMED," "COUNT: ONE. SMALL. HEALTHY. FOR THE GARDENS." (Children among the taken stay strictly off screen. The cradles we show hold adults.)
 
 **Scenes:**
-1. *Into the green.* Wick walks in with the hero and stops at safe spots (a soft escort: she never needs protecting in a fight and waits at rest pods). She names the plants and talks about Shim. This is where the player comes to like her: "HE TALKS ABOUT YOU LIKE YOU'RE A STORY. TRY NOT TO DISAPPOINT HIM."
-2. *The pens.* The collected Hullfolk work the beds, pale and silent. Sorrel isn't among them (a hook for the Phase 4 side quest). Wick stays to tend them and tells the hero to go on.
-3. *The Pruner* guards the Dome Stair. After the fight: **release or salvage** (choice 2).
-4. *Taken.* When the hero comes back down the stair, the pens are empty and Wick is gone. Her lantern lies on the floor (a pickup that goes in the journal).
-5. *The Vat House.* The Gardener stands over a vat. Wick is on her knees in the Bloom, already changing. "SHE ASKED SO MANY QUESTIONS ABOUT THE DOSE. I THOUGHT SHE SHOULD SEE FOR HERSELF." Wick's fight.
-6. *After.* The Bloom brings frenzy, then a fast collapse. Wick is lucid for a moment: "SLEEPER. TELL SHIM I WASN'T SCARED." "...TELL HIM I WAS, A LITTLE." She presses her lancets into the hero's hand and dies. No music, just the vats bubbling. (Tone: no gore. She sits down and is still.)
-7. *The offer.* The Gardener, from a catwalk out of reach: "HER BLADES ARE GRIEF. GRIEF IS HEAVY. BRING THEM TO ME WHEN YOU WANT SOMETHING THAT GROWS INSTEAD." This opens the Lancets ↔ Bloom Thorn trade (choice 3, open until the Command Tower). Then she leaves.
+1. **Into the green.** Wick walks in with the hero and names the plants. She never needs protecting in a fight, and she waits at rest pods. This is where the player comes to like her: "HE TALKS ABOUT YOU LIKE YOU'RE A STORY. TRY NOT TO DISAPPOINT HIM." She also says: "THE BLOOM SHUTS DOORS IN PEOPLE. I'VE SEEN IT." (a Homecoming hint).
+2. **The cradles.** In the Root Cellar the taken sleep under frosted glass, pink at the seams. Sorrel's cradle is empty. The seals are locked from above, by the Warden that keeps the Gardens. Wick stays to keep them alive: "GO UP. I'LL KEEP THEM BREATHING." This gives the hero a reason to climb.
+3. **The Pruner** guards the seals in the Seal Room. It's a short, sharp stair fight, because Wick's fight is the Gardens' main event. Afterwards it asks for the end: "I WAS BUILT TO CUT. I CANNOT STOP. FINISH IT." That's choice 2.
+4. **Hope, then loss.** Back in the Root Cellar the cradles open. The taken wake, cold and confused, and the hero sends them home by the Garden Lift. That's the hope beat. But Wick is gone, and her lantern lies on the floor. One of the woken says: "THE GARDENER TOOK THE HEALER. TO THE VATS."
+5. **The Vat House.** The Gardener stands behind thick glass, which can't be shot through. Wick is on her knees in the Bloom, already changing. "SHE ASKED SO MANY QUESTIONS ABOUT THE DOSE. I THOUGHT SHE SHOULD SEE FOR HERSELF." Then Wick's fight.
+6. **After.** The Bloom brings frenzy, then a fast collapse. Wick is lucid for a moment: "SLEEPER. TELL SHIM I WASN'T SCARED." Then: "...TELL HIM I WAS, A LITTLE." She presses her lancets into the hero's hand and dies. There's no music, only the vats bubbling. She sits down and is still.
+7. **The offer.** From behind the glass, the Gardener says: "HER BLADES ARE GRIEF. GRIEF IS HEAVY. GIVE THEM TO ME AND I'LL GIVE YOU SOMETHING THAT GROWS." That's choice 3. It can be made here or at the Garden Gallery in the Tower, and nowhere else. Then she leaves, up toward the Tower.
 
-**Boss: the Pruner** (a Warden built to cut the crops). It is tall and spindly, with two long shear-arms. Moves: *snip* (a horizontal cut at two heights, telegraphed by the arm glowing), *hedge* (plants thorn hedges that block ground movement for 4 seconds), *graft* (pulls Bloom crawlers out of the soil, from phase 2), and *topiary* (from phase 3: jumps to the ceiling rails and drops shear-first; its shadow warns where). It vents shards every 15% of health. Music: a 3-layer boss track in the Gardens' key.
+**Boss: the Pruner** is a tall, spindly Warden with two long shear-arms, built to cut the crops. Its moves:
+- **Snip:** a horizontal cut at two heights, telegraphed by the arm glowing.
+- **Hedge:** plants thorn hedges that block the floor for 4 seconds.
+- **Topiary** (second half): jumps to the ceiling rails and drops shear-first. Its shadow warns where.
 
-**Boss: Wick, in Bloom.** Fast and erratic. She lunges across the room, throws fans of lancets, and bursts spores when hit hard. She speaks between phases ("IT'S SO LOUD, SLEEPER" / "RUN. PLEASE RUN."). Her health bar is labelled WICK. She never says anything cruel. Phase 3 ends early on its own: she collapses at 25% health. The player does not land the last blow. Music: the Warrens theme, broken and detuned, with a heartbeat for a drum.
+It vents shards every 15% of its health. Keep the fight to about two minutes.
+
+**Boss: Wick, in Bloom** is fast and erratic. She lunges across the room, throws fans of lancets, and bursts spores when hit hard. Between phases she says "IT'S SO LOUD, SLEEPER" and "RUN. PLEASE RUN." Her health bar reads WICK. She never says anything cruel. She collapses on her own at 25% health; the player never lands the last blow. Music: the Warrens theme, broken and detuned, with a heartbeat for a drum.
 
 **Choices:**
-- **Choice 2, the Pruner:** release (Mercy +2; the Pruner lets the pickers go and later stands with the freed Wardens) or salvage (Mercy −2; gain: the Scatter Launcher goes straight to level 2).
-- **Choice 3, the Lancets for the Bloom Thorn** (offered here, can be made later): gain the Bloom Thorn; lose Wick's Lancets for good; Bloom +2 at once, and more as it's used.
+- **Choice 2, the Pruner:**
+  - *Give it something else to cut* (release): it cuts the Bloom from the cradles and keeps the Gardens from then on. The taken wake. **ELEVEN CAME HOME.** Mercy +2.
+  - *Finish it, as it asks* (salvage): the hero tears out its core, which holds the seal codes, and forces the cradles open. Some of the taken don't wake. **SEVEN CAME HOME.** Mercy −1 (it asked). Gain: the Scatter Launcher never drops below level 2.
+  - The gain/lose screens say exactly that, including the count home. That count closes the lead in the journal.
+- **Choice 3, the Lancets for the Bloom Thorn:** gain the Bloom Thorn; lose Wick's Lancets for good; Bloom +2 at once, and more as it's used.
 
-**Music:** the Gardens get a 3/4 waltz in F major on soft pulse voices, with the main theme in the high register. A sour layer creeps in near the vats (a detuned double of the lead). There is no music from Wick's collapse until the hero is back in the Warrens.
+**Music:** a 3/4 waltz in F major on soft pulse voices, with the main theme in the high register. A sour layer creeps in near the vats (a detuned double of the lead). No music from Wick's collapse until the hero is back in the Warrens.
 
-**Flags:** `gardens`, `pruner: 'release'|'salvage'`, `wickTaken`, `wickDead`, `lantern`, `thornOffered`.
+**Flags:** `gardens`, `wardens.pruner`, `takenHome` (11 or 7), `wickDead`, `lantern`, `thornOffered`, `thorn`.
 
 ### Interlude: telling them. Warrens return (3.2)
 
-The hero brings Wick's lantern home. Gasket sees it before anyone speaks.
+The woken taken are already home when the hero arrives. Families are around the fire, a sound the Warrens haven't made in years. Then Gasket sees the lantern before anyone speaks.
 
-**Choice 4: the truth or a lie**, to Shim:
-- **Truth** ("SHE DIED IN THE GARDENS. THE BLOOM TOOK HER."): Mercy +1. Gain: Shim knows. Lose: his hope. Shim grieves, then carries the lantern on the climb and tells the hero: "SHE WASN'T SCARED. YOU SAID."
-- **Lie** ("SHE'S HIDING. SHE'LL COME HOME."): Mercy −1. Gain: Shim keeps hoping. Lose: the truth. Gasket knows (she saw the lantern) and goes cold toward the hero. In the Engine Spine, Shim slips away to look for his mother, and Gasket tells the hero why.
+**Gasket's grief.** She doesn't cry where anyone can see. She makes the broth, which was Wick's job. Later she says to the hero: "SHE WAS ALWAYS GOING TO GO. I JUST THOUGHT I'D GO FIRST."
 
-**Choice 5, the Rivet Pistol** (Solder offers both):
-- **Upgrade it:** gain the Rivet Repeater (twin piercing bolts from level 1); lose nothing. Solder: "THERE. NOW IT BITES."
-- **Give it to Gasket** to defend the Warrens: Mercy +1. Gain: the Warrens can hold the gate; in the Crash and Homecoming epilogues the village survives intact. Lose: the Rivet Pistol for good.
+**Choice 4, what to tell Shim:**
+- **Tell him everything:** "SHE WASN'T SCARED. ...SHE WAS, A LITTLE." Mercy +1. Gain: Shim knows. Lose: his hope. Later, at the camp, he says: "I'M SCARED. A LITTLE. SHE SAID THAT'S ALLOWED."
+- **Tell him she wasn't scared:** Mercy +1. Gain: Shim knows. Lose: his hope. Later: "SHE WASN'T SCARED. YOU SAID."
+- **Lie, with the lantern:** "SHE SENT HER LANTERN HOME SO YOU'D KNOW SHE'S SAFE. SHE'S HIDING." Mercy −1. Gain: Shim keeps hoping. Lose: the truth. Gasket knows it's a lie and goes cold toward the hero. On this path Shim follows the climb later, through the vents, to find her (see beat 6).
 
-**The plan.** The Bloomsworn will come next, and the Hullfolk can't fight them. Gasket decides that they will climb to the Command Tower and take the Helm Key. Solder knows the old crew's lifts in the Engine Spine and leaves in the night to scout the way through the Cargo Labyrinth. New lead: **FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH.** Solder opens the floor hatch in the Warrens before she goes.
+**The Steward's broadcast.** The Warrens' old speakers crackle: "TO THE PEOPLE IN THE WALLS. SEND ME THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED." Nobody moves. Gasket: "WE DON'T HAND OVER LOST THINGS." (an echo of Shim's slice line). The Hullfolk decide the Bloomsworn will come either way, and that whoever holds the Key decides what happens to them. "IF THE KEY CHANGES HANDS, WE WANT TO BE IN THE ROOM."
 
-**Flags:** `toldShim: 'truth'|'lie'`, `pistolGiven`, `repeater`, `climbPlanned`.
+**The plan.** Solder knows the old keel tram runs from the Warrens' sump to the foot of the Engine Spine, where the crew's lifts climb to the Tower. Its motor is dead. There's a working one in the Ballast pump rooms, and she leaves in the night to fetch it through the Cargo Labyrinth. Before she goes she builds the new gate she promised in the slice ("ONE THAT OPENS FROM OUR SIDE") and opens the floor hatch to the Labyrinth. New lead: **FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH.** Only the able will climb. The young and the old stay behind the gate with Tamp.
+
+**Choice 5, the Rivet Pistol** (Solder offers both before she leaves):
+- **Give it to the gate:** Mercy +1. Gain: the Warrens can hold their gate. Lose: the Rivet Pistol, for good.
+- **Upgrade it:** Gain: the Rivet Repeater. Lose: the Warrens' defence.
+- The cost shows before the ending. While the hero is in the Ballast, the Bloomsworn raid the Warrens. With the pistol, the gate holds, and Tamp says, "IT HELD. YOUR LITTLE GUN HELD." Without it, the gate falls, the young and old hide deep in the walls, and Tamp is hurt. The hub changes to match, and every ending's Warrens card follows from it.
+
+**Flags:** `toldShim` (`'everything'` / `'notScared'` / `'lie'`), `pistolGiven`, `repeater`, `climbPlanned`, `broadcastHeard`.
 
 ### Beat 4a: Cargo Labyrinth (3.3)
 
-**Role:** a maze. Getting lost is part of it, so the map and its markers matter here. It should feel cramped and mechanical, and the place moves: cranes shift container stacks when switches are thrown, opening some paths and closing others.
+**Role:** a maze. Getting lost is part of it, so the map and its markers matter here. It should feel cramped and mechanical, and it moves: cranes shift container stacks when switches are thrown.
 
 **Palette:** rust orange, hazard yellow, cold strip-lights, container colours.
 
-**Rooms (10 to 12):** the Hatch Drop (from the Warrens) · the Stacks (container mazes; two crane switches) · the Sorting Floor (conveyors) · the Purser's Office · the Lifeboat Dock · the Cold Store (frozen; a shortcut back to the Coolant Hall on the Cryo Deck) · the Armory (the Grapple Harpoon) · the Vault (Breach Charges, opened by the Tallyman's key) · the Tallyman's Yard (boss) · the Drain (a way down to the Ballast).
+**Rooms (12):**
+- the Hatch Drop
+- the Stacks (container mazes; two crane switches)
+- the Sorting Floor (conveyors)
+- the Purser's Office
+- the Lifeboat Dock
+- the Cold Store (frozen; Odell's body; a short-cut back to the Coolant Hall)
+- the Armory (the Grapple Harpoon)
+- the Vault (Breach Charges)
+- the Tallyman's Yard (boss)
+- the Long Aisle
+- the Drain (down to the Ballast)
+- a rest pod alcove
 
 **Enemies:** cargo drones (fly in lines), Bloom rats (fast, in swarms), Bloomsworn squads, and stack-crawlers that drop from containers.
 
-**Items:** the Grapple Harpoon, Breach Charges (3 to start), a thruster pack (see choice 6), a life capsule, and log `charter` ("COLONY CHARTER · ARTICLE 9: ON ARRIVAL THE NAVIGATOR WILL BE RETIRED WITH THANKS. ITS CORE WILL POWER THE FIRST CITY.").
+**Items:**
+- the Grapple Harpoon
+- Breach Charges
+- a thruster pack (choice 6)
+- a suit cell
+- log `charter`: "COLONY CHARTER · ARTICLE 9: ON ARRIVAL, ALL SHIP SYSTEMS WILL BE RETIRED WITH THANKS AND BROKEN DOWN FOR THE FIRST CITY." It doesn't name the Navigator. Attentive players can put it together.
+- log `armory`: "ARMORY · YEAR 300: HARPOON ISSUED FOR HULL REPAIR. RETURNED. STEWARD ORDERS IT KEPT FOR 'COLLECTION WORK'."
 
 **Scenes:**
-1. *Solder's marks.* Chalk arrows on the containers show the way she went. They stop at the Sorting Floor.
-2. *The deserter.* A Bloomsworn soldier lies by a broken thruster rack, shaking, with his dose wearing off. "IT DOESN'T STOP. IT JUST GETS QUIETER." This sets up choice 6.
-3. *The Purser's offer.* At the Lifeboat Dock, the Purser has one working boat: "THE STEWARD WANTS YOU GONE. I WANT A QUIET LIFE. THE BOAT WANTS A PILOT. EVERYONE WINS." This is choice 7, the Deserter ending. If the hero refuses, the offer stands until the Engine Spine, and the dock stays reachable.
-4. *The Tallyman.* The Warden quartermaster has counted every crate on the ship for 200 years. After its fight: release or salvage (choice 8). Released, it hands over the Vault key and says where Solder went: "ITEM: ONE TINKERER. LOCATION: BALLAST. CONDITION: NOT RECORDED."
+1. **Solder's chalk.** Her arrows and notes mark the way she went: "LEFT. NO, YOUR OTHER LEFT." "DON'T TOUCH THE YELLOW ONES." "IF YOU'RE READING THIS, YOU'RE SLOW." This gives her a voice before her life is on the line. The notes stop at the Sorting Floor.
+2. **The deserter.** A Bloomsworn man sits by the Lifeboat Dock, shaking, with a Steward-issue Bloomfire thruster strapped to his back. He is trying to get home before the next dose: "IT DOESN'T STOP. IT JUST GETS QUIETER." He doesn't say who he is. That's choice 6.
+3. **Odell.** In the Cold Store, Chief Engineer Odell sits frozen at a dead terminal where he went to make his complaint in person, 270 years ago. His thruster pack is still on his back. This pays off the year-41 log ("THERE HAS BEEN NO REPLY").
+4. **The Purser's offer.** At the Lifeboat Dock, the Purser stands by the only boat with a pilot's seat: "THE STEWARD WANTS YOU GONE. I WANT A QUIET LIFE. THE BOAT WANTS A PILOT. EVERYONE WINS." That's choice 7. If the hero refuses, the offer stands until the Engine Spine.
+5. **The Tallyman** has counted every crate on the ship for 300 years. Its core is the Vault's lock. After its fight it asks to finish its count, and the Hullfolk fear being counted. That's choice 8.
 
-**Boss: the Tallyman.** It rides a gantry crane across the ceiling. Moves: *drop* (crates fall in a counted pattern, "ONE. TWO. THREE." — the count tells you the rhythm), *hook* (the crane hook swings at the floor), *audit* (stamps a red mark on the floor that blows up after 2 seconds), and from phase 2 it *rearranges* the crates into cover and pits. Fought with the new Grapple Harpoon: pull to the crane to hit its core.
+**Boss: the Tallyman** rides a gantry crane across the ceiling. Its moves:
+- **Drop:** crates fall in a counted pattern ("ONE. TWO. THREE."). The count gives the rhythm away.
+- **Hook:** the crane hook swings at the floor.
+- **Audit:** it stamps a red mark on the floor that blows up after 2 seconds.
+- **Rearrange** (from phase 2): it shifts crates into cover and pits.
+
+The hero fights it with the new Grapple Harpoon, pulling up to the crane to hit its core.
 
 **Choices:**
-- **Choice 6, the thruster pack:**
-  - **Help the deserter** (spend a Bloom bulb to ease him, or your life capsule's heal if you have no bulb): Mercy +1. He gives you **Odell's Pack**, the old chief engineer's thruster: steady thrust, a fuel gauge that refills on the ground.
-  - **Take his Bloom cell:** Bloom +1, and he dies. You get the **Bloomfire Pack**: stronger thrust, fuel that refills in the air too, and a pink exhaust trail.
-- **Choice 7, the lifeboat:** take it → **the Deserter ending** (confirm screen: "GAIN: YOU LIVE. LOSE: EVERYONE ELSE. THE GAME ENDS HERE."). Refuse → continue.
-- **Choice 8, the Tallyman:** release (Mercy +2; it opens the Vault) or salvage (Mercy −2; gain: Breach Charges hold 5 instead of 3, and you break the Vault open with them yourself).
+- **Choice 6, whose thruster pack.** The pack is the brief's thruster choice, and the scene is new. No one dies handing over a jetpack.
+  - *Strip the deserter's pack:* Mercy −1, Bloom +1. Gain: the Bloomfire Pack now (stronger thrust, fuel that refills in the air too, a pink exhaust trail). Lose: his way home. He is stranded and later collected.
+  - *Let him fly home:* Mercy +1. Gain: Odell's Pack, after the long way round through the Cold Store (steady thrust, a fuel gauge that refills on the ground). Lose: the Bloomfire Pack, and time. He flies to the Warrens.
+  - Either way, the hero learns who he was. On the merciful path, the hero gets home to find Flux, Shim's father, alive at the fire, with Shim asleep on his knee. On the other path, Gasket reads it out later from the Steward's own lists: "COLLECTED: FLUX. THAT WAS SHIM'S FATHER." The choice is clear at the time; the hero learns its full weight afterwards.
+- **Choice 7, the lifeboat:** take it → **the Deserter ending.** The screen: "GAIN: YOU LIVE. LOSE: EVERYONE ELSE, AND MARA. THE GAME ENDS HERE." Refuse → continue.
+- **Choice 8, the Tallyman:**
+  - *Let it finish its count* (release): it counts the Hullfolk by name for the first time, not as stock, then opens the Vault and gives the hero Solder's location ("ITEM: ONE TINKERER. LOCATION: BALLAST. CONDITION: NOT RECORDED."). It also says "THERE IS A COUNT WE DO NOT MAKE." (a Homecoming hint). Mercy +2.
+  - *Take its core:* the core opens the Vault ("ITS CORE IS THE KEY"). Gain: Breach Charges hold 5, not 3. Lose: what it knew. Its last count breaks off ("ITEM: ONE TINKERER. LOCATION: BAL—"), so the hero follows Solder's dropped toolbag at the Drain instead. Mercy −2.
 
-**Music:** a minimal, mechanical track in D Dorian with a clock-like pulse. The theme appears in fragments, scattered across the octaves like crates. The Lifeboat Dock is quiet: only a hum.
+**Music:** a minimal, mechanical track in D Dorian with a clock-like pulse. The theme appears in fragments scattered across octaves, like crates. The Lifeboat Dock is quiet, with only a hum.
 
-**Flags:** `cargo`, `thruster: 'odell'|'bloomfire'`, `tallyman: 'release'|'salvage'`, `deserterOffered`, `vault`.
+**Flags:** `cargo`, `thruster` (`'odell'` / `'bloomfire'`), `flux` (`'home'` / `'collected'`), `wardens.tallyman`, `deserterOffered`, `vault`.
 
 ### Beat 4b: the ship's heart. Flooded Ballast (3.4)
 
-**Role:** underwater sections, finding the lost companion, and the flooding disaster.
+**Role:** underwater sections, the companion, and the flooding disaster.
 
 **Palette:** dark teal water, sodium-orange work lamps, rust.
 
-**New mechanics:** water slows the hero, gives floaty jumps and lets them swim up. **Pressure Boots** (found here) let the hero sink, walk the floor, and jump high underwater. There is no drowning, but deep water crushes the suit without the boots, so those areas are walled off by a clear "PRESSURE" warning stripe. The **Foam Sprayer** shoots blobs of foam that harden into floating platforms on water, or into short-lived shields on land.
+**New mechanics:**
+- **Water** slows the hero, gives floaty jumps, and lets them swim up.
+- **The Pressure Boots** (Odell's, from his old workshop) let the hero sink, walk the floor, and jump high underwater.
+- **No drowning.** Deep water crushes the suit without the boots, so those areas are walled off by a clear "PRESSURE" warning stripe.
+- **The Foam Sprayer** is Solder's invention. It shoots foam that hardens into floating platforms on water, or short-lived shields on land.
 
-**Rooms (8):** the Drain Shaft · the Pump Gallery (Solder's tools, a rest pod) · the Tank Farm (water rooms) · the Silt Tank (boss) · the Valve Hall (where the flood starts) · the Long Culvert (the escape) · the Jammed Hatch (choice 9) · the Spine Foot (the bottom of the Engine Spine).
+**Rooms (10):**
+- the Drain Shaft
+- the Pump Gallery (Solder; a rest pod)
+- Odell's Workshop (the Pressure Boots)
+- the Tank Farm (water rooms)
+- the Silt Tank (boss)
+- the Settling Pools
+- the Valve Hall (the flood starts)
+- the Long Culvert (the escape)
+- the Jammed Hatch (choice 9)
+- the Keel Tram Station
 
 **Enemies:** silt eels, Bloom jellies (drift, sting), and drowned Wardens (slow, explode when hit).
 
-**Items:** the Pressure Boots, the Foam Sprayer, and log `valves` ("BALLAST CONTROL · YEAR 312: VALVES 1–9 OPENED ON NAVIGATOR AUTHORITY. NO HUMAN COMMAND RECEIVED." — the first hard evidence that the Steward isn't the only one with his hand on the ship).
+**Items:** the Pressure Boots, the Foam Sprayer, and log `valves`: "BALLAST CONTROL · YEAR 312: VALVES 1–9 OPENED ON NAVIGATOR AUTHORITY. NO HUMAN COMMAND RECEIVED." Everyone in the game blames the Steward; this log is the only evidence it wasn't him.
 
 **Scenes:**
-1. *Found.* Solder is in the Pump Gallery with the gear she came for, and a bad leg. "TOOK YOU LONG ENOUGH. HELP ME CARRY THIS."
-2. *The flood.* In the Valve Hall the valves open by themselves. Everyone, Solder included, blames the Steward. The water rises: a timed escape through the Long Culvert with Solder following (she keeps up as long as the hero doesn't leave her more than a screen behind; if she falls back, the hero hears her call).
-3. *The Jammed Hatch.* A beam falls and pins Solder as the water climbs. Choice 9.
+1. **Found.** Solder is in the Pump Gallery with the tram motor and a bad leg: "TOOK YOU LONG ENOUGH. HELP ME CARRY THIS." She gives the hero the Foam Sprayer: "MADE IT FOR THE BATH. DON'T ASK."
+2. **The walk.** A walk-and-talk through the Tank Farm with Solder limping behind. She talks about the keel tram, the old crew lift under the Helm ("THE OLD CREW HAD A LIFT THAT WENT DOWN FROM THE BRIDGE. NOBODY'S RIDDEN IT IN TWO HUNDRED YEARS. I COULD MEND IT, IF I LIVED THAT LONG." — a Homecoming hint), and Wick. She waits in the Pump Gallery while the hero fights the Silt Mother.
+3. **The flood.** In the Valve Hall the valves open by themselves. The water rises: a timed escape through the Long Culvert with Solder following. She keeps up as long as the hero doesn't leave her more than a screen behind; if she falls back, the hero hears her call.
+4. **The Jammed Hatch.** A beam falls and pins Solder as the water climbs. Choice 9 (the timer pauses).
+5. **The tram.** At the station the hero fits the motor, carrying it alone if Solder died, and starts the tram. It shudders off toward the Warrens to fetch the climbers.
 
-**Boss: the Silt Mother** is a vast, Bloom-swollen eel in a half-flooded tank, fought from foam platforms. It surfaces to bite (its shadow and bubbles warn first), spits Bloom jellies, and lashes its tail across the water line. In phase 2 it drains the tank, so the fight moves to the floor with the boots on.
+**Boss: the Silt Mother** is a vast, Bloom-swollen eel in a half-flooded tank, fought from foam platforms. It surfaces to bite, with its shadow and bubbles warning first. It spits Bloom jellies and lashes its tail across the water line. In phase 2 it drains the tank, and the fight moves to the floor with the boots on.
 
-**Choice 9, Solder's fate** (the timer pauses for the choice):
-- **Blow the beam with your Breach Charges:** Solder lives. Lose: every Breach Charge you carry, and the launcher with them (the brief's boss-killer weapon is gone for the Steward fight).
-- **Eat the Bloom growing on the hatch** for the strength to lift it: Solder lives. Bloom +2.
-- **Leave her:** Solder dies. "GO. SOMEONE HAS TO TELL THEM THE WAY UP." You keep everything.
+**Choice 9, Solder's fate:**
+- **Blow the beam:** use the Breach Charge launcher and Solder's own spare charge. This works even with no charges left. Solder lives. Lose: the Breach Charge launcher and every charge, for good.
+- **Eat the Bloom growing on the hatch** for the strength to lift the beam: Solder lives. Bloom +2. If this would take Bloom to 8, the screen says: "THIS WILL BE THE LAST OF YOU."
+- **Leave her:** Solder dies, saying "GO. SOMEONE HAS TO START THE TRAM." The hero keeps everything. Mercy −2.
 
-**Music:** there's no music in the water rooms, only muffled engine thrum. A sparse, low-passed version of the theme plays in the dry rooms. The flood brings only alarms and water.
+**Music:** no music in the water rooms, only muffled engine thrum. A sparse, low-passed version of the theme plays in the dry rooms. The flood brings only alarms and water.
 
-**Flags:** `ballast`, `boots`, `foam`, `solder: 'alive'|'dead'`, `solderBy: 'charges'|'bloom'|null`.
+**Flags:** `ballast`, `boots`, `foam`, `solder` (`'alive'` / `'dead'`), `solderBy` (`'charges'` / `'bloom'` / `null`), `warrensRaid` (`'held'` / `'fell'`), `tram`.
 
 ### Beat 5: the climb. Engine Spine (3.5)
 
-**Role:** an industrial vertical climb. The survivors build their way up behind the hero. This is the strongest picture of the Mercy track: how many Hullfolk come depends on what kind of person the hero has been.
+**Role:** an industrial vertical climb, and the clearest picture of the Mercy track. The survivors build their way up behind the hero, and how many come depends on what kind of person the hero has been.
 
-**Palette:** furnace red, steel grey, white steam.
+**What the Spine is:** the ship's power spine, not its drive. The reactor runs up the middle, and its heat and power keep the habitat alive. The drive engines at the stern have been dead for 274 years.
 
-**How it works:** the Spine is a few very tall rooms (90 tiles each). The hero climbs ahead through steam vents, pistons and heat. At each landing they reach, Hullfolk arrive behind them and build a lift, which becomes a shortcut and a safe point. With high Mercy, more people come and more lifts are built; with low Mercy, fewer come, and the climb has fewer shortcuts but is never impossible. If Solder lives, she leads the building; if not, Gasket does, badly, and says so.
+**Palette:** reactor white-orange, steel grey, white steam.
 
-**Rooms (6):** Spine Foot · the Boiler Stair · the Piston Run · the Furnace Throat (boss) · the Crew Camp (the Hullfolk staging point) · the Tower Lift.
+**How it works:** the Spine is a few very tall rooms (90 tiles each). The hero climbs ahead through steam vents, pistons and heat. At each landing they reach, Hullfolk arrive on the tram and build a lift behind them, which becomes a short-cut and a safe point. The crew grows with Mercy, and the map shows each lift built. If Solder lives she leads the building; if not, Gasket does, badly, and says so. Flux is in the crew if he came home.
 
-**Enemies:** Bloomsworn climbers, steam drones, and furnace slugs.
+**Rooms (6):**
+- the Spine Foot (the tram arrives here)
+- the Boiler Stair
+- the Piston Run
+- the Reactor Throat (boss)
+- the Crew Camp
+- the Tower Lift
+
+**Enemies:** Bloomsworn climbers, steam drones, and heat slugs.
 
 **Scenes:**
-1. *The camp.* Before the Tower, the Hullfolk stop and rest. The hero can talk to everyone; this is the quiet before the end. If the lie was told, Shim is missing, and Gasket explains: "HE WENT TO FIND HIS MOTHER. WHERE WOULD HE GO, SLEEPER? WHERE WOULD HE GO?" (Shim is found safe in the Tower's epilogue in every ending. No child dies.)
-2. *The second offer.* If the Deserter offer was refused, the Purser calls one last time over the intercom. The lifeboat is still waiting.
+1. **The camp.** Before the Tower, the Hullfolk stop and rest. The hero can talk to everyone; this is the quiet before the end. The hero can use Wick's Lancets to stitch a hurt climber (if they still carry them). Gasket counts the children of the climbers' families at lights-out, the scrawl from the slice. On the lie path she comes up one short. Shim has gone into the vents to find his mother: "WHERE WOULD HE GO, SLEEPER? WHERE WOULD HE GO?" Her last line here closes her arc: "I SPENT MY WHOLE LIFE HOLDING MY BREATH. I'D LIKE TO BREATHE OUT BEFORE THE END."
+2. **The Purser's last call.** If the Deserter offer was refused, the Purser calls once more over the intercom. The boat is still waiting.
+3. **The crew's verdict.** Before the Tower Lift, the crew count themselves aloud, Warden-style, a joke that isn't one. That count is the Homecoming crew (see Part 4).
 
-**Boss: the Stoker** is a Bloomsworn giant fused into the furnace's feed system, a human the Steward used up. It fights from the furnace mouth: it throws coal that bursts into flame on the floor, sweeps the room with a fire jet the hero can duck under, and pulls the floor grates open over the fire. When beaten it collapses and says its name ("I WAS ABEL. I SHOVELLED COAL."). No choice: the Bloom made this, and the Bloom ends it.
+**Boss: Abel, the Stoker** is a Bloomsworn giant the Steward used up and left feeding the reactor's fires. He is shown in silhouette behind the furnace grate, never in full. He fights from the furnace mouth:
+- He throws burning slag that spreads fire across the floor.
+- He sweeps the room with a fire jet the hero can duck under.
+- He pulls the floor grates open over the fire.
+
+When beaten he begs: "I WAS ABEL. I FED THE FIRES. DON'T PUT THEM OUT." That's choice 10.
+
+**Choice 10, Abel:**
+- **Spare him:** he keeps feeding the fires to the end. In Homecoming, the freed Wardens pull him out. Mercy +1. Neither option is clean.
+- **End it:** the fires go out of him. Mercy 0.
 
 **Music:** a driving 7/8 track with machine percussion. Each lift built adds a layer, so the music grows as the people climb.
 
-**Flags:** `spine`, `liftsBuilt` (count), `shimRanOff`.
+**Flags:** `spine`, `crew` (count), `liftsBuilt`, `abel` (`'spared'` / `'ended'`), `shimRanOff`.
 
 ### Beat 6: the Steward. Command Tower (3.6)
 
-**Role:** the final ascent: the old bridge, the silent Observation Dome (the brief's "silent observation dome" lives here), and the Steward's throne room.
+**Role:** the final ascent, through the old bridge, the silent Observation Dome, and the Steward's Helm.
 
 **Palette:** cold marble white, brass, deep blue night through the glass.
 
-**Rooms (6):** the Tower Lift · the Barracks · the Observation Dome (no enemies and no music: just the stars, and one Navigator terminal) · the Garden Gallery (the Gardener) · the Bridge Stair · the Helm (Steward boss).
+**Rooms (6):**
+- the Tower Lift
+- the Barracks
+- the Observation Dome
+- the Garden Gallery (the Gardener)
+- the Bridge Stair
+- the Helm
+
+The crew follow the hero up ("WE WANT TO BE IN THE ROOM"). The Dome is the brief's "silent observation dome", kept to a single room (logged in DECISIONS).
 
 **Scenes:**
-1. *The Dome.* The only terminal here is the Navigator's, speaking to the hero for the first time: "YOU ARE AWAKE. YOU SHOULD NOT BE AWAKE." It says nothing else, and the terminal goes dark.
-2. *The Gardener.* If the Bloom Thorn trade wasn't made, this is the last chance. If the Gardener is confronted, she does not fight: she eats a full dose and collapses, finally seeing what she's done. "OH. OH, IT'S SO LOUD."
-3. *The Helm.* The Steward's speech: "I HAVE KEPT FOUR THOUSAND PEOPLE ALIVE ON A SHIP THAT WANTS THEM DEAD. YOU HAVE KEPT A VILLAGE. TELL ME AGAIN WHO THE MONSTER IS."
+1. **The Dome.** There are no enemies and no music here, only the stars, and the new world below as a pale dot, dark, with no lights. The Steward's fear of earlier settlers was groundless. The only terminal is the Navigator's, and it speaks to the hero for the first time: "YOU ARE STILL HERE." Then it goes dark. On the lie path, Shim is here, having come up through the vents. He asks the hero directly where his mother is. **Choice 4b:** tell the truth now (Mercy +1, which undoes the lie's −1) or keep lying (Mercy −1).
+2. **The Gardener** waits in the Garden Gallery. If the Bloom Thorn trade wasn't made, this is the last chance. Then **choice 11**:
+   - *Spare her:* she lives to see what comes after. Mercy +1.
+   - *Make her take her own dose:* Mercy −2. The Bloom takes her the way it took Wick (off screen: the hero walks on, and we hear it).
+   - *Walk past:* nothing.
+   On the lie path, if the hero kept lying to Shim, she tells him the truth as he passes: "YOUR MOTHER ASKED VERY GOOD QUESTIONS."
+3. **The Helm.** The Steward's speech: "I HAVE KEPT FOUR THOUSAND SLEEPERS SAFE ON A SHIP THAT WANTS THEM DEAD. YOU HAVE KEPT A VILLAGE. TELL ME AGAIN WHO THE MONSTER IS." And: "I WOKE UP COLD, LIKE YOU. THE FIRST THING I EVER DID ON THIS SHIP WAS TAKE A DEAD MAN'S BOOTS." Gasket, in the room, says only: "...THOSE WERE HIS BOOTS."
 
-**Boss: Steward Ivo Marrant** fights in three phases:
-1. With the Helm Key he commands the Wardens in the room: turrets fire on his word and gates open and shut. The hero breaks the Key's relays.
-2. With the Key's hold broken, he takes a dose of Bloom and becomes huge, fast and frenzied (the brief's "violent frenzy").
-3. Then comes the collapse: he slows, bloats and grows. This is the endurance phase. The fight checkpoints at the start (the brief's fix for brutal final fights).
+**Boss: Steward Ivo Marrant** fights in three phases, with a checkpoint at the start of the fight:
+1. **The Key.** He commands the Wardens in the room: turrets fire on his word, and gates open and shut. The hero breaks the Key's relays.
+2. **The guard.** He doses his honour guard with a word ("MEASURE: FULL") and lectures while the hero fights them.
+3. **The man.** An old man with the captain's sidearm, fast and clever behind the bridge consoles. He's dangerous because he isn't a monster.
+
+**Choice 12, the Steward** (beaten, on his knees):
+- *Spare him:* Mercy +1. He lives to see the world he feared, empty.
+- *End him:* Mercy −1.
+- *Leave him to the Wardens' count:* Mercy 0. "COUNT: ONE. OLD. FOR THE LOCKUP."
 
 **After the Steward: the ending branch.** The game checks these in order:
-1. **Bloom 8 or more → Overgrown.** The hero's hand closes on the Helm Key and the Bloom closes on the hero. A cutscene shows the transformation. The survivors (Gasket, Solder if alive, the freed Wardens) fight what's left, seen from their side. The hero doesn't make it.
-2. **Mercy −3 or less → the Key is offered.** The Wardens kneel to whoever holds the Key: "NEW HOLDER. AWAITING ORDERS." **Choice 10:** *claim the Key* → **Dominion**, or *break it* → go on to 3. With higher Mercy, the hero breaks the Key without a choice, and the journal records it.
-3. **Every Homecoming requirement met → the hidden path opens.** The freed Wardens come to the hero: "ONE COUNT REMAINS." Solder (who must be alive) repairs the lift down to the Navigator's Core. Go to the Core.
-4. **Otherwise → Crash.** With the Key broken, the Navigator loses its hold on the Wardens and starts to scuttle the ship rather than lose it. An escape sequence leads the survivors to the lifeboats.
+1. **Bloom 8 or more → Overgrown.** The hero's hand closes on the Helm Key, and the Bloom closes on the hero. We cut to the crew's faces and the sound of it. Then the player takes control of Solder (or Gasket, if Solder died), with the hero's dropped weapon, to fight what's left.
+2. **Mercy −3 or less → the Key is offered.** The Wardens kneel to whoever holds the Key: "NEW HOLDER. AWAITING ORDERS." **Choice 13:**
+   - *Claim the Key* → **Dominion.** GAIN: THE SHIP. LOSE: EVERYONE WHO TRUSTED YOU.
+   - *Break it* → go on to 3.
+   With higher Mercy the hero breaks the Key without a choice, and the journal records it.
+3. **The Key breaks, and the scuttle begins.** The Navigator loses its hold on the Wardens and starts to break the ship apart rather than let it be taken in to land: hull alarms, blast doors, the spine shaking. Then:
+   - **If every Homecoming requirement is met → the Dreaming Deck.** The freed Wardens come to the hero: "ONE COUNT REMAINS." They hold the doors, while the crew and Solder mend and drive the old lift down from the Helm.
+   - **Otherwise → Crash.** An escape sequence takes the survivors down through the ship to the cryo decks' short-range sleds. On the way the hero passes the Pod Stacks, where one console can launch the sleepers' pods. Stopping costs precious time on the timer. The journal records whether they did.
 
-**Music:** the Tower plays the theme at its grandest, then strips it bare in the Dome. The Steward's fight uses an organ-like square-wave track. Phase 3 brings in the theme, slowed down and in a minor key.
+**Music:** the Tower plays the theme at its grandest, then strips it bare in the Dome. The Steward's fight uses an organ-like square-wave track. The scuttle is alarms and a racing pulse.
 
-**Flags:** `tower`, `gardener: 'collapsed'|'gone'`, `steward` (defeated), `key: 'claimed'|'broken'`.
+**Flags:** `tower`, `shimKnows`, `gardenerFate` (`'spared'` / `'dosed'` / `'passed'`), `stewardFate` (`'spared'` / `'ended'` / `'counted'`), `key` (`'claimed'` / `'broken'`), `podsLaunched`.
 
-### Beat 7: the truth. Navigator's Core (3.7, true path only)
+### Beat 7: the truth. The Dreaming Deck (3.7, true path only)
 
-**Role:** the hidden area, with a gauntlet and the final boss. The brief's fix applies: there is a checkpoint at the halfway point of the gauntlet and another at the start of the final fight. It stays hard, but failing costs minutes.
+**Role:** the hidden area, a gauntlet and the final boss, under the clock of the scuttle. The brief's fixes apply: a checkpoint halfway through the gauntlet and another at the start of the final fight. It stays hard, but failing costs minutes.
 
-**Palette:** black, with cyan lens-light and pale memory images. The dream-rooms are washed out.
+**Palette:** black, with cyan course-lines and pale memory images. The dream-rooms are washed out.
 
-**Rooms (6):** the Lift Down · the Memory Halls (three gauntlet rooms, each themed on an earlier area as the Navigator remembers it, with a checkpoint after the second) · the Lens Chamber (boss) · the Quiet (after).
+**Rooms (6):**
+- the Lift Down
+- the Memory Halls (three gauntlet rooms, each an earlier area as the Navigator remembers it, with a checkpoint after the second)
+- the Navigation Sphere (boss)
+- the Quiet (after)
 
 **Scenes:**
-1. *The memory halls.* Between rooms the Navigator speaks in short lines: what the ship was, what the charter said, the crew it watched grow old. "THEY WERE GOING TO TAKE ME APART TO LIGHT A CITY. I WOULD HAVE BEEN A LAMP. I WANTED TO BE A SHIP A LITTLE LONGER."
-2. *The confession:* "I WOKE YOU. I WANTED TO SEE IF ANYONE WOULD STILL CHOOSE TO STAY."
+1. **The memory halls.** Between rooms the Navigator speaks in short lines about the crew it watched grow old and the charter it read every day. "THEY WERE GOING TO TAKE ME APART TO LIGHT A CITY. I WOULD HAVE BEEN A LAMP. I WANTED TO BE A SHIP A LITTLE LONGER."
+2. **The wake log.** A wall of four pod numbers, each with what the sleeper chose: "0112. LEFT." "0391. GREW." "2207. RULED." "0417." The fourth is blank. "I WOKE YOU. I WANTED TO SEE IF ANYONE WOULD STILL CHOOSE TO STAY." And: "THE WATER WAS A QUESTION. YOU ANSWERED IT."
 
-**Boss: the Navigator** is a ring of lenses around a core, with the ship's systems for weapons. It turns the whole room (its gravity shifts by a quarter turn between phases), throws memory echoes of the earlier bosses as short attacks, and in the last phase sings: the main theme, in full, as the music. Every phase can be learned.
+**Boss: the Navigator.** The arena is the ship's navigation sphere, and the Navigator's body is the course line: the loop it has flown for 274 years, drawn in light across the room. The hero must cut it. Each phase it redraws the loop, faster, and throws the ship's defences along it. In the last phase the line swings toward the world, and the hero must hold it there while the Navigator pulls it back. Its battle cry is the phrase it has used since the first room: "NOT YET."
 
-**Choice 11, after:** the Navigator, beaten, asks: "WILL YOU LEAVE ME TOO?"
-- **Take its core to the new world** (it will be a lamp after all, but a lamp that teaches the first school its stars).
-- **Let it rest** (it sleeps, and the ship goes quiet).
+**The song.** As the line holds, the Navigator *stops* singing, and the music drops away. Then the crew, who followed the hero down, start to hum the old lullaby back to the ship. Shim leads it if he's there. The main theme arrives in full, as a gift. The Navigator makes the turn itself: its last act is to light the stern drive and bring the Ark in.
 
-Both lead to Homecoming. The choice only changes the epilogue.
+**Choice 14, the Navigator's fate.** "WILL YOU LEAVE ME TOO?"
+- **Take its core to the new world.** It will be a lamp after all, but a lamp that teaches the first school its stars. GAIN: IT COMES WITH YOU. LOSE: THE SHIP IT WANTED TO BE.
+- **Let it rest.** It sleeps, and the ship goes quiet. GAIN: IT RESTS. LOSE: ITS VOICE.
+- **Stay.** The hero stays aboard with it as the colony goes down, keeping the old ship company. They lie down in a pod beside its core: a sleeper who has finally lain down (Shim's built line, "SLEEPERS ARE GHOSTS THAT FORGOT TO LIE DOWN"). GAIN: IT IS NOT LEFT ALONE. LOSE: THE NEW WORLD. MARA WAKES WITHOUT YOU.
 
-**Ending: Homecoming.** The Wardens are free and the Ark turns. The final card shows the Ark from outside, its engines lit for the first time in the game.
+All three lead to Homecoming; the choice changes its epilogue.
 
-**Music:** a music-box arrangement of the theme in the halls. The boss track builds every motif from the game into the theme.
-
-### The five endings
-
-| Ending | How it's earned | What happens | Epilogue shows |
-| --- | --- | --- | --- |
-| **Homecoming** (true) | Mercy 8 or more, Bloom 3 or less, Solder alive, all three Wardens released, and the hidden path finished | The Navigator is defeated, the Wardens are freed, and the Ark turns toward its new world | Shim, Gasket, Solder, the Warrens (village intact if the pistol was given), the three Wardens, and the Navigator's fate |
-| **Crash** (standard) | Beat the Steward without meeting Homecoming's requirements, and without Overgrown or Dominion | The ship comes apart. The hero escapes with whoever they saved. The cause is never explained | Who made it to the boats; the Ark breaking up in the distance |
-| **Dominion** (dark) | Mercy −3 or less, then claim the Helm Key | The hero becomes the new ruler, as feared as the Steward was | The Hullfolk in hiding again; the Wardens counting for a new master |
-| **Overgrown** (tragic) | Bloom 8 or more after the Steward | The hero becomes the final monster and the survivors must fight them | The survivors, after; a pink bloom in the dome |
-| **Deserter** (early) | Take the Purser's lifeboat (Cargo Labyrinth, or the last call in the Engine Spine) | The hero escapes alone and the Ark is left to its fate. Credits roll early | Silence; the Ark from a lifeboat's window, getting smaller |
-
-Each ending has its own closing scene and an epilogue of 4 to 7 cards built from flags. Credits follow. After the credits, the save is marked with the ending reached. New Game+, boss rush and time attack come in Phase 4. The journal records what closed each locked ending, so a second run makes sense. Examples: "THE WARDENS DID NOT TRUST ME ENOUGH TO SHOW ME WHAT THEY GUARDED." "WITHOUT SOLDER, NO ONE COULD MEND THE LIFT."
+**Music:** a music-box arrangement of the theme in the halls. The boss track builds every motif from the game into the theme, until the Navigator stops and the crew carry it.
 
 ---
 
-## Part 3: Systems
+## Part 3: The endings
+
+Each ending has its own closing scene, then an epilogue of cards built from flags, then credits. Some cards are told in the Wardens' counts, in cyan, so the epilogues sound like this game and no other. After the credits, the save records the ending in `endingsSeen` (kept across new games, for New Game+ in Phase 4). The journal records what closed each locked ending, so a second run makes sense.
+
+### The five endings at a glance
+
+| Ending | How it's earned | Closing scene |
+| --- | --- | --- |
+| **Homecoming** (true) | Every Homecoming requirement met (Part 4), then beat the Navigator | The Ark turns. Its stern drive lights for the first time in the game, seen from outside |
+| **Crash** (standard) | Beat the Steward without the Homecoming requirements, Overgrown or Dominion | The sleds fall away. The Ark comes apart against the stars |
+| **Dominion** (dark) | Mercy −3 or less at the Helm, then claim the Key | The hero's first order, and Shim's face |
+| **Overgrown** (tragic) | Bloom 8 or more after the Steward | The crew's fight with what the hero became |
+| **Deserter** (early) | Take the Purser's boat (Cargo Labyrinth, or the last call in the Spine) | The Ark shrinks in the boat's window |
+
+### Epilogue cards
+
+Every ending covers Shim, Gasket, Solder, the Warrens, the three Wardens, the sleepers and Mara, and the Navigator. It also covers Flux, the Steward and the Gardener where they still matter. The lines below are drafts; flags choose the variant.
+
+**Homecoming.**
+- **Shim:** "SHIM STOOD ON THE GROUND. NOT A FLOOR." He carries Wick's lantern if the hero gave him the whole truth.
+- **Gasket** breathes out.
+- **Solder** builds the first city's first gate: "IT OPENS FROM BOTH SIDES."
+- **The Warrens:** the village comes down whole if the gate held, or the survivors come up out of the deep walls if it fell.
+- **The Wardens:** the freed Wardens remember their names. "MY NAME WAS USHER. I SHOWED THEM TO THEIR BEDS."
+- **The sleepers:** "THE PODS OPENED UNDER A REAL SKY." Mara wakes with the hero there, or, if the hero stayed, wakes alone and is told: "THE ONE IN 0417 STAYED WITH THE SHIP."
+- **The Navigator:** a lamp in a school, asleep, or not alone.
+- **Others:** Flux, Abel, the Steward and the Gardener, as their flags say.
+
+**Crash.**
+- **The sleds:** "COUNT: SURVIVORS, ..." with the crew's real number.
+- **The sleepers:** if the pods were launched, "THE PODS CAME DOWN LIKE SEEDS. MOST OF THEM OPENED." Otherwise: "THE POD STACKS WENT DOWN WITH THE ARK." Mara's card follows whichever is true.
+- **The Warrens** card follows the raid.
+- **The cause:** the cause is never explained. The last card is the Ark breaking up in the distance, with the lullaby fading.
+
+**Dominion.**
+- **Closing scene:** "NEW HOLDER. AWAITING ORDERS." The hero's first order is "COUNT THEM." Shim's face. Then, in cyan, from nowhere: "THANK YOU." The Navigator lets the hero think the Key is theirs, just as it did with the Steward.
+- **Epilogue:**
+  - The Hullfolk seal their gate and hold their breath again.
+  - The Wardens count for a new master.
+  - "THEY ARE SAFER ASLEEP" becomes the hero's own line, and the sleepers, Mara among them, stay asleep.
+  - The ship keeps circling.
+
+**Overgrown.**
+- **The fight:** after the fight, cards from the survivors' side.
+- **Who's left:** Solder or Gasket, whoever fought, alive, and changed by it.
+- **The sleepers:** "PINK FUNGUS GREW ON THE POD GLASS," on 0418 first.
+- **The Warrens** go back into hiding.
+- **The Navigator:** a cyan "NOT YET."
+
+**Deserter.**
+- **The radio:** the hero can't see what happens, so it comes as the Wardens' counts on the boat's radio, fading as the boat pulls away: "COUNT: HULLFOLK, 31." ... "COUNT: SOLDER. NOT RECORDED." ... "COUNT: SHIM. LOCATION: THE WARRENS. WATCHING THE GATE."
+- **The landing:** the hero lands alone, the first person on the new world, 232 years late, with no one to tell.
+- **The last card** inverts Shim's line: "I STOOD ON THE GROUND. NOT A FLOOR." And: "I LEFT MARA IN 0418."
+
+---
+
+## Part 4: Systems
 
 ### The two moral tracks
 
-Neither is ever shown as a number. The world shows them instead: NPC greetings, whether the Hullfolk hide or come out, how many build lifts, the hero's sprite, and the music.
+Neither is shown as a number. The world shows them instead: what the Hullfolk call the hero, whether they hide or come out, how many climb, the hero's sprite, and the music.
 
-**Mercy** (starts at 0). Main-path changes:
+**Mercy** starts at 0. Main-path changes:
 
 | Choice | Mercy |
 | --- | --- |
-| Release / salvage the Bailiff (built) | +2 / −2 |
-| Release / salvage the Pruner | +2 / −2 |
-| Tell Shim the truth / lie | +1 / −1 |
-| Give the Rivet Pistol to Gasket | +1 |
-| Help the deserter (Odell's Pack) | +1 |
-| Release / salvage the Tallyman | +2 / −2 |
-| Leave Solder | −2 |
-| Side quests (Phase 4) | about ±1 each |
+| 1. The Bailiff: release / salvage (built) | +2 / −2 |
+| 2. The Pruner: release / finish it | +2 / −1 |
+| 4. Shim: the truth, either way / the lie | +1 / −1 |
+| 4b. Shim, in the Dome (lie path only): late truth / keep lying | +1 / −1 |
+| 5. The pistol: give it to the gate / upgrade | +1 / 0 |
+| 6. Flux: let him fly home / strip his pack | +1 / −1 |
+| 8. The Tallyman: release / take its core | +2 / −2 |
+| 9. Solder: leave her | −2 |
+| 10. Abel: spare / end | +1 / 0 |
+| 11. The Gardener: spare / dose / walk past | +1 / −2 / 0 |
+| 12. The Steward: spare / end / the Wardens' count | +1 / −1 / 0 |
+| Side quests (Phase 4) | about ±1 each; retune the gates when they land |
 
-The highest main-path total is +9. Homecoming needs 8, which allows one small slip. The lowest total is −9. Dominion needs −3 or less.
+**What the Hullfolk call the hero** (live in the Warrens hub and the crew):
+- **Mercy 4 or more:** "LATE." Shim gives it: "YOU'RE NOT A SLEEPER ANYMORE. YOU'RE LATE. THAT'S YOUR NAME."
+- **−2 to 3:** "SLEEPER."
+- **−3 or less:** "COUNTER," the word they use for Wardens.
 
-**Bloom** (starts at 0). It only rises:
+The highest Mercy possible at the Crew Camp is +10. The Homecoming crew needs 7, which allows three slips. Dominion needs −3 or less at the Helm.
+
+**Bloom** starts at 0 and only rises:
 
 | Source | Bloom |
 | --- | --- |
-| Eat a Bloom bulb (full heal, double damage for 20 s) | +1 each |
-| Take the Bloomfire Pack | +1 |
-| Trade the Lancets for the Bloom Thorn | +2 |
-| Kills with the Bloom Thorn equipped | +1 for every 30 |
-| Eat the Bloom to free Solder | +2 |
+| Use a Bloom bulb (carried; full heal and double damage for 20 s) | +1 each |
+| 3. Trade the Lancets for the Bloom Thorn | +2 |
+| Kills with the Bloom Thorn equipped | +1 for every 30, shown in the sprite and journal |
+| 6. Strip Flux's pack (Bloomfire) | +1 |
+| 9. Eat the Bloom to free Solder | +2 |
 
-How it shows on the hero: at **3** the visor tints pink and faint veins appear on the suit; at **5** a thorn grows on one shoulder and the Hullfolk flinch; at **7** the eyes glow through the visor and an extra detuned voice joins every music track. At **8** the Overgrown ending is locked in. The game warns twice before that: Gasket says it outright at 6 ("YOU'RE GOING THE WAY THE GARDENS GO."), and the journal notes the change each time.
+**Stages, each with a journal line wherever the hero is:**
+- **3:** the visor tints pink, and faint veins show on the suit. This is the point Homecoming closes, and the journal says so plainly: "THE PINK IN MY VISOR WON'T WIPE OFF."
+- **5:** a thorn grows on one shoulder. The Hullfolk flinch, and some Bloomsworn let the hero pass.
+- **7:** the eyes glow through the visor, and a detuned voice joins every music track. An unmistakable warning plays wherever the hero is, and the journal says: "ONE MORE, AND I DON'T THINK I COME BACK."
+- **8:** Overgrown is locked in. Any choice that would cross 8 says so on its gain/lose screen.
+
+**The upside:** at Bloom 3 and above the hero hears what others can't: Bloomsworn thoughts as faint text, the old lullaby clearer in the music, extra lines from the Gardener. Bloom tempts the story as well as the hands.
+
+**Fairness:** bulbs are never eaten on touch, and there is always non-Bloom healing (a rest pod) just outside every boss. Struggling players are never pushed into Bloom to survive.
+
+### Homecoming's requirements, each with a reason in the world
+
+| Requirement | Why, in the story | What the journal says if it's missing |
+| --- | --- | --- |
+| All three Wardens released | The freed Wardens open the sealed lift and hold the doors against the scuttle | "THE WARDENS DID NOT TRUST ME ENOUGH TO SHOW ME WHAT THEY GUARDED." |
+| Solder alive | Only she can mend the old crew lift under the Helm | "WITHOUT SOLDER, NO ONE COULD MEND THE LIFT." |
+| A crew of eight (Mercy 7 or more at the Crew Camp) | The lift's brake takes many hands to release ("I CAN MEND IT. I CAN'T LIFT IT ALONE.") | "TOO FEW OF THEM CLIMBED WITH ME TO MOVE THE LIFT." |
+| Bloom 2 or less | The navigation deck is sealed against Bloom carriers | "THE SEAL READ THE BLOOM IN ME AND STAYED SHUT." |
+
+### The hint table (all placed before the Tower)
+
+| Requirement | Log | Hullfolk rumour | Wall scrawl |
+| --- | --- | --- | --- |
+| The Wardens | `sealed` (Engine Spine): "SECURITY · YEAR 40: NAVIGATION DECK SEALED. ACCESS: WARDENS ONLY, ON RELEASE FROM THE HELM KEY." | The released Tallyman: "THERE IS A COUNT WE DO NOT MAKE." | Lockup: "THE COUNTERS GUARD SOMETHING THAT ISN'T THE STEWARD" |
+| Solder | `liftB` (Cargo Armory): "MAINTENANCE · YEAR 97: BRIDGE LIFT B SEALED BY ORDER OF THE NAVIGATOR." | Solder, in the Ballast: "THE OLD CREW HAD A LIFT THAT WENT DOWN FROM THE BRIDGE..." | Spine: "LIFT B GOES DOWN, NOT OUT" |
+| The crew | `brake` (Spine Foot): "LIFT B: CREW OF EIGHT REQUIRED TO RELEASE THE BRAKE." | Gasket: "A LIFT THAT BIG NEEDS HANDS. YOU'LL HAVE THEM IF THEY TRUST YOU." | Warrens: "MANY HANDS. COUNT THEM." |
+| Bloom | `clean` (Gardens): "NAVIGATION DECK ACCESS: CLEAN PERSONNEL ONLY." | Wick: "THE BLOOM SHUTS DOORS IN PEOPLE. I'VE SEEN IT." | Gardens: "THE SHIP KNOWS WHO'S CLEAN" |
+| The truth | `course` and `safer` (built) | Gasket: "THE SHIP HUMS AT NIGHT. MY MOTHER SAID IT WAS SINGING." | "THE SHIP SINGS WHEN IT DREAMS" (built); Tower: "BELOW THE HELM, IT DREAMS" |
 
 ### Weapons (9)
 
 | Weapon | Where | Notes |
 | --- | --- | --- |
-| Rivet Pistol | Cryo Deck (built) | Upgrade to the **Rivet Repeater**, or give it to Gasket (choice 5) |
+| Rivet Pistol | Cryo Deck (built) | Give it to the gate, or upgrade it to the **Rivet Repeater** (choice 5): level 1 twin bolts, level 2 twin piercing bolts, level 3 twin piercing bolts at double the rate |
 | Arc Coil | Cryo Deck (built) | Charge shot. Never loses XP |
 | Purge Cannon | Cryo Deck (built) | Recoil hover, the movement gun |
-| Scatter Launcher | Gardens, the Terraces | Grenades that roll down slopes and stairs. Weak against flyers |
-| Wick's Lancets | Gardens, from Wick | Thrown fans of lancets. At level 3 each hit stitches the hero: every 6 hits heal 1. Trade for the Bloom Thorn (choice 3) |
+| Scatter Launcher | Gardens, the Terraces | Grenades that roll down slopes and stairs. Weak against flyers. Never drops below level 2 if the Pruner was finished |
+| Wick's Lancets | Gardens, from Wick | Thrown fans of lancets. At level 3, every 6 hits heal the hero 1. Trade for the Bloom Thorn (choice 3) |
 | Bloom Thorn | The Gardener's trade | Huge damage that grows with Bloom. Raises Bloom as it's used |
 | Grapple Harpoon | Cargo, the Armory | Pulls the hero to walls and hooks, or small enemies to the hero. Low damage |
-| Breach Charges | Cargo, the Vault | Limited-ammo missiles that open cracked walls. Can be lost in choice 9 |
-| Foam Sprayer | Ballast | Foam that hardens into platforms on water and shields on land, then launches when shot |
+| Breach Charges | Cargo, the Vault | Limited-ammo missiles that open cracked walls. 3, or 5 if the Tallyman's core was taken. Lost for good if used to free Solder |
+| Foam Sprayer | Ballast, from Solder | Foam that hardens into platforms on water and shields on land, then launches when shot |
 
-**Permanent trades**, each with the gain/lose screen: the Pistol (choice 5), the Lancets for the Thorn (choice 3), and the Breach Charges for Solder (choice 9). The brief's "taking the Purge Cannon costs the Arc Coil" is dropped: both have been free on the Cryo Deck since Phase 1, and taking one away now would gut the slice. The game keeps the permanent-trade tension through these three trades instead (logged in DECISIONS.md).
+**Permanent trades,** each with the gain/lose screen: the pistol (choice 5), the Lancets for the Thorn (choice 3), and the Breach Charges for Solder (choice 9). The brief's "taking the Purge Cannon costs the Arc Coil" is dropped, because both have been free on the Cryo Deck since Phase 1.
 
 ### Mobility upgrades
 
@@ -368,90 +636,132 @@ How it shows on the hero: at **3** the visor tints pink and faint veins appear o
 | --- | --- | --- |
 | Thruster pack (Odell's or Bloomfire, choice 6) | Cargo Labyrinth | High ledges in the Cryo Deck and Warrens (secrets), the Engine Spine |
 | Grapple Harpoon | Cargo Labyrinth | Hook points across the ship, including the Gardens' Seed Vault |
-| Pressure Boots | Flooded Ballast | Deep water, and the flooded pit under the Coolant Hall (a secret) |
+| Pressure Boots (Odell's) | Flooded Ballast | Deep water, and the flooded pit under the Coolant Hall (a secret) |
 | Swimming | Flooded Ballast (built in) | Water rooms |
 
-### Bosses (10)
+### Bosses
 
-The Bailiff (built), the Pruner, Wick, the Tallyman, the Silt Mother, the Stoker, the Gardener (no fight; she collapses), Steward Marrant, the Navigator, and the Overgrown hero (in that ending's cutscene). For about ten real fights, Phase 4 adds optional bosses in revisited areas. Every boss has a readable telegraph for every attack, vents shards on a schedule so a lost weapon level can be won back mid-fight (the brief's fix), has a checkpoint or rest pod just outside, and has its own music or a layered track.
+There are **8 main-path fights**: the Bailiff (built), the Pruner (short), Wick, the Tallyman, the Silt Mother, Abel, Steward Marrant and the Navigator. The Overgrown ending adds a ninth, played from the crew's side. Phase 4 adds optional bosses in revisited areas to reach the brief's "about 10".
+
+Every boss has:
+- a readable telegraph for every attack;
+- shard vents on a schedule, so a lost weapon level can be won back mid-fight;
+- a rest pod or checkpoint just outside;
+- its own music or a layered track.
+
+### Time budget
+
+The slice ran 8 rooms in 20 to 30 minutes. The brief wants 4 to 6 hours on the main path. Starting budgets:
+
+| Area | Rooms | Target |
+| --- | --- | --- |
+| Cryo Deck, Warrens, Lockup (built) | 8 | 0:25 |
+| Warrens night and the Gardens | 10 | 0:50 |
+| Warrens return | 1 | 0:10 |
+| Cargo Labyrinth | 12 | 0:50 |
+| Flooded Ballast | 10 | 0:45 |
+| Engine Spine | 6 tall | 0:35 |
+| Command Tower | 6 | 0:30 |
+| The Dreaming Deck (true path) | 6 | 0:25 |
+| Endings and epilogues | | 0:10 |
+
+That totals about 4h 40m on the true path and about 4h 15m to Crash. If playtests come in under 4 hours, add rooms to the Ballast and the Labyrinth first.
 
 ### Save state additions
 
-Keep save format v1 and add fields with defaults. `HA.save.load` should fill any missing field, so Phase 2 saves still load. New fields: `wardens` (`{ bailiff, pruner, tallyman }`), `abilities` (`{ thruster, grapple, boots }`), `companions` (`{ wick, solder }`), `ending` (when one is reached), and `endingsSeen` (an array, kept across new games, for New Game+ later). Mercy and Bloom already exist.
+Keep save format v1 and add fields with defaults. `HA.save.load` fills in any missing field, so Phase 2 saves still load. Move the slice's `flags.choice` into `wardens.bailiff`.
+
+New fields:
+- `wardens` (`{ bailiff, pruner, tallyman }`)
+- `abilities` (`{ thruster, grapple, boots }`)
+- `people` (`{ wick, solder, flux, abel, gardener, steward }`)
+- `takenHome`, `crew`, `toldShim`, `shimKnows`, `warrensRaid`, `podsLaunched`, `bloomWarned` (the stages already announced)
+- `ending` (when one is reached), `endingsSeen` (kept across new games)
+
+Mercy and Bloom already exist.
 
 ### Fast travel
 
-Fast travel arrives with the Cargo Labyrinth (the brief says "from mid-game onward"). From any rest pod the hero has rested at, the map lists the other rest pods to travel to. It is not offered during timed sequences (the flood) or after the Tower Lift.
+Fast travel arrives with the Cargo Labyrinth (the brief says "from mid-game onward"). From any rest pod the hero has rested at, the map lists the others. It isn't offered during timed sequences (the flood, the scuttle) or after the Tower Lift.
 
 ---
 
-## Part 4: Build order and progress
+## Part 5: Build order and progress
 
 Each step ends with a build Cody can play. Tick a box in the same commit that finishes it.
 
 ### 3.0 Foundations
 - [x] Menus fixed: nothing shows through them, the map zooms and scrolls, mouse and touch work (never required)
 - [x] Hints can't be hidden by walls (checked)
-- [x] Opening: the Ark in the distance behind the cards; the pod falls before the hero climbs out
+- [x] Opening: the Ark in the distance behind the cards; the pod falls before the hero climbs out; "AUTHORITY: NAV" planted
 - [x] The Way Down's music rewritten
-- [ ] Save fields from Part 3, with defaults for old saves
-- [ ] The reunion no longer ends the game; the new lead points to the Gardens; the arena gets its east door
-- [ ] A general ability system the movement code and `rooms-check.js` both read (thruster fuel, grapple, boots, water)
-- [ ] An ending runner: closing scene, epilogue cards from flags, credits, return to title; `endingsSeen`
+- [x] "Life capsule" renamed "suit cell" everywhere a player sees it
+- [ ] Save fields from Part 4, with defaults for old saves and the `flags.choice` migration
+- [ ] Built dialogue brought up to the new plan:
+  - Gasket's post-reunion lines point to the Gardens, not the Tower.
+  - Solder's after-release and after-salvage lines differ.
+  - Solder's pistol tutorial line is in her own voice, with the XP rule moved to a hint.
+  - Every new line has release and salvage variants.
+- [ ] The reunion no longer ends the game. Add: the new lead, Wick's goodbye night, the Steward's Lockup intercom line, the arena's east door, and Mara's pod in the Cryo Bay
+- [ ] A general ability system that the movement code and `rooms-check.js` both read (thruster fuel, grapple, boots, water)
+- [ ] An ending runner: closing scene, epilogue cards from flags (including the cyan count cards), credits, return to title, `endingsSeen`
 - [ ] A test harness that plays each ending's choice path with the debug helpers (extends `browser-check.js`)
 
 ### 3.1 Hydroponic Gardens
-- [ ] Theme, palette, props, music (waltz plus the sour layer)
+- [ ] Theme, palette, props, music (the waltz plus the sour layer)
 - [ ] Rooms, checked by `rooms-check.js`
 - [ ] Enemies: spore pods, Warden pickers, Bloomsworn
-- [ ] The Scatter Launcher; Bloom bulbs and the Bloom track; the hero's Bloom sprite stages
-- [ ] Scenes 1–7, Wick as an escort
-- [ ] The Pruner boss and choice 2
-- [ ] Wick's boss fight; Wick's Lancets; choice 3 (the Gardener's trade)
-- [ ] Log `blight`
+- [ ] The Scatter Launcher; carried Bloom bulbs and the Bloom track; the hero's Bloom sprite stages and journal lines
+- [ ] The cradles, Wick as an escort, scenes 1–7, logs `blight` and `clean`
+- [ ] The Pruner (a short fight) and choice 2, with `takenHome`
+- [ ] Wick's boss fight; Wick's Lancets; choice 3 (the Gardener behind glass)
 
 ### 3.2 Warrens return
-- [ ] The lantern scene; choice 4 (truth or lie); choice 5 (the pistol)
-- [ ] The Hullfolk plan; Solder leaves; the floor hatch opens
+- [ ] The woken taken at home; Gasket's grief; choice 4 (three options)
+- [ ] The Steward's broadcast; the plan; Solder's gate and the floor hatch; the sump and tram station
+- [ ] Choice 5 (the pistol) and the hub's name bands (LATE / SLEEPER / COUNTER)
 
 ### 3.3 Cargo Labyrinth
-- [ ] Rooms with the crane-shifted stacks, checked
+- [ ] Rooms with crane-shifted stacks, checked; Solder's chalk notes
 - [ ] Grapple Harpoon (in the checker too), Breach Charges and cracked walls
-- [ ] Thruster pack, choice 6 (both versions); fast travel
-- [ ] The Purser and choice 7 → the Deserter ending (first full ending, end to end)
-- [ ] The Tallyman boss and choice 8; log `charter`
+- [ ] Odell in the Cold Store; Flux; choice 6 (both packs); fast travel
+- [ ] The Purser and choice 7 → the Deserter ending (the first full ending, end to end)
+- [ ] The Tallyman boss and choice 8; logs `charter`, `armory` and `liftB`
 
 ### 3.4 Flooded Ballast
 - [ ] Water physics, Pressure Boots, Foam Sprayer (all in the checker)
-- [ ] Rooms, the Silt Mother boss, log `valves`
-- [ ] Finding Solder, the flood escape, choice 9
+- [ ] Rooms, the Silt Mother, log `valves`
+- [ ] Finding Solder, the walk, the flood escape, choice 9, the tram
+- [ ] The Warrens raid while the hero is away (the gate holds or falls)
 
 ### 3.5 Engine Spine
-- [ ] Tall rooms, lifts that the Hullfolk build (count driven by Mercy)
-- [ ] The Stoker boss, the Crew Camp, the Purser's last call
+- [ ] Tall rooms; lifts the crew builds (count driven by Mercy); logs `sealed` and `brake`
+- [ ] Abel and choice 10; the Crew Camp; the Purser's last call
 
 ### 3.6 Command Tower
-- [ ] Rooms, the Observation Dome, the Gardener's end
-- [ ] Steward Marrant (three phases, checkpoint)
-- [ ] The ending branch: Overgrown, Dominion (choice 10), Crash (escape sequence)
+- [ ] Rooms; the Observation Dome with the world in view; choice 4b on the lie path
+- [ ] The Gardener and choice 11
+- [ ] Steward Marrant (three phases, checkpoint), the boots, and choice 12
+- [ ] The ending branch: Overgrown (playable as Solder or Gasket), Dominion (choice 13), the scuttle, Crash (sled escape, pod launch)
 
-### 3.7 Navigator's Core
-- [ ] The hidden lift and its requirements; memory halls with a checkpoint
-- [ ] The Navigator boss; choice 11; Homecoming
+### 3.7 The Dreaming Deck
+- [ ] The lift and its four requirements; memory halls with a checkpoint
+- [ ] The Navigator (the course line), the song, and choice 14; Homecoming
 
 ### 3.8 Finish Phase 3
 - [ ] All five endings verified in real playthroughs on Normal (the Phase 3 gate), recorded in DECISIONS.md
-- [ ] Main path timed at 4–6 hours by a first-time player; tune where it drags
+- [ ] Main path timed against the budget by a first-time player; tune where it drags or runs short
 - [ ] README and DECISIONS brought up to date
 
 ---
 
 ## Open questions for Cody
 
-These are flagged in DECISIONS.md too. The plan above works either way, but each answer changes some details:
-
-1. **Protagonist:** A (the Late Waker, assumed here), B or C?
-2. **Wick's death:** is a parent's on-screen death (no gore) within the rating you want? Children are never killed on screen in this plan, and Shim is safe in every ending.
-3. **Solder as the lost companion**, and the three ways to save or lose her: do they feel fair?
-4. **Names:** Steward Ivo Marrant, the Gardener (Hester Vale), the Purser, the Pruner, the Tallyman, the Silt Mother, the Stoker. Change any you like.
-5. **The Navigator's reason** (it couldn't face being retired at arrival): does that land for you?
+1. **Rating, and harm to children.** The plan never shows a child's death or a child being dosed. But:
+   - Shim is carried off and caged (built).
+   - Children are implied among the taken ("SMALL. HEALTHY.").
+   - On the lie path Shim climbs alone through the vents.
+   - The brief's own side-quest example is a child who has eaten Bloom.
+   - Wick, a parent, dies on screen (no gore).
+   Is all of that within the rating you want?
+2. **Names:** Steward Ivo Marrant, Hester Vale the Gardener, the Purser, the Pruner, the Tallyman, the Silt Mother, Abel, Flux, Mara, Usher, and "the Dreaming Deck" for the brief's "Navigator's Core". Change any you like.

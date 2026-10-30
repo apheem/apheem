@@ -458,7 +458,7 @@
       p.hp = p.maxHp;
       world.burst(k.x + 4, k.y + 5, ['#ff8a8a', '#ffffff', '#b8f4ff'], 24, 2.2);
       HA.audio.play('pickup');
-      world.toast('LIFE CAPSULE · MAX HEALTH +4', 300);
+      world.toast('SUIT CELL · MAX HEALTH +4', 300);
       if (world.collected) world.collected(k);
     }
   }
