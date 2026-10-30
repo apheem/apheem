@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. Nothing in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations) is built** (version 0.3.0); the next job is 3.1, the Hydroponic Gardens. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -25,11 +25,13 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/areas/*.js` | One file per area: its rooms as ASCII maps, plus the legend, scenery, hints, triggers and music |
 | `js/world.js` | Entering rooms, edge transitions, doors, interactions, triggers, the camera, drawing, the HUD |
 | `js/actors.js` | The hero's movement, enemies and pickups |
+| `js/abilities.js` | The thruster pack, the grapple's pull and hang, pressure boots and swimming. The hero's update and `rooms-check.js` both call it. Water is `~` in a map, a grapple hook ring is `o` |
+| `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to) |
 | `js/weapons.js` | Weapon definitions, levels and XP, and shots |
 | `js/boss.js` | The Bailiff. Each new boss gets its own file (`js/bosses/<name>.js` from Phase 3 on) |
 | `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls. Split it per area once it passes ~1000 lines (`js/story/<area>.js`) |
 | `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card`, `fade`, `walk` |
-| `js/save.js` | Save state, autosave, the explored-map bitsets, and talk history |
+| `js/save.js` | Save state (the Phase 3 fields and what each value means are listed in `newState`), the upgrade for older saves, autosave, the explored-map bitsets, and talk history |
 | `js/music.js` | Every music track as note data plus a `play(step, out)` function. `js/audio.js` holds the sound effects |
 | `js/scenery.js` | Area palettes, background props, and animated scenery (fires, doors, the hero's pod) |
 | `js/mapscreen.js`, `js/ui.js` | The map and journal screen, the title, pause and settings menus |
@@ -41,7 +43,9 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 - Rises are 3 tiles comfortably and 4 at most (a full jump reaches 35.5px).
 - From every way into a room, every exit, item, person, terminal and rest pod must be reachable. Secrets that need an ability must not be reachable without it.
 - Hints sit in open air, never against a wall.
-- New abilities (thruster, grapple, boots, swimming) must be added to the checker's movement simulation before rooms that need them are built, so the checker keeps proving every room can be crossed.
+- New abilities go in `js/abilities.js`, which the checker already runs. A room lists what the hero always has by the time they reach it as `abilities: { thruster: 'odell', grapple: true, ... }`, and a secret that needs one says so in its legend as `needs: { grapple: true }`. The checker proves the secret can't be reached without it and can with it.
+- An exit into an area that isn't built yet must be named in the room's `unbuilt: { right: 'AREA NAME' }`. The game shows a "coming in the next build" note there. Remove it when the area lands.
+- The Grapple Harpoon weapon (3.3) should fire `HA.abilities.fireGrapple`. When it lands, switch the checker's grapple moves from asking for the grapple directly to pressing Fire with the harpoon.
 
 ### Rules every scene follows
 
@@ -696,18 +700,19 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 - [x] Opening: the Ark in the distance behind the cards; the pod falls before the hero climbs out; "AUTHORITY: NAV" planted
 - [x] The Way Down's music rewritten
 - [x] "Life capsule" renamed "suit cell" everywhere a player sees it
-- [ ] Save fields from Part 4, with defaults for old saves and the `flags.choice` migration
-- [ ] Built dialogue brought up to the new plan:
+- [x] Save fields from Part 4, with defaults for old saves and the `flags.choice` migration (also `people.navigator` for choice 14; a finished Phase 2 save picks up with Wick's goodbye night)
+- [x] Built dialogue brought up to the new plan:
   - Gasket's post-reunion lines point to the Gardens, not the Tower.
   - Solder's after-release and after-salvage lines differ.
   - Solder's pistol tutorial line is in her own voice, with the XP rule moved to a hint.
   - Every new line has release and salvage variants.
-- [ ] The reunion no longer ends the game. Add: the new lead, Wick's goodbye night, the Steward's Lockup intercom line, the arena's east door, and Mara's pod in the Cryo Bay
-- [ ] A general ability system that the movement code and `rooms-check.js` both read (thruster fuel, grapple, boots, water)
-- [ ] An ending runner: closing scene, epilogue cards from flags (including the cyan count cards), credits, return to title, `endingsSeen`
-- [ ] A test harness that plays each ending's choice path with the debug helpers (extends `browser-check.js`)
+- [x] The reunion no longer ends the game. Add: the new lead, Wick's goodbye night, the Steward's Lockup intercom line, the arena's east door, and Mara's pod in the Cryo Bay (Wick waits in the Bailiff's Hall the next morning; the east door leads to an "unbuilt" note until 3.1)
+- [x] A general ability system that the movement code and `rooms-check.js` both read (thruster fuel, grapple, boots, water), proved by four test rooms in the checker
+- [x] An ending runner: closing scene, epilogue cards from flags (including the cyan count cards), credits, return to title, `endingsSeen` (the closing scenes are cards over space for now; each area's build replaces its ending's closing with the real scene)
+- [x] A test harness that plays each ending's choice path with the debug helpers (extends `browser-check.js`). Today it sets each path's flags directly, checks the branch `afterSteward` picks and the epilogue lines, and plays each ending to the title. As areas land, swap each flag for the real choice played through.
 
 ### 3.1 Hydroponic Gardens
+- [ ] Remove the arena's `unbuilt` note; Wick (waiting in the arena, legend `2`) walks into the Root Cellar with the hero and sets `flags.gardens`
 - [ ] Theme, palette, props, music (the waltz plus the sour layer)
 - [ ] Rooms, checked by `rooms-check.js`
 - [ ] Enemies: spore pods, Warden pickers, Bloomsworn

@@ -80,18 +80,25 @@
       world.weaponBanner = 90;
     }
 
+    // Water, the boots and the grapple change how the hero moves (see abilities.js).
+    const AB = HA.abilities;
+    p.wet = AB.inWater(room, p);
+
     // Horizontal movement with momentum
     const dir = (held.right ? 1 : 0) - (held.left ? 1 : 0);
-    if (p.stun > 0) {
+    const run = AB.runSpeed(p, MOVE.run);
+    if (p.grapple) {
+      // the winch has the hero
+    } else if (p.stun > 0) {
       p.stun--;
     } else if (dir) {
       p.facing = dir;
       const a = p.onGround ? (p.vx * dir < 0 ? MOVE.turn : MOVE.accel) : MOVE.airAccel;
-      p.vx = approach(p.vx, dir * MOVE.run, a);
+      p.vx = approach(p.vx, dir * run, a);
     } else {
       p.vx = approach(p.vx, 0, p.onGround ? MOVE.decel : MOVE.airDecel);
     }
-    if (Math.abs(p.vx) > MOVE.run * 1.6) p.vx = sign(p.vx) * MOVE.run * 1.6;
+    if (Math.abs(p.vx) > run * 1.6) p.vx = sign(p.vx) * run * 1.6;
 
     // Aim: up any time, down only in the air
     p.aim = held.up ? 'up' : held.down && !p.onGround ? 'down' : 'fwd';
@@ -100,14 +107,16 @@
     p.buffer = pressed.jump ? MOVE.buffer : Math.max(0, p.buffer - 1);
     p.coyote = p.onGround ? MOVE.coyote : Math.max(0, p.coyote - 1);
     if (p.dropTimer > 0) p.dropTimer--;
-    if (p.buffer > 0 && p.onGround && p.ground === 'oneway' && held.down) {
+    if (AB.jump(world, p, input)) {
+      // floating in water, or hanging from the grapple: the press was a stroke, a leap off, or a drop
+    } else if (p.buffer > 0 && p.onGround && p.ground === 'oneway' && held.down) {
       p.dropTimer = 12;
       p.buffer = 0;
       p.coyote = 0;
       p.onGround = false;
       p.y += 1;
     } else if (p.buffer > 0 && p.coyote > 0) {
-      p.vy = -MOVE.jump;
+      p.vy = -AB.jumpPower(p, MOVE.jump);
       p.jumping = true;
       p.jumpTime = 0;
       p.buffer = 0;
@@ -125,9 +134,12 @@
     if (p.vy >= 0) p.jumping = false;
 
     // Gravity
-    let g = p.vy < 0 ? MOVE.gravityUp : MOVE.gravityDown;
-    if (!p.onGround && held.jump && Math.abs(p.vy) < MOVE.hang) g *= 0.5;
-    p.vy = Math.min(p.vy + g, MOVE.maxFall);
+    if (!AB.gravity(world, p, input)) {
+      let g = p.vy < 0 ? MOVE.gravityUp : MOVE.gravityDown;
+      if (!p.onGround && held.jump && Math.abs(p.vy) < MOVE.hang) g *= 0.5;
+      p.vy = Math.min(p.vy + g, MOVE.maxFall);
+    }
+    AB.thruster(world, p, input);
 
     // Fire (hold or toggle, per settings)
     // A tap shorter than one frame still fires: it arrives as pressed and released together.
@@ -141,22 +153,25 @@
     p.fireWasHeld = fire.held;
     HA.weapons.update(world, fire);
 
-    // Move and collide
+    // Move and collide (unless the grapple is winching the hero in, or holding them)
     const fallSpeed = p.vy;
     const wasGround = p.onGround;
-    const hit = HA.room.move(room, p, p.vx, p.vy, { dropThrough: p.dropTimer > 0 });
-    if (hit.left || hit.right) p.vx = 0;
-    if (hit.up) {
-      p.vy = 0.5;
-      p.jumping = false;
-    }
-    p.ground = HA.room.grounded(room, p, { dropThrough: p.dropTimer > 0 });
-    p.onGround = !!p.ground && p.vy >= 0;
-    if (p.onGround) p.vy = 0;
-    if (p.onGround && !wasGround && fallSpeed > 1.5) {
-      p.land = 5;
-      world.dust(p.x + p.w / 2, p.y + p.h, fallSpeed > 3.5 ? 6 : 3);
-      HA.audio.play('land');
+    if (!AB.updateGrapple(world, p, input)) {
+      const hit = HA.room.move(room, p, p.vx, p.vy, { dropThrough: p.dropTimer > 0 });
+      if (hit.left || hit.right) p.vx = 0;
+      if (hit.up) {
+        p.vy = 0.5;
+        p.jumping = false;
+        p.thrusting = false;
+      }
+      p.ground = HA.room.grounded(room, p, { dropThrough: p.dropTimer > 0 });
+      p.onGround = !!p.ground && p.vy >= 0;
+      if (p.onGround) p.vy = 0;
+      if (p.onGround && !wasGround && fallSpeed > 1.5) {
+        p.land = 5;
+        world.dust(p.x + p.w / 2, p.y + p.h, fallSpeed > 3.5 ? 6 : 3);
+        HA.audio.play('land');
+      }
     }
     // Room edges are handled by the world: an opening leads to the next room, a wall stops the hero.
 

@@ -1,6 +1,7 @@
 'use strict';
 // Room tiles, collision and movement. Room layouts live in js/areas/, one file per area of the ship.
-// Map legend shared by every room: # hull   = catwalk (jump up through, Down+Jump to drop)   ^ Bloom thorns   B crate.
+// Map legend shared by every room: # hull   = catwalk (jump up through, Down+Jump to drop)   ^ Bloom thorns   B crate
+// ~ water (see abilities.js).
 // Every other character is a spawn that the room's own legend (or the shared one in world.js) explains.
 (function (HA) {
   const EMPTY = 0;
@@ -8,7 +9,8 @@
   const ONEWAY = 2;
   const THORNS = 3;
   const CRATE = 4;
-  const CODES = { '#': SOLID, '=': ONEWAY, '^': THORNS, B: CRATE };
+  const WATER = 5;
+  const CODES = { '#': SOLID, '=': ONEWAY, '^': THORNS, B: CRATE, '~': WATER };
 
   function load(MAP) {
     const h = MAP.length;
@@ -27,6 +29,7 @@
     const room = {
       w,
       h,
+      hasWater: tiles.includes(WATER),
       pw: w * 8,
       ph: h * 8,
       tiles,
@@ -142,7 +145,7 @@
     return false;
   }
 
-  HA.room = { load, move, grounded, touchesThorns, EMPTY, SOLID, ONEWAY, THORNS, CRATE };
+  HA.room = { load, move, grounded, touchesThorns, EMPTY, SOLID, ONEWAY, THORNS, CRATE, WATER };
 
   // ---- Every room of the ship, placed on one grid (in tiles) so neighbors and the map line up ----
   // A room def: { id, area, name, gx, gy, map: [rows], legend: { char: spawn }, hints, triggers, music, ... }

@@ -1,11 +1,12 @@
 'use strict';
-// The vertical slice's story: the Hullfolk, ship logs, cutscenes, the raid, the Bailiff's fate, and the
+// The story so far: the Hullfolk, ship logs, cutscenes, the raid, the Bailiff's fate, the night after, and the
 // journal entries and leads they leave behind. All text is original to Hollow Ark.
 (function (HA) {
   const W = HA.VIEW_W;
   const run = (world, name) => HA.scenes.run(world, SCENES[name], { name });
   const npcOf = (world, id) => world.npcs.find((n) => n.id === id);
   const FLOOR = (ty) => ty * 8; // feet on top of map row ty
+  const VOICE = '#f2c88a'; // the hero's own thoughts, never spoken aloud
 
   // ---- Journal and leads ----
   function setLead(world, text) {
@@ -37,6 +38,11 @@
   };
 
   function readLog(world, log) {
+    if (log.scene) {
+      log.read = true;
+      run(world, log.scene);
+      return;
+    }
     HA.scenes.run(world, function* () {
       const L = LOGS[log.id];
       const first = !world.state.logs[log.id];
@@ -85,7 +91,7 @@
     if (id === 'shim' && world.def.id === 'thaw-corridor') return 'out';
     if (!f.metHullfolk) return 'hidden';
     if (f.raid && !f.reunion) return id === 'tamp' || id === 'brine' ? 'hidden' : 'out';
-    if (f.reunion && f.choice === 'salvage' && (id === 'tamp' || id === 'brine')) return 'hidden';
+    if (f.reunion && world.state.wardens.bailiff === 'salvage' && (id === 'tamp' || id === 'brine')) return 'hidden';
     return 'out';
   }
 
@@ -116,10 +122,11 @@
     if (n.state === 'hidden') return; // hiding: only their eyes show, in the doorways (see scenery.js)
     let frame = n.sprite.idle;
     if (n.walking) frame = Math.floor(n.t / 8) % 2 ? n.sprite.walk : n.sprite.idle;
-    else if (n.kneel) frame = n.sprite.kneel || n.sprite.idle;
+    else if (n.sleeping) frame = n.sprite.sleep;
+    else if (n.kneel) frame = n.sprite.kneel;
     else if (Math.floor(n.t / 7) % 26 === 0) frame = n.sprite.blink;
     const cx = n.carriedBy ? Math.round(n.carriedBy.x + n.carriedBy.facing * 10 - cam.x) : x + 4;
-    const cy = n.carriedBy ? Math.round(n.carriedBy.y + 4 - cam.y) : y + (n.kneel ? 2 : 0);
+    const cy = n.carriedBy ? Math.round(n.carriedBy.y + 4 - cam.y) : y + (n.kneel || n.sleeping ? n.sprite.h - frame.h + 1 : 0);
     g.save();
     g.translate(cx, cy);
     g.scale(n.facing || 1, 1);
@@ -132,12 +139,13 @@
     }
     g.restore();
     if (n.alert > 0) HA.font.draw(g, '!', cx, cy - 10, '#fff0a8', { align: 'center' });
+    if (n.sleeping && n.t % 90 < 60) HA.font.draw(g, 'z', cx + 4 + Math.floor((n.t % 90) / 20), cy - 6 - Math.floor((n.t % 90) / 12), '#9fb6c8');
   }
 
   // ---- What each person says, by how far the story has come ----
   function phase(world) {
     const f = world.state.flags;
-    if (f.reunion) return f.choice === 'release' ? 'after-release' : 'after-salvage';
+    if (f.reunion) return world.state.wardens.bailiff === 'release' ? 'after-release' : 'after-salvage';
     if (f.raid) return 'taken';
     return 'night';
   }
@@ -149,8 +157,14 @@
         ['THE REST POD BY THE GATE STILL WORKS. MOST THINGS DOWN HERE STILL WORK, IF YOU ARE KIND TO THEM.', 'REST, SLEEPER. THE WALLS ARE SAFE AT NIGHT.'],
       ],
       taken: [['THE LOCKUP IS PAST THE GATE. THEY COUNT THEM THERE BEFORE THEY TAKE THEM UP.', 'BRING HIM BACK.']],
-      'after-release': [['THE COMMAND TOWER IS A LONG WAY UP, SLEEPER. WHEN YOU ARE READY.']],
-      'after-salvage': [['THE COMMAND TOWER IS A LONG WAY UP, SLEEPER. WHEN YOU ARE READY.']],
+      'after-release': [
+        ["THE GARDENS ARE PAST THE BAILIFF'S HALL. THE EAST DOOR. IF A COUNTER CAN OPEN A CAGE, MAYBE UP THERE ISN'T A GRAVE.", 'GO AND SEE, SLEEPER. AND BRING MY DAUGHTER BACK WITH THEM.'],
+        ['THE SHIP HUMS AT NIGHT. MY MOTHER SAID IT WAS SINGING.'],
+      ],
+      'after-salvage': [
+        ["THE GARDENS ARE PAST THE BAILIFF'S HALL. THE EAST DOOR.", "WICK GOES WITH YOU. I CAN'T STOP HER, SO YOU'LL BRING HER BACK."],
+        ['THE SHIP HUMS AT NIGHT. MY MOTHER SAID IT WAS SINGING.'],
+      ],
     },
     wick: {
       night: [
@@ -158,18 +172,25 @@
         ['HE HAS BEEN TALKING ABOUT YOU ALL NIGHT. IT IS THE MOST HE HAS TALKED SINCE HIS FATHER WENT UP THE SHAFTS.'],
       ],
       taken: [['...', 'BRING HIM BACK. PLEASE.']],
-      'after-release': [['YOU BROUGHT HIM BACK. WHATEVER YOU NEED, SLEEPER. EVER.']],
-      'after-salvage': [['YOU BROUGHT HIM BACK.', 'HE HAS NOT SAID A WORD SINCE. THAT IS NOT YOUR FAULT. I DO NOT THINK.']],
+      // From the morning after the reunion, Wick waits in the Bailiff's Hall, by the door to the Gardens.
+      'after-release': [['THE GARDENS ARE UP THROUGH THERE. I USED TO SNEAK UP AS A GIRL, FOR THE WARM AIR.', "STAY CLOSE, SLEEPER. I'LL DO THE SAME."]],
+      'after-salvage': [['THE GARDENS ARE UP THROUGH THERE.', "HE STILL HASN'T SAID A WORD. HE WILL. I'LL BE BACK BY LIGHTS-OUT TO HEAR IT."]],
     },
     solder: {
       night: [
-        ['A RIVET PISTOL. CHARMING. FEED IT SHARDS, THE GLOWING BITS THAT FALL OUT OF THINGS YOU KILL. THE MORE IT EATS, THE MORE IT DOES.', 'GET HIT AND IT SPITS SOME BACK UP. NEVER MORE THAN ONE LEVEL, THOUGH. AND RIGHT AFTER IT DROPS ONE, IT HOLDS ON FOR A MOMENT.'],
+        ['A RIVET PISTOL. CHARMING. IT EATS SHARDS, THE GLOWING BITS THAT FALL OUT OF THINGS YOU BREAK. THE MORE IT EATS, THE MEANER IT GETS.', "GET HIT, THOUGH, AND IT COUGHS SOME UP. IT'S A GUN, NOT A PANTRY."],
         { capsule: ['THERE IS A SUIT CELL UP IN THE COOLANT HALL. NO WAY UP BUT AIR.', 'A PURGE CANNON THAT HAS EATEN ENOUGH WILL HOLD YOU UP THERE. LEVEL TWO, AT LEAST.'] },
         ['BRING ME SOMETHING BROKEN SOMETIME. I GET BORED.'],
       ],
       taken: [['THE COUNTERS ARE STRONG, BUT THEY ARE SLOW TO TURN. GET BEHIND THEM.', 'AND WATCH THEIR EYES. THEY GLOW BEFORE THEY SHOOT.']],
-      'after-release': [['THE GATE IS A RUIN. GOOD. I WILL BUILD A BETTER ONE. ONE THAT OPENS FROM OUR SIDE.']],
-      'after-salvage': [['THE GATE IS A RUIN. GOOD. I WILL BUILD A BETTER ONE. ONE THAT OPENS FROM OUR SIDE.']],
+      'after-release': [
+        ['THE GATE IS A RUIN. GOOD. I WILL BUILD A BETTER ONE. ONE THAT OPENS FROM OUR SIDE.'],
+        ["A COUNTER THAT CHOSE TO LET GO. I'D GIVE A LOT TO SEE HOW IT'S WIRED. NICELY. WITH ITS PERMISSION."],
+      ],
+      'after-salvage': [
+        ['THE GATE IS A RUIN. I WILL BUILD A BETTER ONE.'],
+        ["SO YOU'RE WEARING A COUNTER'S HEART NOW. IT SUITS YOU. I MEAN THAT AS A WARNING."],
+      ],
     },
     shim: {
       night: [
@@ -237,6 +258,9 @@
     const woke = world.state.flags.woke;
     world.heroPod = { x: st.x - 3, ceil: ty * 8, y: woke ? restY : ty * 8 + 5, restY, vy: 0, state: woke ? 'open' : 'hanging' };
     if (woke) world.heroPod.lid = { x: st.x + 28, y: restY + 19, flat: true };
+    // Mara's pod hangs in the next clamps along, still asleep. Up reads its plate from the deck below.
+    world.maraPod = { x: st.x - 21, ceil: ty * 8, y: ty * 8 + 5, state: 'hanging', steady: true };
+    world.logs.push({ id: 'mara', scene: 'mara', x: st.x - 21, y: st.y + 14 - 24, w: 14, h: 24, read: !!world.state.flags.mara });
   }
   function dropPod(world, pod) {
     const skipping = world.scene && world.scene.skipping;
@@ -494,7 +518,7 @@
     *reunion(world) {
       const s = world.state;
       const p = world.player;
-      const release = s.flags.choice === 'release';
+      const release = s.wardens.bailiff === 'release';
       const wick = npcOf(world, 'wick');
       const gasket = npcOf(world, 'gasket');
       const shim = npcOf(world, 'shim');
@@ -533,34 +557,133 @@
         }
         yield { say: 'OLD GASKET', text: 'SHIM SAYS ONE OF THE COUNTERS OPENED HIS CAGE. SAYS YOU LET IT.' };
         yield { say: 'OLD GASKET', text: "I'VE BURIED A LOT OF PEOPLE BELIEVING THOSE THINGS COULDN'T CHOOSE." };
-        yield { say: 'OLD GASKET', text: 'STRANGE NIGHT. STAY, SLEEPER. AS LONG AS YOU LIKE.' };
       } else {
         yield { say: 'OLD GASKET', text: "SHIM WON'T SAY WHAT HAPPENED IN THERE." };
         yield { say: 'OLD GASKET', text: "YOU BROUGHT HIM HOME. THAT'S WHAT MATTERS TONIGHT." };
       }
-      yield { say: 'OLD GASKET', text: 'THE STEWARD HOLDS THE HELM KEY, UP IN THE COMMAND TOWER. AS LONG AS HE HOLDS IT, THE COUNTERS WILL KEEP COMING.' };
+      // Shim is home, but the others the Wardens took are not. The story goes on up, to the Gardens.
+      yield { say: 'OLD GASKET', text: "THE TAKEN DON'T STAY IN THE LOCKUP. THEY GO UP, TO THE GARDENS." };
+      if (release) {
+        yield { say: 'SHIM', text: 'IT SAID THEY SLEEP UP THERE.' };
+        if (wick) wick.facing = -1;
+        yield { say: 'WICK', text: '...SLEEP?' };
+      } else {
+        yield { say: 'WICK', text: "THEN THAT'S WHERE BRINE'S SISTER IS. AND ALL THE REST OF THEM." };
+      }
       if (wick) wick.homeX = wick.x;
-      setLead(world, 'THE STEWARD HOLDS THE HELM KEY');
-      addStory(world, 'I BROUGHT SHIM HOME. THE STEWARD STILL HOLDS THE HELM KEY, UP IN THE COMMAND TOWER.');
-      s.flags.sliceDone = true;
+      setLead(world, 'FIND THE TAKEN IN THE GARDENS');
+      addStory(world, release ? 'I BROUGHT SHIM HOME. THE BAILIFF TOLD HIM THE TAKEN ARE KEPT ASLEEP, UP IN THE GARDENS.' : 'I BROUGHT SHIM HOME. GASKET SAYS THE TAKEN ARE SENT UP TO THE GARDENS.');
+      s.flags.homeDone = true;
       world.save();
       yield { wait: 50 };
+      yield* SCENES.goodbye(world);
+    },
+
+    // That night, with no music: Wick, Shim and the fire. Next morning she goes ahead to the Bailiff's Hall.
+    *goodbye(world) {
+      const s = world.state;
+      const p = world.player;
+      const release = s.wardens.bailiff === 'release';
+      const wick = npcOf(world, 'wick');
+      const shim = npcOf(world, 'shim');
+      const gasket = npcOf(world, 'gasket');
       yield { fade: 'out', frames: 40 };
-      const mins = Math.floor(s.time / 3600);
-      const secs = String(Math.floor(s.time / 60) % 60).padStart(2, '0');
-      yield {
-        card: [
-          ['END OF THE VERTICAL SLICE', '#ffb84d'],
-          '',
-          'TIME ' + mins + ':' + secs + '   ·   SUIT FAILURES ' + s.deaths,
-          release ? 'YOU RELEASED THE BAILIFF.' : "YOU TORE OUT THE BAILIFF'S CORE.",
-          '',
-          'THANK YOU FOR PLAYING.',
-          ['THE STORY GOES ON IN PHASE 3.', '#6c7894'],
-        ],
-        hold: 720,
-      };
-      yield { fade: 'in', frames: 30 };
+      HA.music.play(null);
+      yield { card: ['LIGHTS-OUT.'], hold: 110 };
+      world.nightScene = true;
+      for (const n of world.npcs) {
+        n.x = n.homeX;
+        n.walking = false;
+      }
+      if (wick) {
+        Object.assign(wick, { x: 38 * 8, homeX: 38 * 8, facing: 1, kneel: true });
+        wick.y = wick.homeY = FLOOR(19) - wick.h;
+      }
+      if (shim) Object.assign(shim, { x: 39 * 8 + 2, homeX: 39 * 8 + 2, facing: -1, kneel: true });
+      if (gasket) Object.assign(gasket, { x: 32 * 8, homeX: 32 * 8, facing: 1, sleeping: true });
+      p.x = 46 * 8;
+      p.y = FLOOR(19) - p.h;
+      p.facing = -1;
+      world.camTarget = { x: 42 * 8, y: FLOOR(19) - 30 };
+      yield { fade: 'in', frames: 50 };
+      yield { wait: 70 };
+      if (release) {
+        yield { say: 'SHIM', text: 'ARE YOU GOING UP THERE?' };
+        yield { say: 'WICK', text: 'THE ONES THEY TOOK ARE ASLEEP, SHIM. SOMEONE HAS TO MAKE SURE THEY WAKE UP.' };
+        yield { say: 'WICK', text: "I'LL BE BACK BY LIGHTS-OUT. I PROMISE." };
+        yield { wait: 40 };
+        yield { say: 'SHIM', text: 'DAD SAID THAT.' };
+        yield { wait: 60 };
+        yield { say: 'WICK', text: '...I KNOW HE DID.' };
+      } else {
+        yield { wait: 40 };
+        yield { say: 'WICK', text: "YOU DON'T HAVE TO TALK. I'LL TALK." };
+        yield { say: 'WICK', text: 'THE ONES THEY TOOK ARE ASLEEP UP THERE. SOMEONE HAS TO MAKE SURE THEY WAKE UP.' };
+        yield { say: 'WICK', text: "I'LL BE BACK BY LIGHTS-OUT. I PROMISE." };
+        yield { wait: 60 };
+      }
+      if (wick) wick.facing = 1;
+      yield { wait: 30 };
+      yield { say: 'WICK', text: 'SLEEPER. TAKE ME WITH YOU. THE ONES THEY TOOK ARE MY PATIENTS.' };
+      yield { say: 'WICK', text: "I KNOW THE WAY UP. AND YOU'LL WANT SOMEONE WHO CAN STITCH." };
+      if (shim) {
+        shim.x -= 3;
+        shim.facing = 1;
+        shim.sleeping = true;
+      }
+      yield { wait: 90 };
+      if (wick) wick.facing = -1;
+      yield { say: 'WICK', text: release ? "...HE'S ASLEEP. HE FIGHTS IT EVERY NIGHT." : "...HE'S ASLEEP. GOOD." };
+      if (wick) wick.facing = 1;
+      yield { say: 'WICK', text: 'GO REST, SLEEPER. WE LEAVE WHEN THE LAMPS COME UP.' };
+      yield { wait: 40 };
+      yield { fade: 'out', frames: 50 };
+      // Morning. The hero wakes at the village's rest pod; Wick has already gone on ahead.
+      world.nightScene = false;
+      world.camTarget = null;
+      s.flags.goodbye = true;
+      if (shim) Object.assign(shim, { kneel: false, sleeping: false, x: 31 * 8, homeX: 31 * 8 });
+      if (gasket) Object.assign(gasket, { sleeping: false, x: 36 * 8, homeX: 36 * 8 });
+      if (wick) wick.state = 'gone';
+      const pod = world.pods[0];
+      if (pod) {
+        p.x = pod.x + 4;
+        p.y = pod.y + pod.h - p.h;
+        s.rest = { room: world.def.id, x: p.x, y: p.y };
+      }
+      p.hp = p.maxHp;
+      p.facing = -1;
+      addStory(world, release ? "THAT NIGHT WICK PROMISED SHIM SHE'D BE BACK BY LIGHTS-OUT. HE TOLD HER HIS FATHER SAID THE SAME. SHE'S COMING WITH ME TO THE GARDENS." : "THAT NIGHT WICK PROMISED SHIM SHE'D BE BACK BY LIGHTS-OUT. HE DIDN'T ANSWER. SHE'S COMING WITH ME TO THE GARDENS.");
+      world.toast("WICK HAS GONE AHEAD TO THE BAILIFF'S HALL", 200);
+      world.refreshMusic();
+      world.save();
+      yield { wait: 30 };
+      yield { fade: 'in', frames: 50 };
+    },
+
+    // Mara's pod still hangs in the rack beside the hero's empty clamps.
+    *mara(world) {
+      const first = !world.state.flags.mara;
+      world.state.flags.mara = true;
+      HA.audio.play('terminal');
+      yield { say: 'POD 0418', text: 'MARA · ASLEEP', color: '#b8f4ff' };
+      yield { say: '', text: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE.", color: VOICE };
+      if (first) {
+        addStory(world, "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE.");
+        world.toast('JOURNAL UPDATED', 120);
+      }
+    },
+
+    // The first time the Steward speaks: over the Lockup's intercom, as the hero comes in. He's never named here.
+    *intercom(world) {
+      world.state.flags.intercom = true;
+      yield { wait: 20 };
+      HA.audio.play('intercom');
+      yield { wait: 16 };
+      yield { say: 'INTERCOM', text: 'WHOEVER YOU ARE, YOU ARE NOT IN THE COUNT.', color: '#c9d6e8' };
+      yield { say: 'INTERCOM', text: 'THAT CAN BE FIXED.', color: '#c9d6e8' };
+      HA.audio.play('intercom');
+      addStory(world, "A MAN'S VOICE CAME OVER THE LOCKUP'S INTERCOM. HE KNEW I WASN'T IN THE COUNT.");
     },
   };
 
@@ -583,7 +706,7 @@
     };
     const cage = world.cage;
     if (pick === 0) {
-      s.flags.choice = 'release';
+      s.wardens.bailiff = 'release';
       s.mercy += 2;
       HA.audio.play('unlock');
       world.burst(boss.x + boss.w / 2, boss.y + 10, ['#b8f4ff', '#5fd4e8', '#ffffff'], 18, 1.6);
@@ -607,7 +730,7 @@
       yield { say: 'SHIM', text: 'GOOD. IT WAS SCARED TOO.' };
       addChoice(world, "I RELEASED THE BAILIFF. BEFORE IT LEFT, IT OPENED SHIM'S CAGE ITSELF.");
     } else {
-      s.flags.choice = 'salvage';
+      s.wardens.bailiff = 'salvage';
       s.mercy -= 2;
       HA.audio.play('salvage');
       world.flash('#ffffff', 6);
@@ -687,13 +810,15 @@
     world.alarm = 0;
     if (id === 'cryo-bay' && !f.woke) world.player.hidden = true;
     world.heroPod = null;
+    world.maraPod = null;
     if (world.start) placePod(world);
     if (id === 'warrens' && f.raid && !f.raidDone) {
       spawnCollectors(world, false);
       world.alarm = 1;
     }
     // A game quit in the middle of the homecoming picks it up again.
-    if (id === 'warrens' && f.reunion && !f.sliceDone && !world.scene) run(world, 'reunion');
+    if (id === 'warrens' && f.reunion && !f.homeDone && !world.scene) run(world, 'reunion');
+    else if (id === 'warrens' && f.homeDone && !f.goodbye && !world.scene) run(world, 'goodbye');
     if (id === 'arena' && world.bossSpawn) {
       const place = () => {
         world.boss = HA.boss.make(world, world.bossSpawn.x, world.bossSpawn.y);
@@ -703,13 +828,13 @@
       if (!f.bossDefeated) {
         place();
         world.cage.shim = true;
-      } else if (!f.choice) {
+      } else if (!s.wardens.bailiff) {
         place().broken = true;
         world.cage.shim = true;
         run(world, 'bossChoice');
       } else {
         world.cage.open = true;
-        if (f.choice === 'salvage') Object.assign(place(), { broken: true, cored: true });
+        if (s.wardens.bailiff === 'salvage') Object.assign(place(), { broken: true, cored: true });
       }
     }
   }
@@ -746,7 +871,8 @@
     if (id === 'warrens') {
       if (!f.metHullfolk) return null;
       if (f.raid && !f.reunion) return null; // silence after the raid
-      if (f.reunion) return f.choice === 'release' ? 'warrens' : 'warrensHush';
+      if (world.nightScene) return null;
+      if (f.reunion) return world.state.wardens.bailiff === 'release' ? 'warrens' : 'warrensHush';
     }
     if (id === 'arena') return world.boss && world.boss.fighting && !world.boss.broken ? 'boss' : null;
     return undefined;

@@ -192,5 +192,9 @@
       const w = HA.ui.world;
       w.enterRoom(room, tx * 8, ty * 8 + 8 - w.player.h);
     },
+    // Play an ending from wherever the game is, with the save as it stands.
+    ending(id) {
+      HA.endings.run(HA.ui.world, id);
+    },
   };
 })(window.HA);

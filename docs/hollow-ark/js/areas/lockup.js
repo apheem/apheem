@@ -1,6 +1,7 @@
 'use strict';
 // The Warden Lockup: where the Steward's machines keep what they collect. Red light, black steel.
-// Map legend beyond the shared one: k warden walker   X the Bailiff   Y Shim's cage   D door
+// Map legend beyond the shared one: k warden walker   X the Bailiff   Y Shim's cage   D door in   E door out
+// 2 Wick, waiting for the hero the morning after the reunion
 (function (HA) {
   HA.rooms.area('lockup', { name: 'WARDEN LOCKUP', theme: 'lockup', music: 'lockup', mapColor: '#e8434f' });
 
@@ -12,6 +13,7 @@
     gy: 46,
     legend: { T: { type: 'log', id: 'collect' } },
     scenery: [{ kind: 'cells', x: 26, y: 4, n: 5 }, { kind: 'bloom', x: 30, y: 20, n: 26 }, { kind: 'hazard', x: 16, y: 15, w: 8, h: 1 }],
+    triggers: [{ x0: 0, x1: 6, when: (s) => !s.flags.intercom, run: 'intercom' }],
     map: [
       '################################################################################',
       '################################################################################',
@@ -50,7 +52,12 @@
       X: { type: 'boss', reach: false },
       Y: { type: 'cage', reach: false },
       D: { type: 'door', id: 'arena', open: (s, world) => !(world && world.boss && world.boss.active) },
+      // The way on, up to the Gardens: shut until the Bailiff falls.
+      E: { type: 'door', id: 'east', open: (s) => !!s.flags.bossDefeated },
+      2: { type: 'npc', id: 'wick', name: 'Wick', when: (s) => !!s.flags.goodbye && !s.flags.gardens },
     },
+    // Until Phase 3.1 builds the Hydroponic Gardens, the way east stops at the room's edge.
+    unbuilt: { right: 'THE HYDROPONIC GARDENS' },
     noRespawn: true,
     scenery: [{ kind: 'hazard', x: 2, y: 19, w: 36, h: 1 }, { kind: 'chains', x: 20, y: 3 }],
     triggers: [{ x0: 6, x1: 14, when: (s) => !s.flags.bossDefeated, run: 'bossIntro' }],
@@ -70,10 +77,10 @@
       '####..................................##',
       '####..................................##',
       '####..................................##',
-      '...DD..======..............======.....##',
-      '...DD.................................##',
-      '...DD.................................##',
-      '...DD.......................X.........##',
+      '...DD..======..............======...EE..',
+      '...DD...............................EE..',
+      '...DD...............................EE..',
+      '...DD.......................X.....2.EE..',
       '########################################',
       '########################################',
       '########################################',

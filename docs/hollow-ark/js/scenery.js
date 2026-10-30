@@ -374,13 +374,14 @@
       if (s.kind === 'fire') drawFire(g, world, s, cam);
       if (s.kind === 'homes' && hiding) drawWatchers(g, world, s, cam, hiding);
     }
-    if (world.start) drawHeroPod(g, world, cam);
+    if (world.heroPod) drawPod(g, world, world.heroPod, cam);
+    if (world.maraPod) drawPod(g, world, world.maraPod, cam);
   }
 
   function drawFire(g, world, s, cam) {
     const x = Math.round(s.x * 8 - cam.x);
     const y = Math.round(s.y * 8 + 8 - cam.y);
-    const night = world.state.flags.night && !world.state.flags.reunion;
+    const night = (world.state.flags.night && !world.state.flags.reunion) || world.nightScene;
     const glow = g.createRadialGradient(x, y - 4, 0, x, y - 4, night ? 24 : 40);
     glow.addColorStop(0, 'rgba(255,155,61,0.28)');
     glow.addColorStop(1, 'rgba(255,155,61,0)');
@@ -388,7 +389,7 @@
     g.fillRect(x - 40, y - 44, 80, 80);
     g.fillStyle = '#3a2818';
     g.fillRect(x - 6, y - 2, 12, 2);
-    if (night && world.state.flags.raid) return; // the fire went out in the raid
+    if (night && world.state.flags.raid && !world.nightScene) return; // the fire went out in the raid
     const f = world.time;
     for (let i = 0; i < 4; i++) {
       const h = 3 + ((f / 4 + i * 7) % 5);
@@ -416,9 +417,8 @@
 
   // The pod the hero wakes in. Before the thaw it hangs from the rack's clamps, frosted over. It falls, the
   // lid blows off, and from then on it lies open under the empty clamps, the lid on the deck beside it.
-  function drawHeroPod(g, world, cam) {
-    const pod = world.heroPod;
-    if (!pod) return;
+  // Mara's pod (steady) hangs beside it all game, its light a calm cyan.
+  function drawPod(g, world, pod, cam) {
     const x = Math.round(pod.x - cam.x);
     const y = Math.round(pod.y - cam.y);
     const cy = Math.round(pod.ceil - cam.y);
@@ -461,7 +461,7 @@
       g.fillStyle = '#1d3b52';
       g.fillRect(x + 3, y + 3, 1, 15);
     }
-    g.fillStyle = Math.floor(world.time / 30) % 2 && pod.state !== 'open' ? '#e8434f' : '#5fd4e8';
+    g.fillStyle = Math.floor(world.time / 30) % 2 && pod.state !== 'open' && !pod.steady ? '#e8434f' : '#5fd4e8';
     g.fillRect(x + 6, y + 19, 2, 1);
     // the lid: flying, then lying on the deck
     const lid = pod.lid;
@@ -542,6 +542,17 @@
     g.drawImage(world.layers.vignette, 0, 0);
     if (world.def.area === 'warrens' && f.night && !f.reunion) {
       g.fillStyle = 'rgba(4,3,8,0.35)';
+      g.fillRect(0, 0, HA.VIEW_W, HA.VIEW_H);
+    }
+    // The night after the reunion: dark everywhere but around the fire.
+    const fire = world.nightScene && (world.def.scenery || []).find((s) => s.kind === 'fire');
+    if (fire) {
+      const x = Math.round(fire.x * 8 - world.cam.x);
+      const y = Math.round(fire.y * 8 + 4 - world.cam.y);
+      const dark = g.createRadialGradient(x, y, 18, x, y, 120);
+      dark.addColorStop(0, 'rgba(4,3,8,0)');
+      dark.addColorStop(1, 'rgba(4,3,8,0.6)');
+      g.fillStyle = dark;
       g.fillRect(0, 0, HA.VIEW_W, HA.VIEW_H);
     }
   }

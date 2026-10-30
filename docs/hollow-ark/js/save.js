@@ -42,8 +42,47 @@
       deaths: 0,
       mercy: 0,
       bloom: 0,
+      // Phase 3. Each Warden's fate: null until met, then 'release' or 'salvage'.
+      wardens: { bailiff: null, pruner: null, tallyman: null },
+      // Movement the hero has gained. thruster is null, 'odell' or 'bloomfire' (choice 6).
+      abilities: { thruster: null, grapple: false, boots: false },
+      // What became of each person the story can lose or spare: null until it's decided.
+      //   wick 'dead' · solder 'alive' | 'dead' · flux 'home' | 'stripped' · abel 'spared' | 'ended'
+      //   gardener 'spared' | 'dosed' | 'passed' · steward 'spared' | 'ended' | 'counted'
+      //   navigator (choice 14) 'core' | 'rest' | 'stay'
+      people: { wick: null, solder: null, flux: null, abel: null, gardener: null, steward: null, navigator: null },
+      takenHome: 0, // how many of the taken came home from the Gardens (11 or 7)
+      crew: 0, // how many Hullfolk climb with the hero (set at the Crew Camp)
+      toldShim: null, // choice 4: 'truth', 'scared' or 'lie'
+      shimKnows: null, // choice 4b on the lie path: true or false
+      warrensRaid: null, // the raid while the hero is in the Ballast: 'held' or 'fell'
+      podsLaunched: 0, // the Crash ending's lifeboats
+      bloomWarned: 0, // the highest Bloom stage already announced (3, 5 or 7)
+      ending: null, // the ending this game reached, once it has
+      endingsSeen: endings(), // every ending reached on this machine, carried into new games
       fresh: true,
     };
+  }
+
+  // Older saves are missing the fields added since. Each nested field gets its defaults key by key.
+  function upgrade(data) {
+    const s = newState();
+    for (const k of Object.keys(data)) {
+      const def = s[k];
+      const isTable = def && typeof def === 'object' && !Array.isArray(def) && data[k] && typeof data[k] === 'object';
+      s[k] = isTable ? Object.assign(def, data[k]) : data[k];
+    }
+    s.journal = Object.assign({ story: [], choices: [], talk: [] }, data.journal);
+    // Phase 2 kept the Bailiff's fate in flags.choice.
+    if (s.flags.choice && !s.wardens.bailiff) s.wardens.bailiff = s.flags.choice;
+    delete s.flags.choice;
+    // Phase 2 ended at the reunion. Those saves pick up with the night that follows it.
+    if (s.flags.sliceDone) {
+      s.flags.homeDone = true;
+      delete s.flags.sliceDone;
+    }
+    if (!Array.isArray(s.endingsSeen)) s.endingsSeen = [];
+    return s;
   }
 
   // ---- Where the save lives ----
@@ -71,8 +110,7 @@
     try {
       const data = JSON.parse(raw);
       if (!data || data.v !== VERSION || !HA.rooms.byId[data.room]) return null;
-      const s = Object.assign(newState(), data);
-      s.journal = Object.assign({ story: [], choices: [], talk: [] }, data.journal);
+      const s = upgrade(data);
       s.fresh = false;
       return s;
     } catch (e) {
@@ -82,8 +120,21 @@
 
   const exists = () => !!load();
 
+  // The endings reached so far, from the save or from what a new game left of it.
+  function endings() {
+    try {
+      const data = JSON.parse(readRaw() || 'null');
+      return data && Array.isArray(data.endingsSeen) ? data.endingsSeen.slice() : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Starting over keeps only the list of endings reached. That record has no room, so it never loads as a game.
   function clear() {
-    if (HA.desktop && HA.desktop.writeSave) HA.desktop.writeSave('');
+    const kept = endings();
+    if (kept.length) writeRaw(JSON.stringify({ v: VERSION, endingsSeen: kept }));
+    else if (HA.desktop && HA.desktop.writeSave) HA.desktop.writeSave('');
     else {
       try {
         window.localStorage.removeItem(KEY);
@@ -100,6 +151,7 @@
     p.weapons = s.weapons.map((w) => Object.assign({}, w));
     p.wi = HA.clamp(s.wi, 0, Math.max(0, p.weapons.length - 1));
     p.facing = s.facing || 1;
+    p.abilities = s.abilities;
   }
 
   function fromPlayer(world) {
@@ -190,5 +242,5 @@
     if (log.length > TALK_LOG) log.splice(0, log.length - TALK_LOG);
   }
 
-  HA.save = { newState, load, exists, clear, write, toPlayer, fromPlayer, reveal, isSeen, addTalk };
+  HA.save = { newState, upgrade, load, exists, endings, clear, write, toPlayer, fromPlayer, reveal, isSeen, addTalk };
 })(window.HA);

@@ -161,6 +161,14 @@
       noise({ f: 6500, dur: 0.22, vol: 0.07, q: 2, delay: 0.03 });
     },
     vent: () => noise({ f: 900, f2: 300, dur: 0.18, vol: 0.12 }),
+    harpoon: () => {
+      noise({ f: 1800, f2: 600, dur: 0.1, vol: 0.12, q: 1.5 });
+      tone({ wave: 0.5, f: 220, f2: 520, dur: 0.08, vol: 0.06 });
+    },
+    intercom: () => {
+      noise({ f: 2600, f2: 1400, dur: 0.14, vol: 0.07, q: 2 });
+      tone({ wave: 0.125, f: 1180, dur: 0.05, vol: 0.04, delay: 0.12 });
+    },
     rumble: () => noise({ f: 160, f2: 60, dur: 0.9, vol: 0.4, filter: 'lowpass' }),
     blast: () => {
       noise({ f: 1800, f2: 60, dur: 0.8, vol: 0.4, filter: 'lowpass' });
@@ -204,7 +212,7 @@
     choice: () => tone({ wave: 'triangle', f: 220, dur: 0.5, vol: 0.14 }),
   };
   // Each speaker's text blips at its own pitch.
-  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120 };
+  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520 };
 
   function play(name, arg) {
     if (!live() || !SFX[name]) return;
