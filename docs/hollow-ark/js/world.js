@@ -546,6 +546,7 @@
       HA.font.draw(g, world.near.label, Math.round(o.x + o.w / 2 - cam.x), Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
     }
     if (!world.scene || world.scene.showHud) drawHud(g, world);
+    if (world.leadBanner > 0 && !(world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice))) drawLead(g, world);
     if (world.boss && world.boss.active) HA.boss.drawBar(g, world, world.boss);
     HA.scenes.draw(world, g);
     if (world.fade > 0) {
@@ -676,6 +677,21 @@
     for (let i = 0; i <= n; i++) {
       g.fillRect(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), size, size);
     }
+  }
+
+  // A new lead: what to do next, also kept in the journal.
+  function drawLead(g, world) {
+    const a = Math.min(1, world.leadBanner / 30, (240 - world.leadBanner) / 15);
+    const text = world.state.lead;
+    const w = HA.font.measure(text) + 20;
+    g.globalAlpha = Math.max(0, a);
+    g.fillStyle = 'rgba(5,6,13,0.9)';
+    g.fillRect(Math.round(W / 2 - w / 2), 136, w, 26);
+    g.fillStyle = '#ffb84d';
+    g.fillRect(Math.round(W / 2 - w / 2), 136, w, 1);
+    HA.font.draw(g, 'NEW LEAD', W / 2, 140, '#ffb84d', { align: 'center' });
+    HA.font.draw(g, text, W / 2, 151, '#fff0a8', { align: 'center' });
+    g.globalAlpha = 1;
   }
 
   // ---- HUD: health, weapon level and XP are always readable at a glance ----

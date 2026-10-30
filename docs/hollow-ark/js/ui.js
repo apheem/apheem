@@ -276,7 +276,7 @@
     const rowH = 12;
     const hasValues = m.items.some((it) => it.value);
     const extra = (m.lead ? 22 : 0) + (m.note ? 12 : 0);
-    const pw = hasValues ? 240 : m.lead || m.note ? 260 : 140;
+    const pw = hasValues ? 240 : m.lead || m.note ? 284 : 140;
     const ph = m.items.length * rowH + (m.title ? 30 : 14) + extra;
     const px = Math.round(W / 2 - pw / 2);
     const py = m.root ? 96 : Math.round(H / 2 - ph / 2);

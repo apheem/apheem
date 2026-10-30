@@ -124,6 +124,12 @@
     g.translate(cx, cy);
     g.scale(n.facing || 1, 1);
     g.drawImage(frame.img, -Math.floor(frame.w / 2), 0);
+    if (n.wrench) {
+      g.fillStyle = '#6c7894';
+      g.fillRect(4, 5, 1, 6);
+      g.fillStyle = '#a9b6cc';
+      g.fillRect(3, 3, 3, 2);
+    }
     g.restore();
     if (n.alert > 0) HA.font.draw(g, '!', cx, cy - 10, '#fff0a8', { align: 'center' });
   }
@@ -273,10 +279,13 @@
       yield { wait: 30 };
       gasket.state = 'out';
       gasket.wrench = true;
+      world.burst(gasket.x + 4, gasket.y + 6, ['#3a2a1a', '#6a4a2a'], 6, 0.8);
+      HA.audio.play('vent');
       yield { walk: gasket, x: 20 * 8, speed: 1.1 };
       yield { say: 'OLD GASKET', text: "THAT'S FAR ENOUGH, SLEEPER." };
       yield { say: 'OLD GASKET', text: "THE LAST SLEEPER WHO WOKE UP SHOT MY BROTHER FOR HIS BOOTS. SO YOU'LL FORGIVE THE WRENCH." };
       shim.state = 'out';
+      world.burst(shim.x + 4, shim.y + 4, ['#3a2a1a', '#6a4a2a'], 5, 0.8);
       yield { walk: shim, x: 23 * 8, speed: 1.4 };
       shim.facing = -1;
       yield { say: 'SHIM', text: "IT DIDN'T SHOOT ME, GRAN. IT SHOT THE CRAWLERS." };

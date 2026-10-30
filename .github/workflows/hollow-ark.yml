@@ -1,6 +1,8 @@
 # Hollow Ark must play on any Windows PC, MacBook or Linux machine. On every change this:
-#   1. plays the browser build in Chromium, Firefox and WebKit (Safari's engine) on all three OSes, and
-#   2. builds the desktop app for Windows, macOS and Linux, launches each one and plays a few seconds.
+#   1. proves every room can be crossed, using the game's own movement code,
+#   2. plays the browser build in Chromium, Firefox and WebKit (Safari's engine) on all three OSes,
+#      through the whole vertical slice (rooms, saving, the raid, the boss, the choice, continuing), and
+#   3. builds the desktop app for Windows, macOS and Linux, launches each one and plays a few seconds.
 # Builds are attached to each run as downloadable artifacts.
 name: Hollow Ark
 
@@ -47,6 +49,8 @@ jobs:
           cache: npm
           cache-dependency-path: hollow-ark/tests/package-lock.json
       - run: npm ci
+      - name: Check every room can be crossed
+        run: npm run rooms
       - run: npx playwright install --with-deps chromium firefox webkit
       - name: Play in Chromium, Firefox and WebKit
         run: npm run check

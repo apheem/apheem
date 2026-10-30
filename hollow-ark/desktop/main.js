@@ -165,7 +165,10 @@ function watchSmokeTest(w) {
       }
       const keysSeen = await js('__smokeKeys');
       const focused = await js('document.hasFocus()');
-      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10, info, mode, moved: x1 - x0, keyPath, keysSeen, focused });
+      // The save file: write it, read it back, and check it holds the room the hero is in.
+      const saved = await js('HA.save.write(HA.debug.world); (HA.save.load() || {}).room === HA.debug.world.def.id');
+      const saveFileWritten = fs.existsSync(saveFile());
+      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10 && saved && saveFileWritten, info, mode, moved: x1 - x0, keyPath, keysSeen, focused, saved, saveFileWritten });
     } catch (err) {
       finish({ ok: false, reason: String(err) });
     }
