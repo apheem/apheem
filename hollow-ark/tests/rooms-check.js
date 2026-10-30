@@ -5,7 +5,8 @@
 //   - every opening at a room's edge lines up with an opening in the next room, with a floor to land on;
 //   - from any entrance, every other entrance and every item, person, terminal and rest pod can be reached;
 //   - secrets that need the Purge Cannon can't also be reached by jumping;
-//   - no gap is 7 tiles wide: that width looks jumpable but needs a pixel-perfect run-up.
+//   - no gap is 7 tiles wide: that width looks jumpable but needs a pixel-perfect run-up;
+//   - every on-screen hint sits in open air, so no wall hides part of it.
 //   node rooms-check.js [room-id ...]
 const vm = require('vm');
 const fs = require('fs');
@@ -14,7 +15,7 @@ const path = require('path');
 const GAME = path.resolve(__dirname, '..', '..', 'docs', 'hollow-ark');
 const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
 const areaScripts = [...html.matchAll(/src="(js\/areas\/[^"]+)"/g)].map((m) => m[1]);
-const scripts = ['js/core.js', 'js/room.js', 'js/weapons.js', 'js/actors.js', ...areaScripts];
+const scripts = ['js/core.js', 'js/font.js', 'js/room.js', 'js/weapons.js', 'js/actors.js', ...areaScripts];
 
 const sandbox = { console, Math, JSON, Object, Array, Set, Map, Uint8Array, Error, Number, String, Infinity };
 sandbox.window = sandbox;
@@ -22,6 +23,8 @@ vm.createContext(sandbox);
 for (const s of scripts) vm.runInContext(fs.readFileSync(path.join(GAME, s), 'utf8'), sandbox, { filename: s });
 const HA = sandbox.HA;
 HA.audio = { play() {}, charge() {} };
+// Button prompts inside hints, at their widest on any keyboard or controller.
+HA.input = { promptWidth: (a) => ({ confirm: 34, pause: 22, map: 22, prev: 16, next: 16 })[a] || 12 };
 const { SOLID, ONEWAY, THORNS, CRATE, EMPTY } = HA.room;
 
 // Spawns that are things to reach, as opposed to enemies, crates and doors.
@@ -303,8 +306,24 @@ function targetsOf(def, room) {
   return list;
 }
 
+// Hints are painted on the back wall, under the tiles: any wall they touch would cover part of the text.
+function checkHints(def) {
+  for (const h of def.hints || []) {
+    const w = HA.font.measure(h.text);
+    const last = Math.floor((h.x * 8 + w - 1) / 8);
+    if (last >= def.w) fail(def, `hint "${h.text}" runs off the room's right edge`);
+    const hit = [];
+    for (let ty = Math.floor(h.y); ty <= Math.floor(h.y + 7 / 8); ty++) {
+      const row = def.map[ty] || '';
+      for (let tx = Math.floor(h.x); tx <= Math.min(last, def.w - 1); tx++) if (row[tx] === '#') hit.push(tx);
+    }
+    if (hit.length) fail(def, `hint "${h.text}" at ${h.x},${h.y} runs into a wall at column ${Math.min(...hit)}; it needs ${last - Math.floor(h.x) + 1} open tiles`);
+  }
+}
+
 function checkRoom(def) {
   checkShape(def);
+  checkHints(def);
   // Doors are checked open, and crates as already shot: the hero always has a weapon by the first crate.
   const room = HA.room.load(def.map.map((row) => row.replace(/[DB]/g, '.')));
   const exits = exitsOf(def);

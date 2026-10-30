@@ -47,9 +47,10 @@ async function play(browserType, url, label) {
     await page.waitForFunction(() => window.HA && HA.debug && HA.debug.frames > 20, null, { timeout: 15000 });
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => HA.ui.mode === 'play', null, { timeout: 5000 });
-    expect(await get(() => !!HA.debug.world.scene), 'a new game should open on the wake-up scene');
+    expect(await get(() => !!HA.debug.world.scene && HA.debug.world.heroPod.state === 'hanging'), 'a new game should open on the wake-up scene, the pod hanging in its clamps');
     await get(() => HA.debug.skipScene());
     await page.waitForFunction(() => !HA.debug.world.scene, null, { timeout: 5000 });
+    expect(await get(() => HA.debug.world.state.flags.woke && HA.debug.world.heroPod.state === 'open' && HA.debug.world.heroPod.lid.flat), 'skipping the opening should leave the pod open on the floor');
 
     // ---- By hand: real key presses ----
     const start = await get(() => ({ x: HA.debug.world.player.x, y: HA.debug.world.player.y }));
@@ -188,6 +189,24 @@ async function play(browserType, url, label) {
     await page.keyboard.press('Escape');
     await wait(150);
     expect(await get(() => HA.ui.stack.length === 0), 'Escape did not close the map');
+
+    // ---- Menus also answer to the mouse: click MAP in the pause menu, then right-click back out ----
+    await page.keyboard.press('Escape');
+    await wait(150);
+    const at = await get(() => {
+      const r = HA.ui.stack[0].items.find((it) => it.label === 'MAP').rect;
+      const v = HA.display.view;
+      const dpr = window.devicePixelRatio || 1;
+      return { x: (v.ox + (r.x + r.w / 2) * v.s) / dpr, y: (v.oy + (r.y + r.h / 2) * v.s) / dpr };
+    });
+    await page.mouse.click(at.x, at.y);
+    await wait(150);
+    expect(await get(() => HA.ui.stack.length === 2 && !!HA.ui.stack[1].screen), 'clicking MAP in the pause menu did not open the map');
+    await page.mouse.click(at.x, at.y, { button: 'right' });
+    await wait(150);
+    await page.mouse.click(at.x, at.y, { button: 'right' });
+    await wait(150);
+    expect(await get(() => HA.ui.stack.length === 0), 'right-clicking did not back out of the map and the pause menu');
 
     // ---- Continue: reload the page and pick up the save ----
     await page.reload();

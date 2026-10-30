@@ -16,9 +16,9 @@
     legend: { T: { type: 'log', id: 'course' } },
     scenery: [{ kind: 'pods', x: 12, y: 3.5, n: 7 }, { kind: 'pods', x: 47, y: 3.5, n: 7 }, { kind: 'window', x: 31, y: 4 }],
     hints: [
-      { x: 8, y: 12, text: '{left}{right} MOVE   {jump} JUMP' },
-      { x: 26, y: 11, text: 'HOLD {jump} LONGER TO JUMP HIGHER' },
-      { x: 48, y: 12, text: '{fire} FIRE   HOLD {up} TO AIM UP', when: (w) => has(w, 'pistol') },
+      { x: 8, y: 14, text: '{left}{right} MOVE   {jump} JUMP', when: (w) => w.state.flags.woke },
+      { x: 26, y: 13, text: 'HOLD {jump} LONGER TO JUMP HIGHER' },
+      { x: 43, y: 12, text: '{fire} FIRE   HOLD {up} TO AIM UP', when: (w) => has(w, 'pistol') },
     ],
     map: [
       '################################################################################',
@@ -57,7 +57,7 @@
     scenery: [{ kind: 'vent', x: 58, y: 5 }, { kind: 'window', x: 26, y: 3 }, { kind: 'pods', x: 60, y: 15, n: 0 }],
     hints: [
       { x: 2, y: 11.5, text: 'REST PODS HEAL YOU AND SAVE' },
-      { x: 46, y: 4, text: '{down}+{jump} DROPS THROUGH CATWALKS' },
+      { x: 36, y: 4, text: '{down}+{jump} DROPS THROUGH CATWALKS' },
     ],
     triggers: [{ x0: 30, x1: 40, y1: 9, when: (s) => !s.flags.shimSeen, run: 'shimGlimpse' }],
     map: [

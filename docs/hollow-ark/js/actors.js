@@ -170,6 +170,7 @@
     if (p.invuln > 0) p.invuln--;
     if (p.xpLock > 0) p.xpLock--;
     if (p.land > 0) p.land--;
+    if (p.kneel > 0) p.kneel--;
     if (p.comboTimer > 0 && --p.comboTimer === 0) p.combo = 0;
     p.anim += p.onGround ? Math.abs(p.vx) * 0.11 : 0;
   }
@@ -182,6 +183,7 @@
     let spr = H.idle;
     let bob = 0;
     if (!p.onGround) spr = p.vy < 0 ? H.jump : H.fall;
+    else if (p.kneel > 0) spr = H.kneel;
     else if (p.land > 0) {
       spr = H.jump;
       bob = 1;

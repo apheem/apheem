@@ -151,6 +151,15 @@
       tone({ wave: 0.5, f: 110, f2: 55, dur: 0.3, vol: 0.12 });
     },
     gasp: () => tone({ wave: 0.25, f: 900, f2: 1500, dur: 0.08, vol: 0.06 }),
+    clamp: () => {
+      noise({ f: 2200, dur: 0.07, vol: 0.13, q: 6 });
+      tone({ wave: 0.125, f: 420, f2: 170, dur: 0.14, vol: 0.06 });
+    },
+    crash: () => {
+      noise({ f: 240, f2: 50, dur: 0.4, vol: 0.36, filter: 'lowpass' });
+      tone({ wave: 0.5, f: 95, f2: 40, dur: 0.25, vol: 0.14 });
+      noise({ f: 6500, dur: 0.22, vol: 0.07, q: 2, delay: 0.03 });
+    },
     vent: () => noise({ f: 900, f2: 300, dur: 0.18, vol: 0.12 }),
     rumble: () => noise({ f: 160, f2: 60, dur: 0.9, vol: 0.4, filter: 'lowpass' }),
     blast: () => {

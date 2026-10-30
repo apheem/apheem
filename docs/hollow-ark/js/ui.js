@@ -8,6 +8,39 @@
 
   const ui = { mode: 'title', stack: [], world: null, time: 0, nav: { up: 0, down: 0, left: 0, right: 0 } };
 
+  // ---- Mouse and touch: never needed, but menus answer to them, and a click moves dialogue on ----
+  const pointer = { x: -1, y: -1, moved: false, click: false, back: false, wheel: 0 };
+  ui.pointer = pointer;
+  (function listen() {
+    const canvas = document.getElementById('screen');
+    if (!canvas) return;
+    const at = (e) => {
+      const v = HA.display.view;
+      const dpr = window.devicePixelRatio || 1;
+      pointer.x = (e.clientX * dpr - v.ox) / v.s;
+      pointer.y = (e.clientY * dpr - v.oy) / v.s;
+    };
+    canvas.addEventListener('pointermove', (e) => {
+      at(e);
+      pointer.moved = true;
+    });
+    canvas.addEventListener('pointerdown', (e) => {
+      at(e);
+      if (e.button === 2) pointer.back = true;
+      else if (e.button === 0) pointer.click = true;
+    });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvas.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        pointer.wheel += Math.sign(e.deltaY);
+      },
+      { passive: false }
+    );
+  })();
+  const inside = (r) => r && pointer.x >= r.x && pointer.x < r.x + r.w && pointer.y >= r.y && pointer.y < r.y + r.h;
+
   const cycle = (list, value, dir) => list[(list.indexOf(value) + dir + list.length) % list.length];
   const save = () => HA.saveSettings();
 
@@ -160,7 +193,7 @@
   function updateMenu(input) {
     const m = ui.stack[ui.stack.length - 1];
     if (m.screen) {
-      if (HA.mapscreen.update(m.screen, input) === 'close') {
+      if (HA.mapscreen.update(m.screen, input, pointer) === 'close') {
         ui.stack.pop();
         HA.audio.play('menuBack');
         if (ui.mode === 'play' && !ui.stack.length) HA.audio.setPaused(false);
@@ -175,7 +208,34 @@
       m.sel = (m.sel + 1) % m.items.length;
       HA.audio.play('menuMove');
     }
+    // The pointer picks the row under it; a click on a row is the same as confirming it.
+    const hit = m.items.findIndex((it) => inside(it.rect));
+    if (pointer.moved && hit >= 0 && hit !== m.sel) {
+      m.sel = hit;
+      HA.audio.play('menuMove');
+    }
+    if (pointer.wheel) {
+      m.sel = HA.clamp(m.sel + pointer.wheel, 0, m.items.length - 1);
+      HA.audio.play('menuMove');
+    }
+    let clicked = false;
+    if (pointer.click && hit >= 0) {
+      m.sel = hit;
+      clicked = true;
+    }
     const item = m.items[m.sel];
+    if (clicked && item.change && !item.action) {
+      // A click on the left half of a setting's value steps it back; anywhere else steps it on.
+      const v = item.valueRect;
+      item.change(v && pointer.x >= v.x - 4 && pointer.x < v.x + v.w / 2 ? -1 : 1);
+      HA.audio.play('menuMove');
+      return;
+    }
+    if (pointer.back) {
+      if (m.pause) resume();
+      else pop();
+      return;
+    }
     for (const [dir, d] of [
       ['left', -1],
       ['right', 1],
@@ -185,7 +245,7 @@
         HA.audio.play('menuMove');
       }
     }
-    if (input.pressed.confirm) {
+    if (input.pressed.confirm || clicked) {
       if (item.action) {
         HA.audio.play('menuOk');
         item.action();
@@ -202,10 +262,23 @@
   ui.update = () => {
     const input = HA.input;
     ui.time++;
+    const done = () => {
+      pointer.moved = pointer.click = pointer.back = false;
+      pointer.wheel = 0;
+    };
     if (ui.stack.length) {
       updateMenu(input);
+      done();
       return;
     }
+    // Outside menus a click moves dialogue on, and a right click pauses.
+    if (pointer.click) input.pressed.confirm = true;
+    if (pointer.back && ui.mode === 'play') {
+      done();
+      ui.pause();
+      return;
+    }
+    done();
     if (ui.mode === 'play') {
       const world = ui.world;
       // Enter both pauses and confirms; while someone is talking it confirms.
@@ -227,38 +300,9 @@
   };
 
   // ---- Drawing ----
-  const stars = (() => {
-    const rnd = HA.seeded(3);
-    return Array.from({ length: 90 }, () => ({ x: rnd() * W, y: rnd() * H, z: rnd() }));
-  })();
-
   function drawTitleBackground(g) {
-    g.fillStyle = '#04050b';
-    g.fillRect(0, 0, W, H);
-    for (const s of stars) {
-      const x = (s.x - ui.time * (0.05 + s.z * 0.2)) % W;
-      g.fillStyle = s.z > 0.8 ? '#ffffff' : s.z > 0.4 ? '#8aa0c8' : '#3b4a72';
-      g.fillRect(Math.floor(x < 0 ? x + W : x), Math.floor(s.y), 1, 1);
-    }
-    // The Ark, drifting
-    const ox = 214 + Math.round(Math.sin(ui.time * 0.01) * 2);
-    const oy = 104 + Math.round(Math.sin(ui.time * 0.013) * 2);
-    g.fillStyle = '#161b2b';
-    g.fillRect(ox, oy, 84, 12);
-    g.fillRect(ox + 10, oy - 6, 50, 6);
-    g.fillRect(ox + 60, oy + 12, 18, 5);
-    g.fillRect(ox - 10, oy + 3, 10, 6);
-    g.fillStyle = '#262e44';
-    g.fillRect(ox, oy, 84, 1);
-    g.fillRect(ox + 10, oy - 6, 50, 1);
-    for (let i = 0; i < 9; i++) {
-      g.fillStyle = (i + Math.floor(ui.time / 40)) % 7 === 0 ? '#ffb84d' : '#2a3a5a';
-      g.fillRect(ox + 6 + i * 8, oy + 5, 3, 2);
-    }
-    g.fillStyle = Math.floor(ui.time / 30) % 2 ? '#f27ad8' : '#5c2479';
-    g.fillRect(ox + 34, oy - 4, 4, 3);
-    g.fillStyle = '#5fd4e8';
-    g.fillRect(ox + 84, oy + 4, 2, 4);
+    HA.art.drawStars(g, W, H, ui.time);
+    HA.art.drawArk(g, 220 + Math.sin(ui.time * 0.01) * 2, 96 + Math.sin(ui.time * 0.013) * 2, 1, ui.time);
   }
 
   function drawPanel(g, x, y, w, h) {
@@ -299,6 +343,7 @@
     m.items.forEach((it, i) => {
       const sel = i === m.sel;
       const color = sel ? '#fff0a8' : '#9fb6c8';
+      it.rect = { x: px + 4, y: y - 3, w: pw - 8, h: rowH };
       if (hasValues && it.value) {
         HA.font.draw(g, it.label, px + 16, y, color);
         const v = it.value();
@@ -309,8 +354,12 @@
             g.fillRect(bx + k * 5, y + 1, 4, 5);
           }
           HA.font.draw(g, v, px + pw - 16, y, color, { align: 'right' });
+          it.valueRect = { x: bx, w: px + pw - 16 - bx };
         } else {
-          HA.font.draw(g, sel ? '< ' + v + ' >' : v, px + pw - 16, y, color, { align: 'right' });
+          const text = '< ' + v + ' >';
+          HA.font.draw(g, sel ? text : v, px + pw - 16, y, color, { align: 'right' });
+          const tw = HA.font.measure(text);
+          it.valueRect = { x: px + pw - 16 - tw, w: tw };
         }
         if (sel) HA.font.draw(g, '>', px + 7, y, '#ffb84d');
       } else {
@@ -327,7 +376,7 @@
 
   function drawControls(g, m) {
     const pw = 300;
-    const ph = 164;
+    const ph = 146;
     const px = Math.round(W / 2 - pw / 2);
     const py = Math.round(H / 2 - ph / 2);
     drawPanel(g, px, py, pw, ph);
@@ -347,19 +396,21 @@
     HA.font.draw(g, 'KEYBOARD', px + 104, py + 21, '#6c7894');
     HA.font.draw(g, 'CONTROLLER', px + 206, py + 21, '#6c7894');
     rows.forEach((r, i) => {
-      const y = py + 32 + i * 11;
+      const y = py + 32 + i * 10;
       HA.font.draw(g, r[0], px + 8, y, '#9fb6c8');
       HA.font.draw(g, r[1], px + 104, y, '#eef4f6');
       HA.font.draw(g, r[2], px + 206, y, '#eef4f6');
     });
     HA.font.draw(g, '> BACK <', W / 2, py + ph - 12, '#fff0a8', { align: 'center' });
+    m.items[0].rect = { x: px, y: py, w: pw, h: ph };
   }
 
   ui.draw = (g) => {
+    // Whatever sits under a menu is dimmed and kept free of text, so nothing shows through it.
     if (ui.mode === 'play' && ui.world) {
-      HA.world.draw(ui.world, g);
-      if (ui.stack.length && !ui.stack[ui.stack.length - 1].screen) {
-        g.fillStyle = 'rgba(5,6,13,0.55)';
+      HA.world.draw(ui.world, g, ui.stack.length > 0);
+      if (ui.stack.length) {
+        g.fillStyle = 'rgba(5,6,13,0.72)';
         g.fillRect(0, 0, W, H);
       }
     } else {
@@ -367,6 +418,9 @@
       if (ui.stack.length <= 1) {
         HA.font.draw(g, 'HOLLOW ARK', W / 2, 30, '#eef4f6', { align: 'center', scale: 3, shadow: '#2f5fb3' });
         HA.font.draw(g, 'PHASE 2 · VERTICAL SLICE', W / 2, 62, '#ffb84d', { align: 'center' });
+      } else {
+        g.fillStyle = 'rgba(5,6,13,0.72)';
+        g.fillRect(0, 0, W, H);
       }
     }
     const top = ui.stack[ui.stack.length - 1];
@@ -375,7 +429,7 @@
       const hint = top.root ? '{confirm} SELECT' : '{confirm} SELECT   {back} BACK';
       HA.font.draw(g, hint, W / 2, H - 12, '#6c7894', { align: 'center' });
     }
-    if (ui.mode === 'title') {
+    if (ui.mode === 'title' && ui.stack.length <= 1) {
       HA.font.draw(g, 'V' + HA.VERSION, 4, H - 10, '#3a4258');
       HA.font.draw(g, HA.display.platformName(), W - 4, H - 10, '#3a4258', { align: 'right' });
     }

@@ -5,6 +5,7 @@
 //   yield { until: () => done }                wait for something (the player may move if control is on)
 //   yield { choice: {...} }                    pick an option; permanent ones show what's gained and lost first
 //   yield { card: ['LINE', ...], hold: 120 }   white text on black, full screen
+//         (with space: 'in' | true | 'out' and ark: { x, y, s }, the Ark drifts among stars behind the text)
 //   yield { fade: 'out' | 'in' }               fade the screen to black or back
 //   yield { walk: actor, x: 120, speed: 1 }    move a person or machine to an x position
 // Any other side effect (sound, shake, setting a flag) is plain code between the yields.
@@ -139,6 +140,7 @@
       done = updateChoice(world, scene, step, input);
     } else if (step && step.card) {
       step.t++;
+      world.cardClock = (world.cardClock || 0) + 1;
       if (step.t > (step.hold || 150) || (go && step.t > 20 && step.skippable !== false)) {
         done = true;
         world.card = null;
@@ -221,7 +223,7 @@
     g.fillRect(x + w - 1, y, 1, h);
   }
 
-  function draw(world, g) {
+  function draw(world, g, quiet) {
     const scene = world.scene;
     if (!scene) return;
     // Letterbox bars while a cutscene holds the controls.
@@ -231,6 +233,7 @@
       g.fillRect(0, H - 4, W, 4);
     }
     const step = scene.step;
+    if (quiet) return;
     if (step && step.say !== undefined) drawSay(world, g, step);
     if (step && step.choice) drawChoice(world, g, step);
   }
@@ -289,19 +292,33 @@
   }
 
   // Full-screen cards sit above everything, fade included.
-  function drawCard(world, g) {
+  function drawCard(world, g, quiet) {
     const card = world.card;
     if (!card) return;
-    const a = Math.min(1, card.t / 20, ((card.hold || 150) - card.t + 20) / 20);
+    const hold = card.hold || 150;
+    const a = Math.min(1, card.t / 20, (hold - card.t) / 20);
     g.fillStyle = '#05060d';
     g.fillRect(0, 0, W, H);
+    if (card.space) drawSpace(world, g, card, hold);
+    if (quiet) return;
     g.globalAlpha = Math.max(0, a);
     const lines = card.card;
-    const top = H / 2 - (lines.length * 12) / 2;
+    const top = card.top !== undefined ? card.top : H / 2 - (lines.length * 12) / 2;
     lines.forEach((line, i) => {
       const color = Array.isArray(line) ? line[1] : i === 0 && card.title ? '#ffb84d' : '#eef4f6';
       HA.font.draw(g, Array.isArray(line) ? line[0] : line, W / 2, top + i * 12, color, { align: 'center' });
     });
+    g.globalAlpha = 1;
+  }
+
+  // Behind the opening cards: stars, and the Ark far off among them, drifting on.
+  function drawSpace(world, g, card, hold) {
+    const t = world.cardClock || 0;
+    const fadeIn = card.space === 'in' ? Math.min(1, card.t / 45) : 1;
+    const fadeOut = card.space === 'out' ? HA.clamp((hold - card.t) / 30, 0, 1) : 1;
+    g.globalAlpha = Math.min(fadeIn, fadeOut);
+    HA.art.drawStars(g, W, H, t, 0.5);
+    if (card.ark) HA.art.drawArk(g, card.ark.x + t * 0.02 * card.ark.s, card.ark.y, card.ark.s, t, card.ark);
     g.globalAlpha = 1;
   }
 
