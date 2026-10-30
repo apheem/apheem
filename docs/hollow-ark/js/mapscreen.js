@@ -59,7 +59,7 @@
           const ch = r.map[ty][tx];
           const solid = ch === '#' || ch === '%';
           if (!solid) {
-            g.fillStyle = ch === '^' ? '#5c2479' : ch === '=' ? '#3a4258' : '#141a2c';
+            g.fillStyle = ch === '^' ? '#5c2479' : ch === '=' ? '#3a4258' : ch === '~' ? '#16343a' : ch === 's' ? '#3a1834' : '#141a2c';
             g.fillRect(ox + tx, oy + ty, 1, 1);
             continue;
           }

@@ -8,7 +8,7 @@
   const has = (w, id) => w.player.weapons.some((x) => x.id === id);
   const FADE = 10; // frames for each half of a room change
 
-  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1, q: 1, j: 1, b: 1, r: 1, d: 1, v: 1 };
+  const ENEMY_CHARS = { c: 1, f: 1, w: 1, k: 1, q: 1, j: 1, b: 1, r: 1, d: 1, v: 1, u: 1, i: 1, x: 1 };
   // Weapons placed by a map character everywhere, or by a room's legend ({ type: 'weapon', id }).
   const WEAPON_CHARS = { G: 'pistol', U: 'cannon', A: 'coil', Q: 'scatter' };
   const WEAPON_TEXT = {
@@ -18,6 +18,7 @@
     scatter: 'SCATTER LAUNCHER · {fire} LOBS GRENADES THAT ROLL',
     harpoon: 'GRAPPLE HARPOON · AIM AT A RING AND {fire} TO PULL UP',
     charges: 'BREACH CHARGES · {fire} BLOWS OPEN CRACKED WALLS',
+    foam: 'FOAM SPRAYER · {fire} ON WATER SETS A PLATFORM',
   };
 
   function create(state) {
@@ -225,6 +226,8 @@
     world.hooks = [];
     world.links = [];
     world.switches = [];
+    world.foam = [];
+    world.shields = [];
     world.craneMove = null;
     world.glass = [];
     world.barks = [];
@@ -292,6 +295,7 @@
       p.vy = 0;
     }
     if (opts.facing) p.facing = opts.facing;
+    p.safe = { x, y }; // where Bloom silt throws the hero back to, until they stand somewhere else
     updateDoors(world, true);
     s.room = id;
     if (areaChanged) world.areaBanner = 160;
@@ -488,6 +492,7 @@
     for (const a of world.actors) if (a.update) a.update(world, a);
 
     HA.weapons.updateShots(world);
+    HA.weapons.updateFoam(world);
 
     for (const k of world.pickups) A.updatePickup(world, k);
     world.pickups = world.pickups.filter((k) => k.life > 0);
@@ -649,6 +654,7 @@
     A.drawPlayer(g, world, cam);
     HA.abilities.draw(g, world, cam);
     HA.abilities.drawWater(g, world, cam);
+    drawFoam(g, world, cam);
     for (const s of world.shots) drawShot(g, world, s, cam);
     for (const b of world.beams) drawBeam(g, b, cam);
     for (const q of world.particles) {
@@ -698,6 +704,7 @@
       HA.font.draw(g, world.near.label, Math.round(o.x + o.w / 2 - cam.x), Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
     }
     if (!world.scene || world.scene.showHud) drawHud(g, world, quiet);
+    if (!quiet && HA.story.drawFlood) HA.story.drawFlood(g, world);
     if (world.leadBanner > 0 && !quiet && !(world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice))) drawLead(g, world);
     if (world.boss && world.boss.active) HA.bosses[world.boss.type].drawBar(g, world, world.boss);
     HA.scenes.draw(world, g, quiet);
@@ -708,6 +715,37 @@
       g.globalAlpha = 1;
     }
     HA.scenes.drawCard(world, g, quiet);
+  }
+
+  // The Foam Sprayer's platforms afloat (they blink before they go) and its shields on land.
+  function drawFoam(g, world, cam) {
+    for (const pl of world.foam || []) {
+      if (pl.life < 90 && Math.floor(pl.life / 6) % 2) continue;
+      for (const c of pl.cells) {
+        const x = c.tx * 8 - cam.x;
+        const y = c.ty * 8 - cam.y;
+        g.fillStyle = '#9fb6c8';
+        g.fillRect(x, y + 1, 8, 5);
+        g.fillStyle = '#f4f0e0';
+        g.fillRect(x, y, 8, 4);
+        g.fillStyle = '#ffffff';
+        g.fillRect(x + ((c.tx * 3) % 5), y, 2, 1);
+        g.fillStyle = '#d8e4ea';
+        g.fillRect(x + ((c.tx * 5 + 2) % 6), y + 2, 2, 2);
+      }
+    }
+    for (const sh of world.shields || []) {
+      if (sh.life < 60 && Math.floor(sh.life / 5) % 2) continue;
+      const x = Math.round(sh.x - cam.x);
+      const y = Math.round(sh.y - cam.y);
+      g.fillStyle = '#9fb6c8';
+      g.fillRect(x, y + 2, sh.w, sh.h - 2);
+      g.fillStyle = '#f4f0e0';
+      g.fillRect(x + 1, y, sh.w - 2, sh.h - 1);
+      g.fillStyle = '#ffffff';
+      g.fillRect(x + 1, y + 2, 2, 2);
+      g.fillRect(x + 3, y + 8, 1, 1);
+    }
   }
 
   function drawHints(g, world, cam) {
@@ -833,6 +871,14 @@
       g.fillRect(x + (horiz ? ux * 2 : -1), y + (horiz ? -1 : uy * 2), horiz ? 1 : 3, horiz ? 3 : 1);
       g.fillStyle = Math.floor(world.time / 2) % 2 ? '#fff0a8' : '#ff9b3d';
       g.fillRect(x - (horiz ? ux * 4 : 0), y - (horiz ? 0 : uy * 4), 1, 1); // the flame at its tail
+    } else if (s.kind === 'foam') {
+      g.fillStyle = '#9fb6c8';
+      g.fillRect(x - 2, y - 1, 5, 3);
+      g.fillRect(x - 1, y - 2, 3, 5);
+      g.fillStyle = '#f4f0e0';
+      g.fillRect(x - 1, y - 1, 3, 3);
+      g.fillStyle = '#ffffff';
+      g.fillRect(x - 1, y - 1, 1, 1);
     } else if (s.kind === 'wave') {
       g.fillStyle = '#10121c';
       g.fillRect(x - 3, y - s.h, 7, s.h);

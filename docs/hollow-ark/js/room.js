@@ -2,6 +2,8 @@
 // Room tiles, collision and movement. Room layouts live in js/areas/, one file per area of the ship.
 // Map legend shared by every room: # hull   % cargo containers (solid, drawn as stacked containers)
 // = catwalk (jump up through, Down+Jump to drop)   ^ Bloom thorns   B crate   ~ water (see abilities.js).
+// s Bloom silt (the Ballast's sludge: it burns, and throws the hero back to where they last stood safely).
+// Foam (the Foam Sprayer's platforms, set while the game runs) floats on water or silt and holds like a catwalk.
 // Every other character is a spawn that the room's own legend (or the shared one in world.js) explains.
 // A room's belts ({ x0, x1, y, dir }: the floor row y, from column x0 to x1) carry whoever stands on them.
 (function (HA) {
@@ -11,7 +13,9 @@
   const THORNS = 3;
   const CRATE = 4;
   const WATER = 5;
-  const CODES = { '#': SOLID, '%': SOLID, '=': ONEWAY, '^': THORNS, B: CRATE, '~': WATER };
+  const FOAM = 6;
+  const SLUDGE = 7;
+  const CODES = { '#': SOLID, '%': SOLID, '=': ONEWAY, '^': THORNS, B: CRATE, '~': WATER, s: SLUDGE };
   const BELT_SPEED = 0.6;
 
   function load(MAP) {
@@ -30,10 +34,17 @@
         if (ch === 'B') spawns.push({ type: 'B', tx: x, ty: y, x: x * 8, y: y * 8 });
       }
     }
+    // Something placed in a pool (an eel, a suit cell on the bottom) is under water, not in a bubble of air: a
+    // spawn with water above it, or on both sides, sits in water.
+    const wet = (x, y) => MAP[y] && MAP[y][x] === '~';
+    for (const sp of spawns) {
+      if (sp.type !== 'B' && (wet(sp.tx, sp.ty - 1) || (wet(sp.tx - 1, sp.ty) && wet(sp.tx + 1, sp.ty)))) tiles[sp.ty * w + sp.tx] = WATER;
+    }
     const room = {
       w,
       h,
       hasWater: tiles.includes(WATER),
+      hasLiquid: tiles.includes(WATER) || tiles.includes(SLUDGE),
       pw: w * 8,
       ph: h * 8,
       tiles,
@@ -109,7 +120,7 @@
       const ty = Math.floor((b.y + b.h - 0.01) / 8);
       for (let tx = left; tx <= right; tx++) {
         const t = room.tile(tx, ty);
-        const catwalk = t === ONEWAY && !opts.dropThrough && prevBottom <= ty * 8 + 0.01;
+        const catwalk = (t === ONEWAY || t === FOAM) && !opts.dropThrough && prevBottom <= ty * 8 + 0.01;
         if (blocking(t) || catwalk) {
           b.y = ty * 8 - b.h;
           hit.down = true;
@@ -137,7 +148,7 @@
     const right = Math.floor((b.x + b.w - 0.01) / 8);
     for (let tx = left; tx <= right; tx++) {
       const t = room.tile(tx, ty);
-      if (blocking(t) || (t === ONEWAY && !opts.dropThrough)) return t === ONEWAY ? 'oneway' : 'solid';
+      if (blocking(t) || ((t === ONEWAY || t === FOAM) && !opts.dropThrough)) return t === ONEWAY || t === FOAM ? 'oneway' : 'solid';
     }
     return false;
   }
@@ -160,7 +171,15 @@
     return false;
   }
 
-  HA.room = { load, move, grounded, touchesThorns, beltUnder, EMPTY, SOLID, ONEWAY, THORNS, CRATE, WATER };
+  // Has the body's lower half sunk into Bloom silt?
+  function touchesSludge(room, b) {
+    const left = Math.floor((b.x + 1) / 8);
+    const right = Math.floor((b.x + b.w - 1) / 8);
+    for (let ty = Math.floor((b.y + b.h / 2) / 8); ty <= Math.floor((b.y + b.h - 2) / 8); ty++) for (let tx = left; tx <= right; tx++) if (room.tile(tx, ty) === SLUDGE) return true;
+    return false;
+  }
+
+  HA.room = { load, move, grounded, touchesThorns, touchesSludge, beltUnder, EMPTY, SOLID, ONEWAY, THORNS, CRATE, WATER, FOAM, SLUDGE };
 
   // ---- Every room of the ship, placed on one grid (in tiles) so neighbors and the map line up ----
   // A room def: { id, area, name, gx, gy, map: [rows], legend: { char: spawn }, hints, triggers, music, ... }

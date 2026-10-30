@@ -649,15 +649,16 @@ async function play(browserType, url, label) {
       out.wall = !!s.flags.aisleWall;
       HA.debug.step(100, { left: true });
       out.aisle = w().def.id;
-      // The Drain: Solder's toolbag by the grate, and the grate down to the Ballast.
+      // The Drain: Solder's toolbag by the grate, and the grate down to the Ballast (Phase 3.4).
       at('drain', 19, 18);
       HA.debug.step(1, { up: true });
       talkThrough();
       out.toolbag = s.lead;
       at('drain', 14, 18);
       HA.debug.step(1, { down: true });
+      talkThrough();
       HA.debug.step(5);
-      out.grate = w().toastText;
+      out.grate = w().def.id;
       // Travel: at a pod, the map rings the others; picking one goes there.
       s.rested.warrens = true;
       at('pursers-office', 8, 18);
@@ -706,10 +707,191 @@ async function play(browserType, url, label) {
     expect(cl.tallyIntro === 'tallyIntro' && cl.fight.fighting && cl.fight.music === 'tallyman' && cl.fight.opened && cl.fight.struck === 40 && cl.fight.after === 'tallymanDefeated', `the Tallyman's fight went wrong (${JSON.stringify(cl.fight)})`);
     expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
     expect(cl.charges === 3 && cl.wall && cl.aisle === 'long-aisle', `the Breach Charges did not open the cracked wall (${cl.charges}, ${cl.wall}, ${cl.aisle})`);
-    expect(/BALLAST/.test(cl.toolbag) && /FLOODED BALLAST/.test(cl.grate), `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
+    expect(/BALLAST/.test(cl.toolbag) && cl.grate === 'ballast-intake', `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
     expect(/TRAVEL/.test(cl.podPrompt) && /warrens/.test(cl.travel) && cl.travelled === 'warrens' && cl.flux, `travel between pods, or Flux at home, went wrong (${JSON.stringify(cl)})`);
     expect(cl.boatLose.lose === 'EVERYONE ELSE, AND MARA' && /ENDS HERE/.test(cl.boatLose.note) && cl.ending.mode === 'title' && cl.ending.seen.includes('deserter'), `taking the boat did not play the Deserter ending to the title (${JSON.stringify(cl.ending)})`);
     await shot('labyrinth');
+
+    // ---- The Flooded Ballast (Phase 3.4), from a save at the Drain's grate with the Labyrinth behind it ----
+    await get(() => {
+      const s = HA.save.newState();
+      Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'shim', cargo: true, chalkStops: true, deserterMet: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true });
+      Object.assign(s.wardens, { bailiff: 'release', pruner: 'release', tallyman: 'release' });
+      Object.assign(s.people, { wick: 'dead', flux: 'home' });
+      Object.assign(s.abilities, { thruster: 'odell', grapple: true });
+      Object.assign(s, { toldShim: 'truth', mercy: 6, takenHome: 11, room: 'drain', x: 14 * 8, y: 19 * 8 - 14, facing: 1, fresh: false, lead: 'FOLLOW SOLDER DOWN THE DRAIN, TO THE BALLAST' });
+      s.weapons = ['cannon', 'harpoon', 'charges'].map((id) => HA.weapons.make(id));
+      localStorage.setItem('hollow-ark.save.v1', JSON.stringify(s));
+    });
+    await page.reload();
+    await page.waitForFunction(() => window.HA && HA.debug && HA.debug.frames > 20, null, { timeout: 15000 });
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => HA.ui.mode === 'play', null, { timeout: 5000 });
+    const bl = await get(() => {
+      const out = {};
+      const w = () => HA.debug.world;
+      const s = w().state;
+      const p = w().player;
+      const talkThrough = () => {
+        for (let i = 0; i < 6000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          HA.debug.skipScene();
+          HA.debug.step(1);
+        }
+      };
+      // (The page was reloaded, so the helpers from the Gardens are gone.)
+      const choose = (i) => {
+        for (let k = 0; k < i; k++) {
+          HA.debug.step(1, { down: true });
+          HA.debug.step(1);
+        }
+        const asks = !!w().scene.step.choice.options[i].confirm;
+        HA.debug.step(1, { confirm: true });
+        HA.debug.step(1);
+        if (asks) {
+          HA.debug.step(1, { up: true });
+          HA.debug.step(1);
+          HA.debug.step(1, { confirm: true });
+        }
+        talkThrough();
+      };
+      const solder = () => HA.story.npcOf(w(), 'solder');
+      // Walk on, jumping out of pools, and waiting whenever Solder falls behind.
+      const pace = (i) => HA.debug.step(1, solder() && p.x - solder().x > 60 ? {} : { right: true, jump: i % 30 < 10 });
+      w().assist.invincible = true;
+      // Down the grate, into the Ballast.
+      HA.debug.step(5);
+      HA.debug.step(1, { down: true });
+      talkThrough();
+      HA.debug.step(10);
+      out.into = { room: w().def.id, area: w().area.name, music: HA.music.playing, lead: s.lead };
+      // 1. Solder, with the motor: the toolbag back, the Foam Sprayer, and the walk begins.
+      HA.debug.goto('pump-gallery', 4, 18);
+      HA.debug.step(5);
+      talkThrough();
+      out.found = { foam: p.weapons.some((x) => x.id === 'foam'), back: !!s.flags.toolbagBack, walk: !!s.flags.solderWalk };
+      // 2. The walk along the Tank Farm, and Solder's goodbye at the workshop door.
+      HA.debug.goto('tank-farm', 2, 41);
+      HA.debug.step(5);
+      const barks = new Set();
+      for (let i = 0; i < 1500 && !(w().scene && w().scene.name === 'workshopDoor'); i++) {
+        HA.debug.step(1, solder() && p.x - solder().x > 120 ? {} : { right: true });
+        for (const b of w().barks) barks.add(b.text);
+      }
+      out.walk = { barks: barks.size, door: w().scene && w().scene.name };
+      talkThrough();
+      // Odell's Workshop: foam sets on the silt; stepping into the silt throws the hero back; the boots.
+      HA.debug.goto('odell-workshop', 6, 18);
+      HA.debug.step(5);
+      p.wi = p.weapons.findIndex((x) => x.id === 'foam');
+      HA.debug.step(1, { right: true });
+      HA.debug.step(2, { fire: true });
+      HA.debug.step(30);
+      out.foam = (w().foam || []).length && w().room.tile(10, 19) === HA.room.FOAM;
+      HA.debug.step(80, { right: true });
+      out.thrown = p.x < 13 * 8;
+      HA.debug.goto('odell-workshop', 36, 18);
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.boots = s.abilities.boots;
+      // In the boots the hero sinks to the bottom of the Tank Farm's east tank.
+      HA.debug.goto('tank-farm', 52, 41);
+      HA.debug.step(5);
+      HA.debug.step(1, { down: true, jump: true });
+      HA.debug.step(200);
+      out.sank = p.y > 55 * 8;
+      // The Silt Mother: her moves run, she's only hurt out of the water, she drains the tank, and she falls.
+      HA.debug.goto('silt-tank', 4, 18);
+      HA.debug.step(5);
+      talkThrough();
+      const b = w().boss;
+      out.fighting = b && b.fighting && HA.music.playing === 'siltMother';
+      const states = new Set();
+      for (let i = 0; i < 1200; i++) {
+        HA.debug.step(1);
+        states.add(b.state);
+      }
+      out.states = [...states].sort().join(',');
+      b.ghost = true;
+      const hp = b.hp;
+      HA.bosses.siltMother.hurt(w(), b, 10, 1);
+      out.underwater = b.hp === hp;
+      const hurtWhenOut = (to) => {
+        for (let i = 0; i < 5000 && b.hp > to; i++) {
+          HA.debug.step(1);
+          if (!b.ghost && b.state !== 'drain') HA.bosses.siltMother.hurt(w(), b, 6, 1);
+        }
+      };
+      hurtWhenOut(140);
+      HA.debug.step(200);
+      out.drained = b.phase === 2 && w().room.tile(40, 15) === HA.room.EMPTY;
+      hurtWhenOut(0);
+      out.defeated = w().scene && w().scene.name;
+      talkThrough();
+      HA.debug.step(30); // past the hit-stop of her last blow, which the skipped scene outran
+      out.after = { down: !!s.flags.siltDown, raid: s.warrensRaid, withHer: !!s.flags.solderWith, solder: !!solder(), gates: w().doors.every((d) => d.open) };
+      // 3. The flood. The first time, the water is let catch her, and she's pulled back to the Valve Hall.
+      HA.debug.goto('valve-hall', 8, 41);
+      HA.debug.step(5);
+      for (let i = 0; i < 400 && !(w().scene && w().scene.name === 'flood'); i++) pace(i);
+      talkThrough();
+      out.flood = { flooding: !!s.flags.flooding, music: HA.music.playing, doors: w().doors.map((d) => d.id + (d.open ? '+' : '-')).join(' ') };
+      w().floodLevel = solder().y + w().def.gy * 8 - 8;
+      for (let i = 0; i < 300 && !(w().scene && w().scene.name === 'floodFail'); i++) HA.debug.step(1);
+      out.failed = w().scene && w().scene.name;
+      talkThrough();
+      out.retry = { room: w().def.id, flooding: !!s.flags.flooding, solder: !!solder() };
+      // Then up the culvert, keeping her close, to the hatch.
+      for (let i = 0; i < 600 && !(w().scene && w().scene.name === 'flood'); i++) pace(i);
+      talkThrough();
+      const rooms = [];
+      let under = 0;
+      for (let i = 0; i < 6000 && !(w().scene && w().scene.name === 'jammed'); i++) {
+        pace(i);
+        if (!rooms.includes(w().def.id)) rooms.push(w().def.id);
+        if (solder()) under = Math.max(under, solder().under || 0);
+        if (w().scene && w().scene.name === 'floodFail') break;
+      }
+      out.culvert = { rooms: rooms.join('/'), under, scene: w().scene && w().scene.name };
+      // 4. Choice 9: eat the Bloom on the hatch.
+      talkThrough();
+      const opts = w().scene && w().scene.step && w().scene.step.choice && w().scene.step.choice.options;
+      out.nine = opts && opts.map((o) => o.label).join('/');
+      out.bloomLose = opts && opts[1].confirm.lose;
+      const bloom = s.bloom;
+      choose(1);
+      out.choice = { solder: s.people.solder, by: s.flags.solderBy, bloom: s.bloom - bloom, room: w().def.id, flooded: !!s.flags.flooded, flooding: !!s.flags.flooding, charges: p.weapons.some((x) => x.id === 'charges') };
+      // 5. The tram, and the ballast control log.
+      HA.debug.goto('tram-station', 33, 18);
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.tram = { tram: !!s.flags.tram, lead: s.lead };
+      HA.debug.goto('tram-station', 10, 8);
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      out.log = w().scene && w().scene.step && w().scene.step.text;
+      talkThrough();
+      // Home: the gate held, with the pistol on it.
+      HA.debug.goto('warrens', 40, 18);
+      for (let i = 0; i < 4; i++) {
+        HA.debug.step(40);
+        talkThrough();
+      }
+      out.home = { raidSeen: !!s.flags.raidSeen, story: s.journal.story.some((t) => /GATE HELD/.test(t)), solder: w().npcs.some((n) => n.id === 'solder' && n.state === 'out') };
+      return out;
+    });
+    expect(bl.into.room === 'ballast-intake' && bl.into.area === 'FLOODED BALLAST' && bl.into.music === 'ballast' && /SOLDER/.test(bl.into.lead), `the Drain's grate did not lead into the Ballast (${JSON.stringify(bl.into)})`);
+    expect(bl.found.foam && bl.found.back && bl.found.walk && bl.walk.barks >= 6 && bl.walk.door === 'workshopDoor', `finding Solder, or the walk, went wrong (${JSON.stringify(bl.found)}, ${JSON.stringify(bl.walk)})`);
+    expect(bl.foam && bl.thrown && bl.boots && bl.sank, `the Foam Sprayer, the silt or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.boots}, ${bl.sank})`);
+    expect(bl.fighting && /bite/.test(bl.states) && /lash/.test(bl.states) && /spit/.test(bl.states) && bl.underwater && bl.drained && bl.defeated === 'siltMotherDefeated', `the Silt Mother's fight went wrong (${JSON.stringify(bl)})`);
+    expect(bl.after.down && bl.after.raid === 'held' && bl.after.withHer && bl.after.solder && bl.after.gates, `after the Silt Mother, Solder or the raid went wrong (${JSON.stringify(bl.after)})`);
+    expect(bl.flood.flooding && bl.flood.music === 'flood' && /hallWest- culvert\+/.test(bl.flood.doors) && bl.failed === 'floodFail' && bl.retry.room === 'valve-hall' && !bl.retry.flooding && bl.retry.solder, `the flood, or its retry, went wrong (${JSON.stringify(bl.flood)}, ${bl.failed}, ${JSON.stringify(bl.retry)})`);
+    expect(bl.culvert.rooms === 'valve-hall/long-culvert/jammed-hatch' && bl.culvert.under === 0 && bl.culvert.scene === 'jammed', `the escape up the culvert went wrong (${JSON.stringify(bl.culvert)})`);
+    expect(bl.nine === 'BLOW THE BEAM/EAT THE BLOOM ON THE HATCH/LEAVE HER' && /BLOOM GROWS/.test(bl.bloomLose) && bl.choice.solder === 'alive' && bl.choice.by === 'bloom' && bl.choice.bloom === 2 && bl.choice.room === 'tram-station' && bl.choice.flooded && !bl.choice.flooding && bl.choice.charges, `choice 9 went wrong (${JSON.stringify(bl.choice)})`);
+    expect(bl.tram.tram && /ENGINE SPINE/.test(bl.tram.lead) && /NAVIGATOR AUTHORITY/.test(bl.log), `the tram, or the valves log, went wrong (${JSON.stringify(bl.tram)}, ${bl.log})`);
+    expect(bl.home.raidSeen && bl.home.story && bl.home.solder, `home after the raid went wrong (${JSON.stringify(bl.home)})`);
+    await shot('ballast');
 
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {

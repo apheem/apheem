@@ -15,8 +15,8 @@
   };
   // Without boots the hero floats chest-deep, and can swim across a surface but never down into deep water.
   const SWIM = { run: 0.85, gravity: 0.1, sink: 0.6, rise: 0.3, maxRise: 1.6, depth: 6, stroke: 3.6 };
-  // With the pressure boots the hero sinks, walks the bottom, and jumps heavily.
-  const BOOTS = { run: 0.75, gravity: 0.16, maxFall: 2.2, jump: 3.2 };
+  // With the pressure boots the hero sinks, walks the bottom, and jumps high off it (Odell's, from his workshop).
+  const BOOTS = { run: 0.75, gravity: 0.16, maxFall: 2.2, jump: 3.9 };
   // The harpoon bites a hook within range near the line of aim, then winches the hero up to hang from it.
   const GRAPPLE = { range: 96, cone: 0.42, speed: 4.5, cooldown: 12 };
 
@@ -74,7 +74,7 @@
     return true;
   }
 
-  // The boots' heavier jump from the bottom of a pool.
+  // The boots' jump from the bottom of a pool: high while underwater, cut short once it breaks the surface.
   const jumpPower = (p, base) => (p.wet && has(p, 'boots') ? BOOTS.jump : base);
 
   // ---- The thruster pack: press Jump again in the air, and hold it ----
@@ -263,23 +263,45 @@
 
   function drawWater(g, world, cam) {
     const room = world.room;
-    if (!room.hasWater) return;
+    if (!room.hasLiquid) return;
     const x0 = Math.max(0, Math.floor(cam.x / 8));
     const y0 = Math.max(0, Math.floor(cam.y / 8));
     const x1 = Math.min(room.w - 1, Math.ceil((cam.x + HA.VIEW_W) / 8));
     const y1 = Math.min(room.h - 1, Math.ceil((cam.y + HA.VIEW_H) / 8));
+    // Each area can tint its water (the Ballast's is dark teal).
+    const tint = (world.area && world.area.water) || { body: 'rgba(40,110,170,0.42)', top: '#9fd8e8' };
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
-        if (room.tile(tx, ty) !== HA.room.WATER) continue;
+        const t = room.tile(tx, ty);
+        if (t !== HA.room.WATER && t !== HA.room.SLUDGE) continue;
         const x = tx * 8 - cam.x;
         const y = ty * 8 - cam.y;
-        g.fillStyle = 'rgba(40,110,170,0.42)';
+        const silt = t === HA.room.SLUDGE;
+        g.fillStyle = silt ? '#2a1424' : tint.body;
         g.fillRect(x, y, 8, 8);
+        if (silt && (tx * 7 + ty * 3 + Math.floor(world.time / 30)) % 9 === 0) {
+          g.fillStyle = '#b04ad0';
+          g.fillRect(x + ((tx * 5) % 6), y + 2 + ((ty + tx) % 4), 1, 1);
+        }
         if (room.tile(tx, ty - 1) === HA.room.EMPTY) {
-          g.fillStyle = '#9fd8e8';
+          g.fillStyle = silt ? '#8a3a6a' : tint.top;
           g.fillRect(x, y + ((tx + Math.floor(world.time / 20)) % 2), 8, 1);
         }
       }
+    }
+    // Deep water the suit can't take without the boots is marked with a hazard stripe across it.
+    for (const st of (world.def && world.def.pressure) || []) {
+      const y = st.y * 8 + 3 - cam.y;
+      if (y < -8 || y > HA.VIEW_H + 8) continue;
+      for (let tx = st.x0; tx <= st.x1; tx++) {
+        const x = tx * 8 - cam.x;
+        if (x < -8 || x > HA.VIEW_W) continue;
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y, 8, 3);
+        g.fillStyle = '#ffd84d';
+        g.fillRect(x + (tx % 2 ? 0 : 4), y, 4, 3);
+      }
+      for (let tx = st.x0 + 1; tx + 8 <= st.x1; tx += 14) HA.font.draw(g, 'PRESSURE', tx * 8 - cam.x, y + 5, '#ffd84d');
     }
   }
 

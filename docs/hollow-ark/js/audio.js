@@ -243,6 +243,12 @@
       noise({ f: 700, f2: 3200, dur: 0.32, vol: 0.16, q: 0.8 });
       tone({ wave: 0.5, f: 140, f2: 70, dur: 0.18, vol: 0.12 });
     },
+    // The Flooded Ballast: the Foam Sprayer's wet cough, and the hiss of foam setting.
+    foam: () => noise({ f: 1800, f2: 600, dur: 0.12, vol: 0.12, q: 0.7 }),
+    foamSet: () => {
+      noise({ f: 3000, f2: 5000, dur: 0.25, vol: 0.07, q: 1.5 });
+      tone({ wave: 'sine', f: 300, f2: 500, dur: 0.12, vol: 0.05 });
+    },
     bulb: () => [523, 659, 494].forEach((f, i) => tone({ wave: 'sine', f, dur: 0.2, vol: 0.08, delay: i * 0.08 })),
     bloom: () => {
       tone({ wave: 'sine', f: 220, f2: 233, dur: 1.2, vol: 0.12, attack: 0.2 });
@@ -250,7 +256,7 @@
     },
   };
   // Each speaker's text blips at its own pitch.
-  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700, 'THE PURSER': 280, 'THE DESERTER': 230, FLUX: 230, 'THE TALLYMAN': 135, TERMINAL: 1100, 'COLD STORE LIFT': 700 };
+  const VOICE = { 'OLD GASKET': 260, WICK: 420, SOLDER: 340, SHIM: 620, TAMP: 300, BRINE: 380, 'THE BAILIFF': 120, INTERCOM: 190, 'POD 0418': 900, '': 520, 'THE PRUNER': 150, 'THE GARDENER': 480, 'A WOKEN VILLAGER': 360, 'GARDEN LIFT': 700, 'THE PURSER': 280, 'THE DESERTER': 230, FLUX: 230, 'THE TALLYMAN': 135, TERMINAL: 1100, 'COLD STORE LIFT': 700, 'BALLAST CONTROL': 1000 };
 
   function play(name, arg) {
     if (!live() || !SFX[name]) return;

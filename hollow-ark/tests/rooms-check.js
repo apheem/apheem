@@ -12,7 +12,11 @@
 //     pulls, a cracked wall a Breach Charge opens) keeps the exit behind it shut without it, and open with it,
 //     and so does an exit the room lists in `exitNeeds` (a ledge only a thruster reaches);
 //   - a room with cranes (the Stacks) can be crossed from every way in, whichever slot each crane's stack is
-//     in, by throwing the switches it can reach;
+//     in, by throwing the switches it can reach; a room whose doors or water follow a story flag (the Silt
+//     Tank's sluices, and its water once drained) can be crossed either way;
+//   - the Foam Sprayer's platforms are set and stood on as in the game, and a room with water is crossed again
+//     in the pressure boots, which sink where the hero used to float;
+//   - nowhere the hero can get to is a dead end they can't climb back out of;
 //   - belts carry the hero as they do in the game, and containers (%) are walls;
 //   - no gap is 7 tiles wide: that width looks jumpable but needs a pixel-perfect run-up;
 //   - every on-screen hint sits in open air, so no wall hides part of it.
@@ -37,10 +41,10 @@ const HA = sandbox.HA;
 HA.audio = { play() {}, charge() {} };
 // Button prompts inside hints, at their widest on any keyboard or controller.
 HA.input = { promptWidth: (a) => ({ confirm: 34, pause: 22, map: 22, prev: 16, next: 16 })[a] || 12 };
-const { SOLID, ONEWAY, THORNS, CRATE, EMPTY, WATER } = HA.room;
+const { SOLID, ONEWAY, THORNS, CRATE, EMPTY, WATER, FOAM, SLUDGE } = HA.room;
 
 // Spawns that are things to reach, as opposed to enemies, crates and doors.
-const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'q', 'j', 'b', 'r', 'd', 'v', 'B', 'D', 'P', 'o']);
+const NOT_TARGETS = new Set(['c', 'f', 'w', 'k', 'q', 'j', 'b', 'r', 'd', 'v', 'u', 'i', 'x', 'B', 'D', 'P', 'o']);
 // Door cells: D everywhere, and any other character a room's legend calls a door.
 const legendChars = (def, test) => Object.keys(def.legend || {}).filter((c) => test(def.legend[c]));
 const doorChars = (def) => ['D', ...legendChars(def, (l) => l.type === 'door')];
@@ -180,11 +184,12 @@ function hooksOf(room) {
 
 // weapon: what the hero holds for this move. Hovers fire the Purge Cannon; grapples fire the Grapple Harpoon,
 // which bites a hook in reach exactly as it does in the game.
-function simulate(room, def, abilities, start, program, onFrame, weapon) {
+function simulate(room, def, abilities, start, program, onFrame, weapon, frames = 300) {
   const p = HA.actors.makePlayer(start.x, start.y);
   p.weapons = [];
   if (abilities.cannon) p.weapons.push({ id: 'cannon', level: abilities.cannon, xp: 0, ammo: 40 });
   if (abilities.grapple) p.weapons.push({ id: 'harpoon', level: 1, xp: 0, ammo: 0 });
+  if (abilities.foam) p.weapons.push({ id: 'foam', level: 1, xp: 0, ammo: 0 });
   p.wi = Math.max(0, p.weapons.findIndex((w) => w.id === weapon));
   p.abilities = { thruster: abilities.thruster || null, grapple: !!abilities.grapple, boots: !!abilities.boots };
   p.vx = start.vx || 0;
@@ -201,7 +206,11 @@ function simulate(room, def, abilities, start, program, onFrame, weapon) {
     enemies: [],
     particles: [],
     pickups: [],
+    foam: [],
+    shields: [],
     assist: {},
+    hurtEnemy() {},
+    flash() {},
     dust() {},
     burst() {},
     shake() {},
@@ -212,11 +221,27 @@ function simulate(room, def, abilities, start, program, onFrame, weapon) {
       hurt = true;
     },
   };
+  try {
+    return run(world, p, def, program, onFrame, () => hurt, frames);
+  } finally {
+    // Foam set during the move melts again, so the room is as it was for the next one.
+    for (const pl of world.foam) HA.weapons.dissolve(world, pl);
+  }
+}
+
+// Is the body standing on foam (the Foam Sprayer's platforms)?
+function onFoam(room, p) {
+  const ty = Math.floor((p.y + p.h + 0.5) / 8);
+  return room.tile(Math.floor(p.x / 8), ty) === FOAM || room.tile(Math.floor((p.x + p.w - 0.01) / 8), ty) === FOAM;
+}
+
+function run(world, p, def, program, onFrame, hurt, frames) {
+  const room = world.room;
   const held = {};
   const pressed = {};
   const released = {};
   let airborne = false;
-  for (let f = 0; f < 300; f++) {
+  for (let f = 0; f < frames; f++) {
     const want = program(f, p);
     if (want === null) return { end: 'stop', p };
     for (const a of ['left', 'right', 'up', 'down', 'jump', 'fire']) {
@@ -227,13 +252,16 @@ function simulate(room, def, abilities, start, program, onFrame, weapon) {
     }
     world.time++;
     HA.actors.updatePlayer(world, { held, pressed, released });
-    world.shots.length = 0;
-    if (hurt) return { end: 'hurt' };
+    // Only foam matters here: it sets platforms the hero can stand on.
+    world.shots = world.shots.filter((s) => s.kind === 'foam');
+    HA.weapons.updateShots(world);
+    HA.weapons.updateFoam(world);
+    if (hurt()) return { end: 'hurt' };
     onFrame(p);
     if (p.x + p.w / 2 < 0) return { end: 'exit', side: 'left', row: Math.floor((p.y + p.h - 1) / 8) };
     if (p.x + p.w / 2 > def.w * 8) return { end: 'exit', side: 'right', row: Math.floor((p.y + p.h - 1) / 8) };
     if (!p.onGround) airborne = true;
-    else if (airborne || f > 40) return { end: 'land', x: p.x, y: p.y, p };
+    else if ((airborne || f > 40) && !onFoam(room, p)) return { end: 'land', x: p.x, y: p.y, p };
     // Floating still on a surface counts as landing there.
     if (p.wet && !p.grapple && f > 20 && Math.abs(p.vy) < 0.06 && Math.abs(p.vx) < 0.06) return { end: 'land', x: p.x, y: p.y, p };
   }
@@ -250,7 +278,7 @@ function input(dir, extra) {
 
 // The moves tried from every spot: jumps of several heights with steering, walking off ledges,
 // dropping through catwalks, and (with the cannon) hovering by firing down.
-function programs(abilities, onCatwalk) {
+function programs(abilities, onCatwalk, wet, shore, rings) {
   const list = [];
   for (const hold of [3, 7, 11, 15, 60]) {
     list.push({ runup: 0, prog: (f) => (f > 80 ? null : { jump: f < hold }) });
@@ -301,8 +329,8 @@ function programs(abilities, onCatwalk) {
     }
   }
   // Grapple: fire the harpoon forward, up or up-and-forward (standing, or at the top of a jump), hang, then
-  // leap off or drop.
-  if (abilities.grapple) {
+  // leap off or drop. (In a room with no rings to bite, these are only jumps, so they're left out.)
+  if (abilities.grapple && rings) {
     const aims = [
       { up: false, dir: -1 },
       { up: false, dir: 1 },
@@ -350,7 +378,70 @@ function programs(abilities, onCatwalk) {
       }
     }
   }
+  // Foam, from water: set a platform, get up onto it, then jump from it. Floating, the glob sets right in front
+  // at the surface and a stroke climbs on; on a pool's floor in the boots, it floats up and a jump goes up
+  // through it.
+  if (abilities.foam && wet) {
+    const aims = [-1, 1].map((dir) => ({ up: false, dir }));
+    if (abilities.boots) aims.push(...[-1, 1].map((dir) => ({ up: true, dir })));
+    for (const aim of aims) {
+      for (const hold of [8, 15, 60]) {
+        for (const steer of [-1, 0, 1]) {
+          list.push({
+            runup: 0,
+            weapon: 'foam',
+            prog: (f, p) => {
+              if (f === 0) p.startY = p.y;
+              if (!p.footSince && p.onGround && p.y < p.startY - 4) p.footSince = f;
+              if (!p.footSince) {
+                if (f < 3) return input(aim.dir, { up: aim.up, fire: f > 0 });
+                if (abilities.boots) return { jump: f >= 8 && f < 70 };
+                return { jump: (f >= 6 && f < 22) || (f >= 40 && f < 56) };
+              }
+              const t = f - p.footSince;
+              if (t < 4) return {};
+              return input(steer, { jump: t < 4 + hold });
+            },
+          });
+        }
+      }
+    }
+  }
+  // Foam, from the edge of the silt: lob a glob out onto it, hop onto the platform it sets, and again from there,
+  // until the hero lands on something firm.
+  if (abilities.foam && shore) {
+    for (const dir of [-1, 1]) {
+      for (const hold of [8, 12, 16, 24]) {
+        for (const [wait, run] of [[16, 0], [30, 0], [24, 6]]) {
+          list.push({
+            runup: 0,
+            weapon: 'foam',
+            long: true,
+            prog: (f, p) => {
+              if (f === 0) p.hop = 0;
+              if (p.onGround && p.flying) {
+                p.flying = false;
+                p.hop = f;
+              }
+              const t = f - p.hop;
+              if (!p.onGround) p.flying = t > 2;
+              if (t < 3) return input(dir, { fire: t > 0 });
+              if (t < wait - run) return {};
+              return input(dir, { jump: t >= wait && t < wait + hold });
+            },
+          });
+        }
+      }
+    }
+  }
   return list;
+}
+
+// Is there silt near this floor (a little below it, within a dozen tiles either way)? Water can be swum, so only
+// silt is worth hopping across on foam.
+function nearSilt(room, tx, ty) {
+  for (let x = tx - 12; x <= tx + 12; x++) for (let y = ty - 1; y <= ty + 3; y++) if (room.tile(x, y) === SLUDGE) return true;
+  return false;
 }
 
 // Where a room can be crossed: every floor (segment) the hero can stand on, and from each one, which floors
@@ -365,8 +456,13 @@ function buildGraph(def, room, abilities, targets) {
   const next = segs.map(() => new Set());
   const exits = segs.map(() => new Set());
   const touch = segs.map(() => new Set());
-  const progs = programs(abilities, false);
-  const progsCat = programs(abilities, true);
+  const lists = new Map();
+  const rings = (room.hooks || (room.hooks = hooksOf(room))).length > 0;
+  const progsFor = (catwalk, wet, shore) => {
+    const k = catwalk + ':' + wet + ':' + shore;
+    if (!lists.has(k)) lists.set(k, programs(abilities, catwalk, wet, shore, rings));
+    return lists.get(k);
+  };
   for (const seg of segs) {
     const touched = touch[seg.id];
     const onFrame = (p) => {
@@ -375,14 +471,18 @@ function buildGraph(def, room, abilities, targets) {
     const y = seg.ty * 8 - 14;
     // Walking covers the whole floor.
     for (let tx = seg.x0; tx <= seg.x1; tx++) onFrame({ x: tx * 8, y, w: 8, h: 14 });
+    // Moves are tried from every tile near a floor's ends, and from every other tile along the middle of a long
+    // one. Trying fewer spots can only find fewer ways across, so nothing passes that shouldn't.
     const spots = new Set();
-    for (let tx = seg.x0; tx <= seg.x1; tx++) spots.add(tx * 8);
+    for (let tx = seg.x0; tx <= seg.x1; tx++) if (tx - seg.x0 < 6 || seg.x1 - tx < 6 || (tx - seg.x0) % 2 === 0) spots.add(tx * 8);
     spots.add(seg.x0 * 8 - 5);
     spots.add(seg.x1 * 8 + 5);
     for (const x of spots) {
       const tx = Math.floor((x + 4) / 8);
       const catwalk = room.tile(tx, seg.ty) === ONEWAY;
-      for (const pr of catwalk ? progsCat : progs) {
+      const wet = room.tile(tx, seg.ty - 1) === WATER;
+      const shore = !!abilities.foam && !wet && nearSilt(room, tx, seg.ty);
+      for (const pr of progsFor(catwalk, wet, shore)) {
         if (pr.walk && x !== (pr.walk < 0 ? seg.x0 * 8 - 5 : seg.x1 * 8 + 5)) continue;
         let vx = 0;
         if (pr.runup) {
@@ -390,7 +490,7 @@ function buildGraph(def, room, abilities, targets) {
           if (back < 16) continue;
           vx = pr.runup * HA.actors.MOVE.run;
         }
-        const r = simulate(room, def, abilities, { x, y, vx }, pr.prog, onFrame, pr.weapon);
+        const r = simulate(room, def, abilities, { x, y, vx }, pr.prog, onFrame, pr.weapon, pr.long ? 700 : 300);
         if (r.end === 'land') {
           const n = segOf(r.x, r.y);
           if (n && n !== seg) next[seg.id].add(n.id);
@@ -411,8 +511,9 @@ function shapeOf(def, flags, gatesOpen) {
         const L = def.legend && def.legend[ch];
         if (L && L.type === 'glass') return '#';
         if (ch === 'B') return '.';
+        if (ch === '~' && def.drains && flags[def.drains]) return '.'; // the tank drained
         if (ch === 'D' || (L && L.type === 'door')) {
-          if (L && L.crane) return L.open(state) ? '.' : '%';
+          if (L && (L.crane || L.state)) return L.open(state) ? '.' : '%';
           if (L && L.needs && !gatesOpen) return '#';
           return '.';
         }
@@ -436,7 +537,10 @@ const abKey = (ab) => JSON.stringify(ab);
 // moves on to the other state of that crane, with the hero standing at the switch. With a thruster of either
 // pack, only what both packs reach counts.
 function makeSolver(def, targets) {
-  const cranes = [...new Set(legendChars(def, (l) => l.type === 'door' && l.crane).map((c) => def.legend[c].crane))];
+  // Each crane (and each story flag a door or the room's water follows, like the Silt Tank's sluices) doubles the
+  // states the room is checked in. Only a crane has switches to move between them.
+  const flagOf = (l) => l.crane || l.state;
+  const cranes = [...new Set(legendChars(def, (l) => l.type === 'door' && flagOf(l)).map((c) => flagOf(def.legend[c])).concat(def.drains ? [def.drains] : []))];
   const switches = new Map();
   for (const t of targets) if (t.legend && t.legend.type === 'switch') switches.set(t.id, t);
   const graphs = new Map();
@@ -477,6 +581,42 @@ function makeSolver(def, targets) {
   }
   return {
     states: 1 << cranes.length,
+    // Floors the hero can reach from these ways in but never leave again (no exit, and no lift or hatch in
+    // `goals`): a pool too deep to climb out of in the boots, say. Rooms without crane switches only, in one state.
+    switches: switches.size,
+    traps(entries, si, gatesOpen, abilities, goals) {
+      const found = [];
+      for (const ab of variants(abilities)) {
+        const G = graph(si, gatesOpen, ab);
+        const seen = new Set();
+        const queue = [];
+        const add = (i) => {
+          if (i === undefined || seen.has(i)) return;
+          seen.add(i);
+          queue.push(i);
+        };
+        for (const e of entries) add((G.segOf(e.x, e.y) || {}).id);
+        while (queue.length) for (const n of G.next[queue.shift()]) add(n);
+        const prev = G.segs.map(() => []);
+        G.next.forEach((ns, i) => ns.forEach((n) => prev[n].push(i)));
+        const out = new Set();
+        const back = [];
+        for (const sg of G.segs) {
+          if (!G.exits[sg.id].size && ![...G.touch[sg.id]].some((t) => goals.has(t))) continue;
+          out.add(sg.id);
+          back.push(sg.id);
+        }
+        while (back.length) {
+          for (const j of prev[back.shift()]) {
+            if (out.has(j)) continue;
+            out.add(j);
+            back.push(j);
+          }
+        }
+        for (const i of seen) if (!out.has(i) && !found.some((sg) => sg.id === i)) found.push(G.segs[i]);
+      }
+      return found;
+    },
     reach(entries, s0, gatesOpen, abilities) {
       const results = variants(abilities).map((ab) => search(entries, s0, gatesOpen, ab));
       const [first, ...rest] = results;
@@ -548,7 +688,7 @@ function checkRoom(def) {
     return;
   }
   const solver = makeSolver(def, targets);
-  const stateName = (si) => (solver.states > 1 ? ` with the cranes in state ${si}` : '');
+  const stateName = (si) => (solver.states > 1 ? ` with the ${solver.switches ? 'cranes' : 'story flags'} in state ${si}` : '');
 
   // From each way in on its own, in every crane state: every exit must be reachable, so the hero can never be
   // stuck. A gated exit must stay out of reach without its ability, and come into reach with it.
@@ -590,6 +730,30 @@ function checkRoom(def) {
     const withIt = solver.reach(entries, 0, true, Object.assign({}, base, needs));
     for (const t of targets) if (t.needs && JSON.stringify(t.needs) === k && !withIt.reached.has(t.id)) fail(def, `can't reach ${t.name} at ${t.id} even with ${describe(needs)}`);
   }
+
+  // Nowhere the hero can get to may be a dead end they can't get back out of.
+  const goals = new Set(links.map((t) => t.id));
+  const trapped = (ab, what) => {
+    if (solver.switches || (!exits.length && !links.length)) return; // the Stacks, and the closed ability test rooms
+    for (let si = 0; si < solver.states; si++) {
+      for (const sg of solver.traps(entries, si, true, ab, goals)) fail(def, `a hero${what} who gets onto row ${sg.ty} at x ${sg.x0}-${sg.x1} can't get back out${stateName(si)}`);
+    }
+  };
+  trapped(base, '');
+
+  // A room with water is crossed again later in the boots, which sink where the hero used to float. With all
+  // the hero has by then (and every gate open), every way in must still lead to every way out, and to every
+  // lift and hatch, with no pool they can't climb back out of.
+  if (room.hasWater && !base.boots) {
+    const later = Object.assign({}, base, { thruster: base.thruster || true, grapple: true, foam: true, boots: true });
+    for (const entry of entries) {
+      const from = entry.start ? 'start' : entry.link ? entry.link.name.replace(/^the /, '') : entry.exit.id;
+      const { exitsHit, reached } = solver.reach([entry], 0, true, later);
+      for (const t of links) if (t !== entry.link && !reached.has(t.id)) fail(def, `in the boots, can't reach ${t.name} at ${t.id} from the ${from}`);
+      for (const e of exits) if (e !== entry.exit && !reaches(exitsHit, e)) fail(def, `in the boots, can't reach the ${e.id} from the ${from}`);
+    }
+    trapped(later, ' in the boots');
+  }
 }
 
 function describe(needs) {
@@ -598,6 +762,7 @@ function describe(needs) {
   if (needs.thruster) parts.push(needs.thruster === true ? 'a thruster pack (either one)' : needs.thruster === 'bloomfire' ? 'the Bloomfire pack' : "Odell's thruster pack");
   if (needs.grapple) parts.push('the grapple');
   if (needs.boots) parts.push('the pressure boots');
+  if (needs.foam) parts.push('the Foam Sprayer');
   if (needs.charges) parts.push('Breach Charges');
   return parts.join(' and ');
 }
@@ -619,11 +784,29 @@ const ledgeRoom = (id, needs, extra) =>
 const pool = '##' + '#'.repeat(12) + '~'.repeat(13) + '#'.repeat(11) + '##';
 const poolRows = { 12: put(put(BLANK, 4, 'P'), 32, 'R'), 19: pool, 20: put(pool, 20, 'T') };
 for (let y = 13; y < 19; y++) poolRows[y] = pool;
+// Foam: a ledge four tiles over a wide pool, too high for a swimmer's stroke and too far from the bank to jump.
+// In the boots, the same ledge over a pool four deep: a jump from its floor falls short.
+const deep = '##' + '#'.repeat(12) + '~'.repeat(16) + '#'.repeat(8) + '##';
+const ledgeOver = (top, surface, floor) => {
+  const rows = { [top - 1]: put(BLANK, 34, 'T'), [surface - 1]: put(put(BLANK, 4, 'P'), 30, '#'.repeat(9)) };
+  for (let y = top; y < surface - 1; y++) rows[y] = put(BLANK, 30, '#'.repeat(9));
+  for (let y = surface; y < floor; y++) rows[y] = deep;
+  for (let y = floor; y < 21; y++) rows[y] = '#'.repeat(40);
+  return rows;
+};
+const foamRows = ledgeOver(9, 13, 19);
+// Silt: a channel too long to clear with a thruster under its low roof, and too hot to wade.
+const siltRows = { 18: put(put(BLANK, 3, 'P'), 36, 'T'), 19: '#'.repeat(6) + 's'.repeat(28) + '#'.repeat(6), 20: '#'.repeat(40) };
+for (let y = 2; y < 14; y++) siltRows[y] = '#'.repeat(40);
+const bootsFoamRows = ledgeOver(10, 14, 18);
 const ABILITY_TESTS = [
   ledgeRoom('test-odell', { thruster: 'odell' }),
   ledgeRoom('test-bloomfire', { thruster: 'bloomfire' }),
   ledgeRoom('test-grapple', { grapple: true }, { 10: put(BLANK, 24, 'o') }),
   testRoom('test-pool', poolRows, { boots: true }),
+  testRoom('test-foam', foamRows, { foam: true }),
+  Object.assign(testRoom('test-boots-foam', bootsFoamRows, { foam: true }), { abilities: { boots: true } }),
+  Object.assign(testRoom('test-silt', siltRows, { foam: true }), { abilities: { thruster: true, grapple: true } }),
 ];
 ABILITY_TESTS.forEach((def) => {
   def.w = 40;

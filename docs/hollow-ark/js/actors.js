@@ -188,6 +188,17 @@
       world.hurtPlayer(2, p.x + p.w / 2 - p.facing);
       p.vy = -3.2;
     }
+    // Bloom silt burns, and the hero is thrown back to the last firm ground they stood on (never foam).
+    const under = room.tile(Math.floor((p.x + p.w / 2) / 8), Math.floor((p.y + p.h + 0.5) / 8));
+    if (p.onGround && under !== HA.room.FOAM && !p.grapple) p.safe = { x: p.x, y: p.y };
+    if (HA.room.touchesSludge(room, p)) {
+      world.burst(p.x + p.w / 2, p.y + p.h - 2, ['#b04ad0', '#f27ad8', '#5a3a26'], 10, 1.4);
+      world.hurtPlayer(2, p.x + p.w / 2 - p.facing);
+      if (!p.dead && p.safe) {
+        Object.assign(p, { x: p.safe.x, y: p.safe.y, vx: 0, vy: 0, stun: 12, jumping: false, thrusting: false });
+        world.flash('#b04ad0', 4);
+      } else if (!p.dead) p.vy = -3.2;
+    }
 
     // Timers and animation
     if (p.invuln > 0) p.invuln--;
@@ -270,8 +281,13 @@
     rat: { w: 8, h: 5, hp: 2, dmg: 1, drops: { small: 1, big: 0, heart: 0.06 } },
     drone: { w: 12, h: 7, hp: 3, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
     dropper: { w: 12, h: 8, hp: 5, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
+    // The Flooded Ballast: silt eels that lunge at anyone in their water, Bloom jellies that drift and sting, and
+    // drowned Wardens, slow and waterlogged, that swell and burst once something hits them.
+    eel: { w: 14, h: 6, hp: 4, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
+    jelly: { w: 10, h: 10, hp: 2, dmg: 2, drops: { small: 1, big: 0, heart: 0.1 } },
+    drowned: { w: 12, h: 18, hp: 6, dmg: 2, drops: { small: 3, big: 1, heart: 0.4 } },
   };
-  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper' };
+  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper', u: 'eel', i: 'jelly', x: 'drowned' };
   // What the Bloomsworn are thinking. Only a hero with the Bloom in them (stage 3 or more) can hear it.
   const THOUGHTS = ['SO LOUD', 'WHERE IS MY GIRL', 'IT HURTS WHEN IT STOPS', 'COUNT ME', 'SO WARM', 'I HAD A NAME', 'KEEP MOVING'];
 
@@ -331,7 +347,7 @@
     }
     if (e.stun > 0) {
       e.stun--;
-      if (e.type !== 'drifter' && e.type !== 'drone') {
+      if (e.type !== 'drifter' && e.type !== 'drone' && e.type !== 'eel' && e.type !== 'jelly') {
         e.vx = 0;
         walk(world, e);
       }
@@ -339,6 +355,11 @@
     }
 
     if (e.type === 'rat') updateRat(world, e, px, py, dist);
+    else if (e.type === 'eel') updateEel(world, e, px, py, dist);
+    else if (e.type === 'jelly') updateJelly(world, e, px, py, dist);
+    else if (e.type === 'drowned') {
+      if (updateDrowned(world, e, px, py, dist)) return;
+    }
     else if (e.type === 'drone') updateDrone(world, e, px, py);
     else if (e.type === 'dropper') updateDropper(world, e, px, py, dist);
     else if (e.type === 'crawler') {
@@ -646,9 +667,118 @@
     if (e.vx) e.facing = HA.sign(e.vx);
   }
 
+  // A silt eel stays in its water: it sways along near home, and when the hero is in the water close by, it curls
+  // and lunges.
+  function updateEel(world, e, px, py, dist) {
+    const room = world.room;
+    const p = world.player;
+    const wet = (x, y) => room.tile(Math.floor(x / 8), Math.floor(y / 8)) === HA.room.WATER;
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    if (e.cool > 0) e.cool--;
+    if (e.tele > 0) {
+      e.vx = 0;
+      e.vy = 0;
+      if (--e.tele === 0) {
+        const a = Math.atan2(py - cy, px - cx);
+        e.vx = Math.cos(a) * 2.2;
+        e.vy = Math.sin(a) * 2.2;
+        e.lunge = 30;
+        HA.audio.play('swipe');
+      }
+    } else if (e.lunge > 0) {
+      e.lunge--;
+      e.vx *= 0.97;
+      e.vy *= 0.97;
+    } else {
+      e.vx = approach(e.vx, e.dir * 0.5, 0.05);
+      e.vy = approach(e.vy, Math.sin(e.t * 0.05) * 0.3, 0.05);
+      if (Math.abs(e.x - e.homeX) > 40) e.dir = sign(e.homeX - e.x);
+      if (p.wet && dist < 80 && e.cool <= 0 && !p.dead) {
+        e.cool = 110;
+        e.tele = 20;
+        HA.audio.play('telegraph');
+      }
+    }
+    if (!wet(cx + e.vx + sign(e.vx) * (e.w / 2), cy)) {
+      e.vx = -e.vx;
+      e.dir = sign(e.vx || -e.dir);
+      e.lunge = 0;
+    }
+    if (!wet(cx, cy + e.vy + sign(e.vy) * (e.h / 2))) e.vy = -e.vy * 0.5;
+    e.x += e.vx;
+    e.y += e.vy;
+    e.facing = sign(e.vx || e.dir);
+  }
+
+  // A Bloom jelly drifts: a pulse lifts it, then it sinks a little, and it leans after the hero when near.
+  function updateJelly(world, e, px, py, dist) {
+    const chase = dist < 110 && !world.player.dead;
+    const tx = chase ? px : e.homeX + 5 + Math.sin(e.t * 0.012) * 20;
+    const ty = chase ? py - 6 : e.homeY + 5;
+    if ((e.t + e.spawn.tx * 11) % 80 === 0 && e.y + e.h / 2 > ty) {
+      e.vy = -0.9;
+      e.pulse = 12;
+    }
+    if (e.pulse > 0) e.pulse--;
+    e.vy = Math.min(e.vy + 0.012, 0.3);
+    e.vx = approach(e.vx, clamp((tx - (e.x + e.w / 2)) * 0.01, -0.3, 0.3), 0.01);
+    const hit = HA.room.move(world.room, e, e.vx, e.vy);
+    if (hit.left || hit.right) e.vx = -e.vx;
+    if (hit.down) e.vy = -0.4;
+    e.facing = 1;
+  }
+
+  // A drowned Warden walks at the hero, slowly. Hit, it swells, and a moment later it bursts. Returns true once it
+  // has burst.
+  function updateDrowned(world, e, px, py, dist) {
+    if (e.fuse > 0) {
+      e.vx = 0;
+      walk(world, e);
+      if (--e.fuse === 0) {
+        burstDrowned(world, e);
+        return true;
+      }
+      return false;
+    }
+    const near = dist < 140 && Math.abs(py - (e.y + e.h / 2)) < 40 && !world.player.dead;
+    if (near) e.facing = sign(px - (e.x + e.w / 2));
+    e.vx = approach(e.vx, near ? e.facing * 0.3 : 0, 0.02);
+    walk(world, e);
+    return false;
+  }
+
+  function burstDrowned(world, e) {
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    const p = world.player;
+    if (Math.hypot(p.x + p.w / 2 - cx, p.y + p.h / 2 - cy) < 28) world.hurtPlayer(3, cx);
+    for (const o of world.enemies) {
+      if (o === e || o.dead || o.boss || Math.hypot(o.x + o.w / 2 - cx, o.y + o.h / 2 - cy) > 28) continue;
+      world.hurtEnemy(o, 6, sign(o.x + o.w / 2 - cx));
+    }
+    world.burst(cx, cy, ['#6fd0b8', '#3f7a4a', '#ffffff', '#b04ad0'], 22, 2.4);
+    world.flashes.push({ x: cx, y: cy, life: 4, r: 6 });
+    world.shake(3);
+    HA.audio.play('blast');
+    kill(world, e);
+  }
+
   function hurtEnemy(world, e, dmg, dir) {
     if (e.dead) return;
     if (e.boss) return HA.bosses[e.type].hurt(world, e, dmg, dir);
+    if (e.type === 'drowned') {
+      // The first hit starts it swelling; killing it sets it off at once.
+      e.hp -= dmg;
+      e.flash = 5;
+      if (!e.fuse) {
+        e.fuse = 45;
+        HA.audio.play('swell');
+      }
+      if (e.hp <= 0) e.fuse = 1;
+      world.burst(e.x + e.w / 2, e.y + e.h / 2, ['#6fd0b8', '#ffffff'], 3, 1.2);
+      return;
+    }
     if (e.type === 'bloomsworn' && e.state === 'stagger') dmg = Math.ceil(dmg * 1.5);
     e.hp -= dmg;
     e.flash = 5;
@@ -665,23 +795,25 @@
       e.x += dir * 1.5;
     }
     world.burst(e.x + e.w / 2, e.y + e.h / 2, ['#f27ad8', '#ffffff'], 3, 1.2);
-    if (e.hp <= 0) {
-      e.dead = true;
-      e.spawn.respawn = 300;
-      const cx = e.x + e.w / 2;
-      const cy = e.y + e.h / 2;
-      world.burst(cx, cy, ['#f27ad8', '#b04ad0', '#5c2479', '#fff0a8'], 16, 2.2);
-      const d = ENEMY[e.type].drops;
-      for (let i = 0; i < d.small; i++) world.pickups.push(makeShard(cx, cy, false));
-      for (let i = 0; i < d.big; i++) world.pickups.push(makeShard(cx, cy, true));
-      if (Math.random() < d.heart && world.player.hp < world.player.maxHp) world.pickups.push(makeHeart(cx, cy));
-      HA.bloom.onKill(world);
-      world.shake(2);
-      world.freeze(3);
-      HA.audio.play('kill');
-    } else {
-      HA.audio.play('hit');
-    }
+    if (e.hp <= 0) kill(world, e);
+    else HA.audio.play('hit');
+  }
+
+  // Something dies: it bursts, drops its shards (and sometimes a heart), and comes back later out of sight.
+  function kill(world, e) {
+    e.dead = true;
+    if (e.spawn.respawn >= 0) e.spawn.respawn = 300; // in a room where nothing comes back (-1), it stays dead
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    world.burst(cx, cy, ['#f27ad8', '#b04ad0', '#5c2479', '#fff0a8'], 16, 2.2);
+    const d = ENEMY[e.type].drops;
+    for (let i = 0; i < d.small; i++) world.pickups.push(makeShard(cx, cy, false));
+    for (let i = 0; i < d.big; i++) world.pickups.push(makeShard(cx, cy, true));
+    if (Math.random() < d.heart && world.player.hp < world.player.maxHp) world.pickups.push(makeHeart(cx, cy));
+    HA.bloom.onKill(world);
+    world.shake(2);
+    world.freeze(3);
+    HA.audio.play('kill');
   }
 
   function drawEnemy(ctx, world, e, cam) {
@@ -689,7 +821,7 @@
     if (e.type === 'pod') return drawPod(ctx, world, e, cam);
     const frames = HA.art.enemies[e.type];
     const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn' && !e.cling) || Math.abs(e.vx) > 0.05;
-    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9 }[e.type] || (e.state === 'charge' ? 5 : 14);
+    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9, eel: 8, jelly: 12, drowned: 18 }[e.type] || (e.state === 'charge' ? 5 : 14);
     let spr = frames[walking && !(e.stun > 0) ? Math.floor(e.t / pace) % frames.length : 0];
     if (e.type === 'bloomsworn' && e.state === 'stagger') spr = HA.art.enemies.bloomswornStagger;
     const img = e.flash > 0 ? spr.white : spr.img;
@@ -709,6 +841,19 @@
       ctx.fillStyle = '#fff0a8';
       ctx.fillRect(x - 3, y - 3, 1, 1);
       ctx.fillRect(x + 3, y - 4, 1, 1);
+    }
+    // A drowned Warden swelling to burst, and an eel curling to lunge.
+    if (e.type === 'drowned' && e.fuse > 0 && Math.floor(e.fuse / (e.fuse < 15 ? 2 : 5)) % 2 === 0) {
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(spr.white, x - Math.floor(spr.w / 2), y);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#6fd0b8';
+      ctx.fillRect(x - 8, y + 6, 1, 1);
+      ctx.fillRect(x + 7, y + 4, 1, 1);
+    }
+    if (e.type === 'eel' && e.tele > 0 && Math.floor(e.tele / 3) % 2 === 0) {
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillRect(x + e.facing * 5, y + 1, 2, 2);
     }
     if (e.type === 'drone' && e.tele > 0 && Math.floor(e.tele / 4) % 2 === 0) {
       ctx.fillStyle = '#fff0a8';
