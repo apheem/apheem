@@ -66,7 +66,16 @@
     tamp: { name: 'TAMP', sprite: 'tamp' },
     brine: { name: 'BRINE', sprite: 'brine' },
     gardener: { name: 'THE GARDENER', sprite: 'gardener' },
+    woken: { name: 'A WOKEN VILLAGER', sprite: 'woken1' },
   };
+
+  // What the Hullfolk call the hero, by Mercy (never shown as a number). LATE is a name Shim gives, so it waits
+  // until he has given it; COUNTER is what they call the Wardens.
+  function callName(s) {
+    if (s.mercy <= -3) return 'COUNTER';
+    if (s.mercy >= 4 && s.flags.namedLate) return 'LATE';
+    return 'SLEEPER';
+  }
 
   function makeNpc(world, id, sp) {
     const spr = HA.art.people[PEOPLE[id].sprite];
@@ -95,6 +104,8 @@
     if (id === 'shim' && world.def.id === 'thaw-corridor') return 'out';
     if (!f.metHullfolk) return 'hidden';
     if (f.raid && !f.reunion) return id === 'tamp' || id === 'brine' ? 'hidden' : 'out';
+    // Once the taken are home, the village comes out to the hero, unless they've started calling them COUNTER.
+    if (f.cradles) return (id === 'tamp' || id === 'brine') && callName(world.state) === 'COUNTER' ? 'hidden' : 'out';
     if (f.reunion && world.state.wardens.bailiff === 'salvage' && (id === 'tamp' || id === 'brine')) return 'hidden';
     return 'out';
   }
@@ -140,6 +151,7 @@
     g.translate(cx, cy);
     g.scale(n.facing || 1, 1);
     g.drawImage(frame.img, -Math.floor(frame.w / 2), 0);
+    if (n.lantern) HA.scenery.miniLantern(g, 2, frame.h - 7);
     if (n.wrench) {
       g.fillStyle = '#6c7894';
       g.fillRect(4, 5, 1, 6);
@@ -186,6 +198,8 @@
   function phase(world) {
     const f = world.state.flags;
     if (world.def.area === 'gardens') return 'cellar';
+    if (f.climbPlanned) return 'climb'; // the morning after Solder leaves
+    if (f.homeAgain) return 'home'; // home from the Gardens, without Wick
     if (f.reunion) return world.state.wardens.bailiff === 'release' ? 'after-release' : 'after-salvage';
     if (f.raid) return 'taken';
     return 'night';
@@ -253,20 +267,32 @@
     },
   };
 
+  // A person's lines for this point in the story: a list of things to say, one more each time they're talked to
+  // (the last repeats). An area can hand a talk to a scene instead, and a list (or a line) can be a function of
+  // the world, for lines that depend on choices. Someone with lines of their own (the woken) always says those.
   function talk(world, npc) {
     const s = world.state;
-    const lines = TALK[npc.id][phase(world)] || [['...']];
+    for (const a of AREAS) {
+      const scene = a.talk && a.talk(world, npc);
+      if (scene) {
+        npc.facing = Math.sign(world.player.x - npc.x) || 1;
+        return run(world, scene);
+      }
+    }
+    let lines = npc.lines ? [npc.lines] : TALK[npc.id][phase(world)] || [['...']];
+    if (typeof lines === 'function') lines = lines(world);
     const k = npc.id + ':' + phase(world);
-    const count = s.talked[k] || 0;
+    const count = npc.lines ? 0 : s.talked[k] || 0;
     let pick = lines[Math.min(count, lines.length - 1)];
     if (pick.capsule) {
       const wanted = world.player.weapons.some((w) => w.id === 'cannon') && !s.taken['coolant-hall:H'];
       pick = wanted ? pick.capsule : lines[lines.length - 1];
     }
-    s.talked[k] = count + 1;
+    if (!npc.lines) s.talked[k] = count + 1;
     npc.facing = Math.sign(world.player.x - npc.x) || 1;
     HA.scenes.run(world, function* () {
-      for (const line of pick) {
+      for (let line of pick) {
+        if (typeof line === 'function') line = line(world);
         if (line.heal) {
           world.player.hp = world.player.maxHp;
           world.floatText(world.player.x + 4, world.player.y - 6, 'HEALED', '#7ad1a0');
@@ -908,10 +934,20 @@
     run(world, world.boss.type === 'bailiff' ? 'bossDefeated' : world.boss.type + 'Defeated');
   }
 
-  // Music the story asks for, or undefined to let the room choose.
+  // A lift or a hatch: each area's story decides whether it runs and what happens on the way.
+  function useLink(world, link) {
+    world.link = link;
+    run(world, link.legend.type === 'lift' ? 'lift' : 'hatch');
+  }
+
+  // Music the story asks for, or undefined to let the room choose. Later areas' hooks speak first.
   function music(world) {
     const f = world.state.flags;
     const id = world.def.id;
+    for (const a of AREAS) {
+      const m = a.music && a.music(world);
+      if (m !== undefined) return m;
+    }
     if (id === 'cryo-bay' && !f.woke) return null;
     if (id === 'warrens') {
       if (!f.metHullfolk) return null;
@@ -920,12 +956,8 @@
       if (f.reunion) return world.state.wardens.bailiff === 'release' ? 'warrens' : 'warrensHush';
     }
     if (id === 'arena') return world.boss && world.boss.fighting && !world.boss.broken ? 'boss' : null;
-    for (const a of AREAS) {
-      const m = a.music && a.music(world);
-      if (m !== undefined) return m;
-    }
     return undefined;
   }
 
-  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, setLead, addStory, addChoice, bark, drawBarks };
+  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, drawBarks };
 })(window.HA);

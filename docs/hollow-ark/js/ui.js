@@ -378,7 +378,7 @@
 
   function drawControls(g, m) {
     const pw = 300;
-    const ph = 156;
+    const ph = 166;
     const px = Math.round(W / 2 - pw / 2);
     const py = Math.round(H / 2 - ph / 2);
     drawPanel(g, px, py, pw, ph);
@@ -392,6 +392,7 @@
       ['EAT A BLOOM BULB', 'F / L', 'Y'],
       ['DROP DOWN', 'DOWN + JUMP', 'DOWN + A'],
       ['TALK, READ, REST', 'UP', 'UP'],
+      ['CLIMB DOWN', 'DOWN', 'DOWN'],
       ['MAP, JOURNAL', 'TAB / M', 'VIEW / BACK'],
       ['PAUSE', 'ESC / ENTER / P', 'START'],
       ['FULLSCREEN', 'ALT+ENTER' + (HA.desktop ? ' / F11' : ''), 'SETTINGS MENU'],

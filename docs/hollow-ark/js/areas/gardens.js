@@ -65,7 +65,7 @@
     gx: 360,
     gy: 46,
     legend: {
-      L: { type: 'lift', name: 'the Garden Lift' },
+      L: { type: 'lift', name: 'the Garden Lift', to: 'warrens' },
       // The hatch to the Seed Vault has a ring the grapple can bite and pull.
       V: { type: 'door', id: 'vault', open: (s) => !!s.flags.vaultHatch, ring: 'vaultHatch', needs: { grapple: true } },
       // The seal to the vats opens with the cradles.

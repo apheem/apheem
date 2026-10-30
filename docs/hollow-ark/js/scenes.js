@@ -239,10 +239,11 @@
   }
 
   // The box sits at the bottom of the screen, unless the hero (and so whoever they're with) would be
-  // under it, as on the floor of a one-screen-high room: then it moves to the top.
+  // under it, as on the floor of a one-screen-high room: then it moves to the top. With the hero out of the
+  // picture (asleep in a pod), the people talking are on the floor too if the room is only a screen high.
   function boxY(world) {
     const p = world.player;
-    if (p.hidden) return BOX.y;
+    if (p.hidden) return world.room.ph <= H + 8 ? BOX.top : BOX.y;
     return p.y + p.h - world.cam.y > BOX.y - 4 ? BOX.top : BOX.y;
   }
 

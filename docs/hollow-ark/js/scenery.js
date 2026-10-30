@@ -383,7 +383,7 @@
         g.fillRect(x - 4, y, 9, 1);
       }
     },
-    // The Garden Lift's shaft: two cables from the ceiling down to the car.
+    // The Garden Lift's shaft: two cables from the ceiling down to the car. The Warrens' stop has its own colour.
     liftshaft(g, s) {
       const x = s.x * 8;
       for (const dx of [-6, 13]) {
@@ -392,8 +392,69 @@
         g.fillStyle = '#3a4258';
         g.fillRect(x + dx + 1, 0, 1, s.y * 8 - 20);
       }
-      g.fillStyle = '#16241b';
+      g.fillStyle = s.color || '#16241b';
       g.fillRect(x - 10, 24, 28, s.y * 8 - 44);
+    },
+    // The old crew's keel tram, dead at its platform: a cable car under its cable, which runs off east into the
+    // dark of the keel tunnel.
+    tram(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8 + 8;
+      g.fillStyle = '#05060d';
+      g.fillRect(s.tunnel * 8, y - 52, (s.x1 - s.tunnel) * 8, 52);
+      g.fillStyle = '#3a2818';
+      g.fillRect(s.tunnel * 8 - 3, y - 55, 3, 55);
+      g.fillRect(s.tunnel * 8 - 3, y - 55, (s.x1 - s.tunnel) * 8 + 3, 3);
+      // the cable, from its wheel on the platform wall into the tunnel
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 24, y - 44, s.x1 * 8 - x + 24, 2);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x - 24, y - 44, s.x1 * 8 - x + 24, 1);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 31, y - 51, 15, 15);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x - 30, y - 50, 13, 13);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 26, y - 46, 5, 5);
+      g.fillStyle = '#a8743a';
+      g.fillRect(x - 25, y - 45, 3, 3);
+      // the car
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, y - 37, 66, 35);
+      g.fillStyle = '#5a4028';
+      g.fillRect(x, y - 36, 64, 33);
+      g.fillStyle = '#8a5a2b';
+      g.fillRect(x, y - 36, 64, 2);
+      g.fillStyle = '#3a2818';
+      g.fillRect(x, y - 12, 64, 2);
+      for (let i = 0; i < 4; i++) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 5 + i * 15, y - 31, 11, 13);
+        g.fillStyle = '#1a2a30';
+        g.fillRect(x + 6 + i * 15, y - 30, 9, 11);
+        g.fillStyle = 'rgba(216,244,255,0.18)';
+        g.fillRect(x + 7 + i * 15, y - 29, 2, 6);
+      }
+      // the hanger up to the cable, and the dead lamp on the nose
+      g.fillStyle = '#3a4258';
+      g.fillRect(x + 30, y - 44, 4, 8);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 62, y - 24, 4, 4);
+      g.fillStyle = '#3a2a10';
+      g.fillRect(x + 63, y - 23, 2, 2);
+      g.fillStyle = '#c98a4a';
+      g.globalAlpha = 0.6;
+      HA.font.draw(g, 'KEEL LINE', x + 9, y - 9, '#c98a4a', { shadow: null });
+      g.globalAlpha = 1;
+      // the platform's edge, and the car's wheels on the track bed below it
+      g.fillStyle = '#10121c';
+      for (const wx of [8, 50]) g.fillRect(x + wx, y - 3, 6, 3);
+    },
+    // Solder's chalk: quick white letters, the way she marks a route.
+    chalk(g, s) {
+      g.globalAlpha = 0.7;
+      HA.font.draw(g, s.text, s.x * 8, s.y * 8, '#e6e2d6', { shadow: null });
+      g.globalAlpha = 1;
     },
     // The ceiling rail the Pruner climbs to.
     rails(g, s) {
@@ -582,6 +643,13 @@
   function drawFire(g, world, s, cam) {
     const x = Math.round(s.x * 8 - cam.x);
     const y = Math.round(s.y * 8 + 8 - cam.y);
+    // Wick's lantern, hung on a hook by the fire where she'd have seen it.
+    if (world.state.flags.lanternWith === 'fire') {
+      g.fillStyle = '#3a2616';
+      g.fillRect(x - 12, y - 22, 1, 10);
+      g.fillRect(x - 12, y - 22, 3, 1);
+      miniLantern(g, x - 13, y - 12);
+    }
     const night = (world.state.flags.night && !world.state.flags.reunion) || world.nightScene;
     const glow = g.createRadialGradient(x, y - 4, 0, x, y - 4, night ? 24 : 40);
     glow.addColorStop(0, 'rgba(255,155,61,0.28)');
@@ -766,7 +834,60 @@
     }
   }
 
-  // The Garden Lift's car: a cage on its cables, the lamp red while it's locked and green once it will run.
+  // A lantern small enough to hang from a belt or a child's hand, with its own glow.
+  function miniLantern(g, x, y) {
+    const glow = g.createRadialGradient(x + 1, y + 3, 0, x + 1, y + 3, 14);
+    glow.addColorStop(0, 'rgba(255,184,77,0.3)');
+    glow.addColorStop(1, 'rgba(255,184,77,0)');
+    g.fillStyle = glow;
+    g.fillRect(x - 13, y - 11, 28, 28);
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 1, y, 5, 6);
+    g.fillStyle = '#6c7894';
+    g.fillRect(x, y - 1, 3, 1);
+    g.fillStyle = '#ffb84d';
+    g.fillRect(x, y + 1, 3, 4);
+    g.fillStyle = '#fff0a8';
+    g.fillRect(x + 1, y + 2, 1, 2);
+  }
+
+  // Lifts and hatches between rooms. A lift is a cage on its cables, its lamp red while it's locked and green once
+  // it will run. A floor hatch is a plate in the floor, then a hole with a ladder's top once it's open. Its other
+  // end is a ladder up through the ceiling.
+  function drawLink(g, world, l, cam) {
+    if (l.legend.type === 'lift') return drawLift(g, world, l, cam);
+    const x = Math.round(l.tx * 8 - 4 - cam.x);
+    if (l.legend.up) {
+      const foot = Math.round(l.ty * 8 + 8 - cam.y);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 2, -1, 2, foot + 1);
+      g.fillRect(x + 12, -1, 2, foot + 1);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 3, -1, 1, foot + 1);
+      g.fillRect(x + 13, -1, 1, foot + 1);
+      for (let y = foot - 4; y > -8; y -= 6) g.fillRect(x + 3, y, 11, 1);
+      return;
+    }
+    const y = Math.round(l.ty * 8 + 8 - cam.y);
+    if (l.legend.open(world.state)) {
+      g.fillStyle = '#05060d';
+      g.fillRect(x, y, 16, 4);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 3, y, 1, 4);
+      g.fillRect(x + 12, y, 1, 4);
+      g.fillRect(x + 3, y + 2, 10, 1);
+      return;
+    }
+    g.fillStyle = '#10121c';
+    g.fillRect(x, y, 16, 3);
+    g.fillStyle = '#5a4028';
+    g.fillRect(x + 1, y, 14, 2);
+    g.fillStyle = '#a8743a';
+    g.fillRect(x + 2, y, 1, 1);
+    g.fillRect(x + 13, y, 1, 1);
+    g.fillRect(x + 6, y, 4, 1);
+  }
+
   function drawLift(g, world, l, cam) {
     const x = Math.round(l.x - cam.x);
     const y = Math.round(l.y - cam.y);
@@ -816,6 +937,30 @@
   }
 
   function drawDoor(g, world, d, cam) {
+    // Solder's gate, the one that opens from the Hullfolk's side: patched plates, rivets, and a wheel.
+    if (d.legend.kept && d.legend.kept(world.state)) {
+      for (const c of d.cells) {
+        const x = c.tx * 8 - cam.x;
+        const y = c.ty * 8 - cam.y;
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y, 8, 8);
+        g.fillStyle = (c.tx + c.ty) % 2 ? '#5a4028' : '#4a3420';
+        g.fillRect(x + 1, y, 6, 8);
+        g.fillStyle = '#a8743a';
+        g.fillRect(x + 1, y + 1, 1, 1);
+        g.fillRect(x + 6, y + 6, 1, 1);
+      }
+      const xs = d.cells.map((c) => c.tx);
+      const ys = d.cells.map((c) => c.ty);
+      const wx = Math.min(...xs) * 8 - cam.x;
+      const wy = ((Math.min(...ys) + Math.max(...ys) + 1) / 2) * 8 - cam.y;
+      g.fillStyle = '#a9b6cc';
+      g.fillRect(wx - 1, wy - 4, 1, 8);
+      g.fillRect(wx - 3, wy - 1, 5, 1);
+      g.fillStyle = '#6c7894';
+      g.fillRect(wx - 3, wy - 3, 1, 5);
+      return;
+    }
     for (const c of d.cells) {
       const x = c.tx * 8 - cam.x;
       const y = c.ty * 8 - cam.y;
@@ -868,5 +1013,5 @@
     }
   }
 
-  HA.scenery = { THEMES, layers, drawBack, drawTerminal, drawDoor, drawCage, drawLight, drawLift, drawGlass, cradleSpot };
+  HA.scenery = { THEMES, layers, drawBack, drawTerminal, drawDoor, drawCage, drawLight, drawLink, drawGlass, cradleSpot, miniLantern };
 })(window.HA);

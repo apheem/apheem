@@ -14,8 +14,8 @@
     legend: { T: { type: 'log', id: 'collect' } },
     scenery: [{ kind: 'cells', x: 26, y: 4, n: 5 }, { kind: 'bloom', x: 30, y: 20, n: 26 }, { kind: 'hazard', x: 16, y: 15, w: 8, h: 1 }],
     triggers: [{ x0: 0, x1: 6, when: (s) => !s.flags.intercom, run: 'intercom' }],
-    // Once the cradles open, the Warrens wait for their next chapter (Phase 3.2): the way home holds until then.
-    holdBack: { left: (s) => (s.flags.cradles ? 'THE WARRENS RETURN' : null) },
+    // Once the cradles open, the hero won't go home without Wick (the Garden Lift says the same).
+    holdBack: { left: (s) => (s.flags.cradles && !s.flags.wickDead ? 'NOT WITHOUT WICK.' : null) },
     map: [
       '################################################################################',
       '################################################################################',

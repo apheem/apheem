@@ -53,7 +53,7 @@
       people: { wick: null, solder: null, flux: null, abel: null, gardener: null, steward: null, navigator: null },
       takenHome: 0, // how many of the taken came home from the Gardens (11 or 7)
       crew: 0, // how many Hullfolk climb with the hero (set at the Crew Camp)
-      toldShim: null, // choice 4: 'truth', 'scared' or 'lie'
+      toldShim: null, // choice 4: 'truth' (everything), 'notScared' (only that she wasn't scared) or 'lie'
       shimKnows: null, // choice 4b on the lie path: true or false
       warrensRaid: null, // the raid while the hero is in the Ballast: 'held' or 'fell'
       podsLaunched: 0, // the Crash ending's lifeboats

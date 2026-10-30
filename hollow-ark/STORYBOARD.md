@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations) and 3.1 (the Hydroponic Gardens) are built** (version 0.3.1); the next job is 3.2, the Warrens return. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens) and 3.2 (the Warrens return) are built** (version 0.3.2); the next job is 3.3, the Cargo Labyrinth. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -23,7 +23,7 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/core.js` | The `HA` namespace, settings, constants (320x180 view, 8px tiles, 60 updates a second) |
 | `js/room.js` | Tile maps, collision, and the room registry (`HA.rooms.area`, `HA.rooms.add`, `HA.rooms.at`) |
 | `js/areas/*.js` | One file per area: its rooms as ASCII maps, plus the legend, scenery, hints, triggers and music |
-| `js/world.js` | Entering rooms, edge transitions, doors, interactions, triggers, the camera, drawing, the HUD |
+| `js/world.js` | Entering rooms, edge transitions, doors (and gates someone keeps, which open as the hero nears), links (lifts and floor hatches to another room, `world.travel`), interactions, triggers, the camera, drawing, the HUD |
 | `js/actors.js` | The hero's movement, enemies and pickups |
 | `js/abilities.js` | The thruster pack, the grapple's pull and hang, pressure boots and swimming. The hero's update and `rooms-check.js` both call it. Water is `~` in a map, a grapple hook ring is `o` |
 | `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to) |
@@ -31,7 +31,7 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/boss.js` | The Bailiff, plus what every boss shares: shard vents, the health bar, and the `HA.bosses` registry the world looks bosses up in |
 | `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
 | `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls, up to the Gardens. Also barks (short lines over someone's head that don't stop play) and companions (`npc.follow`) |
-| `js/story/*.js` | Each later area's story: `gardens.js` adds its scenes, lines and logs to the tables in `story.js` and pushes its own `{ enterRoom, update, music }` hook onto `HA.story.areas` |
+| `js/story/*.js` | Each later area's story: `gardens.js`, `warrens.js` (the return) add their scenes, lines and logs to the tables in `story.js` and push their own `{ enterRoom, update, music, talk }` hooks onto `HA.story.areas` (`talk` can hand a conversation to a scene). `story.js` also holds `callName` (LATE, SLEEPER or COUNTER) |
 | `js/bloom.js` | The Bloom track: bulbs (carried, eaten on their own button), the stages (3, 5, 7, 8) with their journal lines, what a rise would close (`closes`), and the Thorn's kill count |
 | `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card`, `fade`, `walk` |
 | `js/save.js` | Save state (the Phase 3 fields and what each value means are listed in `newState`), the upgrade for older saves, autosave, the explored-map bitsets, and talk history |
@@ -47,7 +47,8 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 - From every way into a room, every exit, item, person, terminal and rest pod must be reachable. Secrets that need an ability must not be reachable without it.
 - Hints sit in open air, never against a wall.
 - New abilities go in `js/abilities.js`, which the checker already runs. A room lists what the hero always has by the time they reach it as `abilities: { thruster: 'odell', grapple: true, ... }`, and a secret that needs one says so in its legend as `needs: { grapple: true }`. The checker proves the secret can't be reached without it and can with it.
-- An exit into an area that isn't built yet must be named in the room's `unbuilt: { right: 'AREA NAME' }`. The game shows a "coming in the next build" note there. Remove it when the area lands. A way back into an area whose next chapter isn't built yet can be held the same way with `holdBack: { left: (state) => 'AREA NAME' or null }` (the Lockup's west exit uses it once the cradles open).
+- An exit into an area that isn't built yet must be named in the room's `unbuilt: { right: 'AREA NAME' }`. The game shows a "coming in the next build" note there. Remove it when the area lands. A way the story holds shut for now can use `holdBack: { left: (state) => 'NOTE' or null }`, which shows the note as written (the Lockup's west exit says "NOT WITHOUT WICK." between the cradles opening and Wick's fall).
+- A lift or a floor hatch joins two rooms where their sides don't: its legend is `{ type: 'lift' | 'hatch', to: 'other-room' }` (a hatch has `open(state)`, and the ladder at its other end has `up: true`), and the other room has a link back. The checker treats each link as a way in, and proves every other way in and out can be reached from it.
 - A door only an ability opens (the Seed Vault's hatch) says so in its legend as `needs: { grapple: true }`, with `ring: 'flag'` for the ring the grapple pulls. The checker proves the exit behind it is shut without the ability and open with it.
 - The Grapple Harpoon weapon (3.3) should fire `HA.abilities.fireGrapple`. When it lands, switch the checker's grapple moves from asking for the grapple directly to pressing Fire with the harpoon.
 
@@ -122,10 +123,10 @@ The player can finish the game without learning most of this (the Crash ending).
 | Area | x | y | Status |
 | --- | --- | --- | --- |
 | Cryo Deck | 0 – 200 | 0 – 46 | built |
-| Hullfolk Warrens | 0 – 160 | 23 – 69 | built (gets a sump with the keel tram station in 3.2) |
+| Hullfolk Warrens | 0 – 160 | 23 – 69 | built; its sump with the keel tram station (80 – 160, 69 – 92) sits at the top of the Labyrinth's box |
 | Warden Lockup | 160 – 280 | 46 – 69 | built (the arena gets an east door in 3.0) |
 | Hydroponic Gardens | 280 – 480 | 0 – 92 | 3.1 |
-| Cargo Labyrinth | 0 – 280 | 69 – 161 | 3.3 |
+| Cargo Labyrinth | 0 – 280 | 69 – 161, around the sump | 3.3 (entered from the sump's west side) |
 | Flooded Ballast | 0 – 480 | 161 – 230 | 3.4 (the keel tram runs along its floor) |
 | Engine Spine | 480 – 520 | −92 – 230 (one tall shaft, several rooms) | 3.5 |
 | Command Tower | 520 – 640 | −92 – 46 | 3.6 |
@@ -272,7 +273,9 @@ The woken taken are already home when the hero arrives. Families are around the 
 - **Upgrade it:** Gain: the Rivet Repeater. Lose: the Warrens' defence.
 - The cost shows before the ending. While the hero is in the Ballast, the Bloomsworn raid the Warrens. With the pistol, the gate holds, and Tamp says, "IT HELD. YOUR LITTLE GUN HELD." Without it, the gate falls, the young and old hide deep in the walls, and Tamp is hurt. The hub changes to match, and every ending's Warrens card follows from it.
 
-**Flags:** `toldShim` (`'everything'` / `'notScared'` / `'lie'`), `pistolGiven`, `repeater`, `climbPlanned`, `broadcastHeard`.
+**Flags:** `toldShim` (`'truth'` / `'notScared'` / `'lie'`), `pistolGiven`, `repeater`, `climbPlanned`, `broadcastHeard`.
+
+**As built (3.2).** The Garden Lift runs to a new stop in the Warrens hub (east of the fire) and back; the Lockup's way home opens once Wick's fate is known. The return plays as an arrival near the fire (the woken, then Gasket sees the lantern), then three conversations: Shim by his door (choice 4), Gasket at the pot (her grief, the broadcast, after which she names the Steward, and the plan), and Solder at her bench (choice 5). Resting at the village pod plays the night she leaves: she builds the gate, opens the floor hatch by her bench and goes, while Shim watches. The sump (80, 69, two screens wide) holds the dead keel tram and log `tram` ("KEEL TRAM · YEAR 118: ... THE MOTOR IS NEEDED AT BALLAST PUMP 3"); its west side is the way into the Labyrinth, marked with Solder's first chalk. The woken are people in the hub from now on, `takenHome` of them, one line each. On the half-truth Shim won't take the lantern, and it hangs by the fire (`flags.lanternWith` is `'shim'` or `'fire'`). Choice 5 without a pistol isn't asked: Solder arms the gate with her own. Extra flags: `homeAgain`, `lanternWith`, `pistolDone`, `newGate`, `hatch`, `solderLeft`, `namedLate`, `namedCounter`.
 
 ### Beat 4a: Cargo Labyrinth (3.3)
 
@@ -685,7 +688,7 @@ New fields:
 - `wardens` (`{ bailiff, pruner, tallyman }`)
 - `abilities` (`{ thruster, grapple, boots }`)
 - `people` (`{ wick, solder, flux, abel, gardener, steward }`)
-- `takenHome`, `crew`, `toldShim`, `shimKnows`, `warrensRaid`, `podsLaunched`, `bloomWarned` (the stages already announced)
+- `takenHome`, `crew`, `toldShim` (`'truth'`, `'notScared'` or `'lie'`), `shimKnows`, `warrensRaid`, `podsLaunched`, `bloomWarned` (the stages already announced)
 - `ending` (when one is reached), `endingsSeen` (kept across new games)
 
 Mercy and Bloom already exist.
@@ -728,13 +731,14 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 - [x] Wick's boss fight; Wick's Lancets; choice 3 (the Gardener behind glass)
 
 ### 3.2 Warrens return
-- [ ] Remove the Lockup's `holdBack` and the Garden Lift's next-build note: the lift goes down to the Warrens (a new lift stop there), and walking home works again
-- [ ] The woken taken at home (`takenHome` of them); Gasket's grief; choice 4 (three options); Wick's lantern (`flags.lantern`) for Shim on the truth path
-- [ ] The Steward's broadcast; the plan; Solder's gate and the floor hatch; the sump and tram station
-- [ ] Choice 5 (the pistol) and the hub's name bands (LATE / SLEEPER / COUNTER)
+- [x] Remove the Lockup's `holdBack` and the Garden Lift's next-build note: the lift goes down to the Warrens (a new lift stop there), and walking home works again
+- [x] The woken taken at home (`takenHome` of them); Gasket's grief; choice 4 (three options); Wick's lantern (`flags.lantern`) for Shim on the truth path
+- [x] The Steward's broadcast; the plan; Solder's gate and the floor hatch; the sump and tram station
+- [x] Choice 5 (the pistol) and the hub's name bands (LATE / SLEEPER / COUNTER)
 
 ### 3.3 Cargo Labyrinth
-- [ ] Rooms with crane-shifted stacks, checked; Solder's chalk notes
+- [ ] Remove the sump's `unbuilt` note: its west side leads into the Labyrinth
+- [ ] Rooms with crane-shifted stacks, checked; Solder's chalk notes (the first is already in the sump)
 - [ ] Grapple Harpoon (in the checker too), Breach Charges and cracked walls
 - [ ] Odell in the Cold Store; Flux; choice 6 (both packs); fast travel
 - [ ] The Purser and choice 7 → the Deserter ending (the first full ending, end to end)

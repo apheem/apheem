@@ -4,8 +4,9 @@
 // Each run plays by hand-held keys first (move, jump, fire), then runs the story so far quickly through the
 // game's debug helpers: rooms, saving, the raid, the boss, the choice, the reunion and the night after it,
 // and continuing a save, then the Hydroponic Gardens (a bulb, the cradles, the Pruner and its choice, the
-// taken waking, Wick's fight and the Gardener's offer). Then it loads a Phase 2 save to check it upgrades,
-// and plays all five endings.
+// taken waking, Wick's fight and the Gardener's offer), and the Warrens return (the lift home, telling Shim,
+// the broadcast, the pistol, the night Solder leaves, her gate, the hatch to the sump). Then it loads a Phase 2
+// save to check it upgrades, and plays all five endings.
 //   node browser-check.js [chromium firefox webkit]
 const http = require('http');
 const fs = require('fs');
@@ -288,7 +289,7 @@ async function play(browserType, url, label) {
         }
       };
       // Pick the option at index i, then YES on its gain-and-loss screen if it has one.
-      const choose = (i) => {
+      const choose = (window.choose = (i) => {
         for (let k = 0; k < i; k++) {
           HA.debug.step(1, { down: true });
           HA.debug.step(1);
@@ -304,7 +305,8 @@ async function play(browserType, url, label) {
         }
         talkThrough();
         return lose;
-      };
+      });
+      window.talkThrough = talkThrough;
       w().assist.invincible = true;
       // A Bloom bulb on the cellar's loft: picked up, then eaten only on its own button, asking the first time.
       HA.debug.goto('root-cellar', 30, 12);
@@ -366,6 +368,16 @@ async function play(browserType, url, label) {
       out.lantern = !!s.flags.lantern;
       out.lead2 = s.lead;
       out.wakeReplayed = !!w().scene;
+      // Until Wick is found, the hero won't go home: not by the lift, and not on foot through the Lockup.
+      HA.debug.goto('garden-lift', 10, 18);
+      HA.debug.step(20);
+      HA.debug.step(2, { up: true });
+      out.liftRefusal = w().scene && w().scene.step && w().scene.step.text;
+      talkThrough();
+      HA.debug.goto('lockup', 2, 18);
+      HA.debug.step(60, { left: true });
+      out.heldNote = w().toastText;
+      out.held = w().def.id === 'lockup';
       // The vats: the seal is open now. Wick's fight, her collapse at a quarter health, and her lancets.
       HA.debug.goto('garden-lift', 30, 41);
       HA.debug.step(3);
@@ -385,19 +397,9 @@ async function play(browserType, url, label) {
       out.kept = { lancets: p.weapons.some((x) => x.id === 'lancets'), thorn: p.weapons.some((x) => x.id === 'thorn'), offered: !!s.flags.thornOffered };
       out.music = HA.music.playing;
       out.lead3 = s.lead;
-      // The lift home, and the walk home, both wait for the next build.
-      HA.debug.goto('garden-lift', 10, 18);
-      HA.debug.step(20); // skipped scenes end in a few frames, so let the hit-stop from Wick's fall run out
-      HA.debug.step(2, { up: true });
-      talkThrough();
-      out.liftNote = w().toastText;
-      HA.debug.goto('lockup', 2, 18);
-      HA.debug.step(60, { left: true });
-      out.heldNote = w().toastText;
-      out.held = w().def.id === 'lockup';
       // The Seed Vault's hatch: the grapple (Phase 3.3) bites its ring and tears it open.
       HA.debug.goto('garden-lift', 8, 41);
-      HA.debug.step(3);
+      HA.debug.step(20); // skipped scenes end in a few frames, so let the hit-stop from Wick's fall run out
       p.facing = -1;
       p.abilities.grapple = true;
       out.hatchPulled = HA.abilities.fireGrapple(w(), p, { held: {}, pressed: {}, released: {} });
@@ -419,10 +421,107 @@ async function play(browserType, url, label) {
     expect(gd.vatSeal && gd.wickFighting && gd.wickHp === 40 && gd.offer, `Wick's fight did not end in her collapse and the Gardener's offer (${JSON.stringify(gd)})`);
     expect(gd.wick === 'dead' && gd.lancets && gd.kept.lancets && !gd.kept.thorn && gd.kept.offered, `Wick's lancets were not given, or keeping them went wrong (${JSON.stringify(gd)})`);
     expect(gd.music === null && /GARDEN LIFT/.test(gd.lead3), `after Wick, the Gardens should be silent with the lead home (${gd.music}, ${gd.lead3})`);
-    expect(/NEXT BUILD/.test(gd.liftNote) && /NEXT BUILD/.test(gd.heldNote) && gd.held, `the way home should wait for the next build (${gd.liftNote} / ${gd.heldNote})`);
+    expect(gd.liftRefusal === 'NOT WITHOUT WICK.' && gd.heldNote === 'NOT WITHOUT WICK.' && gd.held, `before Wick, the way home should be held (${gd.liftRefusal} / ${gd.heldNote})`);
     expect(gd.hatchPulled && gd.hatchOpen, `the grapple did not tear the Seed Vault hatch open (${gd.hatchPulled}, ${gd.hatchOpen})`);
     expect(gd.choices === 3, `the journal should list three choices by now (${gd.choices})`);
     await shot('gardens');
+
+    // ---- The Warrens return (Phase 3.2): home by the lift, Shim, the broadcast, the pistol, the night ----
+    const wr = await get(() => {
+      const out = {};
+      const w = () => HA.debug.world;
+      const s = w().state;
+      const p = w().player;
+      const { talkThrough, choose } = window;
+      const talkTo = (id) => {
+        const n = w().npcs.find((x) => x.id === id);
+        p.x = n.x + 12;
+        HA.debug.step(3);
+        HA.debug.step(1, { up: true });
+        return w().scene && w().scene.name;
+      };
+      w().assist.invincible = true;
+      // The Garden Lift takes the hero home. The woken are there already; Gasket sees the lantern.
+      HA.debug.goto('garden-lift', 10, 18);
+      HA.debug.step(3);
+      HA.debug.step(2, { up: true });
+      talkThrough(); // the ride down, and the arrival scene it leads into
+      out.room = w().def.id;
+      out.arrival = !!s.flags.homeAgain && s.journal.story.some((t) => /SAW WICK'S LANTERN/.test(t));
+      out.woken = w().npcs.filter((n) => n.id === 'woken').length;
+      talkThrough();
+      out.lead1 = s.lead;
+      out.music1 = HA.music.playing;
+      // Choice 4: tell Shim everything. He keeps her lantern.
+      out.tellScene = talkTo('shim');
+      talkThrough();
+      out.tellLose = choose(0);
+      const shim = w().npcs.find((n) => n.id === 'shim');
+      out.told = { told: s.toldShim, heroHas: !!s.flags.lantern, with: s.flags.lanternWith, shimHolds: !!shim.lantern };
+      // Gasket's grief, then the Steward over the old speakers, and Solder's plan.
+      out.griefScene = talkTo('gasket');
+      talkThrough();
+      out.broadcast = !!s.flags.broadcastHeard;
+      out.lead2 = s.lead;
+      // Choice 5, at Solder's bench: the pistol becomes the Rivet Repeater.
+      out.pistolScene = talkTo('solder');
+      talkThrough();
+      out.pistolLose = choose(1);
+      out.gun = p.weapons.map((x) => x.id);
+      w().player.wi = p.weapons.findIndex((x) => x.id === 'repeater');
+      HA.debug.step(2, { fire: true });
+      out.twin = w().shots.filter((x) => x.owner === 'player' && x.kind === 'bolt').length;
+      // Resting starts the night: Solder builds the gate, opens the hatch and goes.
+      const pod = w().pods[0];
+      p.x = pod.x + 4;
+      HA.debug.step(3);
+      HA.debug.step(1, { up: true });
+      out.night = w().scene && w().scene.name;
+      talkThrough();
+      out.morning = { lead: s.lead, newGate: !!s.flags.newGate, hatch: !!s.flags.hatch, planned: !!s.flags.climbPlanned, solderGone: !w().npcs.some((n) => n.id === 'solder' && n.state !== 'gone'), name: HA.story.callName(s) };
+      // The new gate stays shut until the hero comes near it, then lets them through to the Lockup.
+      const gate = w().doors.find((d) => d.id === 'gate');
+      out.gateShut = !gate.open;
+      HA.debug.step(160, { right: true });
+      out.gateOpened = w().def.id === 'lockup';
+      // Down the floor hatch to the sump and the dead keel tram. The Labyrinth waits; the ladder goes back up.
+      HA.debug.goto('warrens', 78, 18);
+      HA.debug.step(3);
+      out.hatchPrompt = w().near && w().near.label;
+      HA.debug.step(1, { down: true });
+      talkThrough();
+      HA.debug.step(5);
+      out.sump = w().def.id;
+      HA.debug.goto('sump', 3, 18);
+      HA.debug.step(60, { left: true });
+      out.sumpNote = w().toastText;
+      HA.debug.goto('sump', 38, 18);
+      HA.debug.step(3);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      HA.debug.step(5);
+      out.ladderUp = [w().def.id, Math.round(p.x / 8)];
+      // The lift runs back up to the Gardens, whose music is back now the hero has been home.
+      HA.debug.goto('warrens', 65, 18);
+      HA.debug.step(3);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      HA.debug.step(5);
+      out.liftUp = w().def.id;
+      out.music2 = HA.music.playing;
+      out.choices = s.journal.choices.length;
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(wr.room === 'warrens' && wr.arrival && wr.woken === 11 && wr.lead1 === 'TELL SHIM' && wr.music1 === 'warrensHush', `the lift home did not bring the hero back to the woken and Gasket (${JSON.stringify(wr)})`);
+    expect(wr.tellScene === 'tellShim' && wr.tellLose === 'HIS HOPE' && wr.told.told === 'truth' && !wr.told.heroHas && wr.told.with === 'shim' && wr.told.shimHolds, `telling Shim everything went wrong (${JSON.stringify(wr.told)})`);
+    expect(wr.griefScene === 'grief' && wr.broadcast && wr.lead2 === 'TALK TO SOLDER BEFORE SHE GOES', `Gasket's grief and the broadcast did not play (${JSON.stringify(wr)})`);
+    expect(wr.pistolScene === 'pistol' && /FALLS/.test(wr.pistolLose) && wr.gun.includes('repeater') && !wr.gun.includes('pistol') && wr.twin === 2, `the pistol did not become the Repeater (${JSON.stringify(wr)})`);
+    expect(wr.night === 'solderLeaves' && wr.morning.newGate && wr.morning.hatch && wr.morning.planned && wr.morning.solderGone && wr.morning.lead === 'FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH', `the night Solder leaves did not play out (${JSON.stringify(wr.morning)})`);
+    expect(wr.gateShut && wr.gateOpened, `the new gate should be shut, and open as the hero comes near (${wr.gateShut}, ${wr.gateOpened})`);
+    expect(/CLIMB DOWN/.test(wr.hatchPrompt) && wr.sump === 'sump' && /CARGO LABYRINTH/.test(wr.sumpNote) && wr.ladderUp[0] === 'warrens' && wr.ladderUp[1] === 78, `the hatch to the sump went wrong (${JSON.stringify(wr)})`);
+    expect(wr.liftUp === 'garden-lift' && wr.music2 === 'gardens' && wr.choices === 5, `the lift back up, the Gardens' music or the journal went wrong (${JSON.stringify(wr)})`);
+    await shot('warrens-return');
 
     // ---- A Phase 2 save (the Bailiff's fate in flags.choice, the slice finished) upgrades and plays on ----
     await get(() => {

@@ -1,6 +1,6 @@
 # Hollow Ark
 
-A dark, retro pixel-art action-exploration game set aboard a colony ship drifting off course for 300 years. This folder holds **Phase 2, the vertical slice** (the Cryo Deck, the Hullfolk Warrens, the Warden Lockup and the first boss, with saving, a map, a journal and one moral choice), and **Phase 3 in progress**, the full main path. Today the story runs about 25 to 35 minutes and stops at the door to the Hydroponic Gardens, the next area to be built.
+A dark, retro pixel-art action-exploration game set aboard a colony ship drifting off course for 300 years. This folder holds **Phase 2, the vertical slice** (the Cryo Deck, the Hullfolk Warrens, the Warden Lockup and the first boss, with saving, a map, a journal and one moral choice), and **Phase 3 in progress**, the full main path. Today the story runs from waking in pod 0417, through the Hydroponic Gardens, and home to the Warrens, and stops at the way down into the Cargo Labyrinth, the next area to be built.
 
 The game direction lives in the [Hollow Ark game direction brief](https://claude.ai/artifact/1DQU8Exivvskbjp3ykeMXY). Every place the build departs from it is in [DECISIONS.md](DECISIONS.md). The plan for the rest of the game, Phase 3 onward, is in [STORYBOARD.md](STORYBOARD.md): the whole story area by area, every boss, weapon, choice and ending, and the build order with a checklist. Start there to pick up the work.
 
@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.1-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.2-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.1-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.2-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -37,7 +37,8 @@ No mouse is needed anywhere. On-screen prompts switch between keyboard keys and 
 | Switch weapon | Q / E (or C / V) | LB / RB |
 | Eat a Bloom bulb (never on touch) | F or L | Y |
 | Drop through a catwalk | Down + Jump | Down + A |
-| Talk, read a ship log, rest at a rest pod | Up | Up |
+| Talk, read a ship log, rest at a rest pod, ride a lift, climb a ladder | Up | Up |
+| Climb down an open floor hatch | Down | Down |
 | Next line of dialogue | Z, Space, Enter or X | A or X |
 | Map and journal | Tab or M (Q / E switch tabs) | View / Back (LB / RB switch tabs) |
 | Pause (also: skip a scene) | Esc, Enter or P | Start |
@@ -102,11 +103,25 @@ The third story beat, and the first new area of Phase 3: ten rooms under the shi
 - **The cradles open,** the taken wake and go home by the Garden Lift, but Wick is gone. Her lantern is on the floor, still lit.
 - **The Vat House.** The Gardener watches from behind thick glass. Wick is on her knees in the Bloom, and you have to fight her: fast, lunging, throwing fans of her own lancets, bursting into spores when hit hard. She speaks between phases, and at a quarter of her health she falls on her own; you never land the last blow. Her last words are for Shim, and she gives you her lancets (a fan of thrown blades; at level 3 every sixth hit heals you). Then the Gardener offers the Bloom Thorn for them. Keep them, and she says she'll ask again in the Tower.
 - **The music:** a waltz in F for the Gardens, which turns sour near the vats; the Pruner's own fight track; for Wick, the Warrens' song, broken, with a heartbeat for a drum. From her fall there's no music until you're home.
-- **Home is the next build.** The Garden Lift, and the walk back through the Lockup, both stop at a note: "THE WARRENS RETURN · COMING IN THE NEXT BUILD".
+- **No going home without Wick.** Until her fate is known, the Garden Lift and the walk back through the Lockup both stop at the hero's own thought: "NOT WITHOUT WICK."
+
+## Phase 3.2: the Warrens return
+
+An interlude at home, between the Gardens and the Cargo Labyrinth. The checklist is at the bottom of [STORYBOARD.md](STORYBOARD.md).
+
+- **The way home.** The Garden Lift runs down to a new stop in the Warrens, and back up again; the walk home through the Lockup is open too.
+- **The woken are home first.** Eleven, or seven, of them sit around the fire with their families, a sound the Warrens haven't made in years, and each has something to say. Then Gasket sees Wick's lantern at the hero's hip before anyone speaks, and goes back to the pot. She makes the broth now. It was Wick's job.
+- **What to tell Shim** (choice 4). He's sitting by his door, waiting for his mother to be back by lights-out. Tell him everything she said at the end, and he keeps her lantern. Tell him only that she wasn't scared, and he won't take it: it hangs by the fire. Or give him the lantern and a lie (she's hiding, she's safe), and Gasket knows. The hero never speaks aloud; what they tell him is in their own voice.
+- **Gasket's grief,** and then the Steward over the Warrens' old speakers: "SEND ME THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED." Nobody moves. "WE DON'T HAND OVER LOST THINGS."
+- **The plan.** An old crew tram runs from the sump under the village, along the keel, to the foot of the Engine Spine. Its motor is gone, and Solder will fetch a working one from the Ballast pump rooms, alone, through the cargo decks, chalking the walls as she goes. The new lead: **FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH**.
+- **The Rivet Pistol** (choice 5). Solder bolts it to the new gate, so the Warrens can hold if the Steward's soldiers come; or she turns it into the **Rivet Repeater** (twin bolts from level 1, piercing from level 2, twice the rate at level 3), and the gate has no gun. Both screens say so.
+- **The night she leaves.** Rest at the village pod: Solder builds the gate she promised, one that opens from the Hullfolk's side (it opens as you come near it, from either side), opens the floor hatch by her bench, and goes. Shim is awake to see it.
+- **The Sump,** down the hatch: the old keel tram dead at its platform under its cable, a ship log about where its motor went, and Solder's chalk at the way into the Cargo Labyrinth, which is the next build.
+- **What the Hullfolk call you.** Release the Wardens and tell Shim the truth, and in the morning he gives you a name: "YOU'RE NOT A SLEEPER ANYMORE. YOU'RE LATE." Be cruel enough and the village starts calling you COUNTER, the word they use for the Wardens, and hides from you. Everyone else calls you SLEEPER, and the people in the Warrens say whichever name is yours.
 
 ## How the rooms are checked
 
-Every gap on the main path can be jumped with room to spare: 5 tiles or less (a running jump reaches 7, but only with a pixel-perfect run-up). Gaps that aren't meant to be jumped are 9 tiles or more, with another route in view. `hollow-ark/tests/rooms-check.js` plays every room with the game's own movement code, swimming, thruster and grapple included. It fails the build if any entrance, item, person or rest pod can't be reached with the abilities the hero has by then, if a secret meant for an ability can be reached without it (that includes a way through a door only an ability opens, like the Seed Vault's hatch), if a gap is exactly 7 tiles wide, or if a hint runs into a wall. Before the real rooms it plays four small test rooms, one per ability, to prove each one opens exactly what it should.
+Every gap on the main path can be jumped with room to spare: 5 tiles or less (a running jump reaches 7, but only with a pixel-perfect run-up). Gaps that aren't meant to be jumped are 9 tiles or more, with another route in view. `hollow-ark/tests/rooms-check.js` plays every room with the game's own movement code, swimming, thruster and grapple included. It fails the build if any entrance (an edge, or a lift or ladder from another room), item, person or rest pod can't be reached with the abilities the hero has by then, if a secret meant for an ability can be reached without it (that includes a way through a door only an ability opens, like the Seed Vault's hatch), if a gap is exactly 7 tiles wide, or if a hint runs into a wall. Before the real rooms it plays four small test rooms, one per ability, to prove each one opens exactly what it should.
 
 ## How it's built
 
@@ -116,7 +131,7 @@ Every gap on the main path can be jumped with room to spare: 5 tiles or less (a 
 | `hollow-ark/desktop/` | Electron shell that packages those same files as Windows, macOS and Linux apps (Steam-ready in Phase 5). |
 | `docs/hollow-ark/js/areas/` | The rooms, one file per area, drawn as text maps (the legend is at the top of each file). |
 | `docs/hollow-ark/js/story/`, `js/bosses/` | Each area's story (scenes, lines, logs) and each boss, one file each, from Phase 3 on. |
-| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens included), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
+| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens and the Warrens return included), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
 | `.github/workflows/hollow-ark.yml` | CI. On Windows, macOS and Linux it checks the rooms, plays the slice in all three browser engines, builds each desktop app, launches it, plays a few seconds and uploads it. |
 
 Run the desktop app from source:
