@@ -101,7 +101,7 @@
     items.push({ label: 'SETTINGS', action: () => push(settingsMenu()) });
     items.push({ label: 'CONTROLS', action: () => push(controlsMenu()) });
     if (HA.desktop) items.push({ label: 'QUIT', action: () => HA.desktop.quit() });
-    return { title: null, items, sel: 0, root: true };
+    return { title: null, items, sel: 0, root: true, endings: HA.save.endings() };
   }
 
   function confirmMenu(title, note, yes) {
@@ -296,6 +296,7 @@
         return;
       }
       HA.world.update(world, input);
+      if (world.exitToTitle) toTitle(); // an ending has played to its last card
     }
   };
 
@@ -417,7 +418,7 @@
       drawTitleBackground(g);
       if (ui.stack.length <= 1) {
         HA.font.draw(g, 'HOLLOW ARK', W / 2, 30, '#eef4f6', { align: 'center', scale: 3, shadow: '#2f5fb3' });
-        HA.font.draw(g, 'PHASE 2 · VERTICAL SLICE', W / 2, 62, '#ffb84d', { align: 'center' });
+        HA.font.draw(g, 'PHASE 3 · IN PROGRESS', W / 2, 62, '#ffb84d', { align: 'center' });
       } else {
         g.fillStyle = 'rgba(5,6,13,0.72)';
         g.fillRect(0, 0, W, H);
@@ -430,6 +431,8 @@
       HA.font.draw(g, hint, W / 2, H - 12, '#6c7894', { align: 'center' });
     }
     if (ui.mode === 'title' && ui.stack.length <= 1) {
+      const seen = ui.stack[0] && ui.stack[0].endings;
+      if (seen && seen.length) HA.font.draw(g, HA.endings.seenLine(seen), W / 2, 74, '#6c7894', { align: 'center' });
       HA.font.draw(g, 'V' + HA.VERSION, 4, H - 10, '#3a4258');
       HA.font.draw(g, HA.display.platformName(), W - 4, H - 10, '#3a4258', { align: 'right' });
     }

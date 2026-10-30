@@ -13,7 +13,7 @@
 (function (HA) {
   const W = HA.VIEW_W;
   const H = HA.VIEW_H;
-  const BOX = { x: 8, y: 128, w: 304, h: 46 };
+  const BOX = { x: 8, y: 128, w: 304, h: 46, top: 22 };
   const LINE_CHARS = 48;
   const LINES = 3;
   const SPEED = { slow: 0.5, normal: 1, fast: 3, instant: 999 };
@@ -238,24 +238,33 @@
     if (step && step.choice) drawChoice(world, g, step);
   }
 
+  // The box sits at the bottom of the screen, unless the hero (and so whoever they're with) would be
+  // under it, as on the floor of a one-screen-high room: then it moves to the top.
+  function boxY(world) {
+    const p = world.player;
+    if (p.hidden) return BOX.y;
+    return p.y + p.h - world.cam.y > BOX.y - 4 ? BOX.top : BOX.y;
+  }
+
   function drawSay(world, g, step) {
     const page = step.pages[step.page];
-    panel(g, BOX.x, BOX.y, BOX.w, BOX.h);
+    const y = boxY(world);
+    panel(g, BOX.x, y, BOX.w, BOX.h);
     if (step.say) {
       const nw = HA.font.measure(step.say) + 10;
-      panel(g, BOX.x + 6, BOX.y - 9, nw, 12, '#ffb84d');
-      HA.font.draw(g, step.say, BOX.x + 11, BOX.y - 6, '#ffb84d');
+      panel(g, BOX.x + 6, y - 9, nw, 12, '#ffb84d');
+      HA.font.draw(g, step.say, BOX.x + 11, y - 6, '#ffb84d');
     }
     let left = Math.floor(step.shown);
     page.forEach((line, i) => {
       const part = line.slice(0, Math.max(0, left));
       left -= line.length;
-      HA.font.draw(g, part, BOX.x + 8, BOX.y + 8 + i * 11, step.color || '#eef4f6');
+      HA.font.draw(g, part, BOX.x + 8, y + 8 + i * 11, step.color || '#eef4f6');
     });
     if (step.shown >= pageLength(page) && Math.floor(world.time / 20) % 2) {
       g.fillStyle = '#ffb84d';
-      g.fillRect(BOX.x + BOX.w - 12, BOX.y + BOX.h - 8, 5, 2);
-      g.fillRect(BOX.x + BOX.w - 11, BOX.y + BOX.h - 6, 3, 1);
+      g.fillRect(BOX.x + BOX.w - 12, y + BOX.h - 8, 5, 2);
+      g.fillRect(BOX.x + BOX.w - 11, y + BOX.h - 6, 3, 1);
     }
   }
 

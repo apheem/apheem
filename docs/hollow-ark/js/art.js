@@ -281,12 +281,13 @@
     if (extra) rows = extra(rows);
     const walkRows = rows.slice(0, rows.length - (child ? 2 : 3)).concat(child ? CHILD_WALK : ADULT_WALK);
     const blinkRows = rows.map((r) => r.replace(/x/g, 'e'));
-    const kneelRows = rows.slice(0, rows.length - 3).concat(['0DDDDDDD0', '.0000000.']);
+    const kneelRows = rows.slice(0, rows.length - 3).concat(child ? ['0DDDDDD0', '.000000.'] : ['0DDDDDDD0', '.0000000.']);
     return {
       idle: personSprite(rows, colors),
       blink: personSprite(blinkRows, colors),
       walk: personSprite(walkRows, colors),
-      kneel: child ? null : personSprite(kneelRows, colors),
+      kneel: personSprite(kneelRows, colors),
+      sleep: personSprite(kneelRows.map((r) => r.replace(/x/g, 'e')), colors),
       h: rows.length,
     };
   }
@@ -304,9 +305,31 @@
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----
   // It flies right: dead engines at the back, the habitat drum and the garden dome in the middle, the ring,
   // then the command tower forward. Most windows are dark. Something pink glows under the dome.
+  // opts: alarm (the cryo window blinks red), drive (the stern drive burns), broken (0-1, coming apart).
   function drawArk(g, x, y, s, t, opts = {}) {
     x = Math.round(x);
     y = Math.round(y);
+    if (opts.broken > 0) {
+      // Three pieces drift apart: the stern, the habitat and ring, and the tower and nose.
+      const k = opts.broken;
+      const pieces = [
+        [-12, 18, -9 * k, 5 * k],
+        [18, 35, 2 * k, -4 * k],
+        [53, 22, 11 * k, 6 * k],
+      ];
+      for (const [from, w, dx, dy] of pieces) {
+        g.save();
+        g.beginPath();
+        g.rect(x + from * s, y - 2 * s, w * s, 28 * s);
+        g.clip();
+        g.translate(Math.round(dx * s), Math.round(dy * s));
+        drawArk(g, x, y, s, t, Object.assign({}, opts, { broken: 0, drive: false }));
+        g.restore();
+      }
+      g.fillStyle = '#6c7894';
+      if (k < 1) for (let i = 0; i < 6; i++) g.fillRect(x + (18 + ((i * 13 + t) % 40)) * s, y + (6 + ((i * 7) % 14)) * s, s, s);
+      return;
+    }
     const r = (rx, ry, w, h, c) => {
       g.fillStyle = c;
       g.fillRect(x + rx * s, y + ry * s, w * s, h * s);
@@ -321,6 +344,13 @@
     r(-3, 9, 3, 3, '#2a3146');
     r(-3, 13, 3, 3, '#2a3146');
     r(-4, 10, 1, 1, t % 240 < 4 ? '#5fd4e8' : '#1d3b52');
+    if (opts.drive) {
+      // lit for the first time since year 38
+      const len = 6 + (t % 6 < 3 ? 1 : 0) + Math.min(10, Math.floor(opts.drive * 10));
+      r(-3 - len, 9, len, 7, '#ff9b3d');
+      r(-3 - len + 2, 10, len - 2, 5, '#ffb84d');
+      r(-3 - Math.ceil(len / 2), 11, Math.ceil(len / 2), 3, '#fff0a8');
+    }
     // the spine and its ribs
     r(9, 11, 59, 3, D);
     r(9, 11, 59, 1, E);

@@ -73,7 +73,7 @@
     gy: 46,
     legend: {
       1: { type: 'npc', id: 'gasket', name: 'Old Gasket' },
-      2: { type: 'npc', id: 'wick', name: 'Wick' },
+      2: { type: 'npc', id: 'wick', name: 'Wick', when: (s) => !s.flags.goodbye },
       3: { type: 'npc', id: 'solder', name: 'Solder' },
       4: { type: 'npc', id: 'shim', name: 'Shim', when: (s) => !s.flags.raid || s.flags.reunion },
       5: { type: 'npc', id: 'tamp', name: 'a villager' },
@@ -90,6 +90,8 @@
       { kind: 'scrawl', x: 102, y: 6, text: 'NO FURTHER' },
       { kind: 'hazard', x: 110, y: 15, w: 5, h: 4 },
     ],
+    // Solder explains shards in her own words. The exact rule sits on the wall above her bench.
+    hints: [{ x: 64, y: 14, text: 'A HIT COSTS SHARDS · NEVER MORE THAN ONE LEVEL', when: (w) => w.state.flags.metHullfolk && w.player.weapons.length > 0 }],
     triggers: [{ x0: 3, x1: 14, when: (s) => !s.flags.metHullfolk, run: 'meetHullfolk' }],
     onRest: (world) => world.state.flags.metHullfolk && !world.state.flags.raid && 'raid',
     map: [

@@ -110,6 +110,8 @@
       p.vx = (p.x + p.w / 2 < srcX ? -1 : 1) * 1.6;
       p.vy = -2.4;
       p.jumping = false;
+      p.grapple = null; // a hit knocks the hero off the grapple
+      p.thrusting = false;
       HA.weapons.loseXp(world);
       world.floatText(p.x + 4, p.y - 4, '-' + dmg, '#ff8a8a');
       world.burst(p.x + 4, p.y + 7, ['#e8434f', '#ff8a8a', '#eef4f6'], 8, 1.6);
@@ -197,6 +199,7 @@
     world.npcs = [];
     world.logs = [];
     world.doors = [];
+    world.hooks = [];
     world.actors = [];
     world.boss = null;
     world.cage = null;
@@ -226,6 +229,7 @@
       else if (legend.type === 'npc') {
         if (!legend.when || legend.when(s, world)) world.npcs.push(HA.story.makeNpc(world, legend.id, sp));
       } else if (legend.type === 'door') addDoorCell(world, legend, sp);
+      else if (ch === 'o') world.hooks.push({ x: sp.x + 4, y: sp.y + 4 });
       else if (legend.type === 'boss') world.bossSpawn = { x: sp.x + 4, y: sp.y + 8 };
       else if (legend.type === 'cage') world.cage = { x: sp.x - 8, y: sp.y - 8, w: 24, h: 22, open: false, t: 0 };
     }
@@ -234,6 +238,8 @@
     const p = world.player;
     p.x = x;
     p.y = y;
+    p.grapple = null;
+    p.thrusting = false;
     if (!opts.keepVelocity) {
       p.vx = 0;
       p.vy = 0;
@@ -295,6 +301,10 @@
     if (!next || world.scene || p.dead) {
       p.x = HA.clamp(p.x, -p.w / 2, room.pw - p.w / 2);
       p.vx = 0;
+      // An opening into an area that isn't built yet says so instead of just stopping the hero.
+      const unbuilt = !next && def.unbuilt && def.unbuilt[cx < 0 ? 'left' : 'right'];
+      const note = unbuilt && unbuilt + ' · COMING IN THE NEXT BUILD';
+      if (note && (world.toastText !== note || world.toastTime < 30)) world.toast(note, 150);
       return;
     }
     world.transition = { t: 0, to: next.id, x: def.gx * 8 + p.x - next.gx * 8, y: def.gy * 8 + p.y - next.gy * 8 };
@@ -486,7 +496,8 @@
     HA.scenery.drawBack(g, world, cam);
 
     for (const pod of world.pods) drawPod(g, world, pod, cam);
-    for (const l of world.logs) HA.scenery.drawTerminal(g, world, l, cam);
+    for (const l of world.logs) if (!l.scene) HA.scenery.drawTerminal(g, world, l, cam);
+    HA.abilities.drawHooks(g, world, cam);
     drawHints(g, world, cam);
     for (const n of world.npcs) HA.story.drawNpc(g, world, n, cam);
     g.drawImage(world.layers.tiles, -cam.x, -cam.y);
@@ -498,6 +509,8 @@
     for (const e of world.enemies) if (!e.dead) A.drawEnemy(g, world, e, cam);
     for (const a of world.actors) if (a.draw) a.draw(g, world, a, cam);
     A.drawPlayer(g, world, cam);
+    HA.abilities.draw(g, world, cam);
+    HA.abilities.drawWater(g, world, cam);
     for (const s of world.shots) drawShot(g, world, s, cam);
     for (const b of world.beams) drawBeam(g, b, cam);
     for (const q of world.particles) {
