@@ -118,7 +118,7 @@
           prompt: "THE DESERTER'S PACK",
           options: [
             { label: 'LET HIM FLY HOME', confirm: { title: 'LET HIM FLY HOME?', gain: "ODELL'S PACK, THE LONG WAY ROUND", lose: 'THE BLOOMFIRE PACK, AND TIME' } },
-            { label: 'TAKE HIS PACK', confirm: { title: "STRIP THE DESERTER'S PACK?", gain: 'THE BLOOMFIRE PACK, NOW', lose: closes ? 'HIS WAY HOME, AND ' + (/OVERGROWN/.test(closes) ? 'YOURSELF' : 'THE TRUE ENDING') : 'HIS WAY HOME · THE BLOOM GROWS' } },
+            { label: 'TAKE HIS PACK', confirm: { title: "STRIP THE DESERTER'S PACK?", gain: 'THE BLOOMFIRE PACK, NOW', lose: closes ? 'HIS WAY HOME, AND YOURSELF' : 'HIS WAY HOME · THE BLOOM GROWS' } },
           ],
         },
       };
@@ -346,14 +346,12 @@
     world.camTarget = { x: (p.x + boss.x + boss.w / 2) / 2, y: 12 * 8 };
     yield say('THE TALLYMAN', 'THE COUNT IS NOT FINISHED.', '#9fb6c8');
     yield say('THE TALLYMAN', 'THREE HUNDRED YEARS, AND THE COUNT IS NOT FINISHED. LET ME FINISH IT.', '#9fb6c8');
-    // Taking its core closes the true ending if the other Wardens went free; the screen says so.
-    const others = HA.endings.wardenCloses(s, 'tallyman');
     const pick = yield {
       choice: {
         prompt: "THE TALLYMAN'S CORE IS STILL LIT.",
         options: [
           { label: 'LET IT FINISH ITS COUNT', confirm: { title: 'LET THE TALLYMAN FINISH ITS COUNT?', gain: 'WHAT IT KNOWS · THE VAULT OPENS', lose: 'ITS CORE: THE CHARGES HOLD 3, NOT 5' } },
-          { label: 'TAKE ITS CORE', confirm: { title: "TAKE THE TALLYMAN'S CORE?", gain: 'THE VAULT · THE CHARGES HOLD 5', lose: others ? 'WHAT IT KNOWS, AND THE TRUE ENDING' : 'WHAT IT KNOWS, FOR GOOD' } },
+          { label: 'TAKE ITS CORE', confirm: { title: "TAKE THE TALLYMAN'S CORE?", gain: 'THE VAULT · THE CHARGES HOLD 5', lose: 'WHAT IT KNOWS, FOR GOOD' } },
         ],
       },
     };

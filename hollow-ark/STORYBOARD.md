@@ -26,7 +26,7 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | `js/world.js` | Entering rooms, edge transitions, doors (gates someone keeps, which open as the hero nears; crane stacks, moved by their switches; cracked walls, opened by a Breach Charge), links (lifts and floor hatches to another room, `world.travel`), interactions, triggers, rest pods, the trip between pods, the camera, drawing, the HUD |
 | `js/actors.js` | The hero's movement, enemies and pickups |
 | `js/abilities.js` | The thruster pack, the grapple's pull and hang (fired by the Grapple Harpoon; a hook can move, and can be a weak point that takes the hero's arrival as a blow), pressure boots and swimming. The hero's update and `rooms-check.js` both call it. Water is `~` in a map, a grapple hook ring is `o` |
-| `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements), `afterSteward(s)` (which branch the Steward's fall leads to) and `wardenCloses(s, id)` (whether taking a Warden's core would close Homecoming). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
+| `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
 | `js/weapons.js` | Weapon definitions, levels and XP, and shots, including the Grapple Harpoon (`fireGrapple` at a ring, a barb otherwise) and the Breach Charges (`chargesMax`) |
 | `js/boss.js` | The Bailiff, plus what every boss shares: shard vents, the health bar, and the `HA.bosses` registry the world looks bosses up in |
 | `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`, `tallyman.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
@@ -58,8 +58,9 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 
 ### Rules every scene follows
 
-- Every permanent choice uses the gain/lose screen, and every line on it is true. If an option costs something later (a village, a person, an ending), the screen says so in plain words.
-- A choice that would close an ending says so on its screen.
+- Every permanent choice uses the gain/lose screen, and every line on it is true. If an option costs something later (a village, a person), the screen says so in plain words.
+- A choice that would lock in Overgrown, or end the game, says so on its screen.
+- No screen names the true ending, or says that a choice closes it: that's too much of a hint (Cody, after 3.3). The world and the journal show what's been lost instead.
 - Never show a child's death, or a child being dosed. Children can be in danger only off screen or in the slice's existing raid.
 - Body horror is implied: cut away, use silhouettes and sound. The Bloom transforms only three people on screen: Wick, Abel and (in Overgrown) the hero.
 - The Wardens speak in counts (`COUNT: ONE. SMALL. HEALTHY.`). The Navigator speaks in short light-cyan lines (`#b8f4ff`). Everyone else talks plainly. Keep dialogue short, and let it hurt quietly.

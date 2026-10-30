@@ -769,7 +769,7 @@
         prompt: "THE BAILIFF'S CORE IS STILL LIT.",
         options: [
           { label: 'RELEASE IT', confirm: { title: 'RELEASE THE BAILIFF?', gain: 'NOTHING, FOR NOW', lose: '+4 MAX HEALTH FROM ITS CORE' } },
-          { label: 'SALVAGE ITS CORE', confirm: { title: "TEAR OUT THE BAILIFF'S CORE?", gain: '+4 MAX HEALTH', lose: HA.endings.wardenCloses(s, 'bailiff') ? 'THE BAILIFF, AND THE TRUE ENDING' : 'THE BAILIFF, FOREVER' } },
+          { label: 'SALVAGE ITS CORE', confirm: { title: "TEAR OUT THE BAILIFF'S CORE?", gain: '+4 MAX HEALTH', lose: 'THE BAILIFF, FOREVER' } },
         ],
       },
     };

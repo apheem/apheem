@@ -633,7 +633,6 @@ async function play(browserType, url, label) {
       // Choice 8: let it finish its count. (This run tore out the Bailiff's core, so the true ending is already
       // closed and the core's screen doesn't name it; with the other two free, it would.)
       out.coreLose = w().scene.step.choice.options[1].confirm.lose;
-      out.coreCloses = HA.endings.wardenCloses({ wardens: { bailiff: 'release', pruner: 'release', tallyman: null } }, 'tallyman') && !HA.endings.wardenCloses(s, 'tallyman');
       out.tallyLose = choose(0);
       out.tally = { fate: s.wardens.tallyman, vault: w().doors.find((d) => d.id === 'vault').open, said: s.journal.talk.some((t) => /LOCATION: BALLAST/.test(t.text)) };
       // The Vault's Breach Charges, and the cracked wall at the foot of the Sorting Floor.
@@ -705,7 +704,7 @@ async function play(browserType, url, label) {
     expect(cl.boat === 'STAY/TAKE THE BOAT', `the Purser did not offer the boat (${cl.boat})`);
     expect(cl.ice && /READ/.test(cl.odellPrompt) && cl.odell.thruster === 'odell' && /TALLYMAN/.test(cl.odell.lead) && cl.odell.music === 'coldStore' && cl.coldLift === 'coolant-hall', `Odell, his pack or the cold lift went wrong (${JSON.stringify(cl)})`);
     expect(cl.tallyIntro === 'tallyIntro' && cl.fight.fighting && cl.fight.music === 'tallyman' && cl.fight.opened && cl.fight.struck === 40 && cl.fight.after === 'tallymanDefeated', `the Tallyman's fight went wrong (${JSON.stringify(cl.fight)})`);
-    expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.coreCloses && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
+    expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
     expect(cl.charges === 3 && cl.wall && cl.aisle === 'long-aisle', `the Breach Charges did not open the cracked wall (${cl.charges}, ${cl.wall}, ${cl.aisle})`);
     expect(/BALLAST/.test(cl.toolbag) && /FLOODED BALLAST/.test(cl.grate), `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
     expect(/TRAVEL/.test(cl.podPrompt) && /warrens/.test(cl.travel) && cl.travelled === 'warrens' && cl.flux, `travel between pods, or Flux at home, went wrong (${JSON.stringify(cl)})`);
