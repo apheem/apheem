@@ -550,7 +550,10 @@
         yield say('OLD GASKET', 'THEY CAME WHILE YOU WERE DOWN THERE. THE GATE WENT.');
         yield say('OLD GASKET', 'WE GOT THE LITTLE ONES AND THE OLD ONES INTO THE DEEP WALLS. TAMP HELD THE DOOR WITH HIS BACK.');
         yield me("TAMP IS LYING BY THE FIRE. HE DOESN'T GET UP.");
+        yield say('OLD GASKET', 'AND WHEN THEY BROKE THE GATE, THE WEST END OF THE HALL CAME DOWN WITH IT. THE WAY OUT TO THE WAY DOWN IS UNDER IT.');
+        yield say('OLD GASKET', 'WE LIVE IN THE WALLS AGAIN. LIKE BEFORE THE GATE. THE HOLE BY THE HOMES GOES DOWN, IF YOU NEED THE WAY ROUND.');
         S.addStory(world, 'THE BLOOMSWORN RAIDED THE WARRENS WHILE I WAS IN THE BALLAST. THE GATE FELL. THE YOUNG AND THE OLD HID IN THE DEEP WALLS, AND TAMP WAS HURT.');
+        caveIn(world);
       }
       world.save();
     },
@@ -569,6 +572,15 @@
       world.save();
     },
   };
+
+  // Lock 2 (STORYBOARD.md, "Routes that close"): the gate fell, and the hall came down with it. Said once, the first
+  // time the hero learns of it, from Gasket or from the rubble itself.
+  function caveIn(world) {
+    const f = world.state.flags;
+    if (f.caveIn) return;
+    f.caveIn = true;
+    S.addStory(world, 'THE GATE FELL, AND THE HALL CAME DOWN WITH IT. THE WAY WEST TO THE WAY DOWN IS UNDER THE RUBBLE, AND THE WAY ROUND IS THROUGH THE DEEP WALLS. WE LIVE IN THE WALLS AGAIN.');
+  }
 
   // ---- Hooks the world calls ----
   S.areas.push({
@@ -650,6 +662,18 @@
       const culvert = world.def.id === 'long-culvert' || world.def.id === 'jammed-hatch';
       if (culvert && !f.flooding && !f.flooded && !world.scene && !world.transition && !world.player.dead) run(world, 'floodFail');
       if (world.tramGo) world.tramGo++;
+      // The rubble, seen for the first time (on the run for the sleds too, so it doesn't stop the clock).
+      const caved = s.warrensRaid === 'fell' && !world.scene && !world.transition;
+      if (caved && world.def.id === 'warrens' && !f.rubbleSeen && world.player.x < 46 * 8) {
+        f.rubbleSeen = true;
+        S.think(world, 'THE WHOLE WEST END CAME DOWN. THE WAY OUT IS UNDER IT.');
+        S.think(world, 'THE HOLE BY THE HOMES. THAT GOES DOWN INTO THE WALLS.');
+        caveIn(world);
+      }
+      if (caved && world.def.id === 'deep-walls' && !f.deepWalls) {
+        f.deepWalls = true;
+        S.think(world, 'THIS IS WHERE THEY HID. THEIR CHALK IS ON EVERY WALL.', 40);
+      }
       if (world.def.id !== 'warrens' || f.running || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
       if (s.warrensRaid && !f.raidSeen) run(world, 'raidSeen');
       else if (s.people.solder === 'dead' && f.tram && !f.solderMourned) run(world, 'solderMourned');

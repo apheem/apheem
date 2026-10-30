@@ -2172,10 +2172,52 @@
     g.fillRect(cx, cy - 8, 1, 2);
   }
 
+  // The cave-in at the Warrens' west end, if the gate fell: hull plates, beams and the village's own patchwork,
+  // heaped where the hall came down. Its top edge is ragged.
+  function drawRubble(g, world, d, cam) {
+    const at = new Set(d.cells.map((c) => c.tx + ',' + c.ty));
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      const k = (c.tx * 13 + c.ty * 7) % 5;
+      const top = !at.has(c.tx + ',' + (c.ty - 1));
+      g.fillStyle = '#0b0807';
+      g.fillRect(x, y + (top ? k % 3 : 0), 8, 8 - (top ? k % 3 : 0));
+      g.fillStyle = k < 2 ? '#3a4258' : k < 4 ? '#4a3526' : '#5a4028';
+      g.fillRect(x + 1, y + 1 + (top ? k % 3 : 0), 6, 5 - (top ? k % 3 : 0));
+      g.fillStyle = k < 2 ? '#6c7894' : '#a8743a';
+      g.fillRect(x + 1 + k, y + 2 + (top ? k % 3 : 0), 2, 1);
+      // a beam, end on, every few cells
+      if (k === 3 && !top) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 2, y + 3, 4, 4);
+        g.fillStyle = '#5a6b87';
+        g.fillRect(x + 3, y + 4, 2, 2);
+      }
+    }
+  }
+
+  // The deep walls' door in the Way Down: boards the Hullfolk nailed across it from their side.
+  function drawPlanks(g, world, d, cam) {
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = c.ty % 2 ? '#5a4028' : '#4a3420';
+      g.fillRect(x, y + 1, 8, 6);
+      g.fillStyle = '#a8743a';
+      g.fillRect(x + 1, y + 3, 1, 1);
+      g.fillRect(x + 6, y + 3, 1, 1);
+    }
+  }
+
   function drawDoor(g, world, d, cam) {
     if (d.legend.crane) return drawStack(g, world, d, cam);
     if (d.legend.cracked) return drawCracked(g, world, d, cam);
     if (d.legend.vault) return drawVaultDoor(g, world, d, cam);
+    if (d.legend.rubble) return drawRubble(g, world, d, cam);
+    if (d.legend.planks) return drawPlanks(g, world, d, cam);
     // Solder's gate, the one that opens from the Hullfolk's side: patched plates, rivets, and a wheel.
     if (d.legend.kept && d.legend.kept(world.state)) {
       for (const c of d.cells) {

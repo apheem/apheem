@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.10-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.11-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.10-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.11-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,10 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.11: the second route that closes
+
+- **The gate's cave-in.** If you upgraded the pistol instead of giving it to the gate, the Bloomsworn break the gate while you're in the Ballast, and the west end of the Warrens' hall comes down with it. The way out to the Way Down is buried. The way round is the hole by the homes, down into **the deep walls**, where the Hullfolk hid: a vent too low to stand in, a shaft, and Bloomsworn nests on the way back to a door low in the Way Down. On the run for the sleds it's the long way, with the same clock. Gasket tells you where to go, and so does the bar under the clock. With the gate held, the hall stays whole, and the deep walls stay shut.
 
 ## 0.3.10: Cody's calls on the story audit
 

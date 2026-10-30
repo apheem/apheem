@@ -1683,6 +1683,44 @@ async function play(browserType, url, label) {
     expect(bench.overflow === 3 && bench.maxed === 7, `spare shards were not kept as scrap (${JSON.stringify(bench)})`);
     expect(bench.plating === 1 && bench.scrap === 0 && bench.hp === bench.hp0 + 2 && !bench.open, `Solder's bench did not sell plating for 30 scrap (${JSON.stringify(bench)})`);
 
+    // ---- Lock 2 (3.10): if the gate fell, the Warrens' way west is under rubble, and the deep walls go round ----
+    const caveIn = await get(() => {
+      const w = HA.debug.world;
+      const s = w.state;
+      const was = { raid: s.warrensRaid, seen: s.flags.raidSeen, room: w.def.id, x: w.player.x, y: w.player.y };
+      s.flags.raidSeen = true; // (the raid's own scene isn't what this is about)
+      const look = (raid) => {
+        s.warrensRaid = raid;
+        HA.debug.goto('warrens', 50, 18);
+        HA.debug.step(2);
+        const hole = w.links.find((l) => l.legend.to === 'deep-walls');
+        const out = { rubble: !w.doors.find((d) => d.id === 'caveIn').open, wayWest: w.room.tile(0, 17) !== HA.room.SOLID, hole: !!hole && hole.legend.open(s) };
+        HA.debug.goto('warrens-gate', 20, 41);
+        HA.debug.step(2);
+        out.gateRubble = !w.doors.find((d) => d.id === 'caveIn').open;
+        out.deepDoor = w.doors.find((d) => d.id === 'deepDoor').open;
+        return out;
+      };
+      const held = look('held');
+      const fell = look('fell');
+      // Walking up to the rubble says what it is, once, in the journal.
+      HA.debug.goto('warrens', 30, 18);
+      HA.debug.step(4);
+      const line = s.journal.story.filter((t) => /WE LIVE IN THE WALLS AGAIN/.test(t)).length;
+      // Down the hole: the deep walls.
+      const hole = w.links.find((l) => l.legend.to === 'deep-walls');
+      w.travel(hole);
+      HA.debug.step(4);
+      const room = w.def.id;
+      s.warrensRaid = was.raid;
+      s.flags.raidSeen = was.seen;
+      w.enterRoom(was.room, was.x, was.y, { noSave: true });
+      return { held, fell, line, room };
+    });
+    expect(!caveIn.held.rubble && caveIn.held.wayWest && !caveIn.held.hole && !caveIn.held.gateRubble && !caveIn.held.deepDoor, `with the gate held, the Warrens' way west should be open and the deep walls shut (${JSON.stringify(caveIn.held)})`);
+    expect(caveIn.fell.rubble && !caveIn.fell.wayWest && caveIn.fell.hole && caveIn.fell.gateRubble && caveIn.fell.deepDoor, `with the gate fallen, the way west should be under rubble and the deep walls open (${JSON.stringify(caveIn.fell)})`);
+    expect(caveIn.line === 1 && caveIn.room === 'deep-walls', `the cave-in's journal line, or the hole down into the deep walls, went wrong (${JSON.stringify(caveIn)})`);
+
     // ---- The five endings, each from the flags its path would set, played to the title and recorded ----
     const PATHS = {
       deserter: { takenHome: 11, people: { solder: null } },

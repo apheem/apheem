@@ -5,8 +5,8 @@ This file is for the next session, on this account or another, so that nothing i
 ## Right now
 
 - **Branch:** `claude/practical-heisenberg-1chpy5`. It restarts from `main` after each merge. Open a draft PR for it if there isn't an open one.
-- **Last merged:** 0.3.9, Cody's first full play fixes (PR #15).
-- **Working on:** Phase 3.10, Cody's calls on the story audit (released so far as 0.3.10 on the branch). The checklist is in `STORYBOARD.md` under "3.10". The Mara plan (who she is, the rules, and where each dream and line goes) is in `STORYBOARD.md` under "Mara, and the dreams".
+- **Last merged:** 0.3.10, the first part of Cody's calls on the story audit (PR #16).
+- **Working on:** Phase 3.10, Cody's calls on the story audit (0.3.11 on the branch). The checklist is in `STORYBOARD.md` under "3.10". The Mara plan (who she is, the rules, and where each dream and line goes) is in `STORYBOARD.md` under "Mara, and the dreams".
 - **Next step:** the first unticked box under 3.10.
 
 ## Cody's calls (Oct 30)
@@ -37,3 +37,4 @@ Their words are in the session log; the story audit doc is [here](https://claude
 - **Oct 30:** Mara's thread built (`js/story/mara.js`, plus lines in `story.js`, `story/warrens.js`, `spine.js`, `cargo.js`, `gardens.js`, `tower.js`, `deck.js`, `scuttle.js`). Hero thoughts that don't stop play: `HA.story.think`. The browser check plays each dream and checks the epilogue's pictures and sister lines. All five playthroughs pass. Next: the shard bank (option B).
 - **Oct 30:** The shard bank and Solder's bench (`js/story/bench.js`, `weapons.bank`, `state.scrap`, `state.upgrades`). The browser check banks shards and buys plating. Next: routes that close (design first).
 - **Oct 30:** Lock 1 built: the Overflow Pipes. The Crash playthrough goes round through them. Version 0.3.10 (README section). Next: lock 2 (the fallen gate), then lock 3, then the length work. Watch out: `Q` in a map is the Scatter Launcher's pickup, not a free letter; `b` and the other enemy letters are in `actors.js` `TYPES`.
+- **Oct 30:** PR #16 (0.3.10) merged; the branch restarted from `main`. Lock 2 built: the gate's cave-in and the deep walls (`deep-walls`, west of the Way Down; `R`, `g` and `Z` in `areas/warrens.js`; the lines in `story/ballast.js`; the run's route and arrows in `story/scuttle.js`). The Crash playthrough goes round through the deep walls; the browser check looks at the cave-in with the gate held and fallen. Version 0.3.11. Next: lock 3 (side content each choice shuts).

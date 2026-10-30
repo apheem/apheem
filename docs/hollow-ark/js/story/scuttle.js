@@ -15,9 +15,19 @@
 
   const CLOCK = 60 * (4 * 60 + 30); // the run, from the sump to the sleds
   const LAUNCH = 60 * 20; // what the pod launch costs on the clock
-  const ROUTE = ['sump', 'warrens', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'];
+  // (The deep walls are on it if the gate fell: the cave-in shuts the Warrens' way west, lock 2 in STORYBOARD.md.)
+  const ROUTE = ['sump', 'warrens', 'deep-walls', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'];
   // Which way the sleds are from each room of the run, shown under the clock.
-  const WAY = { sump: 'UP THE HATCH ↑', warrens: '←', 'warrens-gate': '→', 'coolant-hall': '→', 'pod-stacks': '←', 'thaw-corridor': '←', 'cryo-bay': '←' };
+  const WAY = {
+    sump: 'UP THE HATCH ↑',
+    warrens: (s) => (s.warrensRaid === 'fell' ? '← THEN DOWN THE HOLE ↓' : '←'),
+    'deep-walls': '← DOWN, THEN →',
+    'warrens-gate': '→',
+    'coolant-hall': '→',
+    'pod-stacks': '←',
+    'thaw-corridor': '←',
+    'cryo-bay': '←',
+  };
   const START = { room: 'sump', x: 44 * 8, ty: 19 };
   const LEAD = 'RUN BACK TO THE SLEDS IN CRYO BAY 4, WHERE I WOKE';
   const WARDENS = ['warden', 'walker', 'turret', 'picker'];
@@ -148,6 +158,7 @@
     yield { fade: 'in', frames: 30 };
     yield say('OLD GASKET', "TAMP'S TAKEN THE VILLAGE UP TO THE SLEDS. THE CREW'S GOING ROUND BY THE COLD LIFT.");
     yield say('OLD GASKET', "YOU'RE FASTER THROUGH THE WARRENS ALONE. BACK UP TO WHERE YOU WOKE. GO! WE'LL SEE YOU AT THE SLEDS!");
+    if (s.warrensRaid === 'fell') yield say('OLD GASKET', "THE HALL'S STILL DOWN AT THE WEST END. GO ROUND THROUGH THE WALLS: THE HOLE BY THE HOMES!");
     yield { walk: g, x: 70 * 8, speed: 1.2 };
     g.state = 'gone';
     S.addStory(world, 'THE SHIP IS COMING APART. THE OLD CREW KEPT SLEDS IN CRYO BAY 4, WHERE I WOKE. I HAVE TO GET THERE BEFORE IT DOES.');
@@ -208,7 +219,7 @@
     const warn = secs <= 30 && Math.floor(world.time / 15) % 2;
     HA.font.draw(g, text, x + 4, 6, warn ? '#ff8a8a' : '#ffb84d');
     // Under it, where the sleds are: the room the hero woke in, and which way from here.
-    const way = WAY[world.def.id];
+    const way = typeof WAY[world.def.id] === 'function' ? WAY[world.def.id](world.state) : WAY[world.def.id];
     const where = 'SLEDS · WHERE I WOKE' + (way ? ' · ' + way : '');
     const ww = HA.font.measure(where) + 8;
     g.fillStyle = 'rgba(5,6,13,0.75)';
