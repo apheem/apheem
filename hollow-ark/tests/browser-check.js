@@ -388,6 +388,7 @@ async function play(browserType, url, label) {
       HA.debug.goto('vat-house', 8, 18);
       HA.debug.step(5);
       talkThrough();
+      out.vale = s.journal.talk.some((t) => /I AM HESTER VALE/.test(t.text)); // the Gardener names herself and makes her case
       out.wickFighting = !!(w().boss && w().boss.fighting && w().boss.type === 'wick');
       HA.debug.step(200);
       w().hurtEnemy(w().boss, 999, 1);
@@ -415,6 +416,7 @@ async function play(browserType, url, label) {
     });
     expect(gd.bulbs === 1 && gd.bulbAsks && gd.ate.bloom === 1 && gd.ate.bulbs === 0 && gd.ate.healed && gd.ate.rush, `the Bloom bulb was not picked up, asked about, and eaten (${JSON.stringify(gd)})`);
     expect(gd.cradleScene === 'cradles' && gd.lead1 === 'FIND THE WARDEN THAT HOLDS THE SEALS', `the cradles scene did not play (${gd.cradleScene}, ${gd.lead1})`);
+    expect(gd.vale, `the Gardener did not name herself and make her case in the Vat House (${gd.vale})`);
     expect(gd.scatter && gd.grenade, 'the Scatter Launcher was not picked up, or threw no grenade');
     expect(gd.prunerFighting && gd.hallShut && gd.prunerChoice, `the Pruner fight and its choice did not play (${JSON.stringify(gd)})`);
     expect(gd.pruner === 'release' && /LAUNCHER/.test(gd.prunerLose) && gd.mercy === 0, `releasing the Pruner went wrong (${gd.pruner}, ${gd.prunerLose}, mercy ${gd.mercy})`);
@@ -465,6 +467,7 @@ async function play(browserType, url, label) {
       out.griefScene = talkTo('gasket');
       talkThrough();
       out.broadcast = !!s.flags.broadcastHeard;
+      out.marrant = s.journal.talk.some((t) => /THIS IS IVO MARRANT/.test(t.text)); // the Steward names himself
       out.lead2 = s.lead;
       // Choice 5, at Solder's bench: the pistol becomes the Rivet Repeater.
       out.pistolScene = talkTo('solder');
@@ -519,6 +522,7 @@ async function play(browserType, url, label) {
     expect(wr.room === 'warrens' && wr.arrival && wr.woken === 11 && wr.lead1 === 'TELL SHIM' && wr.music1 === 'warrensHush', `the lift home did not bring the hero back to the woken and Gasket (${JSON.stringify(wr)})`);
     expect(wr.tellScene === 'tellShim' && wr.tellLose === 'HIS HOPE' && wr.told.told === 'truth' && !wr.told.heroHas && wr.told.with === 'shim' && wr.told.shimHolds, `telling Shim everything went wrong (${JSON.stringify(wr.told)})`);
     expect(wr.griefScene === 'grief' && wr.broadcast && wr.lead2 === 'TALK TO SOLDER BEFORE SHE GOES', `Gasket's grief and the broadcast did not play (${JSON.stringify(wr)})`);
+    expect(wr.marrant, `the Steward did not name himself in his broadcast (${JSON.stringify(wr)})`);
     expect(wr.pistolScene === 'pistol' && /FALLS/.test(wr.pistolLose) && wr.gun.includes('repeater') && !wr.gun.includes('pistol') && wr.twin === 2, `the pistol did not become the Repeater (${JSON.stringify(wr)})`);
     expect(wr.night === 'solderLeaves' && wr.morning.newGate && wr.morning.hatch && wr.morning.planned && wr.morning.solderGone && wr.morning.lead === 'FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH', `the night Solder leaves did not play out (${JSON.stringify(wr.morning)})`);
     expect(wr.gateShut && wr.gateOpened, `the new gate should be shut, and open as the hero comes near (${wr.gateShut}, ${wr.gateOpened})`);
@@ -1774,7 +1778,7 @@ async function play(browserType, url, label) {
       dominion: ['COUNT THEM.', 'THANK YOU.', 'THEY ARE SAFER ASLEEP.', 'I HAD THE KEY. I COULD HAVE WOKEN MY SISTER.'],
       overgrown: ['OLD GASKET WALKED OUT OF THE HELM ALIVE.', 'ON 0418 FIRST.', "I'M RIGHT HERE, LITTLE SISTER.", 'THE GARDENER WENT INTO THE BLOOM SHE MADE.'],
       crash: ['COUNT: SURVIVORS, 6.', 'THE PODS CAME DOWN LIKE SEEDS.', 'I GOT THERE BEFORE MY SISTER WOKE.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', 'COUNT: WARDENS, 2.'],
-      homecoming: ['THE ONE IN 0417 STAYED WITH THE SHIP.', 'FORGIVE ME FOR BEING LATE, LITTLE SISTER.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
+      homecoming: ['THE SEED VAULT WAS OPENED UNDER A REAL SKY.', "DUNN'S GIRL GOT HER STAR.", 'RETURNED, AS ASKED. HE HAD HIS ANSWER.', "SHE SAID CLEAT'S NAME TO THE SKY.", 'THE ONE IN 0417 STAYED WITH THE SHIP.', 'FORGIVE ME FOR BEING LATE, LITTLE SISTER.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
     };
     const LANDED = {
       deserter: () => ({ hullfolk: 0, sleepers: 0, mara: false, hero: true }),

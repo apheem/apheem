@@ -154,11 +154,16 @@
         : [pic(voice('MARA WOKE UNDER A REAL SKY.', "I WAS THE FIRST THING SHE SAW. I WASN'T LATE."), 'mara', { hero: true, list: true }), pic(card('THAT NIGHT WE SLEPT OUTSIDE.', ['MY SISTER AND ME. WE LEFT ROOM FOR A THIRD.', DIM]), 'mara', { hero: true, night: true })];
       const out = [
         shimCard(s, 'SHIM STOOD ON THE GROUND. NOT A FLOOR.'),
-        pic(card('OLD GASKET BREATHED OUT.'), 'gasket'),
+        pic(card('OLD GASKET BREATHED OUT.', "SHE SAID CLEAT'S NAME TO THE SKY."), 'gasket'),
         pic(card("SOLDER BUILT THE FIRST CITY'S FIRST GATE.", 'IT OPENS FROM BOTH SIDES.'), 'gate'),
         warrensCard(s, 'THE WARRENS CAME DOWN WHOLE, LANTERNS AND ALL.', 'THE ONES WHO HID IN THE DEEP WALLS CAME DOWN TOO.'),
         ...wardensCount(s),
         pic(card('THE PODS OPENED UNDER A REAL SKY.'), 'sleepers'),
+        // The small payoffs (the audit's fix 7): the seed vault's "TO BE OPENED UNDER A REAL SKY", Dunn's promise to
+        // his girl, and Odell's "IF FOUND, RETURN TO ODELL".
+        pic(card('THE SEED VAULT WAS OPENED UNDER A REAL SKY.', 'WE STARTED WITH BEANS.'), 'seeds'),
+        ...(HA.story.crewList(s).includes('dunn') ? [pic(card("DUNN'S GIRL GOT HER STAR.", 'HE SHOWED HER ALL OF THEM.'), 'star')] : []),
+        pic(card("ODELL'S BOOTS WENT BACK TO HIM IN THE COLD STORE.", 'RETURNED, AS ASKED. HE HAD HIS ANSWER.'), 'odell'),
         ...mara,
       ];
       if (stayed) out.push(pic({ lines: [['NOT ALONE.', NAV]] }, 'navigator'));

@@ -268,6 +268,7 @@
       }
       yield { wait: 40 };
       yield say('THE FURNACE', 'I WAS ABEL.', ABEL);
+      if (world.state.logs.lists) yield me("ABEL. THE NAME AT THE END OF THE STEWARD'S LISTS: TO THE REACTOR, TO STOKE.");
       yield say('THE FURNACE', 'I FED THE FIRES.', ABEL);
       yield { wait: 30 };
       yield say('ABEL', "DON'T PUT THEM OUT.", ABEL);
@@ -404,7 +405,12 @@
         S.addStory(world, 'AT LIGHTS-OUT TAMP COUNTED THE CHILDREN DOWN THE LINE. ONE SHORT: SHIM HAD GONE INTO THE VENTS, TO FIND HIS MOTHER.');
       } else {
         const lantern = f.lanternWith === 'shim';
-        yield say('THE LINE', lantern ? "...ALL HERE. SHIM'S ASLEEP WITH THE LANTERN." : '...ALL HERE.', LINE);
+        yield say('THE LINE', lantern ? "...ALL HERE. SHIM'S UP WITH THE LANTERN. HE WANTS THE PHONE." : '...ALL HERE. SHIM WANTS THE PHONE.', LINE);
+        yield say('SHIM', 'IS THE SLEEPER THERE?', LINE);
+        yield me("I'M HERE.");
+        yield say('SHIM', lantern ? "I'VE STILL GOT HER LANTERN. IT'S NOT SO DARK DOWN HERE." : "TAMP SAYS YOU'RE GOING TO THE VERY TOP. IS THERE A WINDOW?", LINE);
+        yield me(lantern ? 'KEEP IT LIT FOR ME.' : 'THERE WILL BE.');
+        yield say('SHIM', lantern ? 'OKAY. NIGHT, SLEEPER.' : 'LOOK OUT OF IT FOR ME. NIGHT, SLEEPER.', LINE);
         yield say('OLD GASKET', 'GOOD.');
       }
       HA.audio.play('intercom');
@@ -413,7 +419,7 @@
       yield say('OLD GASKET', 'I SPENT MY WHOLE LIFE HOLDING MY BREATH.');
       yield say('OLD GASKET', "I'D LIKE TO BREATHE OUT BEFORE THE END.");
       yield { wait: 40 };
-      yield say('OLD GASKET', 'MY BROTHER HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
+      yield say('OLD GASKET', 'MY BROTHER CLEAT HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
       yield say('OLD GASKET', 'GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT.');
       S.addStory(world, 'GASKET SAID SHE HAD SPENT HER WHOLE LIFE HOLDING HER BREATH. SHE WANTS TO BREATHE OUT BEFORE THE END.');
       if (g) g.sleeping = true;
