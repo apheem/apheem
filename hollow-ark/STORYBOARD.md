@@ -862,10 +862,26 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [x] A picture layer behind cards and dream scenes (pixel art drawn in code: `js/pictures.js`; a card takes `pic`, a scene can `yield { dream }`)
 - [x] Mara: the opening voice, the turn to 0418 and the refused thaw, Shim's "NOT A GHOST.", four dreams on the story's four nights, the list items while awake, the lines from Wick, the Tallyman and Gasket, the LATE line, the reveal in the First Night hall and in every epilogue (`js/story/mara.js`; the browser check plays each dream)
 - [x] Pictures behind the epilogue cards, all five endings (and each ending's Mara card says "sister")
-- [ ] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades
-- [ ] Routes that close: a death or a choice shuts a main way and a harder way round opens (design first, in `DECISIONS.md`)
+- [x] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades (`js/story/bench.js`: Plating, Magnet, Steady Hands; benches in the Warrens and, with Solder alive, the Crew Camp)
+- [x] Routes that close: the design (below, "Routes that close")
+- [ ] Routes that close, lock 1: Solder left under the beam floods the keel, and the way to the Spine is the Overflow Pipes
+- [ ] Routes that close, lock 2: the gate fell, and the Warrens' hall is rubble; the way through is the deep walls
+- [ ] Routes that close, lock 3: side content each choice shuts (the greenhouse wing and Sorrel; Flux's morning with Shim), with a journal line for each
 - [ ] The rest of the audit's story fixes: Shim on every path (4), the villains set up early (6), the small payoffs (7)
 - [ ] Length: the tram home after the Ballast (5), Wick's longer escort (8), new rooms on the main path (the Ballast and the Labyrinth first), Sorrel (9) and the other side quests
+
+### Routes that close (3.10 design)
+
+Cody's call: when someone dies, doesn't make it, or the hero makes a certain choice, a main way can shut, and the hero goes round a harder way (pipes, tunnels). Choices can also close side content. Each closure gets a journal line, in the style of the Homecoming requirements, so the player knows it was their doing. Build them in this order.
+
+1. **Solder left under the beam (choice 9) floods the keel.** Nobody holds the culvert, so its water comes through the Jammed Hatch after the hero. In the Keel Tram Station the lower trench fills, and the shutter on its east exit to the Spine Foot jams shut under the water. The way to the Spine is the old **Overflow Pipes**: two new rooms on the grid beside the station (a long crawl above the flooded keel, with steam leaks, eels in the sumps and grapple rings; then a riser that comes up through a floor hatch in the Spine Foot). It takes about five minutes and has no rest pod. With Solder alive the station stays dry. She warns the hero off the pipes, which then open as an optional side path with a Suit Cell at the far end. Journal: "THE KEEL FLOODED BEHIND ME. WITHOUT SOLDER, NOBODY HELD THE CULVERT."
+2. **The gate fell (the pistol upgraded, choice 5) leaves the Warrens' hall in rubble.** After the raid, the floor between the village pod and the sump hatch is caved in. The way to the hatch (the Labyrinth, the bench, the run for the sleds) is a crawl through the **deep walls**, where the village hid: tight vents and Bloomsworn nests, one new room. On the Crash run, against the clock, it makes the run longer. Journal: "THE GATE FELL. THE HALL CAME DOWN WITH IT. WE LIVE IN THE WALLS AGAIN."
+3. **Side content each choice shuts.** The Pruner salvaged (choice 2): the greenhouse wing it guarded stays sealed, and Sorrel's trail starts there, so her side quest never opens. Flux's pack taken (choice 6): he never comes home, so there's no morning with Shim. Each one gets a journal line when it shuts.
+
+How to build lock 1:
+- Put the two pipe rooms on the grid in free space next to the station (440, 207) and the Spine Foot (480, 185). Rooms join only at their sides, so use a floor hatch or ladder where the shapes don't line up, as the Spine does.
+- Make the station's east shutter a door whose `open` is `s.people.solder !== 'dead'`. Fill the trench with water (`~`) on entry when she's dead, the way the flood fills rooms.
+- Add the rooms to `rooms-check.js`'s expectations as usual, and give the Crash route in `playthrough-routes.js` a step through the pipes, since that route leaves Solder.
 
 ---
 

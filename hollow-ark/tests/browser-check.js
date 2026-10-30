@@ -1650,6 +1650,39 @@ async function play(browserType, url, label) {
     });
     for (const d of dreams) expect(d.flag && d.journal === 1 && !d.left && d.lit > 8, `dream ${d.n} did not play through, show its picture and leave a journal line (${JSON.stringify(d)})`);
 
+    // ---- The shard bank and Solder's bench (3.10): spare shards become scrap, and scrap buys plating ----
+    const bench = await get(() => {
+      const w = HA.debug.world;
+      const p = w.player;
+      const s = w.state;
+      if (!p.weapons.length) p.weapons.push(HA.weapons.make('pistol'));
+      const wpn = p.weapons[p.wi];
+      const out = { scrap0: s.scrap };
+      wpn.level = 3;
+      wpn.xp = HA.weapons.cap(wpn) - 1;
+      HA.weapons.addXp(w, 4); // one point fills the weapon; three are spare
+      out.overflow = s.scrap - out.scrap0;
+      HA.weapons.addXp(w, 4);
+      out.maxed = s.scrap - out.scrap0;
+      s.scrap = 30;
+      out.hp0 = p.maxHp;
+      HA.scenes.run(w, HA.story.SCENES.bench, { name: 'bench' });
+      for (let i = 0; i < 60 && w.scene; i++) {
+        const st = w.scene.step;
+        if (st && st.choice && s.upgrades.plating) HA.debug.step(1, { up: true }); // round to LEAVE
+        HA.debug.step(6);
+        HA.debug.step(1, { confirm: true });
+        HA.debug.step(6);
+      }
+      out.plating = s.upgrades.plating;
+      out.scrap = s.scrap;
+      out.hp = p.maxHp;
+      out.open = !!w.scene;
+      return out;
+    });
+    expect(bench.overflow === 3 && bench.maxed === 7, `spare shards were not kept as scrap (${JSON.stringify(bench)})`);
+    expect(bench.plating === 1 && bench.scrap === 0 && bench.hp === bench.hp0 + 2 && !bench.open, `Solder's bench did not sell plating for 30 scrap (${JSON.stringify(bench)})`);
+
     // ---- The five endings, each from the flags its path would set, played to the title and recorded ----
     const PATHS = {
       deserter: { takenHome: 11, people: { solder: null } },

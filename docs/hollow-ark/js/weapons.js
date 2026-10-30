@@ -126,10 +126,22 @@
   const cap = (w) => DEFS[w.id].caps[w.level - 1];
   const isMax = (w) => w.level === 3 && w.xp >= cap(w);
 
+  // Shards the weapon in hand can't use (it's at its top level, or there's none out) are kept as scrap, which
+  // Solder's bench turns into parts for the suit (story/bench.js).
+  function bank(world, amount) {
+    if (amount <= 0) return;
+    const s = world.state;
+    s.scrap += amount;
+    world.scrapFlash = 30;
+    if (s.flags.scrapSeen) return;
+    s.flags.scrapSeen = true;
+    world.toast("SPARE SHARDS ARE KEPT AS SCRAP · SOLDER'S BENCH", 240);
+  }
+
   function addXp(world, amount) {
     const p = world.player;
     const w = p.weapons[p.wi];
-    if (!w || isMax(w)) return;
+    if (!w || isMax(w)) return bank(world, amount);
     w.xp += amount;
     if (w.xp >= cap(w)) {
       if (w.level < 3) {
@@ -140,6 +152,7 @@
         world.burst(p.x + 4, p.y + 7, ['#fff0a8', '#ffb84d'], 14, 1.8);
         HA.audio.play('levelUp');
       } else {
+        bank(world, w.xp - cap(w));
         w.xp = cap(w);
         world.floatText(p.x + 4, p.y - 6, 'MAX', '#fff0a8');
       }
@@ -152,10 +165,11 @@
     if (!w) return;
     if (DEFS[w.id].keepsXp || p.xpLock > 0 || world.assist.noXpLoss) return;
     const floor = DEFS[w.id].floor ? DEFS[w.id].floor(world) : 1;
-    if (w.xp >= XP_LOSS) {
-      w.xp -= XP_LOSS;
+    const loss = HA.story.bench && HA.story.bench.steady(world.state) ? XP_LOSS / 2 : XP_LOSS; // the bench's steady hands
+    if (w.xp >= loss) {
+      w.xp -= loss;
     } else if (w.level > floor) {
-      const rest = XP_LOSS - w.xp;
+      const rest = loss - w.xp;
       w.level -= 1;
       w.xp = Math.max(1, cap(w) - rest);
       p.xpLock = XP_LOCK;
@@ -751,5 +765,5 @@
     }
   }
 
-  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, loseXp, update, grapple, updateShots, updateFoam, dissolve, muzzle, chargesMax };
+  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, bank, loseXp, update, grapple, updateShots, updateFoam, dissolve, muzzle, chargesMax };
 })(window.HA);
