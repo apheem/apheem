@@ -213,6 +213,7 @@
     const p = world.player;
     if (p.dead || p.hidden) return;
     if (p.invuln > 0 && p.invuln < 60 && Math.floor(p.invuln / 3) % 2) return;
+    if (world.playAs) return drawStandIn(ctx, world, p, cam);
     const H = HA.art.heroFor(HA.bloom.stage(world.state));
     let spr = H.idle;
     let bob = 0;
@@ -264,6 +265,33 @@
     ctx.restore();
   }
 
+  // In the Overgrown ending someone else fights for the hero: Solder, or Old Gasket, with the hero's dropped weapon.
+  function drawStandIn(ctx, world, p, cam) {
+    const S = HA.art.people[world.playAs];
+    let spr = S.idle;
+    if (!p.onGround || (Math.abs(p.vx) > 0.2 && Math.floor(p.anim) % 2)) spr = S.walk;
+    const flash = p.invuln > 60;
+    ctx.save();
+    ctx.translate(Math.round(p.x + p.w / 2 - cam.x), Math.round(p.y + p.h - spr.h - cam.y));
+    ctx.scale(p.facing, 1);
+    ctx.drawImage(flash ? spr.white : spr.img, -Math.floor(spr.w / 2), 0);
+    const weapon = p.weapons[p.wi];
+    if (weapon) {
+      const gun = HA.art.guns[weapon.id];
+      const gimg = flash ? gun.white : gun.img;
+      if (p.aim === 'up') {
+        ctx.translate(0, 6);
+        ctx.rotate(-Math.PI / 2);
+        ctx.drawImage(gimg, 0, -2);
+      } else if (p.aim === 'down') {
+        ctx.translate(0, 8);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(gimg, 0, -2);
+      } else ctx.drawImage(gimg, 0, 5);
+    }
+    ctx.restore();
+  }
+
   // ---- Enemies ----
   const ENEMY = {
     crawler: { w: 12, h: 8, hp: 4, dmg: 2, drops: { small: 2, big: 0, heart: 0.12 } },
@@ -291,16 +319,21 @@
     climber: { w: 10, h: 14, hp: 8, dmg: 2, drops: { small: 2, big: 1, heart: 0.3 } },
     steamer: { w: 12, h: 10, hp: 4, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
     slug: { w: 12, h: 6, hp: 5, dmg: 2, drops: { small: 2, big: 0, heart: 0.15 } },
+    // The Command Tower: Warden turrets in the ceilings that paint the hero with a sight line and fire a burst, and
+    // the Steward's honour guard, who come on behind a shield and lunge with a pike (and are open after it).
+    turret: { w: 12, h: 8, hp: 6, dmg: 0, drops: { small: 2, big: 0, heart: 0.2 } },
+    guard: { w: 10, h: 16, hp: 16, dmg: 2, drops: { small: 3, big: 1, heart: 0.5 } },
   };
-  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper', u: 'eel', i: 'jelly', x: 'drowned', m: 'climber', 8: 'steamer', 0: 'slug' };
+  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker', q: 'pod', j: 'picker', b: 'bloomsworn', r: 'rat', d: 'drone', v: 'dropper', u: 'eel', i: 'jelly', x: 'drowned', m: 'climber', 8: 'steamer', 0: 'slug', 7: 'turret', 9: 'guard' };
   // What the Bloomsworn are thinking. Only a hero with the Bloom in them (stage 3 or more) can hear it.
   const THOUGHTS = ['SO LOUD', 'WHERE IS MY GIRL', 'IT HURTS WHEN IT STOPS', 'COUNT ME', 'SO WARM', 'I HAD A NAME', 'KEEP MOVING'];
 
   function makeEnemy(spawn) {
     const type = TYPES[spawn.type];
     const d = ENEMY[type];
-    // A stack-crawler starts clinging under the ceiling of its cell; everything else stands on its cell's floor.
-    const y = type === 'dropper' ? spawn.y : spawn.y + 8 - d.h;
+    // A stack-crawler starts clinging under the ceiling of its cell, and a turret hangs there; everything else stands
+    // on its cell's floor.
+    const y = type === 'dropper' || type === 'turret' ? spawn.y : spawn.y + 8 - d.h;
     return {
       type,
       spawn,
@@ -353,7 +386,7 @@
     if (e.stun > 0) {
       e.stun--;
       e.grip = false; // a stunned climber loses its hold on the wall
-      if (e.type !== 'drifter' && e.type !== 'drone' && e.type !== 'eel' && e.type !== 'jelly' && e.type !== 'steamer') {
+      if (e.type !== 'drifter' && e.type !== 'drone' && e.type !== 'eel' && e.type !== 'jelly' && e.type !== 'steamer' && e.type !== 'turret') {
         e.vx = 0;
         walk(world, e);
       }
@@ -370,6 +403,8 @@
     else if (e.type === 'climber') updateClimber(world, e, px, py, dist);
     else if (e.type === 'steamer') updateSteamer(world, e, px, py, dist);
     else if (e.type === 'slug') updateSlug(world, e);
+    else if (e.type === 'turret') updateTurret(world, e, px, py, dist);
+    else if (e.type === 'guard') updateGuard(world, e, px, py, dist);
     else if (e.type === 'dropper') updateDropper(world, e, px, py, dist);
     else if (e.type === 'crawler') {
       e.vy = Math.min(e.vy + 0.3, 4);
@@ -911,6 +946,101 @@
     kill(world, e);
   }
 
+  // A Warden turret: it turns to follow the hero below it, paints them with a sight line while it winds up, then
+  // fires a burst of three. One the Steward holds (e.held) fires only on his word (e.order).
+  function updateTurret(world, e, px, py, dist) {
+    const p = world.player;
+    const ex = e.x + e.w / 2;
+    const ey = e.y + e.h - 2;
+    const want = clamp(Math.atan2(py - ey, px - ex), 0.2, Math.PI - 0.2);
+    if (e.aim === undefined) e.aim = Math.PI / 2;
+    if (e.burst > 0) {
+      if (--e.gap <= 0) {
+        e.gap = 7;
+        e.burst--;
+        world.shots.push({ owner: 'enemy', kind: 'round', x: ex + Math.cos(e.aim) * 7, y: ey + Math.sin(e.aim) * 7, vx: Math.cos(e.aim) * 2.6, vy: Math.sin(e.aim) * 2.6, life: 140, dmg: 2, pierce: 0, hits: new Set() });
+        HA.audio.play('turret');
+      }
+      return;
+    }
+    if (e.tele > 0) {
+      // it keeps tracking, slower, and holds still for the last moment before it fires
+      if (e.tele > 12) e.aim += clamp(want - e.aim, -0.02, 0.02);
+      if (--e.tele === 0) {
+        e.burst = 3;
+        e.gap = 0;
+      }
+      return;
+    }
+    e.aim += clamp(want - e.aim, -0.04, 0.04);
+    if (e.cool > 0) e.cool--;
+    const ready = e.held ? e.order : e.cool <= 0 && dist < 170 && py > ey;
+    if (ready && !p.dead) {
+      e.order = false;
+      e.cool = 150 + Math.floor(Math.random() * 40);
+      e.tele = 40;
+      HA.audio.play('telegraph');
+    }
+  }
+
+  // The honour guard: shield up, it closes on a hero on its level, then pulls back its pike and lunges. Shots that
+  // meet the shield glance off; from behind, or while it recovers from a lunge with the shield down, it can be hurt.
+  // Dosed by the Steward's word (e.dosed), it throws the shield away and comes on twice as fast.
+  function updateGuard(world, e, px, py, dist) {
+    const p = world.player;
+    const ex = e.x + e.w / 2;
+    const level = Math.abs(py - (e.y + e.h / 2)) < 28;
+    const sees = dist < (e.dosed ? 240 : 150) && level && !p.dead;
+    const speed = e.dosed ? 1.1 : 0.45;
+    switch (e.state) {
+      case 'wind':
+        e.vx = approach(e.vx, 0, 0.2);
+        if (--e.timer <= 0) {
+          e.state = 'lunge';
+          e.timer = 12;
+          HA.audio.play('lunge');
+        }
+        break;
+      case 'lunge':
+        e.vx = e.facing * (e.dosed ? 3.2 : 2.6);
+        if (--e.timer <= 0) {
+          e.state = 'open';
+          e.timer = e.dosed ? 30 : 50;
+        }
+        break;
+      case 'open':
+        e.vx = approach(e.vx, 0, 0.15);
+        if (--e.timer <= 0) e.state = null;
+        break;
+      default:
+        if (sees) {
+          if (Math.abs(px - ex) > 4) e.facing = HA.sign(px - ex);
+          e.vx = approach(e.vx, Math.abs(px - ex) > 30 ? e.facing * speed : 0, 0.05);
+          if (Math.abs(px - ex) < (e.dosed ? 56 : 44) && --e.cool <= 0) {
+            e.state = 'wind';
+            e.timer = e.dosed ? 16 : 24;
+            e.cool = e.dosed ? 30 : 60;
+            e.vx = 0;
+            HA.audio.play('telegraph');
+          }
+        } else {
+          e.vx = approach(e.vx, Math.sin(e.t * 0.012) * 0.25, 0.02);
+          if (Math.abs(e.vx) > 0.05) e.facing = HA.sign(e.vx);
+        }
+    }
+    e.shield = !e.dosed && e.state !== 'open' && e.state !== 'lunge';
+    const hit = walk(world, e);
+    if (hit.ledge || hit.left || hit.right) {
+      e.vx = 0;
+      if (e.state === 'lunge') e.timer = 0;
+    }
+    // the pike, out in front while it lunges
+    if (e.state === 'lunge' && !p.dead) {
+      const tip = { x: e.facing > 0 ? e.x + e.w : e.x - 14, y: e.y + 6, w: 14, h: 3 };
+      if (HA.overlap(tip, p)) world.hurtPlayer(3, ex);
+    }
+  }
+
   function hurtEnemy(world, e, dmg, dir) {
     if (e.dead) return;
     if (e.boss) return HA.bosses[e.type].hurt(world, e, dmg, dir);
@@ -927,6 +1057,12 @@
       return;
     }
     if (e.type === 'bloomsworn' && e.state === 'stagger') dmg = Math.ceil(dmg * 1.5);
+    // A shot into a guard's shield glances off.
+    if (e.type === 'guard' && e.shield && dir === -e.facing) {
+      HA.audio.play('tink');
+      world.burst(e.x + e.w / 2 + e.facing * 7, e.y + 8, ['#fff0a8', '#a9b6cc'], 3, 1);
+      return;
+    }
     e.hp -= dmg;
     e.flash = 5;
     if (e.type === 'crawler') e.vx = 0.45 * sign(e.vx) || 0.45;
@@ -941,7 +1077,10 @@
     } else if (e.type === 'climber') {
       // shot off the wall, it drops and comes at the hero from the floor
       if (e.grip) Object.assign(e, { grip: false, tele: 0, state: 'leap', vx: 0, vy: 0.5 });
-    } else {
+    } else if (e.type === 'guard') {
+      // hit from behind, it turns
+      if (!e.state) e.facing = -dir || e.facing;
+    } else if (e.type !== 'turret') {
       e.x += dir * 1.5;
     }
     world.burst(e.x + e.w / 2, e.y + e.h / 2, ['#f27ad8', '#ffffff'], 3, 1.2);
@@ -970,8 +1109,8 @@
     if (e.boss) return HA.bosses[e.type].draw(ctx, world, e, cam);
     if (e.type === 'pod') return drawPod(ctx, world, e, cam);
     const frames = e.grip ? HA.art.enemies.climberGrip : HA.art.enemies[e.type];
-    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn' && !e.cling && !e.grip) || Math.abs(e.vx) > 0.05 || (e.grip && e.climbing);
-    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9, eel: 8, jelly: 12, drowned: 18, climber: e.state === 'rush' ? 5 : 10, steamer: 4, slug: 14 }[e.type] || (e.state === 'charge' ? 5 : 14);
+    const walking = (e.type !== 'walker' && e.type !== 'picker' && e.type !== 'bloomsworn' && e.type !== 'guard' && e.type !== 'turret' && !e.cling && !e.grip) || Math.abs(e.vx) > 0.05 || (e.grip && e.climbing);
+    const pace = { crawler: 10, rat: 5, drone: 3, dropper: 9, eel: 8, jelly: 12, drowned: 18, climber: e.state === 'rush' ? 5 : 10, steamer: 4, slug: 14, guard: e.dosed ? 6 : 12 }[e.type] || (e.state === 'charge' ? 5 : 14);
     let spr = frames[walking && !(e.stun > 0) ? Math.floor(e.t / pace) % frames.length : 0];
     if (e.type === 'bloomsworn' && e.state === 'stagger') spr = HA.art.enemies.bloomswornStagger;
     const img = e.flash > 0 ? spr.white : spr.img;
@@ -1020,6 +1159,8 @@
       ctx.fillRect(x + (e.facing > 0 ? 0 : -4), y + 3, 4, 2);
     }
     if (e.type === 'picker') drawPickerArm(ctx, world, e, x, y);
+    if (e.type === 'turret') drawTurret(ctx, world, e, cam);
+    if (e.type === 'guard') drawGuardKit(ctx, world, e, x, y);
     if (e.type === 'steamer' && e.tele > 0 && Math.floor(e.tele / 3) % 2 === 0) {
       ctx.fillStyle = '#eef4f6';
       ctx.fillRect(x - 1, y + spr.h, 2, 2);
@@ -1027,6 +1168,61 @@
     if ((e.type === 'bloomsworn' && e.state === 'roar') || (e.type === 'climber' && e.alert > 0) || (e.type === 'bloomsworn' && e.alert > 0)) {
       if (e.alert > 0) e.alert--;
       HA.font.draw(ctx, '!', x, y - 10, '#f27ad8', { align: 'center' });
+    }
+  }
+
+  // A turret's barrel, pointed where it aims, and its sight line while it winds up.
+  function drawTurret(ctx, world, e, cam) {
+    const cx = Math.round(e.x + e.w / 2 - cam.x);
+    const cy = Math.round(e.y + e.h - 2 - cam.y);
+    const a = e.aim === undefined ? Math.PI / 2 : e.aim;
+    if (e.tele > 0 && (e.tele > 12 || Math.floor(e.tele / 2) % 2)) {
+      ctx.globalAlpha = e.tele > 12 ? 0.35 : 0.8;
+      ctx.fillStyle = '#e8434f';
+      for (let d = 8; d < 200; d += 2) ctx.fillRect(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d), 1, 1);
+      ctx.globalAlpha = 1;
+    }
+    for (let d = 2; d < 8; d++) {
+      ctx.fillStyle = d < 7 ? '#3a4258' : '#10121c';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * d) - 1, Math.round(cy + Math.sin(a) * d) - 1, 2, 2);
+    }
+    if (e.burst > 0 && e.gap > 4) {
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * 9) - 1, Math.round(cy + Math.sin(a) * 9) - 1, 3, 3);
+    }
+  }
+
+  // The honour guard's shield (up in front, or lowered while it recovers) and its pike (upright, drawn back while
+  // it winds up, thrust out in the lunge). A dosed guard has thrown the shield away.
+  function drawGuardKit(ctx, world, e, x, y) {
+    const f = e.facing;
+    if (!e.dosed) {
+      const sx = x + (f > 0 ? 4 : -8);
+      const low = e.state === 'open' ? 6 : 0;
+      ctx.fillStyle = '#10121c';
+      ctx.fillRect(sx, y + 4 + low, 5, 12 - low);
+      ctx.fillStyle = e.flash > 0 ? '#ffffff' : '#6c7894';
+      ctx.fillRect(sx + 1, y + 5 + low, 3, 10 - low);
+      ctx.fillStyle = '#ffb84d';
+      ctx.fillRect(sx + 1, y + 5 + low, 3, 1);
+      ctx.fillRect(sx + 2, y + 8 + low, 1, 3);
+    }
+    ctx.fillStyle = '#a9b6cc';
+    if (e.state === 'lunge') {
+      ctx.fillRect(f > 0 ? x + 2 : x - 20, y + 7, 18, 1);
+      ctx.fillStyle = '#eef4f6';
+      ctx.fillRect(f > 0 ? x + 18 : x - 22, y + 6, 4, 3);
+    } else {
+      const back = e.state === 'wind' ? -5 : 0;
+      const px = x - f * 5 + f * back;
+      ctx.fillRect(px, y - 4, 1, 18);
+      ctx.fillStyle = '#eef4f6';
+      ctx.fillRect(px - 1, y - 6, 3, 3);
+    }
+    if (e.dosed && Math.floor(world.time / 6) % 2) {
+      ctx.fillStyle = '#f27ad8';
+      ctx.fillRect(x - 3, y + 3, 1, 1);
+      ctx.fillRect(x + 2, y + 3, 1, 1);
     }
   }
 

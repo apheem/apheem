@@ -19,7 +19,7 @@
     const def = world.def;
     const here = { x: def.gx + Math.floor((p.x + p.w / 2) / 8), y: def.gy + Math.floor((p.y + p.h / 2) / 8) };
     // Opened at a rest pod, once the Labyrinth is reached, the map can take the hero to any pod rested at before.
-    const travel = !!(world.near && world.near.kind === 'pod' && world.state.flags.cargo && !world.scene);
+    const travel = !!(world.near && world.near.kind === 'pod' && world.state.flags.cargo && !world.state.flags.tower && !world.scene);
     return { world, tab: tab || 'map', cursor: Object.assign({}, here), here, section: 0, scroll: 0, image: null, bounds: null, zoom: 1, t: 0, rep: {}, travel, pods: travel ? podsRested(world) : [] };
   }
 

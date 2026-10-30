@@ -97,6 +97,20 @@
       edge: 'rgba(6,3,2,0.6)',
       heat: true,
     },
+    // The Command Tower: cold marble and brass, and the deep blue night through tall windows.
+    tower: {
+      bg: '#0b0d14',
+      panel: '#11141d',
+      panelEdge: '#181c28',
+      panelMark: '#1e2230',
+      conduit: ['#1c1a16', '#3a3222', '#6a5630'],
+      light: 'rgba(232,220,192,0.15)',
+      lamp: '#e8dcc0',
+      tile: { deep: '#15161c', deep2: '#191a21', face: '#8a8c96', inner: '#b4b4bc', speck: '#d8d6dc', lip: '#ffd88a', lip2: '#a87a3a', under: '#0a0a10', left: '#c8c8d0', right: '#4a4a56' },
+      walk: ['#ffd88a', '#a87a3a', '#5a4428', '#3a2c1a'],
+      edge: 'rgba(2,3,10,0.6)',
+      marble: true,
+    },
   };
   // Container colours: rust, teal, olive, ochre, slate and plum, each with a lit top edge and a dark rib.
   const CONTAINERS = [
@@ -1061,6 +1075,167 @@
     },
 
     // The Gardener's gallery, behind the glass: clean white tiles, a bench, and her own door out.
+    // ---- The Command Tower ----
+    // Tall arched windows onto the night, in brass frames (every so many pixels, from a start, s.h tiles tall).
+    tallwindows(g, s, rnd, T, room) {
+      const h = (s.h || 10) * 8;
+      const y = s.y * 8;
+      for (let x = s.from; x < room.pw - 24; x += s.every) {
+        g.fillStyle = '#6a5630';
+        g.fillRect(x - 2, y - 2, 28, h + 4);
+        g.fillStyle = '#0a1430';
+        g.fillRect(x, y + 6, 24, h - 6);
+        g.fillRect(x + 2, y + 2, 20, 4);
+        g.fillRect(x + 6, y, 12, 2);
+        const night = g.createLinearGradient(0, y, 0, y + h);
+        night.addColorStop(0, 'rgba(4,6,16,0.7)');
+        night.addColorStop(1, 'rgba(40,64,128,0.25)');
+        g.fillStyle = night;
+        g.fillRect(x, y + 2, 24, h - 2);
+        for (let i = 0; i < 9; i++) {
+          g.fillStyle = rnd() < 0.2 ? '#ffffff' : '#5a6a9a';
+          g.fillRect(x + 1 + Math.floor(rnd() * 22), y + 3 + Math.floor(rnd() * (h - 6)), 1, 1);
+        }
+        g.fillStyle = 'rgba(120,150,220,0.08)';
+        g.fillRect(x, y + 2, 24, h - 2);
+        g.fillStyle = '#6a5630';
+        g.fillRect(x + 11, y, 2, h);
+        g.fillRect(x, y + Math.floor(h / 2), 24, 1);
+        g.fillStyle = '#ffd88a';
+        g.fillRect(x - 2, y + h + 1, 28, 1);
+      }
+    },
+    // The Steward's banners: his colours, with a key worked on them in brass.
+    banners(g, s) {
+      for (const bx of s.at) {
+        const x = bx * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, 15, 18, 2);
+        g.fillStyle = '#2e2a3e';
+        g.fillRect(x, 17, 16, 36);
+        g.fillStyle = '#4a4060';
+        g.fillRect(x + 1, 17, 1, 36);
+        for (let i = 0; i < 8; i++) {
+          g.fillStyle = i % 2 ? '#2e2a3e' : '#4a4060';
+          g.fillRect(x + i * 2, 53, 2, 3 - (i % 2));
+        }
+        g.fillStyle = '#c9a050';
+        g.fillRect(x + 7, 24, 2, 14);
+        g.fillRect(x + 5, 22, 6, 4);
+        g.fillRect(x + 9, 33, 3, 1);
+        g.fillRect(x + 9, 36, 2, 1);
+        g.fillStyle = '#2e2a3e';
+        g.fillRect(x + 7, 23, 2, 2);
+      }
+    },
+    // The Observation Dome: glass from wall to wall, the stars, the bow below, and the new world: a pale dot, dark.
+    domeglass(g, s, rnd, T, room) {
+      const W = room.pw;
+      const top = 16;
+      const bottom = 15 * 8;
+      g.fillStyle = '#03050c';
+      g.fillRect(16, top, W - 32, bottom - top);
+      for (let i = 0; i < 220; i++) {
+        const r = rnd();
+        g.fillStyle = r < 0.12 ? '#ffffff' : r < 0.45 ? '#8aa0c8' : '#3b4a72';
+        g.fillRect(16 + Math.floor(rnd() * (W - 32)), top + Math.floor(rnd() * (bottom - top)), 1, 1);
+      }
+      // the world, low over the bow: pale, and no lights on it anywhere
+      const wx = 236;
+      const wy = 96;
+      for (let dy = -6; dy <= 6; dy++) {
+        const half = Math.floor(Math.sqrt(36 - dy * dy));
+        g.fillStyle = dy < -2 ? '#b8c4cc' : dy < 2 ? '#94a2ae' : '#6c7a88';
+        g.fillRect(wx - half, wy + dy, half * 2 + 1, 1);
+      }
+      g.fillStyle = '#5a6878';
+      g.fillRect(wx - 4, wy + 1, 3, 1);
+      g.fillRect(wx + 1, wy - 2, 4, 1);
+      g.fillStyle = 'rgba(200,220,232,0.1)';
+      g.fillRect(wx - 9, wy - 9, 19, 19);
+      // the bow below the glass
+      g.fillStyle = '#10121c';
+      g.beginPath();
+      g.moveTo(16, bottom);
+      g.lineTo(W - 16, bottom);
+      g.lineTo(W - 16, bottom - 6);
+      g.lineTo(150, bottom - 14);
+      g.lineTo(16, bottom - 18);
+      g.fill();
+      g.fillStyle = '#3a4258';
+      g.fillRect(40, bottom - 17, 1, 1);
+      g.fillRect(120, bottom - 15, 1, 1);
+      // the dome's brass ribs
+      g.strokeStyle = '#6a5630';
+      g.lineWidth = 2;
+      for (const k of [0.18, 0.5, 0.82]) {
+        g.beginPath();
+        g.moveTo(16 + (W - 32) * k, bottom);
+        g.quadraticCurveTo(16 + (W - 32) * (0.5 + (k - 0.5) * 0.4), top - 30, W / 2, top);
+        g.stroke();
+      }
+      g.beginPath();
+      g.moveTo(16, bottom - 40);
+      g.quadraticCurveTo(W / 2, top + 20, W - 16, bottom - 40);
+      g.stroke();
+      g.fillStyle = 'rgba(184,244,255,0.05)';
+      g.fillRect(16, top, W - 32, bottom - top);
+    },
+    // Planters of the Gardener's Bloom: pink stalks and caps standing up out of each bed.
+    planters(g, s, rnd) {
+      for (const [px, py] of s.at) {
+        const x = px * 8;
+        const y = py * 8;
+        for (let i = 0; i < 7; i++) {
+          const sx = x + 2 + Math.floor(rnd() * 28);
+          const h = 6 + Math.floor(rnd() * 14);
+          g.fillStyle = '#5c2479';
+          g.fillRect(sx, y - h, 1, h);
+          g.fillStyle = rnd() < 0.5 ? '#f27ad8' : '#b04ad0';
+          g.fillRect(sx - 1, y - h - 2, 3, 2);
+        }
+      }
+    },
+    // The Helm's great viewport: the night, the stars and the world, behind brass mullions.
+    viewport(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const x1 = s.x1 * 8;
+      const y0 = 24;
+      const y1 = 14 * 8;
+      g.fillStyle = '#6a5630';
+      g.fillRect(x0 - 2, y0 - 2, x1 - x0 + 4, y1 - y0 + 4);
+      g.fillStyle = '#03050c';
+      g.fillRect(x0, y0, x1 - x0, y1 - y0);
+      for (let i = 0; i < 120; i++) {
+        g.fillStyle = rnd() < 0.15 ? '#ffffff' : rnd() < 0.5 ? '#8aa0c8' : '#3b4a72';
+        g.fillRect(x0 + Math.floor(rnd() * (x1 - x0)), y0 + Math.floor(rnd() * (y1 - y0)), 1, 1);
+      }
+      const wx = x0 + Math.floor((x1 - x0) * 0.62);
+      const wy = y0 + 46;
+      for (let dy = -4; dy <= 4; dy++) {
+        const half = Math.floor(Math.sqrt(16 - dy * dy));
+        g.fillStyle = dy < 0 ? '#b8c4cc' : '#7a8896';
+        g.fillRect(wx - half, wy + dy, half * 2 + 1, 1);
+      }
+      g.fillStyle = '#6a5630';
+      for (let x = x0 + 40; x < x1; x += 40) g.fillRect(x, y0, 2, y1 - y0);
+      g.fillRect(x0, y0 + 40, x1 - x0, 1);
+    },
+    // The bridge's consoles: a lit screen standing on each (the console itself is in the map).
+    consoles(g, s) {
+      for (const cx of s.at) {
+        const x = cx * 8;
+        const y = 17 * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 2, y - 12, 20, 12);
+        g.fillStyle = '#1a3a48';
+        g.fillRect(x + 4, y - 10, 16, 7);
+        g.fillStyle = '#5fd4e8';
+        g.fillRect(x + 5, y - 9, 8, 1);
+        g.fillRect(x + 5, y - 7, 12, 1);
+        g.fillRect(x + 5, y - 5, 5, 1);
+      }
+    },
     gallery(g, s) {
       const x0 = s.x0 * 8;
       const y = s.y * 8;
@@ -1156,6 +1331,13 @@
           if ((tx + ty) % 3 === 0) {
             g.fillRect(x + 1, y + 2, 1, 1);
             g.fillRect(x + 6, y + 5, 1, 1);
+          }
+          if (T.marble && (tx * 7 + ty * 3) % 5 === 0) {
+            // a grey vein through the marble
+            g.fillStyle = P.face;
+            g.fillRect(x + 1, y + 5, 2, 1);
+            g.fillRect(x + 3, y + 4, 2, 1);
+            g.fillRect(x + 5, y + 3, 2, 1);
           }
           if (!up) {
             g.fillStyle = P.lip;

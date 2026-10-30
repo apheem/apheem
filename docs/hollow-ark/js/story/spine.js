@@ -551,7 +551,7 @@
       if (id === 'piston-run' && crew[5] && f.lifts >= 2) crewNpc(world, crew[5], 13, 9, ['THE RAMS NEARLY HAD ME. TWICE. TAKE THE LIFT.']);
       // The camp, before and after the night; the crew on the Tower Lift's deck in the morning.
       if (id === 'crew-camp' && f.camp && !f.campDone) placeCamp(world);
-      if (id === 'tower-lift' && f.campDone) placeDeck(world);
+      if (id === 'tower-lift' && f.campDone && !f.towerUp) placeDeck(world);
       // Home, once the climbers have gone up the Spine: only those who stayed behind the gate are left (and Shim,
       // unless he went into the vents).
       if (id === 'warrens' && f.crewCame) {

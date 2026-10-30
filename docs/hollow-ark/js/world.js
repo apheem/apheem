@@ -147,15 +147,18 @@
     };
 
     // After a defeat the suit reboots at the last rest pod (or, before any rest, where the hero entered the room).
+    // A checkpoint the story sets (the start of the Steward's fight, the start of the run to the sleds) comes first.
     world.respawn = () => {
       const s = world.state;
       const p = world.player;
       s.deaths++;
-      const rest = s.rest || { room: s.room, x: s.x, y: s.y };
+      const check = world.checkpoint;
+      const rest = check || s.rest || { room: s.room, x: s.x, y: s.y };
       Object.assign(p, { vx: 0, vy: 0, hp: p.maxHp, dead: false, invuln: 90, stun: 0, charge: 0, fireToggle: false, rush: 0 });
       enterRoom(world, rest.room, rest.x, rest.y, { noSave: true });
       world.fade = 1;
-      world.toast(s.rest ? 'SUIT REBOOTED AT THE REST POD' : 'SUIT REBOOTED', 150);
+      if (check && check.reset) check.reset(world);
+      world.toast(world.playAs ? 'UP AGAIN' : check ? 'SUIT REBOOTED AT THE CHECKPOINT' : s.rest ? 'SUIT REBOOTED AT THE REST POD' : 'SUIT REBOOTED', 150);
     };
 
     world.damageCrate = (tx, ty, dmg) => {
@@ -560,10 +563,12 @@
       }
     };
     if (!p.dead && !world.scene) {
-      const travel = world.state.flags.cargo ? '{up} REST  {map} TRAVEL' : '{up} REST';
-      for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, travel);
+      // Pods travel between each other from the Cargo Labyrinth on, until the Tower Lift; the scuttle turns them off.
+      const f = world.state.flags;
+      const travel = f.cargo && !f.tower ? '{up} REST  {map} TRAVEL' : '{up} REST';
+      if (!f.scuttle) for (const pod of world.pods) if (pod.cool === 0) consider('pod', pod, travel);
       for (const n of world.npcs) if (n.talkable && n.talkable(world, n)) consider('npc', n, '{up} TALK');
-      for (const l of world.logs) consider('log', l, '{up} READ');
+      for (const l of world.logs) consider('log', l, l.label || '{up} READ');
       for (const sw of world.switches) if (!world.craneMove) consider('switch', sw, '{up} THROW THE SWITCH');
       for (const l of world.links) {
         if (l.legend.type === 'lift') consider('link', l, '{up} USE THE LIFT');
@@ -703,14 +708,14 @@
       g.fillStyle = '#05060d';
       g.fillRect(0, 0, W, H);
       g.globalAlpha = 1;
-      if (p.deadTimer < 70) HA.font.draw(g, 'SUIT FAILURE', W / 2, H / 2 - 4, '#ff8a8a', { align: 'center' });
+      if (p.deadTimer < 70) HA.font.draw(g, world.playAs ? 'DOWN' : 'SUIT FAILURE', W / 2, H / 2 - 4, '#ff8a8a', { align: 'center' });
     }
     if (world.near && !world.scene && !quiet) {
       const o = world.near.o;
       HA.font.draw(g, world.near.label, Math.round(o.x + o.w / 2 - cam.x), Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
     }
     if (!world.scene || world.scene.showHud) drawHud(g, world, quiet);
-    if (!quiet && HA.story.drawFlood) HA.story.drawFlood(g, world);
+    if (!quiet) for (const o of HA.story.overlays) o(g, world); // the flood's clock, the scuttle's
     if (world.leadBanner > 0 && !quiet && !(world.scene && world.scene.step && (world.scene.step.say !== undefined || world.scene.step.choice))) drawLead(g, world);
     if (world.boss && world.boss.active) HA.bosses[world.boss.type].drawBar(g, world, world.boss);
     HA.scenes.draw(world, g, quiet);
@@ -836,6 +841,12 @@
       g.fillRect(x - 2, y - 2, 5, 5);
       g.fillStyle = big ? '#ffffff' : '#ff8a8a';
       g.fillRect(x - 1, y - 1, 3, 3);
+    } else if (s.kind === 'round') {
+      // a sidearm's or a turret's round: a short bright streak
+      g.fillStyle = '#ffb84d';
+      g.fillRect(Math.round(x - s.vx), Math.round(y - s.vy), 2, 2);
+      g.fillStyle = '#fff0a8';
+      g.fillRect(x - 1, y - 1, 2, 2);
     } else if (s.kind === 'grenade') {
       g.fillStyle = '#10121c';
       g.fillRect(x - 2, y - 2, 5, 5);

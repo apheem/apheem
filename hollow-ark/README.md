@@ -1,6 +1,6 @@
 # Hollow Ark
 
-A dark, retro pixel-art action-exploration game set aboard a colony ship drifting off course for 300 years. This folder holds **Phase 2, the vertical slice** (the Cryo Deck, the Hullfolk Warrens, the Warden Lockup and the first boss, with saving, a map, a journal and one moral choice), and **Phase 3 in progress**, the full main path. Today the story runs from waking in pod 0417, through the Hydroponic Gardens, home to the Warrens, down through the Cargo Labyrinth and the Flooded Ballast, along the keel and up the Engine Spine, and stops at the Tower Lift, on the way to the Command Tower, the next area to be built. The first of the five endings, Deserter, can be reached in play.
+A dark, retro pixel-art action-exploration game set aboard a colony ship drifting off course for 300 years. This folder holds **Phase 2, the vertical slice** (the Cryo Deck, the Hullfolk Warrens, the Warden Lockup and the first boss, with saving, a map, a journal and one moral choice), and **Phase 3 in progress**, the full main path. Today the story runs from waking in pod 0417, through the Hydroponic Gardens, home to the Warrens, down through the Cargo Labyrinth and the Flooded Ballast, along the keel, up the Engine Spine and the Command Tower to the Steward at the Helm. Four of the five endings can be reached in play: Deserter, Crash, Dominion and Overgrown. The fifth, Homecoming, needs the Dreaming Deck under the Helm, the next area to be built; the true path stops at the lift down to it.
 
 The game direction lives in the [Hollow Ark game direction brief](https://claude.ai/artifact/1DQU8Exivvskbjp3ykeMXY). Every place the build departs from it is in [DECISIONS.md](DECISIONS.md). The plan for the rest of the game, Phase 3 onward, is in [STORYBOARD.md](STORYBOARD.md): the whole story area by area, every boss, weapon, choice and ending, and the build order with a checklist. Start there to pick up the work.
 
@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.5-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.6-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.5-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.6-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -37,14 +37,14 @@ No mouse is needed anywhere. On-screen prompts switch between keyboard keys and 
 | Switch weapon | Q / E (or C / V) | LB / RB |
 | Eat a Bloom bulb (never on touch) | F or L | Y |
 | Drop through a catwalk | Down + Jump | Down + A |
-| Talk, read a ship log, rest at a rest pod, ride a lift, climb a ladder, throw a crane switch | Up | Up |
+| Talk, read a ship log, rest at a rest pod, ride a lift, climb a ladder, throw a crane switch, work a console | Up | Up |
 | Climb down an open floor hatch | Down | Down |
 | Thruster pack (once you have one) | In the air, press Jump again and hold | In the air, press A again and hold |
 | Grapple Harpoon | Aim at a ring (Up, or Up and a direction) and Fire; Jump to leap off, Down to let go | The same, with A and Down |
 | Swim (without the pressure boots) | In water, press Jump for each stroke | In water, press A for each stroke |
 | Pressure boots (once you have them) | You sink in water and walk the bottom; Jump goes high off it | The same, with A |
 | Foam Sprayer | Fire: the foam sets on water or Bloom silt as a platform for a few seconds, or on land as a shield | The same |
-| Travel to another rest pod (from the Cargo Labyrinth on) | At a rest pod, open the map and pick a ringed pod | The same |
+| Travel to another rest pod (from the Cargo Labyrinth until the Tower Lift) | At a rest pod, open the map and pick a ringed pod | The same |
 | Ride a steam vent (Engine Spine) | Step or jump into the steam and it carries you up; steer out to one side | The same |
 | Next line of dialogue | Z, Space, Enter or X | A or X |
 | Map and journal | Tab or M (Q / E switch tabs) | View / Back (LB / RB switch tabs) |
@@ -175,9 +175,26 @@ The ship's power spine: one tall shaft from the keel up to the Command Tower, wi
 - **Abel, the Stoker,** is a Bloomsworn giant the Steward used up and left feeding the Reactor Throat's furnace. You only ever see his shape against the fire. He can be hurt only while he leans out of the furnace mouth, which he does to attack. He lobs burning slag that sets the floor alight. He draws breath while the band his fire will fill flickers across the room, then blows a jet: low along the floor if you're on it (get up on a catwalk), or high if you're up (get down, and don't jump). In his second half he hauls the floor grates open over the fire; fall in and you're burnt and thrown back out.
 - **Choice 10.** Beaten, he says: "I WAS ABEL. I FED THE FIRES. DON'T PUT THEM OUT." Leave him his fires, or open the furnace's quench and put them out of him.
 - **The Crew Camp** is the old crew's bunks and stove at the top of the Spine. The climbers stop there for the night, and you can talk to every one of them. If you still carry Wick's Lancets, you can stitch a climber's burnt arm. At lights-out Gasket has Tamp count the children down the line phone to the Warrens; if you lied to Shim about his mother, he comes up one short. If you turned down the Purser's boat, he calls one last time over the intercom. Going still ends the game as the Deserter.
-- **The crew's verdict.** In the morning, by the Tower Lift, the climbers count themselves off the way the Wardens count ("COUNT: ONE. OLD. STUBBORN."). The Tower Lift up into the Command Tower is the next build.
+- **The crew's verdict.** In the morning, by the Tower Lift, the climbers count themselves off the way the Wardens count ("COUNT: ONE. OLD. STUBBORN."). Then the Tower Lift takes everyone up into the Command Tower.
 - **Home, if you go back:** everyone who climbed is gone from the Warrens, and the rest keep the gate with Tamp.
 - **The music:** a driving 7/8 on machine percussion, with the Ark's theme bent to fit the bar. It starts as only the engine, and each lift the crew builds adds a voice. Abel's fight slows it to a shovel's swing; the camp has the theme slow, by the stove.
+
+## Phase 3.6: the Command Tower
+
+The old bridge at the bow, high over the Spine: cold marble and brass, and the night in every window. Five rooms above the Tower Lift. The checklist is at the bottom of [STORYBOARD.md](STORYBOARD.md).
+
+- **The crew ride up with you** ("WE WANT TO BE IN THE ROOM") and hold the Tower Lift in the Barracks, the honour guard's quarters, until you reach the Helm. Pods stop offering travel once you're up here.
+- **New enemies:** Warden turrets in the ceilings that paint you with a red sight line before a burst of three, and the Steward's honour guard, who come on behind a shield (shots glance off it; get behind them, or catch them open after they lunge with the pike).
+- **The Observation Dome** has no music and nothing to fight: only the stars, and the new world over the bow, a pale dot with no lights on it anywhere. Its one terminal is the Navigator's, and it speaks to you for the first time: "YOU ARE STILL HERE." There's a rest pod.
+- **Choice 4b, if you lied to Shim:** he came up the vents to find his mother, and he's at the Dome's glass. Tell him the truth now, or keep lying.
+- **The Garden Gallery:** the Gardener, among her potted Bloom. If you still carry Wick's Lancets, she offers the Thorn one last time. Then **choice 11**: spare her, make her take her own dose (you walk on, and you hear it), or walk past. If you kept lying to Shim, she tells him the truth as he passes: "YOUR MOTHER ASKED VERY GOOD QUESTIONS."
+- **The Bridge Stair** climbs to the Helm, with a rest pod on the landing outside it.
+- **Steward Ivo Marrant** speaks first ("I WOKE UP COLD, LIKE YOU. THE FIRST THING I EVER DID ON THIS SHIP WAS TAKE A DEAD MAN'S BOOTS." Gasket: "...THOSE WERE HIS BOOTS."), then fights in three phases. The Key: he stands at the helm behind its field and gives orders, the turrets fire on his word and the gates drop and lift, and you break the three relays the Key draws on. The guard: "MEASURE: FULL." He doses his honour guard and lectures while you fight them. The man: an old man with the captain's sidearm, ducking behind the consoles, rising to aim (watch the sight), rolling away if you close in. A fall in the fight brings you back to its start, not down the stair. **Choice 12**: spare him, end him, or leave him to the Wardens' count.
+- **After the Steward,** the game picks the ending:
+  - **Bloom 8 or more: Overgrown.** Your hand closes on the Helm Key, and the Bloom closes on you. You play the last fight as Solder (or Old Gasket, if Solder died), with the weapon you dropped, against what's left of you.
+  - **Mercy −3 or less: the Key is offered.** The Wardens kneel: "NEW HOLDER. AWAITING ORDERS." **Choice 13**: claim the Key (Dominion), or break it.
+  - **Otherwise the Key breaks,** and the Navigator says "NOT YET." and starts to break the ship apart. With every Homecoming requirement met, the freed Wardens hold the doors while the crew mend Lift B under the Helm; the Dreaming Deck it goes down to is the next build. Without them, it's **the run for the sleds:** the tram takes everyone home, and you run alone against the clock from the sump through the Warrens and the Cryo Deck to the old crew's sleds in Cryo Bay 4, where you woke. The ceilings come down, the Wardens are gone, and the pods have no power. In the Pod Stacks one console can launch every sleeper's pod, and it costs 20 seconds. Run out of time and you start the run again. Reach the sleds for the Crash ending.
+- **The music:** the Ark's theme at its grandest, brass on a marching bass; silence in the Dome; an organ of square pipes for the Steward, adding a march for his guard and the theme for the man; a racing heartbeat under the hull alarm for the scuttle; and the Gardens' waltz gone wrong for what the hero became.
 
 ## How the rooms are checked
 
@@ -191,7 +208,7 @@ Every gap on the main path can be jumped with room to spare: 5 tiles or less (a 
 | `hollow-ark/desktop/` | Electron shell that packages those same files as Windows, macOS and Linux apps (Steam-ready in Phase 5). |
 | `docs/hollow-ark/js/areas/` | The rooms, one file per area, drawn as text maps (the legend is at the top of each file). |
 | `docs/hollow-ark/js/story/`, `js/bosses/` | Each area's story (scenes, lines, logs) and each boss, one file each, from Phase 3 on. |
-| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens, the Warrens return, the Cargo Labyrinth to the Deserter ending, the Flooded Ballast to the keel tram, and the Engine Spine to the Tower Lift), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
+| `hollow-ark/tests/` | The room checker, and a check that plays the whole story so far (the Gardens, the Warrens return, the Cargo Labyrinth to the Deserter ending, the Flooded Ballast to the keel tram, the Engine Spine to the Tower Lift, and the Command Tower to every ending after the Steward: the run for the sleds to Crash, Dominion, Overgrown fought as Solder, and the true path to Lift B), upgrades a Phase 2 save and plays all five endings, in Chromium, Firefox and WebKit (Safari's engine). |
 | `.github/workflows/hollow-ark.yml` | CI. On Windows, macOS and Linux it checks the rooms, plays the slice in all three browser engines, builds each desktop app, launches it, plays a few seconds and uploads it. |
 
 Run the desktop app from source:

@@ -333,6 +333,15 @@
     sprite(['............', '...000000...', '.00oooyoo00.', '0roooooooyo0', '0rrrrrrrrrr0', '.0000000000.']),
   ];
 
+  // The Command Tower: the Steward's honour guard (Bloomsworn in dress uniform, a brass helmet and plume, a shield
+  // and a pike, both drawn in actors.js), and the Warden turrets that hang from its ceilings.
+  const GUARD_TOP = ['....0WW0....', '...0vyyv0...', '..0vvvvvv0..', '..0hhPhhh0..', '..0hhhhhh0..', '...0hhhp0...', '..0uyuuyu0..', '.0uUUuuUUu0.', '0uuyuuuuyuu0', '0u0uUUUUu0u0', '0h0uuuuuu0h0', '.0.0uuuu0.0.'];
+  enemies.guard = [
+    sprite(GUARD_TOP.concat(['...0uu0uu0..', '...0uu0uu0..', '..0Uu0.0uU0.', '..000..000..'])),
+    sprite(GUARD_TOP.concat(['..0uu0.0uu0.', '.0uu0...0uu0', '.0Uu0...0uU0', '.000.....000'])),
+  ];
+  enemies.turret = [sprite(['..00000000..', '..0kKKKKk0..', '.0kKLLLLKk0.', '0kKKKKKKKKk0', '0kkKcrrcKkk0', '.0kkkkkkkk0.', '..0kk00kk0..', '...0....0...'])];
+
   // ---- Pickups and HUD icons ----
   const items = {
     shardSmall: [sprite(['.y.', 'yoy', '.y.']), sprite(['.o.', 'oyo', '.o.'])],
