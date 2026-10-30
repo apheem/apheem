@@ -632,7 +632,7 @@
     gy: 137,
     abilities: { thruster: true, grapple: true },
     legend: {
-      h: { type: 'hatch', name: 'the drain', to: 'ballast-intake', unbuilt: 'THE FLOODED BALLAST', open: () => true },
+      h: { type: 'hatch', name: 'the drain', to: 'ballast-intake', open: () => true },
       K: { type: 'log', scene: 'toolbag', name: "Solder's toolbag" },
     },
     scenery: [

@@ -128,6 +128,7 @@
     coil: sprite(['.000000.', '0bcCCcc0', '0bbbbbb0', '0b00000.', '00......']),
     harpoon: sprite(['.0000000.', '0kKKKKKLW', '0k0000000', '00.......']),
     charges: sprite(['.0000000.', '0kLLLLLr0', '0kKKKKKr0', '0K0000000', '00.......']),
+    foam: sprite(['..000...', '.0WWW000', '0kCCCKL0', '0k0000..', '00......']),
   };
 
   // ---- Enemies ----
@@ -294,6 +295,23 @@
     sprite(['............', '...000000...', '..0v0vv0v0..', '.0vv0vv0vv0.', '.0kkkkkkkk0.', '0kkkkkkkkRk0', '0kkkkkkkkkk0', '..0k0k0k0k..']),
   ];
 
+  // The Flooded Ballast: silt eels spotted with Bloom, pink Bloom jellies trailing their stingers, and drowned
+  // Wardens gone green with weed, one dim eye still lit.
+  const EEL = ['....00000000..', '..00tttttttt0.', '0ttGttPttPttY0', '0ttGGGGGGGGGt0', '.0t00GGGGGG00.', '..0..000000...'];
+  enemies.eel = [
+    sprite(EEL.map((r) => r.replace('Y', 'y'))),
+    sprite(['....00000000..', '.000tttttttt0.', '0ttGttPttPtty0', '0ttGGGGGGGGGt0', '..000GGGGGG00.', '.....000000...']),
+  ];
+  enemies.jelly = [
+    sprite(['...0000...', '..0qqqq0..', '.0qPPPPq0.', '0qPPWPPPq0', '0PPPPPPPP0', '.0mmmmmm0.', '..P..P..P.', '.P..P..P..', '..P..P..P.', '...P...P..']),
+    sprite(['..........', '...0000...', '..0qqqq0..', '.0qPPWPq0.', '0qPPPPPPq0', '0mmmmmmmm0', '.P..P..P..', '..P..P..P.', '.P..P..P..', '..P...P...']),
+  ];
+  const DROWNED_TOP = ['....0000....', '...0KKKK0...', '..0KkkkkK0..', '..0kkcckk0..', '..0KkkkkK0..', '...0KKKK0...', '..00kkkk00..', '.0KKtKKKKK0.', '0KkkGkkkkkK0', '0kkktkkGkkk0', '0Kkkkkkkkkt0', '.0kkGkkkkk0.', '..0kkkkkk0..'];
+  enemies.drowned = [
+    sprite(DROWNED_TOP.concat(['..0k0..0k0..', '..0k0..0k0..', '..0K0..0K0..', '.0KK0..0KK0.', '.0000..0000.'])),
+    sprite(DROWNED_TOP.concat(['..0k0..0k0..', '.0k0....0k0.', '.0K0....0K0.', '0KK0....0KK0', '0000....0000'])),
+  ];
+
   // ---- Pickups and HUD icons ----
   const items = {
     shardSmall: [sprite(['.y.', 'yoy', '.y.']), sprite(['.o.', 'oyo', '.o.'])],
@@ -325,6 +343,7 @@
     coil: sprite(['............', '.000000000..', '0bcCCcCcc0..', '0bbbbbbbb0..', '0b0000000...', '00..........', '............']),
     harpoon: sprite(['............', '.........0..', '.00000000L0.', '0kKKKKKKKLW0', '0k0000000L0.', '00.......0..', '............']),
     charges: sprite(['............', '.000000000..', '0KLLLLLLLr0.', '0kKKKKKKKr0.', '0k0000000...', '00..........', '............']),
+    foam: sprite(['............', '...0000.....', '..0WWWW0000.', '.0kCCCCKKLL0', '.0kk00000000', '.00.........', '............']),
   };
 
   // ---- The Hullfolk: small, pale, big-eyed, hooded against the cold of the walls ----

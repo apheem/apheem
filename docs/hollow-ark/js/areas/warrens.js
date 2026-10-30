@@ -81,7 +81,8 @@
       5: { type: 'npc', id: 'tamp', name: 'a villager' },
       6: { type: 'npc', id: 'brine', name: 'a villager' },
       // The raid blew the gate open. Solder's new one opens from the Hullfolk's side: Tamp lets the hero through.
-      D: { type: 'door', id: 'gate', open: (s) => !!s.flags.raid, kept: (s) => !!s.flags.newGate },
+      // If the Bloomsworn broke it while the hero was in the Ballast, it hangs open for good.
+      D: { type: 'door', id: 'gate', open: (s) => !!s.flags.raid, kept: (s) => !!s.flags.newGate && s.warrensRaid !== 'fell' },
       // The old crew's lift up to the Gardens, locked by the Steward until the cradles open.
       L: { type: 'lift', name: 'the Garden Lift', to: 'garden-lift' },
       // Down to the sump and the keel tram. Solder opens it the night she leaves.

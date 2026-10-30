@@ -405,6 +405,75 @@
     },
   };
 
+  // The Flooded Ballast's dry rooms: the Ark's theme an octave down on soft voices, as if heard through the hull,
+  // with long rests between its phrases and water dripping somewhere.
+  const B_THEME = transpose(THEME, -12);
+  const B_CHORDS = [chord('A1', 3), chord('F1', 4), chord('G1', 4), chord('E1', 4)];
+  TRACKS.ballast = {
+    step: 60 / 76 / 4,
+    steps: 128,
+    fadeIn: 2,
+    play(s, out) {
+      const bar = Math.floor(s / 16) % 8;
+      const at = s % 16;
+      const c = B_CHORDS[bar % 4];
+      if (at === 0) out.note(0, 'sine', c.root, 14, 0.2, 0.4);
+      if (at === 8 && bar % 2) out.note(0, 'sine', c.root + 7, 8, 0.1, 0.3);
+      if (at === 0) out.note(0, 'triangle', c.root + 24 + c.third, 16, 0.025, 1);
+      // the theme on its own every other bar, only its first notes
+      if (bar % 2 === 0) themeAt(B_THEME[(bar / 2) % 4], at, (n, len, i) => i < 3 && out.note(0, 'triangle', n, len, 0.07, 0.04));
+      if ((s * 7) % 23 === 3) out.drum(0, 'drip', 0.03);
+    },
+  };
+
+  // The water rooms: no tune at all, only the engines' muffled thrum through the water.
+  TRACKS.ballastWater = {
+    step: 0.25,
+    steps: 32,
+    fadeIn: 2.5,
+    play(s, out) {
+      if (s % 16 === 0) out.note(0, 'sine', 'A1', 16, 0.14, 1.5);
+      if (s % 4 === 0) out.note(0, 'sine', midi('E2') + 0.06, 2, s % 8 ? 0.04 : 0.07, 0.3);
+      if (s === 13) out.drum(0, 'drip', 0.015);
+    },
+  };
+
+  // The flood: no music, only the alarm and the water.
+  TRACKS.flood = {
+    step: 0.2,
+    steps: 16,
+    fadeIn: 0.1,
+    play(s, out) {
+      if (s % 8 === 0) out.note(0, 0.5, 'A4', 3.6, 0.05);
+      if (s % 8 === 4) out.note(0, 0.5, 'F4', 3.6, 0.05);
+      if (s % 2 === 0) out.drum(0, 'hand', 0.06);
+      if (s === 6) out.note(0, 'sine', 'A1', 8, 0.15, 0.5);
+    },
+  };
+
+  // The Silt Mother: a slow churn in 6/8 under the theme pulled flat and low. Layer 2 (the tank drained) speeds the
+  // bass and brings the theme up an octave, out of the water.
+  const S_CHORDS = [chord('A1', 3), chord('A1', 3), chord('F1', 4), chord('E1', 4)];
+  TRACKS.siltMother = {
+    step: 60 / 132 / 4,
+    steps: 96,
+    layers: 2,
+    fadeIn: 0.2,
+    play(s, out) {
+      const bar = Math.floor(s / 12) % 8;
+      const at = s % 12;
+      const c = S_CHORDS[bar % 4];
+      if (at === 0 || at === 6) out.drum(0, 'kick', 0.32);
+      if (at === 9) out.drum(0, 'hand', 0.12);
+      if (at % 3 === 0) out.note(0, 'triangle', c.root + [0, 7, 12, 7][at / 3], 2.6, 0.26);
+      if (at === 0) out.note(0, 0.5, c.root + 12, 11, 0.03, 0.2);
+      themeAt(B_THEME[bar % 4], at, (n, len) => out.note(0, 0.25, midi(n) + 12 - 0.4, len, 0.05, 0.02));
+      if (at % 3 === 1) out.note(1, 'triangle', c.root + 12 + [0, 7, 3, 7][Math.floor(at / 3)], 1, 0.12);
+      if (at === 3 || at === 9) out.drum(1, 'snare', 0.12);
+      themeAt(B_THEME[bar % 4], at, (n, len) => out.note(1, 0.125, midi(n) + 24, len, 0.04, 0.005));
+    },
+  };
+
   // ---- The player: one track at a time, crossfading, with layers that fade in and out ----
   let current = null;
   const fading = [];

@@ -98,11 +98,24 @@
         { cd: 22, speed: 4, dmg: 18, blast: 26 },
       ],
     },
+    // Solder's Foam Sprayer ("MADE IT FOR THE BATH"): a glob that floats up through water and sets on its surface
+    // as a platform for a while, or sets on land as a shield that stops shots. It gums up small things it hits.
+    foam: {
+      name: 'FOAM SPRAYER',
+      caps: [10, 22, 36],
+      levels: [
+        { cd: 20, speed: 1.7, width: 3, life: 480, shield: 150, dmg: 1 },
+        { cd: 18, speed: 1.9, width: 4, life: 600, shield: 210, dmg: 1 },
+        { cd: 16, speed: 2.1, width: 5, life: 720, shield: 270, dmg: 2 },
+      ],
+    },
   };
+  const MAX_FOAM = 3; // platforms afloat at once: a fourth dissolves the oldest
   // How many charges the rack holds (choice 8).
   const chargesMax = (s) => (s.wardens.tallyman === 'salvage' ? 5 : 3);
+  // Something can be out of reach of every weapon for a while (the Silt Mother, under the water): e.ghost.
   // Small things the harpoon's line drags back to the hero.
-  const LIGHT = { crawler: 1, drifter: 1, rat: 1, drone: 1, dropper: 1 };
+  const LIGHT = { crawler: 1, drifter: 1, rat: 1, drone: 1, dropper: 1, eel: 1, jelly: 1 };
   const XP_LOSS = 4;
   const XP_LOCK = 150;
 
@@ -199,6 +212,11 @@
       if (p.cooldown <= 0 && fire.pressed && !p.grapple) {
         if (!HA.abilities.fireGrapple(world, p, input || { held: {} })) fireHarpoon(world, L, w.level);
         p.cooldown = L.cd;
+      }
+    } else if (w.id === 'foam') {
+      if (p.cooldown <= 0 && (fire.pressed || fire.held)) {
+        fireFoam(world, L, w.level);
+        p.cooldown = fire.pressed ? L.cd : Math.round(L.cd * 1.3);
       }
     } else if (w.id === 'charges') {
       if (p.cooldown <= 0 && fire.pressed) {
@@ -350,6 +368,122 @@
     e.stun = 40;
   }
 
+  // A glob of foam, lobbed. Underwater it floats straight up to the surface.
+  function fireFoam(world, L, level) {
+    const p = world.player;
+    const m = muzzle(p);
+    let vx = p.facing * L.speed + p.vx * 0.3;
+    let vy = -0.8;
+    if (p.aim === 'up') {
+      vx = p.facing * 0.5;
+      vy = -3;
+    } else if (p.aim === 'down') {
+      vx = p.facing * 0.4;
+      vy = 1.5;
+    }
+    world.shots.push({ owner: 'player', kind: 'foam', level, x: m.x, y: m.y, vx, vy, life: 150, dmg: L.dmg, width: L.width, keep: L.life, shield: L.shield, pierce: 0, hits: new Set() });
+    HA.audio.play('foam');
+  }
+
+  // Foam floats on water and on Bloom silt alike.
+  const waterAt = (room, tx, ty) => room.tile(tx, ty) === HA.room.WATER || room.tile(tx, ty) === HA.room.SLUDGE;
+
+  function updateFoamShot(world, s) {
+    const room = world.room;
+    s.life--;
+    const tx = Math.floor(s.x / 8);
+    const ty = Math.floor(s.y / 8);
+    const wet = waterAt(room, tx, ty);
+    if (wet) {
+      // It floats: up to the surface, where it sets.
+      if (!waterAt(room, tx, ty - 1)) return setFoam(world, s, tx, ty);
+      s.vx *= 0.85;
+      s.vy = HA.approach(s.vy, -2.2, 0.35);
+    } else s.vy = Math.min(s.vy + 0.16, 4);
+    s.x += s.vx;
+    s.y += s.vy;
+    const t = room.tile(Math.floor(s.x / 8), Math.floor(s.y / 8));
+    if (t === HA.room.FOAM) {
+      // Into a platform already afloat: it tops it up.
+      const pl = (world.foam || []).find((f) => f.cells.some((c) => c.tx === Math.floor(s.x / 8) && c.ty === Math.floor(s.y / 8)));
+      if (pl) pl.life = Math.max(pl.life, s.keep);
+      return pop(world, s);
+    }
+    if (t === HA.room.SOLID || t === HA.room.CRATE) return wet ? pop(world, s) : shieldAt(world, s);
+    for (const e of world.enemies) {
+      if (e.dead || e.ghost || !HA.overlap({ x: s.x - 2, y: s.y - 2, w: 4, h: 4 }, e)) continue;
+      world.hurtEnemy(e, s.dmg, HA.sign(s.vx || 0.01));
+      if (!e.boss) e.stun = Math.max(e.stun || 0, 60);
+      return pop(world, s);
+    }
+    if (s.life <= 0) pop(world, s);
+  }
+
+  function pop(world, s) {
+    s.life = 0;
+    world.burst(s.x, s.y, ['#f4f0e0', '#d8e4ea'], 5, 0.9);
+  }
+
+  // A platform on the surface the glob reached: as wide as the level allows, centred where it came up.
+  function setFoam(world, s, tx, ty) {
+    s.life = 0;
+    const room = world.room;
+    const surface = (x) => waterAt(room, x, ty) && !waterAt(room, x, ty - 1) && room.tile(x, ty - 1) !== HA.room.FOAM;
+    const cells = [];
+    const want = s.width;
+    let lo = tx;
+    let hi = tx;
+    if (surface(tx)) cells.push(tx);
+    while (cells.length && cells.length < want) {
+      const grow = cells.length % 2 ? hi + 1 : lo - 1;
+      const other = cells.length % 2 ? lo - 1 : hi + 1;
+      if (surface(grow)) cells.push(grow);
+      else if (surface(other)) cells.push(other);
+      else break;
+      lo = Math.min(...cells);
+      hi = Math.max(...cells);
+    }
+    if (!cells.length) return pop(world, s);
+    const set = cells.map((x) => ({ tx: x, ty, was: room.tile(x, ty) }));
+    for (const x of cells) room.set(x, ty, HA.room.FOAM);
+    world.foam = world.foam || [];
+    world.foam.push({ cells: set, life: s.keep, max: s.keep });
+    while (world.foam.length > MAX_FOAM) dissolve(world, world.foam.shift());
+    world.burst(s.x, ty * 8, ['#f4f0e0', '#ffffff', '#9fd8e8'], 10, 1.2);
+    HA.audio.play('foamSet');
+  }
+
+  function dissolve(world, pl) {
+    for (const c of pl.cells) {
+      if (world.room.tile(c.tx, c.ty) !== HA.room.FOAM) continue;
+      world.room.set(c.tx, c.ty, c.was);
+      world.burst(c.tx * 8 + 4, c.ty * 8 + 2, ['#f4f0e0', '#9fd8e8'], 2, 0.6);
+    }
+  }
+
+  // On land the glob sets where it hit, as a short-lived shield standing on the floor below.
+  function shieldAt(world, s) {
+    const room = world.room;
+    const x = s.x - HA.sign(s.vx || 0.01) * 4;
+    let fy = Math.floor((s.y - s.vy) / 8);
+    for (let i = 0; i < 6 && !room.solidAt(x, fy * 8 + 8) && room.tile(Math.floor(x / 8), fy + 1) !== HA.room.ONEWAY; i++) fy++;
+    if (room.solidAt(x, fy * 8 + 4)) return pop(world, s);
+    world.shields = world.shields || [];
+    world.shields.push({ x: x - 3, y: fy * 8 + 8 - 16, w: 6, h: 16, life: s.shield, max: s.shield });
+    if (world.shields.length > 2) world.shields.shift();
+    s.life = 0;
+    world.burst(x, fy * 8, ['#f4f0e0', '#ffffff'], 8, 1);
+    HA.audio.play('foamSet');
+  }
+
+  // Platforms and shields wear away; a platform blinks for its last second and a half.
+  function updateFoam(world) {
+    for (const pl of world.foam || []) if (--pl.life <= 0) dissolve(world, pl);
+    if (world.foam) world.foam = world.foam.filter((pl) => pl.life > 0);
+    for (const sh of world.shields || []) sh.life--;
+    if (world.shields) world.shields = world.shields.filter((sh) => sh.life > 0);
+  }
+
   // A Breach Charge: a slow rocket that speeds up, and bursts on whatever it meets.
   function fireCharge(world, L, level) {
     const p = world.player;
@@ -373,7 +507,7 @@
     if (world.time % 2 === 0) world.particles.push({ x: s.x - s.vx, y: s.y - s.vy, vx: -s.vx * 0.2 + HA.rand(-0.2, 0.2), vy: -s.vy * 0.2 + HA.rand(-0.2, 0.2), life: 14, max: 14, color: world.time % 4 ? '#9fb6c8' : '#ffb84d', size: 1, grav: 0 });
     const t = world.room.tile(Math.floor(s.x / 8), Math.floor(s.y / 8));
     if (t === HA.room.SOLID || t === HA.room.CRATE) return breach(world, s);
-    for (const e of world.enemies) if (!e.dead && HA.overlap({ x: s.x - 2, y: s.y - 2, w: 4, h: 4 }, e)) return breach(world, s);
+    for (const e of world.enemies) if (!e.dead && !e.ghost && HA.overlap({ x: s.x - 2, y: s.y - 2, w: 4, h: 4 }, e)) return breach(world, s);
     if (s.life <= 0) breach(world, s);
   }
 
@@ -382,7 +516,7 @@
     s.life = 0;
     const r = s.blast;
     for (const e of world.enemies) {
-      if (e.dead) continue;
+      if (e.dead || e.ghost) continue;
       if (Math.hypot(e.x + e.w / 2 - s.x, e.y + e.h / 2 - s.y) <= r + Math.max(e.w, e.h) / 2) world.hurtEnemy(e, s.dmg, HA.sign(e.x + e.w / 2 - s.x));
     }
     for (let ty = Math.floor((s.y - r) / 8); ty <= Math.floor((s.y + r) / 8); ty++) {
@@ -406,7 +540,7 @@
     s.life = 0;
     const r = s.blast;
     for (const e of world.enemies) {
-      if (e.dead) continue;
+      if (e.dead || e.ghost) continue;
       const d = Math.hypot(e.x + e.w / 2 - s.x, e.y + e.h / 2 - s.y);
       if (d > r + Math.max(e.w, e.h) / 2) continue;
       const flyer = e.type === 'drifter' || e.type === 'warden' || e.type === 'drone';
@@ -441,7 +575,7 @@
       if (Math.abs(s.vx) < 0.35 && s.vy === 0) s.vx = HA.sign(s.vx || 1) * 0.35; // it keeps rolling
     }
     for (const e of world.enemies) {
-      if (!e.dead && HA.overlap(body, e) && s.t > 4) return explode(world, s);
+      if (!e.dead && !e.ghost && HA.overlap(body, e) && s.t > 4) return explode(world, s);
     }
     if (s.life <= 0) explode(world, s);
   }
@@ -473,7 +607,7 @@
       }
       const probe = { x: x - thick, y: y - thick, w: thick * 2, h: thick * 2 };
       for (const e of world.enemies) {
-        if (e.dead || hitList.includes(e) || !HA.overlap(probe, e)) continue;
+        if (e.dead || e.ghost || hitList.includes(e) || !HA.overlap(probe, e)) continue;
         hitList.push(e);
         if (!L.pierce) stopped = true;
       }
@@ -488,7 +622,7 @@
       let best = null;
       let bestD = 64;
       for (const e of world.enemies) {
-        if (e.dead || chained.has(e)) continue;
+        if (e.dead || e.ghost || chained.has(e)) continue;
         const d = Math.hypot(e.x + e.w / 2 - (from.x + from.w / 2), e.y + e.h / 2 - (from.y + from.h / 2));
         if (d < bestD) {
           bestD = d;
@@ -526,6 +660,10 @@
         updateCharge(world, s);
         continue;
       }
+      if (s.kind === 'foam') {
+        updateFoamShot(world, s);
+        continue;
+      }
       s.x += s.vx;
       s.y += s.vy;
       s.life--;
@@ -544,7 +682,7 @@
       if (s.owner === 'player') {
         const box = { x: s.x - 2, y: s.y - 2, w: 4, h: 4 };
         for (const e of world.enemies) {
-          if (e.dead || s.hits.has(e) || !HA.overlap(box, e)) continue;
+          if (e.dead || e.ghost || s.hits.has(e) || !HA.overlap(box, e)) continue;
           s.hits.add(e);
           world.hurtEnemy(e, s.dmg, HA.sign(s.vx || 0.01));
           if (s.heal) lancetHeal(world);
@@ -563,6 +701,11 @@
             world.burst(o.x, o.y, ['#ff8a8a', '#ffffff'], 6, 1.2);
           }
         }
+      } else if ((world.shields || []).some((sh) => HA.overlap({ x: s.x - 2, y: s.y - 2, w: 4, h: 4 }, sh))) {
+        // A foam shield takes the shot, and a little of its life with it.
+        s.life = 0;
+        world.burst(s.x, s.y, ['#f4f0e0', '#ff8a8a'], 4, 1);
+        for (const sh of world.shields) if (HA.overlap({ x: s.x - 2, y: s.y - 2, w: 4, h: 4 }, sh)) sh.life -= 30;
       } else if (HA.overlap({ x: s.x - 3, y: s.y - 3, w: 6, h: 6 }, world.player)) {
         world.hurtPlayer(s.dmg || 2, s.x);
         s.life = 0;
@@ -596,5 +739,5 @@
     }
   }
 
-  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, loseXp, update, updateShots, muzzle, chargesMax };
+  HA.weapons = { DEFS, LIGHT, make, cap, isMax, addXp, loseXp, update, updateShots, updateFoam, dissolve, muzzle, chargesMax };
 })(window.HA);

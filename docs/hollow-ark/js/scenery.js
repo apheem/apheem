@@ -69,6 +69,19 @@
       edge: 'rgba(4,3,2,0.6)',
       stripLights: true,
     },
+    // The Flooded Ballast: dark teal water and wet walls, rust, and sodium-orange work lamps.
+    ballast: {
+      bg: '#050b0b',
+      panel: '#091211',
+      panelEdge: '#0d1817',
+      panelMark: '#112120',
+      conduit: ['#1c1410', '#2e1d14', '#46291a'],
+      light: 'rgba(255,150,60,0.17)',
+      lamp: '#ff9b3d',
+      tile: { deep: '#0e1413', deep2: '#111917', face: '#2a2620', inner: '#38302a', speck: '#5a4030', lip: '#ff9b3d', lip2: '#8a4a26', under: '#060909', left: '#4a3626', right: '#141210' },
+      walk: ['#c98a4a', '#7a5030', '#3a2a1c', '#2a1e14'],
+      edge: 'rgba(1,4,4,0.62)',
+    },
   };
   // Container colours: rust, teal, olive, ochre, slate and plum, each with a lit top edge and a dark rib.
   const CONTAINERS = [
@@ -736,6 +749,153 @@
       g.globalAlpha = 1;
     },
 
+    // ---- The Flooded Ballast ----
+    // A great riveted tank behind the walkways, with a level gauge down its side.
+    tanks(g, s, rnd) {
+      for (const [x0, y0, x1, y1, n] of s.at) {
+        const x = x0 * 8;
+        const y = y0 * 8;
+        const w = (x1 - x0 + 1) * 8;
+        const h = (y1 - y0 + 1) * 8;
+        g.fillStyle = '#0c1615';
+        g.fillRect(x + 4, y, w - 8, h);
+        g.fillRect(x, y + 4, w, h - 8);
+        g.fillStyle = '#132220';
+        g.fillRect(x + 5, y + 1, w - 10, 2);
+        for (let ry = y + 10; ry < y + h - 6; ry += 16) {
+          g.fillStyle = '#16282a';
+          g.fillRect(x + 2, ry, w - 4, 1);
+          for (let rx = x + 6; rx < x + w - 4; rx += 8) {
+            g.fillStyle = '#1e3432';
+            g.fillRect(rx, ry - 2, 1, 1);
+          }
+        }
+        // the gauge: a glass tube, and how full the tank still is
+        const gx = x + w - 10;
+        const level = y + 8 + Math.floor((h - 16) * (0.2 + rnd() * 0.5));
+        g.fillStyle = '#05060d';
+        g.fillRect(gx, y + 8, 4, h - 16);
+        g.fillStyle = '#2a6a64';
+        g.fillRect(gx + 1, level, 2, y + h - 8 - level);
+        g.globalAlpha = 0.35;
+        HA.font.draw(g, 'TANK ' + n, x + 8, y + 8, '#c98a4a', { shadow: null });
+        g.globalAlpha = 1;
+      }
+    },
+    // Pump housings along a wall, each with its number stencilled on.
+    pumps(g, s) {
+      for (const [px, py, n] of s.at) {
+        const x = px * 8;
+        const y = py * 8 + 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 13, y - 34, 27, 34);
+        g.fillStyle = '#3a2a20';
+        g.fillRect(x - 12, y - 33, 25, 32);
+        g.fillStyle = '#5a3a26';
+        g.fillRect(x - 12, y - 33, 25, 2);
+        g.fillStyle = '#241812';
+        for (let i = 0; i < 4; i++) g.fillRect(x - 9 + i * 6, y - 26, 3, 14);
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 3, y - 46, 7, 13);
+        g.fillStyle = '#46291a';
+        g.fillRect(x - 2, y - 46, 5, 12);
+        g.globalAlpha = 0.6;
+        HA.font.draw(g, 'PUMP ' + n, x - 11, y - 9, '#ffb84d', { shadow: null });
+        g.globalAlpha = 1;
+      }
+    },
+    // The Valve Hall's nine wheels, numbered, each over an outlet.
+    valvewall(g, s) {
+      for (let i = 0; i < 9; i++) {
+        const x = (s.x0 + (i % 3) * s.dx) * 8;
+        const y = (s.y + Math.floor(i / 3) * s.dy) * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 9, y - 9, 19, 19);
+        g.fillStyle = '#7a3a26';
+        g.fillRect(x - 8, y - 8, 17, 17);
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 6, y - 6, 13, 13);
+        g.fillStyle = '#a85a3a';
+        g.fillRect(x, y - 8, 1, 17);
+        g.fillRect(x - 8, y, 17, 1);
+        g.fillRect(x - 6, y - 6, 1, 1);
+        g.fillRect(x + 6, y + 6, 1, 1);
+        g.fillStyle = '#05060d';
+        g.fillRect(x - 4, y + 12, 9, 6);
+        g.globalAlpha = 0.55;
+        HA.font.draw(g, String(i + 1), x - 1, y - 18, '#ffb84d', { shadow: null });
+        g.globalAlpha = 1;
+      }
+    },
+    // The ribs of a long round culvert, every few tiles.
+    culvert(g, s, rnd, T, room) {
+      for (let x = (s.x0 || 0) * 8; x < ((s.x1 || room.w) * 8); x += 40) {
+        g.fillStyle = '#121a19';
+        g.fillRect(x, 0, 6, room.ph);
+        g.fillStyle = '#1a2624';
+        g.fillRect(x, 0, 1, room.ph);
+        for (let y = 12; y < room.ph; y += 20) {
+          g.fillStyle = '#26302c';
+          g.fillRect(x + 2, y, 2, 2);
+        }
+      }
+    },
+    // Rust weeping down a wall from a seam.
+    rust(g, s, rnd, T, room) {
+      for (let i = 0; i < (s.n || 20); i++) {
+        const x = Math.floor(rnd() * room.pw);
+        const y = Math.floor(rnd() * room.ph * 0.7);
+        const len = 8 + Math.floor(rnd() * 30);
+        g.fillStyle = rnd() < 0.5 ? 'rgba(138,74,38,0.35)' : 'rgba(90,48,26,0.4)';
+        g.fillRect(x, y, 1 + Math.floor(rnd() * 2), len);
+      }
+    },
+    // Odell's workshop: his bench, tools on a board, and a sign on the door frame.
+    workshop(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8 + 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 20, y - 10, 42, 10);
+      g.fillStyle = '#4a3626';
+      g.fillRect(x - 19, y - 9, 40, 3);
+      g.fillStyle = '#2a1e14';
+      g.fillRect(x - 17, y - 6, 2, 6);
+      g.fillRect(x + 17, y - 6, 2, 6);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 18, y - 42, 38, 22);
+      g.fillStyle = '#2a2620';
+      g.fillRect(x - 17, y - 41, 36, 20);
+      const tools = ['#a9b6cc', '#6c7894', '#c98a4a', '#a9b6cc', '#6c7894'];
+      tools.forEach((c, i) => {
+        g.fillStyle = c;
+        g.fillRect(x - 14 + i * 7, y - 38, 2, 10 + (i % 2) * 4);
+      });
+      g.fillStyle = '#6c7894';
+      g.fillRect(x - 8, y - 13, 6, 3);
+      g.fillStyle = '#ffb84d';
+      g.fillRect(x + 6, y - 12, 2, 2);
+    },
+    // The keel tram's winch house: the empty mount where a motor belongs, and the cable drum.
+    winch(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8 + 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 18, y - 40, 37, 40);
+      g.fillStyle = '#2a2620';
+      g.fillRect(x - 17, y - 39, 35, 38);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 12, y - 34, 24, 24);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x - 11, y - 33, 22, 22);
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 3, y - 25, 7, 7);
+      g.fillStyle = '#6c7894';
+      for (let i = 0; i < 5; i++) g.fillRect(x - 11, y - 31 + i * 4, 22, 1);
+      g.globalAlpha = 0.5;
+      HA.font.draw(g, 'WINCH', x - 10, y - 48, '#c98a4a', { shadow: null });
+      g.globalAlpha = 1;
+    },
+
     // The Gardener's gallery, behind the glass: clean white tiles, a bench, and her own door out.
     gallery(g, s) {
       const x0 = s.x0 * 8;
@@ -899,6 +1059,9 @@
       if (s.kind === 'vats') drawBubbles(g, world, s, cam);
       if (s.kind === 'odell') drawOdell(g, world, s, cam);
       if (s.kind === 'toolbag' && !world.state.flags.toolbag) drawToolbag(g, s, cam);
+      if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
+      if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
+      if (s.kind === 'tramcar' && (!world.state.flags.tram || (world.tramGo || 0) > 0)) drawTramCar(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -1256,6 +1419,57 @@
     g.fillRect(x + 6, y - 11, 3, 1);
     g.fillStyle = '#5fd4e8';
     g.fillRect(x + 2, y - 4, 2, 1);
+  }
+
+  // Odell's pressure boots, in their box on the bench.
+  function drawBoots(g, s, cam) {
+    const x = Math.round(s.x * 8 - cam.x);
+    const y = Math.round(s.y * 8 + 8 - cam.y);
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 6, y - 8, 14, 8);
+    g.fillStyle = '#5a4028';
+    g.fillRect(x - 5, y - 7, 12, 6);
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 4, y - 13, 4, 6);
+    g.fillRect(x + 2, y - 13, 4, 6);
+    g.fillStyle = '#ffb84d';
+    g.fillRect(x - 3, y - 12, 2, 4);
+    g.fillRect(x + 3, y - 12, 2, 4);
+    g.fillStyle = '#6c7894';
+    g.fillRect(x - 4, y - 9, 4, 1);
+    g.fillRect(x + 2, y - 9, 4, 1);
+  }
+
+  // The keel tram's car at the Ballast stop. Once the winch turns, it shudders and rolls off west.
+  function drawTramCar(g, world, s, cam) {
+    const t = Math.max(0, (world.tramGo || 0) - 40);
+    const dx = -Math.round(t * t * 0.012);
+    const shake = world.tramGo > 0 && world.tramGo < 60 ? (world.time % 4 < 2 ? 1 : -1) : 0;
+    const x = Math.round(s.x * 8 + dx + shake - cam.x);
+    const y = Math.round(s.y * 8 + 8 - cam.y);
+    const w = 72;
+    if (x + w < s.tunnel * 8 - cam.x) return;
+    g.save();
+    g.beginPath();
+    g.rect(Math.round(s.tunnel * 8 - cam.x), 0, HA.VIEW_W * 2, HA.VIEW_H);
+    g.clip();
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 1, y - 37, w + 2, 35);
+    g.fillStyle = '#5a4028';
+    g.fillRect(x, y - 36, w, 33);
+    g.fillStyle = '#8a5a2b';
+    g.fillRect(x, y - 36, w, 2);
+    for (let i = 0; i < 4; i++) {
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 6 + i * 16, y - 31, 11, 13);
+      g.fillStyle = world.tramRider && i === 0 ? '#3a2818' : '#1a2a30';
+      g.fillRect(x + 7 + i * 16, y - 30, 9, 11);
+    }
+    g.fillStyle = (world.tramGo || 0) > 0 ? '#ffd84d' : '#3a2a10';
+    g.fillRect(x + 1, y - 23, 3, 3);
+    g.fillStyle = '#10121c';
+    for (const wx of [8, 56]) g.fillRect(x + wx, y - 3, 6, 3);
+    g.restore();
   }
 
   // ---- The Cargo Labyrinth's moving parts ----

@@ -16,7 +16,6 @@
   ];
   const RUSH = 1200; // a bulb's double damage lasts 20 seconds
   const MAX_BULBS = 3;
-  const HOMECOMING = 3; // the true ending needs Bloom 2 or less
   const LOST = 8; // Overgrown
   const THORN_KILLS = 30;
 
@@ -41,14 +40,14 @@
     HA.music.bloomVoice = world.state.bloom >= 7;
   }
 
-  // What going up by n would close for good, said plainly on the gain-and-lose screen (null if nothing).
+  // Whether going up by n would lock in Overgrown, said plainly on the gain-and-lose screen (null if not).
+  // Crossing into stage 3 also closes Homecoming, but no screen names the true ending: that's too much of a hint.
   function closes(s, n) {
     if (s.bloom < LOST && s.bloom + n >= LOST) return 'YOURSELF. OVERGROWN IS LOCKED IN';
-    if (s.bloom < HOMECOMING && s.bloom + n >= HOMECOMING) return 'THE WAY TO THE TRUE ENDING';
     return null;
   }
 
-  // A bulb is eaten only on a press of its own button. The first one, and any that would close an ending,
+  // A bulb is eaten only on a press of its own button. The first one, and any that would lock in Overgrown,
   // ask first on the gain-and-lose screen.
   function eat(world) {
     const s = world.state;

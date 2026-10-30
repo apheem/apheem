@@ -403,7 +403,7 @@
         prompt: "THE PRUNER'S CORE IS STILL LIT.",
         options: [
           { label: 'GIVE IT SOMETHING ELSE TO CUT', confirm: { title: 'RELEASE THE PRUNER?', gain: 'ELEVEN OF THE TAKEN COME HOME', lose: 'A CORE THAT KEEPS THE LAUNCHER LV2' } },
-          { label: 'FINISH IT, AS IT ASKS', confirm: { title: "TEAR OUT THE PRUNER'S CORE?", gain: 'THE SEAL CODES · LAUNCHER STAYS LV2+', lose: HA.endings.wardenCloses(s, 'pruner') ? 'FOUR OF THE TAKEN · THE TRUE ENDING' : 'FOUR OF THE TAKEN. SEVEN COME HOME' } },
+          { label: 'FINISH IT, AS IT ASKS', confirm: { title: "TEAR OUT THE PRUNER'S CORE?", gain: 'THE SEAL CODES · LAUNCHER STAYS LV2+', lose: 'FOUR OF THE TAKEN. SEVEN COME HOME' } },
         ],
       },
     };
@@ -474,7 +474,7 @@
     yield say('THE GARDENER', 'HER BLADES ARE GRIEF. GRIEF IS HEAVY.');
     yield say('THE GARDENER', "GIVE THEM TO ME, AND I'LL GIVE YOU SOMETHING THAT GROWS.");
     const closes = HA.bloom.closes(s, 2);
-    const lose = !closes ? "WICK'S LANCETS · THE BLOOM GROWS" : /OVERGROWN/.test(closes) ? 'THE LANCETS, AND YOURSELF' : 'THE LANCETS AND THE TRUE ENDING';
+    const lose = closes ? 'THE LANCETS, AND YOURSELF' : "WICK'S LANCETS · THE BLOOM GROWS";
     const pick = yield {
       choice: {
         prompt: 'THE GARDENER HOLDS OUT A THORN.',

@@ -154,6 +154,7 @@
     g.drawImage(frame.img, -Math.floor(frame.w / 2), 0);
     if (n.lantern) HA.scenery.miniLantern(g, 2, frame.h - 7);
     if (n.pack && HA.story.drawPack) HA.story.drawPack(g, -8, 5, true);
+    if (n.motor && HA.story.drawMotor) HA.story.drawMotor(g, -11, 4); // Solder, with the tram motor on her back
     if (n.wrench) {
       g.fillStyle = '#6c7894';
       g.fillRect(4, 5, 1, 6);
@@ -769,7 +770,7 @@
         prompt: "THE BAILIFF'S CORE IS STILL LIT.",
         options: [
           { label: 'RELEASE IT', confirm: { title: 'RELEASE THE BAILIFF?', gain: 'NOTHING, FOR NOW', lose: '+4 MAX HEALTH FROM ITS CORE' } },
-          { label: 'SALVAGE ITS CORE', confirm: { title: "TEAR OUT THE BAILIFF'S CORE?", gain: '+4 MAX HEALTH', lose: HA.endings.wardenCloses(s, 'bailiff') ? 'THE BAILIFF, AND THE TRUE ENDING' : 'THE BAILIFF, FOREVER' } },
+          { label: 'SALVAGE ITS CORE', confirm: { title: "TEAR OUT THE BAILIFF'S CORE?", gain: '+4 MAX HEALTH', lose: 'THE BAILIFF, FOREVER' } },
         ],
       },
     };

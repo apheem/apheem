@@ -4,7 +4,7 @@ This is the plan for the whole game, written so that any session can pick up the
 
 The game direction brief (Cody's doc) sets the rules. This file turns them into a concrete story. Any place where it departs from the brief is also logged in `DECISIONS.md`. When a decision here changes, update this file in the same commit.
 
-**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return) and 3.3 (the Cargo Labyrinth) are built** (version 0.3.3); the next job is 3.4, the Flooded Ballast. The Deserter ending can be reached in play. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
+**Status, Oct 30 2026:** Phases 1 and 2 are built and played (the Cryo Deck, the Warrens, the Warden Lockup and the Bailiff). Phase 3, the full main path, starts with this storyboard. An independent audit of the first draft (15 must-fix, 12 should-fix and 11 smaller findings) has been folded in, with Cody's answers on the open points. **Phase 3.0 (foundations), 3.1 (the Hydroponic Gardens), 3.2 (the Warrens return), 3.3 (the Cargo Labyrinth) and 3.4 (the Flooded Ballast) are built** (version 0.3.4); the next job is 3.5, the Engine Spine. The Deserter ending can be reached in play. Nothing else in Part 2 onward is built yet unless the checklist at the end says so.
 
 ---
 
@@ -21,17 +21,17 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 | File | What it holds |
 | --- | --- |
 | `js/core.js` | The `HA` namespace, settings, constants (320x180 view, 8px tiles, 60 updates a second) |
-| `js/room.js` | Tile maps, collision, conveyor belts (`beltUnder`), and the room registry (`HA.rooms.area`, `HA.rooms.add`, `HA.rooms.at`). `%` in a map is a cargo container: solid, drawn as stacked containers |
+| `js/room.js` | Tile maps, collision, conveyor belts (`beltUnder`), and the room registry (`HA.rooms.area`, `HA.rooms.add`, `HA.rooms.at`). `%` in a map is a cargo container: solid, drawn as stacked containers. `s` is Bloom silt (it burns, and throws the hero back to the last firm ground: `touchesSludge`). Foam is a tile set while the game runs, held like a catwalk |
 | `js/areas/*.js` | One file per area: its rooms as ASCII maps, plus the legend, scenery, hints, triggers and music |
 | `js/world.js` | Entering rooms, edge transitions, doors (gates someone keeps, which open as the hero nears; crane stacks, moved by their switches; cracked walls, opened by a Breach Charge), links (lifts and floor hatches to another room, `world.travel`), interactions, triggers, rest pods, the trip between pods, the camera, drawing, the HUD |
 | `js/actors.js` | The hero's movement, enemies and pickups |
-| `js/abilities.js` | The thruster pack, the grapple's pull and hang (fired by the Grapple Harpoon; a hook can move, and can be a weak point that takes the hero's arrival as a blow), pressure boots and swimming. The hero's update and `rooms-check.js` both call it. Water is `~` in a map, a grapple hook ring is `o` |
-| `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements), `afterSteward(s)` (which branch the Steward's fall leads to) and `wardenCloses(s, id)` (whether taking a Warden's core would close Homecoming). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
-| `js/weapons.js` | Weapon definitions, levels and XP, and shots, including the Grapple Harpoon (`fireGrapple` at a ring, a barb otherwise) and the Breach Charges (`chargesMax`) |
+| `js/abilities.js` | The thruster pack, the grapple's pull and hang (fired by the Grapple Harpoon; a hook can move, and can be a weak point that takes the hero's arrival as a blow), pressure boots and swimming. The hero's update and `rooms-check.js` both call it. Water is `~` in a map, a grapple hook ring is `o`; an area can tint its water (`water` in `HA.rooms.area`), and a room's `pressure: [{ x0, x1, y }]` draws the PRESSURE stripes over deep water |
+| `js/endings.js` | The ending runner: each ending's closing cards, the epilogue chosen from the save, credits, `endingsSeen`, plus `missing(s)` (Homecoming's requirements) and `afterSteward(s)` (which branch the Steward's fall leads to). A scene can `yield* HA.endings.play(world, id)` to end the game from a choice |
+| `js/weapons.js` | Weapon definitions, levels and XP, and shots, including the Grapple Harpoon (`fireGrapple` at a ring, a barb otherwise), the Breach Charges (`chargesMax`) and the Foam Sprayer (platforms in `world.foam`, shields in `world.shields`, `updateFoam`, `dissolve`). An enemy with `ghost` set is out of every weapon's reach |
 | `js/boss.js` | The Bailiff, plus what every boss shares: shard vents, the health bar, and the `HA.bosses` registry the world looks bosses up in |
-| `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`, `tallyman.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
+| `js/bosses/*.js` | One file per Phase 3 boss: `pruner.js`, `wick.js`, `tallyman.js`, `siltmother.js`. Each adds `{ make, update, hurt, draw, drawBar }` to `HA.bosses` |
 | `js/story.js` | Story text, people, logs, scenes, leads, and the hooks the world calls, up to the Gardens. Also barks (short lines over someone's head that don't stop play) and companions (`npc.follow`) |
-| `js/story/*.js` | Each later area's story: `gardens.js`, `warrens.js` (the return), `cargo.js` (the Labyrinth, Flux's homecoming, and travel between pods) add their scenes, lines and logs to the tables in `story.js` and push their own `{ enterRoom, update, music, talk }` hooks onto `HA.story.areas` (`talk` can hand a conversation to a scene). `story.js` also holds `callName` (LATE, SLEEPER or COUNTER). A person met away from the Warrens says so with `away: true` in `PEOPLE` |
+| `js/story/*.js` | Each later area's story: `gardens.js`, `warrens.js` (the return), `cargo.js` (the Labyrinth, Flux's homecoming, and travel between pods), `ballast.js` (Solder, the flood, choice 9, the tram, and the raid at home; Solder's limping walk and the rising water live here too) add their scenes, lines and logs to the tables in `story.js` and push their own `{ enterRoom, update, music, talk }` hooks onto `HA.story.areas` (`talk` can hand a conversation to a scene). `story.js` also holds `callName` (LATE, SLEEPER or COUNTER). A person met away from the Warrens says so with `away: true` in `PEOPLE` |
 | `js/bloom.js` | The Bloom track: bulbs (carried, eaten on their own button), the stages (3, 5, 7, 8) with their journal lines, what a rise would close (`closes`), and the Thorn's kill count |
 | `js/scenes.js` | The scene runner: `say`, `wait`, `until`, `choice` (with the gain/lose screen), `card`, `fade`, `walk` |
 | `js/save.js` | Save state (the Phase 3 fields and what each value means are listed in `newState`), the upgrade for older saves, autosave, the explored-map bitsets, and talk history |
@@ -55,11 +55,15 @@ The game direction brief (Cody's doc) sets the rules. This file turns them into 
 - The checker's grapple moves press Fire with the Grapple Harpoon in hand, exactly as the game does, and with a thruster it also tries a burn straight after leaping off a ring.
 - Crane stacks are pairs of doors with the same `crane: 'flag'`, one solid in each state of the flag, and a switch (`{ type: 'switch', crane: 'flag' }`) on each side of the stack. The checker crosses the room from every way in, in every combination of crane states, using the switches it reaches to move between them.
 - Conveyor belts are room data: `belts: [{ x0, x1, y, dir }]` on the floor row `y`. The checker's hero rides them as the game's does.
+- Nowhere the hero can reach may be a dead end they can't climb back out of. A room with water is also crossed again in the boots (with everything the hero has by then), because the boots sink where the hero used to float: give deep pools steps under the water, 4 tiles apart at most.
+- The checker sets foam as the game does: from water (a swimmer's foam, or foam floating up from a pool's floor in the boots), and in hops across silt from its edge. A foam gate is silt under a roof 5 tiles high and at least 26 tiles across, which neither thruster clears.
+- A door, or a room's water, can follow a story flag: `state: 'flag'` on a door's legend, `drains: 'flag'` on the room (the Silt Tank's sluice gates and its water). The checker crosses the room both ways. Doors must not sit in a room's edge columns, or the opening there doesn't count as one.
 
 ### Rules every scene follows
 
-- Every permanent choice uses the gain/lose screen, and every line on it is true. If an option costs something later (a village, a person, an ending), the screen says so in plain words.
-- A choice that would close an ending says so on its screen.
+- Every permanent choice uses the gain/lose screen, and every line on it is true. If an option costs something later (a village, a person), the screen says so in plain words.
+- A choice that would lock in Overgrown, or end the game, says so on its screen.
+- No screen names the true ending, or says that a choice closes it: that's too much of a hint (Cody, after 3.3). The world and the journal show what's been lost instead.
 - Never show a child's death, or a child being dosed. Children can be in danger only off screen or in the slice's existing raid.
 - Body horror is implied: cut away, use silhouettes and sound. The Bloom transforms only three people on screen: Wick, Abel and (in Overgrown) the hero.
 - The Wardens speak in counts (`COUNT: ONE. SMALL. HEALTHY.`). The Navigator speaks in short light-cyan lines (`#b8f4ff`). Everyone else talks plainly. Keep dialogue short, and let it hurt quietly.
@@ -131,7 +135,7 @@ The player can finish the game without learning most of this (the Crash ending).
 | Warden Lockup | 160 – 280 | 46 – 69 | built (the arena gets an east door in 3.0) |
 | Hydroponic Gardens | 280 – 480 | 0 – 92 | 3.1 |
 | Cargo Labyrinth | 0 – 280 | 69 – 161, around the sump | built (3.3); entered from the sump's west side, the Drain's grate leads down to the Ballast |
-| Flooded Ballast | 0 – 480 | 161 – 230 | 3.4 (the keel tram runs along its floor) |
+| Flooded Ballast | 0 – 480 | 161 – 230 | built (3.4); the keel tram's station is at its east end, its tunnel runs on to the Spine |
 | Engine Spine | 480 – 520 | −92 – 230 (one tall shaft, several rooms) | 3.5 |
 | Command Tower | 520 – 640 | −92 – 46 | 3.6 |
 | The Dreaming Deck (hidden) | 520 – 640 | 46 – 138 | 3.7 |
@@ -387,6 +391,8 @@ The hero fights it with the new Grapple Harpoon, pulling up to the crane to hit 
 **Music:** no music in the water rooms, only muffled engine thrum. A sparse, low-passed version of the theme plays in the dry rooms. The flood brings only alarms and water.
 
 **Flags:** `ballast`, `boots`, `foam`, `solder` (`'alive'` / `'dead'`), `solderBy` (`'charges'` / `'bloom'` / `null`), `warrensRaid` (`'held'` / `'fell'`), `tram`.
+
+**As built (3.4).** Ten rooms: the Drain Shaft (0, 161; room id `ballast-intake`, under the Drain's grate), the Pump Gallery (40, 184), the Tank Farm (80, 161, three bands tall), Odell's Workshop (160, 184), the Silt Tank (160, 207), the Settling Pools (240, 184), the Valve Hall (280, 184), the Long Culvert (320, 207), the Jammed Hatch (400, 207) and the Keel Tram Station (440, 207), whose keel tunnel east is `unbuilt` until 3.5. Rest pods: the Pump Gallery, the Workshop and the station. The hero already has a thruster and the harpoon here, so foam's gates are **Bloom silt** (`s`), a new hazard: it burns, and throws the hero back to firm ground; channels of it under low roofs guard the boots, a Tank Farm suit cell and a Settling Pools bulb. Deep water (the Drain Shaft's sump and the Tank Farm's tanks) is marked with PRESSURE stripes; the way down to the Silt Tank is through the bottom of the Tank Farm's east tank, in the boots. Solder walks with the hero along the Tank Farm's walkway (three pairs of barks), turns back at the Workshop, and comes down to the Silt Tank by herself once the Silt Mother falls; from there she follows through the escort rooms (`solderWith`). The raid is settled when the Silt Mother falls (`warrensRaid` from `pistolGiven`). The flood is a 45-second rise from under the Valve Hall's floor to the top of the Jammed Hatch; if it closes over Solder, both are back in the Valve Hall. The beam falls as Solder gets the hatch open. The tram leaves for the Warrens with Solder on it (or empty), and the valves log is on the station's terminal. Extra flags: `solderFound`, `solderWalk`, `toolbagBack`, `siltSeen`, `siltDown`, `solderWith`, `floodSeen`, `flooding`, `flooded`, `hatchOpen`, `raidSeen`, `solderMourned`; the boots are `abilities.boots`, Solder's fate is `people.solder`.
 
 ### Beat 5: the climb. Engine Spine (3.5)
 
@@ -703,7 +709,7 @@ Mercy and Bloom already exist.
 
 Fast travel arrives with the Cargo Labyrinth (the brief says "from mid-game onward"). From any rest pod the hero has rested at, the map lists the others. It isn't offered during timed sequences (the flood, the scuttle) or after the Tower Lift.
 
-As built (3.3): standing at a rest pod, open the map; every other pod rested at is ringed, and picking one takes the hero there, rested. 3.4 and later must switch it off during the flood and the scuttle (`mapscreen.create` decides whether it's offered).
+As built (3.3): standing at a rest pod, open the map; every other pod rested at is ringed, and picking one takes the hero there, rested. During the flood (3.4) there's no pod in reach to travel from; the scuttle must switch it off (`mapscreen.create` decides whether it's offered).
 
 ---
 
@@ -753,13 +759,14 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 - [x] The Tallyman boss and choice 8; logs `charter`, `armory` and `liftB`
 
 ### 3.4 Flooded Ballast
-- [ ] Add `ballast-intake` under the Drain (the Drain's grate is already a hatch to it), and take Solder's toolbag back to her
-- [ ] Water physics, Pressure Boots, Foam Sprayer (all in the checker)
-- [ ] Rooms, the Silt Mother, log `valves`
-- [ ] Finding Solder, the walk, the flood escape, choice 9, the tram
-- [ ] The Warrens raid while the hero is away (the gate holds or falls)
+- [x] Add `ballast-intake` under the Drain (the Drain's grate is already a hatch to it), and take Solder's toolbag back to her
+- [x] Water physics, Pressure Boots, Foam Sprayer (all in the checker)
+- [x] Rooms, the Silt Mother, log `valves`
+- [x] Finding Solder, the walk, the flood escape, choice 9, the tram
+- [x] The Warrens raid while the hero is away (the gate holds or falls)
 
 ### 3.5 Engine Spine
+- [ ] The keel tunnel east from the Ballast's tram station (its `unbuilt` note) to the Spine Foot, where the tram brings the climbers (Solder with them if she lived)
 - [ ] Tall rooms; lifts the crew builds (count driven by Mercy); logs `sealed` and `brake`
 - [ ] Abel and choice 10; the Crew Camp; the Purser's last call
 
