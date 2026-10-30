@@ -47,7 +47,7 @@
   function addXp(world, amount) {
     const p = world.player;
     const w = p.weapons[p.wi];
-    if (isMax(w)) return;
+    if (!w || isMax(w)) return;
     w.xp += amount;
     if (w.xp >= cap(w)) {
       if (w.level < 3) {
@@ -67,6 +67,7 @@
   function loseXp(world) {
     const p = world.player;
     const w = p.weapons[p.wi];
+    if (!w) return;
     if (DEFS[w.id].keepsXp || p.xpLock > 0 || world.assist.noXpLoss) return;
     if (w.xp >= XP_LOSS) {
       w.xp -= XP_LOSS;
@@ -94,6 +95,7 @@
   function update(world, fire) {
     const p = world.player;
     const w = p.weapons[p.wi];
+    if (!w) return; // the hero wakes unarmed
     const def = DEFS[w.id];
     const L = def.levels[w.level - 1];
     if (p.cooldown > 0) p.cooldown--;
@@ -121,7 +123,6 @@
         const before = p.charge;
         p.charge = Math.min(p.charge + 1, L.charge);
         if (p.charge === L.charge && before < L.charge) HA.audio.play('coilReady');
-        HA.audio.charge(p.charge / L.charge);
         if (p.charge > 6 && world.time % 3 === 0) {
           const m = muzzle(p);
           const a = Math.random() * Math.PI * 2;
@@ -129,12 +130,14 @@
           world.particles.push({ x: m.x + Math.cos(a) * r, y: m.y + Math.sin(a) * r, vx: -Math.cos(a) * 0.5, vy: -Math.sin(a) * 0.5, life: 10, max: 10, color: p.charge === L.charge ? '#ffffff' : '#5fd4e8', size: 1 });
         }
       } else if (fire.released || (p.charge > 0 && !fire.held)) {
-        HA.audio.charge(0);
         if (p.charge >= L.charge) fireBeam(world, L, w.level, L.len, L.dmg);
         else if (p.charge >= 0) fireBeam(world, { chain: 0, pierce: false }, 0, 30, 1);
         p.charge = 0;
       }
     }
+    // The charge hum follows the weapon in hand every frame, so a switch or a pickup mid-charge silences it.
+    if (w.id !== 'coil') p.charge = 0;
+    HA.audio.charge(w.id === 'coil' && p.charge > 0 ? p.charge / L.charge : 0);
 
     // Purge Cannon ammo refills when not firing, faster on the ground.
     for (const other of p.weapons) {
@@ -265,6 +268,14 @@
   function updateShots(world) {
     const room = world.room;
     for (const s of world.shots) {
+      if (s.delay > 0) {
+        s.delay--;
+        continue;
+      }
+      if (s.kind === 'wave') {
+        updateWave(world, s);
+        continue;
+      }
       s.x += s.vx;
       s.y += s.vy;
       s.life--;
@@ -306,6 +317,21 @@
       }
     }
     world.shots = world.shots.filter((s) => s.life > 0);
+  }
+
+  // A shockwave runs along the floor until it meets a wall or an edge. Jump over it.
+  function updateWave(world, s) {
+    const room = world.room;
+    s.x += s.vx;
+    s.life--;
+    const ahead = room.tile(Math.floor((s.x + Math.sign(s.vx) * 3) / 8), Math.floor((s.y - 4) / 8));
+    const below = room.tile(Math.floor(s.x / 8), Math.floor((s.y + 2) / 8));
+    if (ahead === HA.room.SOLID || ahead === HA.room.CRATE || below === HA.room.EMPTY || below === HA.room.THORNS) s.life = 0;
+    if (s.life > 0 && world.time % 3 === 0) world.particles.push({ x: s.x, y: s.y - 1, vx: -s.vx * 0.2, vy: -0.6, life: 10, max: 10, color: '#ffb84d', size: 1, grav: 0.05 });
+    if (s.life > 0 && HA.overlap({ x: s.x - 3, y: s.y - s.h, w: 6, h: s.h }, world.player)) {
+      world.hurtPlayer(s.dmg, s.x);
+      s.life = 0;
+    }
   }
 
   HA.weapons = { DEFS, make, cap, isMax, addXp, loseXp, update, updateShots, muzzle };

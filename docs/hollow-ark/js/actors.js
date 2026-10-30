@@ -158,7 +158,7 @@
       world.dust(p.x + p.w / 2, p.y + p.h, fallSpeed > 3.5 ? 6 : 3);
       HA.audio.play('land');
     }
-    p.x = clamp(p.x, 0, room.pw - p.w);
+    // Room edges are handled by the world: an opening leads to the next room, a wall stops the hero.
 
     // Thorns
     if (HA.room.touchesThorns(room, p)) {
@@ -176,7 +176,7 @@
 
   function drawPlayer(ctx, world, cam) {
     const p = world.player;
-    if (p.dead) return;
+    if (p.dead || p.hidden) return;
     if (p.invuln > 0 && p.invuln < 60 && Math.floor(p.invuln / 3) % 2) return;
     const H = HA.art.hero;
     let spr = H.idle;
@@ -199,7 +199,12 @@
     ctx.scale(p.facing, 1);
     ctx.drawImage(img, -6, 0);
     // Gun in hand, pointed where the hero aims
-    const gun = HA.art.guns[p.weapons[p.wi].id];
+    const weapon = p.weapons[p.wi];
+    if (!weapon) {
+      ctx.restore();
+      return;
+    }
+    const gun = HA.art.guns[weapon.id];
     const gimg = flash ? gun.white : gun.img;
     if (p.aim === 'up') {
       ctx.translate(1, 9);
@@ -220,8 +225,9 @@
     crawler: { w: 12, h: 8, hp: 4, dmg: 2, drops: { small: 2, big: 0, heart: 0.12 } },
     drifter: { w: 10, h: 10, hp: 3, dmg: 2, drops: { small: 2, big: 0, heart: 0.25 } },
     warden: { w: 14, h: 12, hp: 9, dmg: 2, drops: { small: 2, big: 1, heart: 0.4 } },
+    walker: { w: 12, h: 18, hp: 14, dmg: 3, drops: { small: 3, big: 1, heart: 0.5 } },
   };
-  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden' };
+  const TYPES = { c: 'crawler', f: 'drifter', w: 'warden', k: 'walker' };
 
   function makeEnemy(spawn) {
     const type = TYPES[spawn.type];
@@ -234,6 +240,7 @@
       w: d.w,
       h: d.h,
       vx: type === 'crawler' ? (Math.random() < 0.5 ? -0.45 : 0.45) : 0,
+      onGround: false,
       vy: 0,
       hp: d.hp,
       flash: 0,
@@ -248,6 +255,7 @@
   }
 
   function updateEnemy(world, e) {
+    if (e.boss) return HA.boss.update(world, e);
     const p = world.player;
     const room = world.room;
     e.t++;
@@ -297,6 +305,35 @@
           HA.audio.play('telegraph');
         }
       }
+    } else if (e.type === 'walker') {
+      // A Warden on foot: marches at the hero, stops at ledges, and fires a pair of orbs after a visible wind-up.
+      e.vy = Math.min(e.vy + 0.3, 4);
+      const awake = !e.hold && ((dist < 170 && Math.abs(py - ey) < 60) || e.angry);
+      if (e.tele > 0) {
+        e.vx = 0;
+        if (--e.tele === 0) {
+          for (const d of [0, 14]) world.shots.push({ owner: 'enemy', kind: 'orb', x: ex + e.facing * 6, y: e.y + 6, vx: e.facing * 1.7, vy: 0, life: 160, dmg: 2, pierce: 0, hits: new Set(), delay: d });
+          HA.audio.play('orb');
+        }
+      } else {
+        if (awake && !p.dead) e.facing = sign(px - ex);
+        const want = awake && Math.abs(px - ex) > 26 ? e.facing * 0.55 : 0;
+        e.vx = approach(e.vx, want, 0.05);
+        if (awake && --e.cool <= 0 && !p.dead) {
+          e.cool = 140 + Math.floor(Math.random() * 60);
+          e.tele = 34;
+          HA.audio.play('telegraph');
+        }
+      }
+      const hit = HA.room.move(room, e, e.vx, e.vy);
+      if (hit.down) e.vy = 0;
+      const aheadX = e.vx > 0 ? e.x + e.w + 1 : e.x - 1;
+      const t = room.tile(Math.floor(aheadX / 8), Math.floor((e.y + e.h + 2) / 8));
+      if (hit.down && e.vx && t !== HA.room.SOLID && t !== HA.room.ONEWAY && t !== HA.room.CRATE) {
+        e.x -= e.vx;
+        e.vx = 0;
+      }
+      if (hit.left || hit.right) e.vx = 0;
     }
 
     // Touch damage
@@ -305,9 +342,11 @@
 
   function hurtEnemy(world, e, dmg, dir) {
     if (e.dead) return;
+    if (e.boss) return HA.boss.hurt(world, e, dmg, dir);
     e.hp -= dmg;
     e.flash = 5;
     if (e.type === 'crawler') e.vx = 0.45 * sign(e.vx) || 0.45;
+    else if (e.type === 'walker') e.angry = true;
     else {
       e.x += dir * 1.5;
     }
@@ -331,8 +370,10 @@
   }
 
   function drawEnemy(ctx, world, e, cam) {
+    if (e.boss) return HA.boss.draw(ctx, world, e, cam);
     const frames = HA.art.enemies[e.type];
-    const spr = frames[Math.floor(e.t / (e.type === 'crawler' ? 10 : 14)) % frames.length];
+    const walking = e.type !== 'walker' || Math.abs(e.vx) > 0.05;
+    const spr = frames[walking ? Math.floor(e.t / (e.type === 'crawler' ? 10 : 14)) % frames.length : 0];
     const img = e.flash > 0 ? spr.white : spr.img;
     const x = Math.round(e.x + e.w / 2 - cam.x);
     const y = Math.round(e.y + e.h - spr.h - cam.y);
@@ -345,6 +386,10 @@
     if (e.type === 'warden' && e.tele > 0 && Math.floor(e.tele / 4) % 2 === 0) {
       ctx.fillStyle = '#fff0a8';
       ctx.fillRect(x - 3, y + 4, 6, 2);
+    }
+    if (e.type === 'walker' && e.tele > 0 && Math.floor(e.tele / 4) % 2 === 0) {
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillRect(x + (e.facing > 0 ? 0 : -4), y + 3, 4, 2);
     }
   }
 
@@ -404,6 +449,7 @@
       world.burst(k.x + 6, k.y, ['#fff0a8', '#5fd4e8'], 20, 2);
       HA.audio.play('pickup');
       world.toast(k.message, 360);
+      if (world.collected) world.collected(k);
     } else if (k.kind === 'capsule') {
       k.life = 0;
       p.maxHp += 4;
@@ -411,6 +457,7 @@
       world.burst(k.x + 4, k.y + 5, ['#ff8a8a', '#ffffff', '#b8f4ff'], 24, 2.2);
       HA.audio.play('pickup');
       world.toast('LIFE CAPSULE · MAX HEALTH +4', 300);
+      if (world.collected) world.collected(k);
     }
   }
 
@@ -454,5 +501,5 @@
     ctx.fillRect(x + 3, y + 3, 10, 1);
   }
 
-  HA.actors = { MOVE, makePlayer, updatePlayer, drawPlayer, makeEnemy, updateEnemy, hurtEnemy, drawEnemy, makeShard, makeHeart, updatePickup, drawPickup };
+  HA.actors = { MOVE, ENEMY, makePlayer, updatePlayer, drawPlayer, makeEnemy, updateEnemy, hurtEnemy, drawEnemy, makeShard, makeHeart, updatePickup, drawPickup, drawPedestal };
 })(window.HA);

@@ -3,7 +3,7 @@
 window.HA = window.HA || {};
 
 (function (HA) {
-  HA.VERSION = '0.1.0';
+  HA.VERSION = '0.2.0';
   HA.VIEW_W = 320;
   HA.VIEW_H = 180;
   HA.TILE = 8;
@@ -52,6 +52,7 @@ window.HA = window.HA || {};
     held: 'hold', // 'hold' | 'toggle' for fire (auto-fire, hover, charge)
     music: 6,
     sfx: 8,
+    textSpeed: 'normal', // 'slow' | 'normal' | 'fast' | 'instant'
     fps: false,
   };
   HA.settings = Object.assign({}, DEFAULTS, HA.store.get(SETTINGS_KEY, {}));

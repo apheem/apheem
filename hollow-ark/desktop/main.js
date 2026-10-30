@@ -73,6 +73,33 @@ ipcMain.handle('fullscreen:set', (e, on) => {
 ipcMain.handle('fullscreen:get', () => (win ? win.isFullScreen() : false));
 ipcMain.on('app:quit', () => app.quit());
 
+// ---- The save file: Windows %APPDATA%\Hollow Ark, macOS ~/Library/Application Support/Hollow Ark,
+// Linux ~/.config/Hollow Ark. Written to a temporary file first, then renamed, so a crash mid-write
+// never leaves a broken save. A launch check uses its own folder and never touches the player's save.
+if (smokeTest) app.setPath('userData', path.join(app.getPath('temp'), 'hollow-ark-smoke-' + process.pid));
+const saveFile = () => path.join(app.getPath('userData'), 'save1.json');
+ipcMain.on('save:read', (e) => {
+  try {
+    e.returnValue = fs.readFileSync(saveFile(), 'utf8');
+  } catch (err) {
+    e.returnValue = null;
+  }
+});
+ipcMain.on('save:write', (e, text) => {
+  try {
+    fs.mkdirSync(path.dirname(saveFile()), { recursive: true });
+    if (!text) {
+      fs.rmSync(saveFile(), { force: true });
+      return;
+    }
+    const tmp = saveFile() + '.tmp';
+    fs.writeFileSync(tmp, text);
+    fs.renameSync(tmp, saveFile());
+  } catch (err) {
+    console.error('Could not write the save: ' + err.message);
+  }
+});
+
 // ---- Launch check, used by CI on each OS: boot the game, start a run, walk right, then exit ----
 function watchSmokeTest(w) {
   const errors = [];
@@ -81,6 +108,11 @@ function watchSmokeTest(w) {
     const report = JSON.stringify({ ok, platform: process.platform, arch: process.arch, electron: process.versions.electron, errors, ...result });
     console.log('SMOKE ' + report);
     if (smokeOut) fs.writeFileSync(smokeOut, report);
+    try {
+      fs.rmSync(app.getPath('userData'), { recursive: true, force: true });
+    } catch (err) {
+      /* the OS cleans its temp folder eventually */
+    }
     app.exit(ok ? 0 : 1);
   };
   const timeout = setTimeout(() => finish({ ok: false, reason: 'timed out waiting for the game to boot' }), 45000);
@@ -105,6 +137,9 @@ function watchSmokeTest(w) {
       await js("window.__smokeKeys = []; addEventListener('keydown', (e) => __smokeKeys.push(e.code), true); true");
       await key('Enter', 120);
       const mode = await js('HA.ui.mode');
+      // A new game opens on a short cutscene; skip it as a player can from the pause menu.
+      await js('HA.debug.skipScene(); true');
+      await new Promise((r) => setTimeout(r, 400));
       const playerX = () => js('HA.debug.world ? HA.debug.world.player.x : -1');
       // CI machines may not keep the window focused, and the game pauses when focus is lost, so keep resuming.
       const holdFor = async (ms) => {
@@ -130,7 +165,10 @@ function watchSmokeTest(w) {
       }
       const keysSeen = await js('__smokeKeys');
       const focused = await js('document.hasFocus()');
-      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10, info, mode, moved: x1 - x0, keyPath, keysSeen, focused });
+      // The save file: write it, read it back, and check it holds the room the hero is in.
+      const saved = await js('HA.save.write(HA.debug.world); (HA.save.load() || {}).room === HA.debug.world.def.id');
+      const saveFileWritten = fs.existsSync(saveFile());
+      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10 && saved && saveFileWritten, info, mode, moved: x1 - x0, keyPath, keysSeen, focused, saved, saveFileWritten });
     } catch (err) {
       finish({ ok: false, reason: String(err) });
     }
