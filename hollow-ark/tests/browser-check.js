@@ -1460,7 +1460,10 @@ async function play(browserType, url, label) {
       HA.debug.goto('coolant-hall', 30, 18);
       HA.debug.step(5);
       out.wardens = w().enemies.filter((e) => !e.dead && ['warden', 'walker'].includes(e.type)).length;
-      // A piece comes down every 110 frames, aimed at a random spot beside the hero, and none falls if that spot is a
+      // The ship coming apart: the hall's floor has given way over the coolant, girders stand up out of it, and fires burn.
+      const door = (id) => w().doors.find((d) => d.id === id);
+      out.wreck = { floor: door('runFloor') && door('runFloor').open, girders: door('runGirders') && !door('runGirders').open, fires: w().hazards.filter((h) => h.kind === 'fire').length };
+      // A piece comes down every 80 frames, aimed at a random spot beside the hero, and none falls if that spot is a
       // wall or under a low ceiling; so give it time for several tries, not two or three.
       let debris = false;
       for (let i = 0; i < 1200 && !debris; i++) {
@@ -1516,11 +1519,12 @@ async function play(browserType, url, label) {
     expect(tw.man.phase === 3 && /aim/.test(tw.man.states) && /crouch/.test(tw.man.states) && /run/.test(tw.man.states) && tw.man.sight, `the Steward's last phase went wrong (${JSON.stringify(tw.man)})`);
     expect(tw.defeated === 'stewardDefeated' && /AFRAID OF NOTHING/.test(tw.beaten) && tw.twelve === "SPARE HIM/END HIM/LEAVE HIM TO THE WARDENS' COUNT", `the Steward's defeat or choice 12 went wrong (${tw.defeated}, ${tw.twelve})`);
     expect(tw.steward.fate === 'spared' && tw.steward.mercy === 1 && tw.steward.key === 'broken' && /NOT YET/.test(tw.after) && /SLEDS/.test(tw.after), `choice 12 or the Key breaking went wrong (${JSON.stringify(tw.steward)}, ${tw.after})`);
-    expect(tw.run.room === 'sump' && tw.run.running && tw.run.scuttle && tw.run.left === 270 && tw.run.music === 'scuttle' && tw.run.check === 'sump' && /SLEDS/.test(tw.run.lead) && tw.run.alarm, `the run for the sleds did not start (${JSON.stringify(tw.run)})`);
+    expect(tw.run.room === 'sump' && tw.run.running && tw.run.scuttle && tw.run.left === 160 && tw.run.music === 'scuttle' && tw.run.check === 'sump' && /SLEDS/.test(tw.run.lead) && tw.run.alarm, `the run for the sleds did not start (${JSON.stringify(tw.run)})`);
     expect(tw.podOff && tw.wardens === 0 && tw.debris, `the scuttle's ship went wrong (pods off ${tw.podOff}, wardens ${tw.wardens}, debris ${tw.debris})`);
+    expect(tw.wreck.floor && tw.wreck.girders && tw.wreck.fires >= 2, `the Coolant Hall didn't come apart in the run (${JSON.stringify(tw.wreck)})`);
     expect(tw.warrensMusic === 'scuttle', `the run's music changed in the Warrens (${tw.warrensMusic})`);
-    expect(tw.failScene === 'runFail' && tw.retry.room === 'sump' && tw.retry.left === 270, `running out of time did not start the run again (${tw.failScene}, ${JSON.stringify(tw.retry)})`);
-    expect(/LAUNCH THE PODS/.test(tw.consolePrompt) && tw.launchAsk === 'LAUNCH THE PODS/KEEP RUNNING' && tw.launch.cost === 20 && tw.launch.pods > 0, `the pod launch went wrong (${tw.consolePrompt}, ${tw.launchAsk}, ${JSON.stringify(tw.launch)})`);
+    expect(tw.failScene === 'runFail' && tw.retry.room === 'sump' && tw.retry.left === 160, `running out of time did not start the run again (${tw.failScene}, ${JSON.stringify(tw.retry)})`);
+    expect(/LAUNCH THE PODS/.test(tw.consolePrompt) && tw.launchAsk === 'LAUNCH THE PODS/KEEP RUNNING' && tw.launch.cost === 30 && tw.launch.pods > 0, `the pod launch went wrong (${tw.consolePrompt}, ${tw.launchAsk}, ${JSON.stringify(tw.launch)})`);
     expect(/CLAMPS WERE EMPTY/.test(tw.mara) && tw.sleds === 'sledsAway' && tw.title === 'title' && tw.ending === 'crash', `the sleds and the Crash ending went wrong (${tw.mara}, ${tw.sleds}, ${tw.title}, ${tw.ending})`);
 
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.

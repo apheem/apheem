@@ -8,6 +8,9 @@ window.HA = window.HA || {};
   HA.VIEW_H = 180;
   HA.TILE = 8;
   HA.STEP = 1 / 60;
+  // The run for the sleds (story/scuttle.js), in seconds: its clock, and what launching the pods costs on it.
+  // tests/rooms-check.js holds the clock to the run's par, worked out from the maps.
+  HA.RUN = { clock: 160, launch: 30 };
 
   HA.clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
   HA.approach = (v, target, amount) => (v < target ? Math.min(v + amount, target) : Math.max(v - amount, target));

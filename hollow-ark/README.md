@@ -234,6 +234,7 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Mara.** No one says what she is to the hero; the dreams and the memory say it.
 - **Why the climb, and why back down.** In the plan at home, Gasket and Solder say what the Helm key is for: it steers the Ark, and they mean to take the ship down to the new world. When the ship starts to tear itself apart, Gasket says why everyone runs back down: the only way off is the old crew's landing sleds, at the bottom of the ship.
 - **The Gardener dosed Wick.** She says so in the Vat House, and the hero sees it. The journal says it, and the hero remembers it in the Tower before choice 11.
+- **The run for the sleds comes apart.** The clock is 2:40, down from 4:30, which was five times what the run needs. Launching the pods costs 30 seconds. While it runs, the ship comes apart: a girder pile across the Warrens' hall to climb over, the Coolant Hall's floor fallen into the coolant with only the girders standing up out of it, the Thaw Corridor's ceiling down to a squeeze, and fires, cracks and sparking cables everywhere, with the ceilings coming down more often.
 - **What closed the other way.** The card after a Crash, Dominion or Overgrown ending says what's under the Helm and why it stayed shut, instead of "the seal read the Bloom". At the seal, the hero says what it's reading for.
 
 ## 0.3.11: the second route that closes, a morning, the tram home, Wick's longer walk, two new rooms, and the audit's story fixes

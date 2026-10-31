@@ -2225,7 +2225,43 @@
     }
   }
 
+  // The run for the sleds' ways that change (story/scuttle.js). A floor that gives way in the run: plates with
+  // cracks across them, there to see before it goes. A girder or rack that came down in the run: dark steel,
+  // riveted, at an angle where it lies across others.
+  function drawWreck(g, world, d, cam) {
+    const at = new Set(d.cells.map((c) => c.tx + ',' + c.ty));
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      const k = (c.tx * 7 + c.ty * 3) % 5;
+      if (d.legend.wreck === 'hole') {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y, 8, 8);
+        g.fillStyle = '#3a4258';
+        g.fillRect(x, y, 8, 3);
+        g.fillStyle = '#6c7894';
+        g.fillRect(x, y, 8, 1);
+        g.fillStyle = '#05060d';
+        if (k < 3) g.fillRect(x + 2 + k, y, 1, 3 + k);
+        if (k === 1) g.fillRect(x + 3, y + 3, 3, 1);
+        continue;
+      }
+      const top = !at.has(c.tx + ',' + (c.ty - 1));
+      g.fillStyle = '#05060d';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = k % 2 ? '#3a3040' : '#46394e';
+      g.fillRect(x + 1, y + (top ? 1 : 0), 6, top ? 7 : 8);
+      g.fillStyle = '#6c7894';
+      if (top) g.fillRect(x + 1, y + 1, 6, 1);
+      g.fillStyle = HAZARD[2];
+      if ((c.tx + c.ty) % 3 === 0) g.fillRect(x + 1, y + 4, 6, 1);
+      g.fillStyle = '#a9b6cc';
+      if (k === 2) g.fillRect(x + 3, y + 3, 2, 2);
+    }
+  }
+
   function drawDoor(g, world, d, cam) {
+    if (d.legend.wreck) return drawWreck(g, world, d, cam);
     if (d.legend.crane) return drawStack(g, world, d, cam);
     if (d.legend.cracked) return drawCracked(g, world, d, cam);
     if (d.legend.vault) return drawVaultDoor(g, world, d, cam);
