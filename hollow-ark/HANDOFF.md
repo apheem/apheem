@@ -5,9 +5,29 @@ This file is for the next session, on this account or another, so that nothing i
 ## Right now
 
 - **Branch:** `claude/practical-heisenberg-1chpy5`. It restarts from `main` after each merge. Open a draft PR for it if there isn't an open one.
-- **Last merged:** 0.3.10, the first part of Cody's calls on the story audit (PR #16).
-- **Working on:** Phase 3.10, Cody's calls on the story audit (0.3.11 on the branch, PR #17, not merged yet). The checklist is in `STORYBOARD.md` under "3.10". The Mara plan (who she is, the rules, and where each dream and line goes) is in `STORYBOARD.md` under "Mara, and the dreams".
-- **Next step:** the first unticked box under 3.10.
+- **Last merged:** 0.3.11, the rest of Cody's calls on the story audit so far (PR #17, Oct 31).
+- **Working on:** Cody's notes from playing 0.3.10 (below, "Cody's notes (Oct 31)"), as 0.3.12. They come before the rest of the length work. The checklist is in `STORYBOARD.md` under "3.11".
+- **Paused:** the second batch of new rooms (the Muster and the Pump Heads, designed in `STORYBOARD.md` under "New rooms on the main path", not built). Pick it up after Cody's notes, unless the bigger way to the Gardens covers the length first.
+- **Next step:** the first unticked box under 3.11.
+
+## Cody's notes (Oct 31, from playing 0.3.10)
+
+Cody played 0.3.10, not 0.3.11 yet. In their words, shortened:
+
+1. Old Gasket should slowly gain the hero's trust: a side part of the story, one of the character developments.
+2. The way to the Gardens is too short and not built up enough. The Gardens are where the taken are hidden, so it should be a bigger build, to make reaching them feel like an achievement. The same goes for the first Warden (the Bailiff).
+3. Make it more obvious who is talking, especially the voices "from the walls".
+4. The wall on the screen with the flood countdown must be tall enough that the hero can't jump over it.
+5. Choice 9's "blow the beam" confirm screen: the line about the Breach Charges and the launcher runs off the screen.
+6. Right after the beam, in the next room (the tram station), pressing Up at the winch makes Solder walk across in a straight line in the air.
+7. When Solder says she's going with the tram, it leaves while she's still talking. Wait until she's done, and show her get in, then leave.
+8. Gasket talks about wanting to see the outside world at the Crew Camp, the night after Abel. After that, put more pressure on him: situations where the hero might lose him.
+9. Make it more obvious that the Gardener poisoned Wick, so that being asked to hear her out makes sense.
+10. It isn't clear why the villagers climb to the top with the hero, and then climb back down to the Cryo Bay. Make the reason obvious.
+11. During the escape, the music turns calm in the Warrens (the safe area). It should be intense everywhere while running.
+12. "The seal read the Bloom" doesn't make sense. If there's a reason, make it obvious.
+13. Launching the pods said it costs 20 seconds, but the escape was fast and easy anyway. The ship is falling apart: make it look mangled, with other ways out, and rooms that change as things fall.
+14. Don't say "sister" at the end. The build-up makes it clear; leaving it unsaid is nicer.
 
 ## Cody's calls (Oct 30)
 

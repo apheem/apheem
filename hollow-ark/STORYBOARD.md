@@ -874,6 +874,18 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank (below, "New rooms on the main path")
 - [ ] Length: Sorrel (9, with lock 3b) and the other side quests
 
+### 3.11 Cody's notes from playing 0.3.10
+Cody's notes (Oct 31) are listed in full in `HANDOFF.md`. They come before the rest of 3.10's length work. Bugs first, then what's unclear, then the bigger builds. Each bigger build gets its design written here before it's built.
+- [ ] Bugs: the confirm screen's text wraps inside its box (choice 9's lose line ran off it); Solder walks along the floor at the tram station, not in a straight line through the air; the tram waits for her to finish, and she's seen getting in; the wall during the flood countdown is too tall to jump; the run for the sleds keeps its music in the Warrens
+- [ ] Who is talking: a marker over whoever speaks, and the voices from the walls shown at their doorway
+- [ ] Mara: "sister" is never said; the build-up says it (this replaces the Oct 30 call, "sister" only at the end)
+- [ ] The seal at the foot of Lift B: say why it reads the Bloom, where it happens
+- [ ] The Gardener poisoned Wick: made plain before choice 11
+- [ ] Why the villagers climb the Spine, and why they go back down to the Cryo Bay on the run: made plain where it happens
+- [ ] Gasket's trust, a thread of its own; and after his talk at the Crew Camp, times when the hero could lose him
+- [ ] The way to the Gardens built up, and the way to the Bailiff
+- [ ] The run for the sleds: the ship mangled as it falls apart, ways that change, and a clock that bites (launching the pods should cost something real)
+
 ### Routes that close (3.10 design)
 
 Cody's call: when someone dies, doesn't make it, or the hero makes a certain choice, a main way can shut, and the hero goes round a harder way (pipes, tunnels). Choices can also close side content. Each closure gets a journal line, in the style of the Homecoming requirements, so the player knows it was their doing. Build them in this order.
