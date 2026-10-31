@@ -427,6 +427,14 @@
       if (g) g.kneel = true;
       yield say('OLD GASKET', 'I SPENT MY WHOLE LIFE HOLDING MY BREATH.');
       yield say('OLD GASKET', "I'D LIKE TO BREATHE OUT BEFORE THE END.");
+      // With her trust (story/gasket.js), what she's never told anyone.
+      if (S.gasketTrust(s) >= 3) {
+        yield { wait: 30 };
+        yield say('OLD GASKET', "I'VE NEVER SEEN A SKY. NOBODY DOWN THERE HAS. THEY SAY IT'S A CEILING NOBODY BUILT.");
+        yield say('OLD GASKET', "IF I DON'T MAKE IT TO THE GROUND, YOU TELL THEM I WANTED TO.");
+        f.gasketSky = true;
+        S.addStory(world, "GASKET TOLD ME SHE'S NEVER SEEN A SKY. IF SHE DOESN'T MAKE IT TO THE GROUND, I'M TO TELL THEM SHE WANTED TO.");
+      }
       yield { wait: 40 };
       yield say('OLD GASKET', 'MY BROTHER CLEAT HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
       yield say('OLD GASKET', 'GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT.');

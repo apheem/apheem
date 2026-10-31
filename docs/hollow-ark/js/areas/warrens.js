@@ -109,6 +109,8 @@
       { kind: 'liftshaft', x: 65, y: 19, color: '#1a120c' },
       { kind: 'lanterns', y: 4, every: 12 },
       { kind: 'fire', x: 41, y: 18 },
+      // Cleat's count of days on the wall by Gasket's door (story/gasket.js).
+      { kind: 'tallymarks', x: 32, y: 14, n: 48, per: 12 },
       { kind: 'workbench', x: 86, y: 18 },
       { kind: 'scrawl', x: 66, y: 5, text: 'COUNT THE CHILDREN AT LIGHTS-OUT' },
       { kind: 'scrawl', x: 102, y: 6, text: 'NO FURTHER' },

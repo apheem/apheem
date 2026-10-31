@@ -508,6 +508,19 @@ async function play(browserType, url, label) {
       out.night = w().scene && w().scene.name;
       talkThrough();
       out.morning = { lead: s.lead, newGate: !!s.flags.newGate, hatch: !!s.flags.hatch, planned: !!s.flags.climbPlanned, solderGone: !w().npcs.some((n) => n.id === 'solder' && n.state !== 'gone'), name: HA.story.callName(s) };
+      // Gasket's trust (story/gasket.js): her grief has had its say, so talking to her now she hangs up her wrench,
+      // and the next time she shows Cleat's count on the wall.
+      const px = p.x;
+      const trust0 = HA.story.gasketTrust(s);
+      out.wrench = talkTo('gasket');
+      talkThrough();
+      out.cleat = talkTo('gasket');
+      talkThrough();
+      out.trust = { before: trust0, after: HA.story.gasketTrust(s), journal: s.journal.story.some((t) => /HUNG UP THE WRENCH/.test(t)) && s.journal.story.some((t) => /CLEAT'S MARKS/.test(t)) };
+      out.again = talkTo('gasket');
+      talkThrough();
+      p.x = px;
+      HA.debug.step(2);
       // The new gate stays shut until the hero comes near it, then lets them through to the Lockup.
       const gate = w().doors.find((d) => d.id === 'gate');
       out.gateShut = !gate.open;
@@ -548,6 +561,7 @@ async function play(browserType, url, label) {
     expect(wr.marrant, `the Steward did not name himself in his broadcast (${JSON.stringify(wr)})`);
     expect(wr.pistolScene === 'pistol' && /FALLS/.test(wr.pistolLose) && wr.gun.includes('repeater') && !wr.gun.includes('pistol') && wr.twin === 2, `the pistol did not become the Repeater (${JSON.stringify(wr)})`);
     expect(wr.night === 'solderLeaves' && wr.morning.newGate && wr.morning.hatch && wr.morning.planned && wr.morning.solderGone && wr.morning.lead === 'FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH', `the night Solder leaves did not play out (${JSON.stringify(wr.morning)})`);
+    expect(wr.wrench === 'gasketWrench' && wr.cleat === 'gasketCleat' && wr.again !== 'gasketCleat' && wr.trust.after === wr.trust.before + 2 && wr.trust.journal, `Gasket's trust at home went wrong (${wr.wrench}, ${wr.cleat}, ${wr.again}, ${JSON.stringify(wr.trust)})`);
     expect(wr.gateShut && wr.gateOpened, `the new gate should be shut, and open as the hero comes near (${wr.gateShut}, ${wr.gateOpened})`);
     expect(/CLIMB DOWN/.test(wr.hatchPrompt) && wr.sump === 'sump' && wr.sumpWest === 'hatch-drop' && wr.ladderUp[0] === 'warrens' && wr.ladderUp[1] === 78, `the hatch to the sump went wrong (${JSON.stringify(wr)})`);
     expect(wr.liftUp === 'garden-lift' && wr.music2 === 'gardens' && wr.choices === 5, `the lift back up, the Gardens' music or the journal went wrong (${JSON.stringify(wr)})`);
@@ -1194,6 +1208,8 @@ async function play(browserType, url, label) {
       press('up');
       out.notYet = w().scene && w().scene.step && w().scene.step.text;
       talkThrough();
+      // Gasket has come to trust the hero by now (story/gasket.js): the wrench, Cleat's count, and Flux home.
+      Object.assign(s.flags, { gasketWrench: true, gasketCleat: true });
       p.x = w().pods[0].x + 4;
       HA.debug.step(3);
       press('up');
@@ -1202,6 +1218,7 @@ async function play(browserType, url, label) {
       talkThrough();
       out.call = (options() || []).map((o) => o.label).join('/');
       out.shim = !!s.flags.shimRanOff;
+      out.sky = { trust: HA.story.gasketTrust(s), said: s.journal.talk.some((t) => /NEVER SEEN A SKY/.test(t.text)) };
       choose(0);
       talkThrough();
       HA.debug.step(30);
@@ -1251,6 +1268,7 @@ async function play(browserType, url, label) {
     expect(/throw/.test(sp.states) && /blow/.test(sp.states) && sp.fire && sp.barred && sp.phase === 2 && sp.grates && sp.burnt, `Abel's moves went wrong (${JSON.stringify(sp)})`);
     expect(sp.defeated === 'abelDefeated' && sp.ten === 'LEAVE HIM HIS FIRES/PUT THE FIRES OUT OF HIM' && sp.abel.fate === 'spared' && sp.abel.mercy === 1 && sp.abel.open && sp.abel.floor, `choice 10 went wrong (${sp.defeated}, ${sp.ten}, ${JSON.stringify(sp.abel)})`);
     expect(sp.camp.room === 'crew-camp' && sp.camp.crew === 8 && sp.camp.lifts === 3 && sp.camp.people === 8 && sp.camp.music === 'camp', `the climbers did not reach the camp (${JSON.stringify(sp.camp)})`);
+    expect(sp.sky.said === sp.sky.trust >= 3 && sp.sky.trust >= 3, `Gasket's sky at the camp went wrong (${JSON.stringify(sp.sky)})`);
     expect(sp.stitch === 'stitch' && /REST FIRST/.test(sp.notYet) && sp.night === 'lightsOut' && sp.call === 'STAY/TAKE THE BOAT' && sp.shim, `the camp's night went wrong (${JSON.stringify(sp)})`);
     expect(sp.morning.done && sp.morning.purser && /TOWER LIFT/.test(sp.morning.lead), `the morning at the camp went wrong (${JSON.stringify(sp.morning)})`);
     expect(sp.verdict.room === 'tower-lift' && sp.verdict.counts === 8 && sp.verdict.crew === 8 && /STEWARD/.test(sp.verdict.lead) && sp.tower === 'towerLift' && sp.towerRoom === 'barracks' && /WARDENS ONLY/.test(sp.sealed), `the crew's verdict, the Tower Lift or the sealed log went wrong (${JSON.stringify(sp.verdict)}, ${sp.tower}, ${sp.towerRoom}, ${sp.sealed})`);

@@ -700,6 +700,16 @@
         if (rnd() < 0.5) g.fillRect(x + 2, y + 4, 4, 2);
       }
     },
+    // Cleat's count of days by Gasket's door: scratches in fives, a long way along the wall.
+    tallymarks(g, s) {
+      g.fillStyle = 'rgba(232,226,214,0.28)';
+      for (let i = 0; i < s.n; i++) {
+        const x = s.x * 8 + (i % s.per) * 7;
+        const y = s.y * 8 + Math.floor(i / s.per) * 7;
+        for (let k = 0; k < 4; k++) g.fillRect(x + k, y, 1, 5);
+        for (let k = 0; k < 5; k++) g.fillRect(x + k, y + 4 - k, 1, 1);
+      }
+    },
     // The Armory's racks: hooks and outlines where the guns used to hang.
     racks(g, s, rnd) {
       for (let x = s.x0 * 8; x < s.x1 * 8; x += 40) {

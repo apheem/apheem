@@ -884,7 +884,8 @@ Cody's notes (Oct 31) are listed in full in `HANDOFF.md`. They come before the r
 - [x] The seal at the foot of Lift B: say why it reads the Bloom, where it happens. As built: at the seal the hero says what it's reading for; the four lines on the card of what closed the other way say what's under the Helm (the old crew lift, the sealed deck) and why it stayed shut, since a hero on those paths never saw them ("Homecoming's requirements" below)
 - [x] The Gardener poisoned Wick: made plain before choice 11. As built: in the Vat House she says she gave Wick a full dose, straight from the vat, and the hero sees Wick's hands going pink; Wick's journal line names her; in the Tower Garden Gallery the hero remembers it on arrival and sees the doses on her bench before choice 11, whose dose option now gains "SHE GOES THE WAY SHE SENT WICK"
 - [x] Why the villagers climb the Spine, and why they go back down to the Cryo Bay on the run: made plain where it happens. As built: in the plan (`story/warrens.js`), Gasket says the Helm key steers the Ark, with a world close enough to land on, and Solder says they'll take the Helm and take the ship down; the journal says so. At the start of the run (`story/scuttle.js`), Gasket says the ship is tearing itself apart and nobody can take it down now, the only way off is the old crew's landing sleds in Cryo Bay 4, and they climbed to take the ship down and now go back down to get there themselves
-- [ ] Gasket's trust, a thread of its own; and after his talk at the Crew Camp, times when the hero could lose him
+- [x] Gasket's trust, a thread of its own (below, "Gasket's trust", as built)
+- [ ] After her talk at the Crew Camp, times when the hero could lose Gasket (designed below; how far it goes, Cody's call)
 - [x] The way to the Bailiff built up: the Counting House (below, "The Counting House")
 - [ ] The way into the Gardens built up (designed below, "The way into the Gardens"; waiting on Cody's reading of the note)
 - [x] The run for the sleds: the ship mangled as it falls apart, ways that change, and a clock that bites (launching the pods should cost something real). As built: below, "The run for the sleds, coming apart"
@@ -986,23 +987,30 @@ Cody's answer decides whether this is built as written, or whether it's the walk
 
 ### Gasket's trust (3.11 design, Cody's notes 1 and 8)
 
-Cody: old Gasket should slowly come to trust the hero, as one of the story's character threads, and after his talk about the outside world at the Crew Camp, there should be times the hero could lose him.
+Cody: old Gasket should slowly come to trust the hero, as one of the story's character threads. After her talk at the Crew Camp about breathing out before the end, there should be times the hero could lose her. (Cody's note says "he"; the game has always written Gasket as a woman: Shim's gran, Wick's mother, Cleat's sister. This keeps that.)
 
-**The thread.** Gasket's trust (`s.gasket`, 0 to 5) grows with what the hero does for the village, and shows in what he says and does, never as a number. Each step is a short scene at home, most of them optional (talk to him).
-1. **The wrench** (0, built): "ONE NIGHT, SLEEPER. TOUCH NOTHING."
-2. **Shim brought back** (+1, after the Bailiff): he puts the wrench down for good. "I'VE BEEN WAITING FOR YOU TO TURN INTO WHAT THE LAST ONE WAS. YOU HAVEN'T YET."
-3. **The taken home** (+1, after the cradles; +1 more if the Pruner was released): he shows the hero his brother Cleat's marks on the wall, a count of days. "HE COUNTED THE DAYS TILL SOMEONE CAME DOWN TO HELP. HE STOPPED AT NINE HUNDRED."
-4. **The lantern** (+1 if it stays with the fire, choice 4): "WICK'S LIGHT STAYS HOME. SO DO YOU, IF YOU WANT."
-5. **The plan** (built): he climbs too, whatever his knees say.
-6. **The Crew Camp** (built, his talk about the outside world): with trust 3 or more he adds what he's never told anyone: he's never seen a sky, and he wants to see one before he dies. "IF I DON'T MAKE IT TO THE GROUND, YOU TELL THEM I WANTED TO."
+**The thread.** Gasket's trust grows with what the hero does for her and the village, and shows in what she says, never as a number. It's worked out from the save (`gasketTrust` in `story.js`): one each for the wrench put away, Cleat's count shown, Wick's lantern left with the fire (choice 4), Flux home (choice 6), and the village calling the hero LATE. Each step is a short scene when the hero talks to her at home, optional, once.
+1. **The wrench** (built): "ONE NIGHT, SLEEPER. TOUCH NOTHING."
+2. **Shim brought back** (after the Bailiff, talking to her at home): she hangs the wrench up. "I'VE BEEN WAITING FOR YOU TO TURN INTO WHAT THE LAST ONE WAS." "YOU HAVEN'T. YET." Journal: "OLD GASKET HUNG HER WRENCH ON ITS HOOK. FOR NOW, SHE SAID."
+3. **The taken home** (after the cradles, talking to her at home): she shows the hero her brother Cleat's marks on the wall, a count of days. "CLEAT COUNTED THE DAYS ON THIS WALL TILL SOMEBODY CAME DOWN TO HELP US. HE GOT TO NINE HUNDRED AND TWELVE." "THEN A SLEEPER CAME DOWN." The hero: "I'M NOT HIM." "NO. YOU BROUGHT THEM HOME."
+4. **The lantern** (choice 4, built): left with the fire, it counts.
+5. **The plan** (built): she climbs too.
+6. **The Crew Camp** (built: "I SPENT MY WHOLE LIFE HOLDING MY BREATH. I'D LIKE TO BREATHE OUT BEFORE THE END."): with trust 3 or more, she adds what she's never told anyone. "I'VE NEVER SEEN A SKY. CLEAT SAID IT'S LIKE A CEILING NOBODY BUILT." "IF I DON'T MAKE IT TO THE GROUND, YOU TELL THEM I WANTED TO." With less, she only says goodnight.
 
-**Times the hero could lose him** (after the Crew Camp):
-- **The Barracks:** the Steward's men cut the crew off on the stair. Gasket is pinned behind a shutter with Bloomsworn coming through. The hero has a short time to reach the shutter's wheel. Too slow, and he's hurt: he limps from then on, and on the run he's slower to the sleds.
-- **The Helm:** in the Steward's last phase he takes Gasket at the rail. The hero has to break off the fight to pull him back, or keep fighting and lose him.
-- **The run for the sleds:** a hurt Gasket falls behind at the Cold Store's lift. The hero can go back for him, which costs time on the clock, or run on.
-- If he's lost, `s.people.gasket = 'dead'`, and the epilogues that have him lighting the lights or counting at lights-out say what happened instead.
+**As built (the thread).** `js/story/gasket.js` (after `tram.js` in `index.html`): `S.gasketTrust`, and the scenes `gasketWrench` and `gasketCleat`, which a talk hook plays when the hero talks to her in the Warrens, after any of the main conversations there that are due (the hook comes after the Warrens' own). The wrench plays between the reunion and the Gardens, or, if missed, once the broadcast is past; Cleat's count plays after the wrench, once the broadcast is past. Cleat's marks are on the wall by her door all game (`tallymarks` in `scenery.js`). At the Crew Camp (`story/spine.js`), with trust 3 or more she says what she's never told anyone (`flags.gasketSky`), and the journal keeps it. The browser check talks to her at home (the wrench, then Cleat, then nothing new) and hears the sky at the camp.
 
-Each of these gets its own design pass before it's built, with the endings' lines.
+**Times the hero could lose her** (after the Crew Camp; not built yet):
+- **The Barracks:** the Steward's men cut the crew off on the stair. Gasket is pinned behind a shutter with Bloomsworn coming through. The hero has a short time to reach the shutter's wheel. Too slow, and she's hurt: she limps from then on, and on the run she's slower to the sleds.
+- **The Helm:** in the Steward's last phase he takes Gasket at the rail. The hero has to break off the fight to pull her back, or keep fighting and lose her.
+- **The run for the sleds:** a hurt Gasket falls behind at the Cold Store's lift. The hero can go back for her, which costs time on the clock, or run on.
+- If she's lost, `s.people.gasket = 'dead'`. That reaches a long way, and each place needs its own answer:
+  - she's the one who fights the Overgrown ending when Solder is dead;
+  - she says "THEN WE ALL LIFT" at Lift B on the true path;
+  - she opens the run for the sleds, and Tamp would have to;
+  - three epilogues have her: counting at lights-out (Crash), breathing out under the sky (Homecoming), and never saying the hero's name again (Dominion);
+  - the crew's count, and the results card.
+
+Each of these gets its own design pass before it's built, with the endings' lines, and Cody's say on how far it should go.
 
 ---
 
