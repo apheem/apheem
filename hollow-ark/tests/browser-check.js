@@ -1436,10 +1436,12 @@ async function play(browserType, url, label) {
       HA.debug.goto('coolant-hall', 30, 18);
       HA.debug.step(5);
       out.wardens = w().enemies.filter((e) => !e.dead && ['warden', 'walker'].includes(e.type)).length;
+      // A piece comes down every 110 frames, aimed at a random spot beside the hero, and none falls if that spot is a
+      // wall or under a low ceiling; so give it time for several tries, not two or three.
       let debris = false;
-      for (let i = 0; i < 300; i++) {
+      for (let i = 0; i < 1200 && !debris; i++) {
         HA.debug.step(1, { left: i % 60 < 30 });
-        debris = debris || w().hazards.some((h) => h.kind === 'debris');
+        debris = w().hazards.some((h) => h.kind === 'debris');
       }
       out.debris = debris;
       // The clock running out: back to the sump, with a full clock.
