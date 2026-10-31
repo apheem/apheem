@@ -700,6 +700,16 @@
         if (rnd() < 0.5) g.fillRect(x + 2, y + 4, 4, 2);
       }
     },
+    // Cleat's count of days by Gasket's door: scratches in fives, a long way along the wall.
+    tallymarks(g, s) {
+      g.fillStyle = 'rgba(232,226,214,0.28)';
+      for (let i = 0; i < s.n; i++) {
+        const x = s.x * 8 + (i % s.per) * 7;
+        const y = s.y * 8 + Math.floor(i / s.per) * 7;
+        for (let k = 0; k < 4; k++) g.fillRect(x + k, y, 1, 5);
+        for (let k = 0; k < 5; k++) g.fillRect(x + k, y + 4 - k, 1, 1);
+      }
+    },
     // The Armory's racks: hooks and outlines where the guns used to hang.
     racks(g, s, rnd) {
       for (let x = s.x0 * 8; x < s.x1 * 8; x += 40) {
@@ -2045,11 +2055,18 @@
     g.fillRect(x, y - 36, w, 33);
     g.fillStyle = '#8a5a2b';
     g.fillRect(x, y - 36, w, 2);
+    // Whoever has got in sits at a window, lit by the car's lamp: head and shoulders.
     for (let i = 0; i < 4; i++) {
       g.fillStyle = '#10121c';
       g.fillRect(x + 6 + i * 16, y - 31, 11, 13);
-      g.fillStyle = world.tramRider && i === 0 ? '#3a2818' : '#1a2a30';
+      const rider = i < (world.tramRiders || 0);
+      g.fillStyle = rider ? '#6a4a28' : '#1a2a30';
       g.fillRect(x + 7 + i * 16, y - 30, 9, 11);
+      if (rider) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 10 + i * 16, y - 27, 4, 4);
+        g.fillRect(x + 8 + i * 16, y - 23, 8, 4);
+      }
     }
     g.fillStyle = (world.tramGo || 0) > 0 ? '#ffd84d' : '#3a2a10';
     g.fillRect(x + 1, y - 23, 3, 3);
@@ -2218,7 +2235,43 @@
     }
   }
 
+  // The run for the sleds' ways that change (story/scuttle.js). A floor that gives way in the run: plates with
+  // cracks across them, there to see before it goes. A girder or rack that came down in the run: dark steel,
+  // riveted, at an angle where it lies across others.
+  function drawWreck(g, world, d, cam) {
+    const at = new Set(d.cells.map((c) => c.tx + ',' + c.ty));
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      const k = (c.tx * 7 + c.ty * 3) % 5;
+      if (d.legend.wreck === 'hole') {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y, 8, 8);
+        g.fillStyle = '#3a4258';
+        g.fillRect(x, y, 8, 3);
+        g.fillStyle = '#6c7894';
+        g.fillRect(x, y, 8, 1);
+        g.fillStyle = '#05060d';
+        if (k < 3) g.fillRect(x + 2 + k, y, 1, 3 + k);
+        if (k === 1) g.fillRect(x + 3, y + 3, 3, 1);
+        continue;
+      }
+      const top = !at.has(c.tx + ',' + (c.ty - 1));
+      g.fillStyle = '#05060d';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = k % 2 ? '#3a3040' : '#46394e';
+      g.fillRect(x + 1, y + (top ? 1 : 0), 6, top ? 7 : 8);
+      g.fillStyle = '#6c7894';
+      if (top) g.fillRect(x + 1, y + 1, 6, 1);
+      g.fillStyle = HAZARD[2];
+      if ((c.tx + c.ty) % 3 === 0) g.fillRect(x + 1, y + 4, 6, 1);
+      g.fillStyle = '#a9b6cc';
+      if (k === 2) g.fillRect(x + 3, y + 3, 2, 2);
+    }
+  }
+
   function drawDoor(g, world, d, cam) {
+    if (d.legend.wreck) return drawWreck(g, world, d, cam);
     if (d.legend.crane) return drawStack(g, world, d, cam);
     if (d.legend.cracked) return drawCracked(g, world, d, cam);
     if (d.legend.vault) return drawVaultDoor(g, world, d, cam);

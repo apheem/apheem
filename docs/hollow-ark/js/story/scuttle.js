@@ -13,8 +13,8 @@
   const me = (text) => ({ say: '', text, color: VOICE });
   const FLOOR = (ty) => (ty - 1) * 8;
 
-  const CLOCK = 60 * (4 * 60 + 30); // the run, from the sump to the sleds
-  const LAUNCH = 60 * 20; // what the pod launch costs on the clock
+  const CLOCK = 60 * HA.RUN.clock; // the run, from the sump to the sleds (core.js)
+  const LAUNCH = 60 * HA.RUN.launch; // what the pod launch costs on the clock
   // (The deep walls are on it if the gate fell: the cave-in shuts the Warrens' way west, lock 2 in STORYBOARD.md.)
   const ROUTE = ['sump', 'warrens', 'deep-walls', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'];
   // Which way the sleds are from each room of the run, shown under the clock.
@@ -78,7 +78,7 @@
         choice: {
           prompt: 'THE POD STACKS. FOUR THOUSAND SLEEPERS, AND THE CLOCK.',
           options: [
-            { label: 'LAUNCH THE PODS', confirm: { title: 'STOP AND LAUNCH THE PODS?', gain: 'THE SLEEPERS GO DOWN TO THE WORLD', lose: 'TWENTY SECONDS YOU MAY NOT HAVE' } },
+            { label: 'LAUNCH THE PODS', confirm: { title: 'STOP AND LAUNCH THE PODS?', gain: 'THE SLEEPERS GO DOWN TO THE WORLD', lose: HA.RUN.launch + ' SECONDS YOU MAY NOT HAVE' } },
             { label: 'KEEP RUNNING' },
           ],
         },
@@ -141,7 +141,10 @@
   function* scuttleRun(world) {
     const s = world.state;
     const lifts = (s.flags.lifts || 0) >= 1;
-    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
+    // Why all the way back down: the ship is coming apart, and the only way off it is at the bottom.
+    yield say('OLD GASKET', "IT'S TEARING ITSELF APART. NOBODY'S TAKING THIS SHIP DOWN NOW. WE HAVE TO GET OFF IT.");
+    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT LANDING SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
+    yield say('OLD GASKET', 'WE CLIMBED ALL THIS WAY TO TAKE THE SHIP DOWN TO THAT WORLD. NOW WE GO BACK DOWN, AND GET THERE OURSELVES.');
     if (s.people.solder === 'alive') yield say('SOLDER', "THE TRAM'S STILL AT THE FOOT. EVERYONE, MOVE!");
     yield { fade: 'out', frames: 40 };
     HA.music.play('scuttle');
@@ -162,7 +165,7 @@
     if (s.warrensRaid === 'fell') yield say('OLD GASKET', "THE HALL'S STILL DOWN AT THE WEST END. GO ROUND THROUGH THE WALLS: THE HOLE BY THE HOMES!");
     yield { walk: g, x: 70 * 8, speed: 1.2 };
     g.state = 'gone';
-    S.addStory(world, 'THE SHIP IS COMING APART. THE OLD CREW KEPT SLEDS IN CRYO BAY 4, WHERE I WOKE. I HAVE TO GET THERE BEFORE IT DOES.');
+    S.addStory(world, "THE SHIP IS COMING APART, AND NOBODY CAN TAKE IT DOWN TO THE NEW WORLD NOW. THE WAY OFF IS THE OLD CREW'S LANDING SLEDS IN CRYO BAY 4, WHERE I WOKE, AT THE BOTTOM OF THE SHIP. I HAVE TO GET THERE BEFORE IT COMES APART.");
     S.setLead(world, LEAD);
     world.save();
   }
@@ -206,6 +209,91 @@
     g.fillRect(x, y, h.w, h.h);
     g.fillStyle = '#9fb6c8';
     g.fillRect(x, y, h.w, 1);
+  }
+
+  // ---- The ship coming apart, in every room of the run ----
+  // Fires on the floor (tiles the hero stands in, two wide; they hurt like the Stoker's), where a jump clears them.
+  const FIRES = {
+    sump: [[60, 18]],
+    warrens: [[24, 18], [55, 18]],
+    'coolant-hall': [[48, 19], [110, 19]],
+    'thaw-corridor': [[66, 18], [14, 18]],
+    'cryo-bay': [[55, 18]],
+  };
+  function addFires(world) {
+    for (const [tx, ty] of FIRES[world.def.id] || []) {
+      HA.hazards.add(world, { kind: 'fire', x: tx * 8, y: ty * 8, w: 14, h: 8, life: Infinity, dmg: 2 });
+    }
+  }
+  // Coming in: the dust still settling on whatever came down (or fell away) in this room.
+  function settle(world) {
+    const wrecks = world.doors.filter((d) => d.legend.wreck);
+    if (!wrecks.length) return;
+    for (const d of wrecks) {
+      for (const c of d.cells) {
+        if (c.tx % 2) continue;
+        world.burst(c.tx * 8 + 4, c.ty * 8 + (d.open ? 8 : 0), ['#6c7894', '#3a4258', '#a9b6cc'], 3, 1.2);
+      }
+    }
+    world.shake(3);
+    HA.audio.play('debris');
+  }
+  // Cracks across the walls, plates hanging loose and cut cables spitting sparks: drawn over the room, the same in
+  // each room every time (seeded by its name).
+  function wreckOf(world) {
+    let seed = 0;
+    for (const ch of world.def.id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+    const room = world.room;
+    const cracks = [];
+    const cables = [];
+    for (let i = 0; i < Math.round(room.w / 10); i++) {
+      const tx = 2 + Math.floor(rnd() * (room.w - 4));
+      const ty = 3 + Math.floor(rnd() * Math.max(1, room.h - 6));
+      if (room.tile(tx, ty) !== HA.room.EMPTY) continue;
+      const pts = [[tx * 8, ty * 8]];
+      for (let k = 0; k < 4; k++) {
+        const [x, y] = pts[pts.length - 1];
+        pts.push([x + Math.round((rnd() - 0.5) * 14), y + 4 + Math.round(rnd() * 6)]);
+      }
+      cracks.push(pts);
+    }
+    for (let tx = 2; tx < room.w - 2; tx += 9 + Math.floor(rnd() * 8)) {
+      for (let ty = 1; ty < room.h - 2; ty++) {
+        if (room.tile(tx, ty) === HA.room.SOLID && room.tile(tx, ty + 1) === HA.room.EMPTY) {
+          cables.push({ x: tx * 8 + 3, y: (ty + 1) * 8, len: 6 + Math.floor(rnd() * 12), phase: Math.floor(rnd() * 90) });
+          break;
+        }
+      }
+    }
+    return { cracks, cables };
+  }
+  function drawWreckage(g, world, a, cam) {
+    const w = a.wreck;
+    g.strokeStyle = 'rgba(5,6,13,0.75)';
+    g.lineWidth = 1;
+    for (const pts of w.cracks) {
+      g.beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(x - cam.x + 0.5, y - cam.y + 0.5) : g.moveTo(x - cam.x + 0.5, y - cam.y + 0.5)));
+      g.stroke();
+    }
+    for (const c of w.cables) {
+      const x = Math.round(c.x - cam.x);
+      const y = Math.round(c.y - cam.y);
+      if (x < -8 || x > HA.VIEW_W + 8 || y > HA.VIEW_H || y + c.len < 0) continue;
+      const sway = Math.round(Math.sin((world.time + c.phase) / 20));
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y, 1, c.len);
+      g.fillRect(x + sway, y + c.len, 2, 2);
+      // a spit of sparks now and then, falling and fading
+      const t = (world.time + c.phase) % 90;
+      if (t < 24) {
+        for (let i = 0; i < 4; i++) {
+          g.fillStyle = i % 2 ? '#fff0a8' : '#ffb84d';
+          g.fillRect(x + sway + ((i * 3 + t) % 7) - 3, y + c.len + 2 + t * 1.4 + i * 2, 1, 1);
+        }
+      }
+    }
   }
 
   // ---- The clock, across the top of the screen ----
@@ -275,6 +363,10 @@
       world.enemies = world.enemies.filter((e) => !WARDENS.includes(e.type));
       // Everyone has gone ahead to the sleds.
       for (const n of world.npcs) n.state = 'gone';
+      // The ship coming apart: fires, cracks and sparks, and the dust settling on what came down.
+      addFires(world);
+      world.actors.push({ wreck: wreckOf(world), draw: drawWreckage });
+      settle(world);
       if (id === 'pod-stacks') {
         world.logs.push({ id: 'podConsole', scene: 'podLaunch', label: '{up} LAUNCH THE PODS', x: 5 * 8, y: 19 * 8 - 12, w: 10, h: 12, read: false });
         world.actors.push({ draw: drawConsole });
@@ -303,7 +395,7 @@
       if (world.scene || p.dead || world.transition) return;
       world.runLeft--;
       if (world.runLeft <= 0) return run(world, 'runFail');
-      if (world.time % 110 === 0) dropDebris(world);
+      if (world.time % 80 === 0) dropDebris(world);
       if (world.time % 150 === 0) {
         world.shake(1.5);
         HA.audio.play('rumble');
@@ -320,5 +412,6 @@
   });
 
   S.scuttleRun = scuttleRun;
+  S.runClock = CLOCK;
   Object.assign(S.SCENES, SCENES);
 })(window.HA);

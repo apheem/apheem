@@ -15,11 +15,13 @@
   const solderAlive = (s) => s.people.solder === 'alive';
 
   // ---- What the true ending needs (Part 4), with the journal line for each one that's missing ----
+  // Each line says what was down there and why it stayed shut, since a hero who missed it never saw it: the old
+  // crew lift under the Helm (Lift B), and the sealed deck it goes down to.
   const REQUIREMENTS = [
-    { id: 'wardens', ok: (s) => released(s) === 3, line: 'THE WARDENS DID NOT TRUST ME ENOUGH TO SHOW ME WHAT THEY GUARDED.' },
-    { id: 'solder', ok: (s) => solderAlive(s), line: 'WITHOUT SOLDER, NO ONE COULD MEND THE LIFT.' },
-    { id: 'crew', ok: (s) => s.crew >= 8, line: 'TOO FEW OF THEM CLIMBED WITH ME TO MOVE THE LIFT.' },
-    { id: 'bloom', ok: (s) => s.bloom <= 2, line: 'THE SEAL READ THE BLOOM IN ME AND STAYED SHUT.' },
+    { id: 'wardens', ok: (s) => released(s) === 3, line: 'THE OLD CREW LIFT UNDER THE HELM GOES DOWN TO A SEALED DECK. ONLY FREED WARDENS OPEN IT.' },
+    { id: 'solder', ok: (s) => solderAlive(s), line: 'THE OLD CREW LIFT UNDER THE HELM WAS BROKEN. ONLY SOLDER COULD HAVE MENDED IT.' },
+    { id: 'crew', ok: (s) => s.crew >= 8, line: "THE OLD LIFT'S BRAKE NEEDS EIGHT PAIRS OF HANDS. TOO FEW CLIMBED WITH ME." },
+    { id: 'bloom', ok: (s) => s.bloom <= 2, line: 'THE DECK UNDER THE HELM LETS ONLY THE CLEAN IN. THE BLOOM WAS TOO DEEP IN ME.' },
   ];
   const missing = (s) => REQUIREMENTS.filter((r) => !r.ok(s));
   // Where the story goes once the Steward falls: Overgrown takes the hero, Dominion is offered, the lift
@@ -148,10 +150,11 @@
   const EPILOGUES = {
     homecoming(s) {
       const stayed = s.people.navigator === 'stay';
-      // Mara's cards say at last what she is to the hero (STORYBOARD.md, "Mara, and the dreams").
+      // Mara's cards never say what she is to the hero: the build-up has said it (Cody, Oct 31; STORYBOARD.md,
+      // "Mara, and the dreams").
       const mara = stayed
-        ? [pic(card('MARA WOKE ALONE. THEY TOLD HER:', ['THE ONE IN 0417 STAYED WITH THE SHIP.', DIM]), 'mara', { alone: true, night: true }), pic(voice('SHE HAS HER SKY. I KEPT THE SHIP COMPANY.', 'FORGIVE ME FOR BEING LATE, LITTLE SISTER.'), 'mara', { alone: true, night: true })]
-        : [pic(voice('MARA WOKE UNDER A REAL SKY.', "I WAS THE FIRST THING SHE SAW. I WASN'T LATE."), 'mara', { hero: true, list: true }), pic(card('THAT NIGHT WE SLEPT OUTSIDE.', ['MY SISTER AND ME. WE LEFT ROOM FOR A THIRD.', DIM]), 'mara', { hero: true, night: true })];
+        ? [pic(card('MARA WOKE ALONE. THEY TOLD HER:', ['THE ONE IN 0417 STAYED WITH THE SHIP.', DIM]), 'mara', { alone: true, night: true }), pic(voice('SHE HAS HER SKY. I KEPT THE SHIP COMPANY.', 'FORGIVE ME FOR BEING LATE, MARA.'), 'mara', { alone: true, night: true })]
+        : [pic(voice('MARA WOKE UNDER A REAL SKY.', "I WAS THE FIRST THING SHE SAW. I WASN'T LATE."), 'mara', { hero: true, list: true }), pic(card('THAT NIGHT WE SLEPT OUTSIDE.', ['MARA AND ME. WE LEFT ROOM FOR A THIRD.', DIM]), 'mara', { hero: true, night: true })];
       const out = [
         shimCard(s, 'SHIM STOOD ON THE GROUND. NOT A FLOOR.'),
         pic(card('OLD GASKET BREATHED OUT.', "SHE SAID CLEAT'S NAME TO THE SKY."), 'gasket'),
@@ -177,7 +180,7 @@
       return [
         pic(count('COUNT: SURVIVORS, ' + (landed(s, 'crash').hullfolk + 1) + '.'), 'warrens', { sleds: true, few: s.warrensRaid === 'fell' }),
         pods ? pic(card('THE PODS CAME DOWN LIKE SEEDS.', 'MOST OF THEM OPENED.'), 'sleepers', { falling: true }) : pic(card('THE POD STACKS WENT DOWN WITH THE ARK.'), 'sleepers', { dark: true }),
-        pods ? pic(voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE MY SISTER WOKE.'), 'mara', { grass: true, hero: true }) : voice("I PROMISED I'D BE THERE WHEN MARA WOKE.", 'MY LITTLE SISTER. SHE NEVER DID.'),
+        pods ? pic(voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE SHE WOKE.'), 'mara', { grass: true, hero: true }) : voice("I PROMISED I'D BE THERE WHEN MARA WOKE.", 'SHE NEVER DID.'),
         shimCard(s, 'SHIM STOOD ON THE GROUND. IT WAS STILL BURNING.', { burning: true }),
         pic(card('OLD GASKET COUNTED THEM AT LIGHTS-OUT, LIKE ALWAYS.'), 'gasket', { fire: true }),
         solderAlive(s) ? pic(card('SOLDER STARTED ON A GATE', 'BEFORE THE FIRES WERE OUT.'), 'gate') : card("SOLDER'S GATE WENT DOWN WITH THE ARK."),
@@ -196,7 +199,7 @@
         pic(count('COUNT: WARDENS, ALL.', 'FOR THE NEW HOLDER.'), 'wardens', { holder: true }),
         voice('THEY ARE SAFER ASLEEP.'),
         pic(card('THE SLEEPERS STAYED ASLEEP.', ['MARA AMONG THEM.', DIM]), 'sleepers', { dark: true }),
-        pic(voice('I HAD THE KEY. I COULD HAVE WOKEN MY SISTER.', 'I TOLD MYSELF SHE WAS SAFER ASLEEP.'), 'sleepers', { dark: true }),
+        pic(voice('I HAD THE KEY. I COULD HAVE WOKEN HER.', 'I TOLD MYSELF SHE WAS SAFER ASLEEP.'), 'sleepers', { dark: true }),
         ...others(s),
         { lines: ['THE SHIP KEPT CIRCLING.'], space: true, ark: { x: 124, y: 104, s: 1 } },
       ];
@@ -209,7 +212,7 @@
         pic(card('SHIM STOPPED ASKING ABOUT THE GROUND.'), 'shaft'),
         card('THE WARRENS WENT BACK INTO HIDING.'),
         pic(card('PINK FUNGUS GREW ON THE POD GLASS.', ['ON 0418 FIRST.', DIM]), 'mara', { pink: true }),
-        pic({ lines: [["I'M RIGHT HERE, LITTLE SISTER.", BLOOM], ["I'M NOT LATE.", BLOOM]] }, 'mara', { pink: true, hero: true }),
+        pic({ lines: [["I'M RIGHT HERE, LITTLE ONE.", BLOOM], ["I'M NOT LATE.", BLOOM]] }, 'mara', { pink: true, hero: true }),
         ...wardensCount(s),
         ...others(s),
         { lines: [['NOT YET.', NAV]] },
@@ -229,7 +232,7 @@
         { lines: [['...', COUNT]], hold: 90 },
         pic(voice('I LANDED ALONE. THE FIRST PERSON ON THE NEW WORLD,', '232 YEARS LATE, WITH NO ONE TO TELL.'), 'boat'),
         pic(voice('I STOOD ON THE GROUND. NOT A FLOOR.'), 'boat'),
-        pic(voice('I LEFT MARA IN 0418.', "MY LITTLE SISTER. SHE'LL WAKE WITHOUT ME."), 'sleepers', { dark: true }),
+        pic(voice('I LEFT MARA IN 0418.', "SHE'LL WAKE WITHOUT ME."), 'sleepers', { dark: true }),
       ];
     },
   };
@@ -295,7 +298,7 @@
     // The results wait for a press, so they can be read (and photographed) however the credits were skipped.
     yield { card: resultCard(s, id), press: true, gap: 11 };
     const closed = closedCard(s, id);
-    if (closed) yield { card: closed, press: true, gap: 11 };
+    if (closed) yield { card: closed, press: true, gap: closed.length > 14 ? 10 : 11 };
     yield { card: runCard(s), press: true, gap: 11 };
     world.exitToTitle = true;
   }

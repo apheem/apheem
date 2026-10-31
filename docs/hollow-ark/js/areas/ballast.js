@@ -546,7 +546,8 @@
     gx: 400,
     gy: 207,
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
-    // Solder gets it open; it shuts again once they're through, with the culvert full behind it.
+    // Solder gets it open; it shuts again once they're through, with the culvert full behind it. It fills the
+    // passage from floor to ceiling, so there's no getting over it.
     legend: { X: { type: 'door', id: 'hatch', open: (s) => !!s.flags.hatchOpen && !s.flags.flooded } },
     scenery: [{ kind: 'culvert', x1: 29 }, { kind: 'stencil', x: 18, y: 4, text: 'PRESSURE HATCH 9' }],
     triggers: [{ x0: 20, x1: 29, when: (s, w) => !!s.flags.flooding && !s.people.solder && HA.story.solderNear(w), run: 'jammed' }],
@@ -554,8 +555,8 @@
       '########################################',
       '########################################',
       '########################################',
-      '##......................................',
-      '##......................................',
+      '##............................XX........',
+      '##............................XX........',
       '..............................XX........',
       '..............................XX........',
       '..............................XX........',

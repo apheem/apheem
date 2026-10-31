@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.11-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.12-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.11-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.12-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,21 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.12: Cody's notes from playing 0.3.10
+
+- **Who's talking.** A small marker bobs over whoever is speaking, the hero included. Someone still hiding in their home speaks from its doorway, and their name reads "…, IN THE WALLS".
+- **Choice screens fit.** The GAIN and LOSE lines wrap inside the confirm box, which grows to fit them. Blowing the beam with the charges no longer runs off the screen.
+- **People walk on the floor.** Anyone walking follows the floor, down and up its steps, instead of walking straight across the air. At the tram station Solder walks down to the winch. She gets in the tram first and you see her in its window. Then you get in, and only then does it leave.
+- **The Jammed Hatch can't be jumped.** It fills the passage from floor to ceiling.
+- **The run keeps its music.** While the clock runs, the Warrens play the run's music like everywhere else.
+- **Mara.** No one says what she is to the hero; the dreams and the memory say it.
+- **Why the climb, and why back down.** In the plan at home, Gasket and Solder say what the Helm key is for: it steers the Ark, and they mean to take the ship down to the new world. When the ship starts to tear itself apart, Gasket says why everyone runs back down: the only way off is the old crew's landing sleds, at the bottom of the ship.
+- **The Gardener dosed Wick.** She says so in the Vat House, and the hero sees it. The journal says it, and the hero remembers it in the Tower before choice 11.
+- **Old Gasket comes round.** Talk to her at home after you bring Shim back, and she hangs up the wrench she's kept by her since you came ("YOU HAVEN'T. YET."). Later she shows you her brother Cleat's count of days on the wall by her door. What you do for her and the village adds up. At the Crew Camp, if she trusts you, she tells you what she's never told anyone.
+- **The Counting House.** The way to the first Warden is longer now. The Bailiff's door is shut from his side, and the way on is up a ladder from the Collection Block into the Counting House, four screens tall, where the Wardens count the taken. Climb the counting floor's tiers to the cage rail under the roof. Shim's cage goes along it ahead of you, calling out. Then drop down the cage chute into the Bailiff's Hall.
+- **The run for the sleds comes apart.** The clock is 2:40, down from 4:30, which was five times what the run needs. Launching the pods costs 30 seconds. While it runs, the ship comes apart: a girder pile across the Warrens' hall to climb over, the Coolant Hall's floor fallen into the coolant with only the girders standing up out of it, the Thaw Corridor's ceiling down to a squeeze, and fires, cracks and sparking cables everywhere, with the ceilings coming down more often.
+- **What closed the other way.** The card after a Crash, Dominion or Overgrown ending says what's under the Helm and why it stayed shut, instead of "the seal read the Bloom". At the seal, the hero says what it's reading for.
 
 ## 0.3.11: the second route that closes, a morning, the tram home, Wick's longer walk, two new rooms, and the audit's story fixes
 

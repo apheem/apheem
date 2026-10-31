@@ -23,7 +23,7 @@
 // It first runs a few small test rooms that prove each ability opens exactly what it should. Each room's floors
 // and moves are simulated once per shape (crane state, doors shut or open) and set of abilities, then searched
 // from each way in.
-//   node rooms-check.js [room-id ...]
+//   node rooms-check.js [room-id ...]   ('abilities' runs the ability tests alone, 'run' the run's clock check)
 const vm = require('vm');
 const fs = require('fs');
 const path = require('path');
@@ -842,8 +842,99 @@ ABILITY_TESTS.forEach((def) => {
   def.h = 23;
 });
 
+// ---- The run for the sleds: its clock against its par ----
+// The par is a rough one: the shortest way through each room of the run, with the run's collapses in (the doors
+// that follow `running`), over open tiles, a climb counting a little more than a step; at the hero's run speed,
+// with a quarter more for jumps and turns. It can't see a jump that isn't there, so it only holds the clock to the
+// right size: the long way round (through the deep walls, if the gate fell) must fit in the clock with time to
+// spare after the pods, and the usual way mustn't leave so much that the clock never bites (Cody found the old
+// 4:30 easy: the run's par was under a minute).
+const RUN_ROUTES = {
+  usual: ['sump', 'warrens', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'],
+  'round by the deep walls': ['sump', 'warrens', 'deep-walls', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'],
+};
+const RUN_START = { x: 44, y: 18 }; // in the sump (story/scuttle.js)
+const RUN_SLEDS = { x: 3, y: 18 }; // at the Cryo Bay's west wall
+function runPar(ids) {
+  const defs = ids.map((id) => HA.rooms.list.find((r) => r.id === id));
+  const shapes = defs.map((d) => shapeOf(d, { running: true }, true));
+  const passable = (room, x, y) => {
+    if (x < 0 || y < 0 || x >= room.w || y >= room.h) return false;
+    const t = room.tile(x, y);
+    return t === EMPTY || t === ONEWAY || t === WATER;
+  };
+  const cellsOf = (def, ch) => def.map.flatMap((row, y) => [...row].map((c, x) => (c === ch ? { x, y } : null)).filter(Boolean));
+  // Where one room of the run gives onto the next: the open cells of a shared edge, or a hatch or lift between them.
+  function joins(i) {
+    const [a, b] = [defs[i], defs[i + 1]];
+    const [ra, rb] = [shapes[i], shapes[i + 1]];
+    const out = { from: [], to: [] };
+    for (const [ax, bx, touch] of [[a.w - 1, 0, a.gx + a.w === b.gx], [0, b.w - 1, b.gx + b.w === a.gx]]) {
+      if (!touch) continue;
+      for (let y = 0; y < a.h; y++) {
+        const by = a.gy + y - b.gy;
+        if (passable(ra, ax, y) && passable(rb, bx, by)) {
+          out.from.push({ x: ax, y });
+          out.to.push({ x: bx, y: by });
+        }
+      }
+    }
+    if (out.from.length) return out;
+    for (const [ch, l] of Object.entries(a.legend || {})) if (l.to === b.id) out.from.push(...cellsOf(a, ch));
+    for (const [ch, l] of Object.entries(b.legend || {})) if (l.to === a.id) out.to.push(...cellsOf(b, ch));
+    return out;
+  }
+  let tiles = 0;
+  let from = [RUN_START];
+  for (let i = 0; i < defs.length; i++) {
+    const room = shapes[i];
+    const j = i + 1 < defs.length ? joins(i) : { from: [RUN_SLEDS], to: [] };
+    const goal = new Set(j.from.map((c) => c.x + ',' + c.y));
+    const dist = new Map(from.map((c) => [c.x + ',' + c.y, 0]));
+    const queue = [...from];
+    let best = Infinity;
+    while (queue.length) {
+      queue.sort((p, q) => dist.get(p.x + ',' + p.y) - dist.get(q.x + ',' + q.y));
+      const c = queue.shift();
+      const d = dist.get(c.x + ',' + c.y);
+      if (goal.has(c.x + ',' + c.y)) {
+        best = d;
+        break;
+      }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = { x: c.x + dx, y: c.y + dy };
+        const k = n.x + ',' + n.y;
+        const nd = d + (dy < 0 ? 1.6 : 1);
+        if (!passable(room, n.x, n.y) || (dist.has(k) && dist.get(k) <= nd)) continue;
+        dist.set(k, nd);
+        queue.push(n);
+      }
+    }
+    if (best === Infinity) return { fail: `no way through ${defs[i].id} on the run` };
+    tiles += best;
+    from = j.to;
+  }
+  const speed = HA.actors.MOVE.run * 60 / 8; // tiles a second
+  return { tiles: Math.round(tiles), seconds: Math.round((tiles / speed) * 1.25) };
+}
+function checkRun() {
+  const { clock, launch } = HA.RUN;
+  const par = {};
+  for (const [name, ids] of Object.entries(RUN_ROUTES)) {
+    par[name] = runPar(ids);
+    if (par[name].fail) fail({ id: 'the run for the sleds' }, par[name].fail);
+  }
+  if (Object.values(par).some((p) => p.fail)) return;
+  const longest = Math.max(...Object.values(par).map((p) => p.seconds));
+  const usual = par.usual.seconds;
+  const left = clock - launch;
+  if (left < 1.5 * longest) fail({ id: 'the run for the sleds' }, `the clock (${clock}s, ${left}s after the pods) leaves less than half again the par of its longest way (${longest}s)`);
+  if (left > 2.5 * usual) fail({ id: 'the run for the sleds' }, `the clock (${clock}s, ${left}s after the pods) is more than two and a half times the par of the usual way (${usual}s), so it never bites`);
+  notes.push(`the run for the sleds: clock ${clock}s (${left}s after the pods); par ${Object.entries(par).map(([n, p]) => `${n} ${p.seconds}s (${p.tiles} tiles)`).join(', ')}`);
+}
+
 // Other scripts (and debugging) can use the checker's parts without running it.
-module.exports = { HA, shapeOf, targetsOf, buildGraph, findSegments, exitsOf, makeSolver };
+module.exports = { HA, shapeOf, targetsOf, buildGraph, findSegments, exitsOf, makeSolver, runPar };
 if (require.main !== module) return;
 
 const only = process.argv.slice(2);
@@ -856,7 +947,7 @@ if (!only.length || only.includes('abilities')) {
   }
 }
 const rooms = HA.rooms.list.filter((r) => !only.length || only.includes(r.id));
-if (!rooms.length && !only.includes('abilities')) {
+if (!rooms.length && !only.includes('abilities') && !only.includes('run')) {
   console.log('No rooms found. Are the area scripts listed in index.html?');
   process.exit(1);
 }
@@ -865,6 +956,11 @@ for (const def of rooms) {
   const before = problems.length;
   checkRoom(def);
   console.log(`${problems.length === before ? 'PASS' : 'FAIL'} ${def.id} (${def.w}x${def.h}, ${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+}
+if (!only.length || only.includes('run') || Object.values(RUN_ROUTES).some((ids) => ids.some((id) => only.includes(id)))) {
+  const before = problems.length;
+  checkRun();
+  console.log(`${problems.length === before ? 'PASS' : 'FAIL'} the run for the sleds (its clock against its par)`);
 }
 for (const n of notes) console.log('  note: ' + n);
 for (const p of problems) console.log('  - ' + p);

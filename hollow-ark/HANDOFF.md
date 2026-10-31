@@ -5,15 +5,35 @@ This file is for the next session, on this account or another, so that nothing i
 ## Right now
 
 - **Branch:** `claude/practical-heisenberg-1chpy5`. It restarts from `main` after each merge. Open a draft PR for it if there isn't an open one.
-- **Last merged:** 0.3.10, the first part of Cody's calls on the story audit (PR #16).
-- **Working on:** Phase 3.10, Cody's calls on the story audit (0.3.11 on the branch, PR #17, not merged yet). The checklist is in `STORYBOARD.md` under "3.10". The Mara plan (who she is, the rules, and where each dream and line goes) is in `STORYBOARD.md` under "Mara, and the dreams".
-- **Next step:** the first unticked box under 3.10.
+- **Last merged:** 0.3.11, the rest of Cody's calls on the story audit so far (PR #17, Oct 31).
+- **Working on:** Cody's notes from playing 0.3.10 (below, "Cody's notes (Oct 31)"), as 0.3.12. They come before the rest of the length work. The checklist is in `STORYBOARD.md` under "3.11".
+- **Paused:** the second batch of new rooms (the Muster and the Pump Heads, designed in `STORYBOARD.md` under "New rooms on the main path", not built). Pick it up after Cody's notes, unless the bigger way to the Gardens covers the length first.
+- **Next step:** the first unticked box under 3.11.
+
+## Cody's notes (Oct 31, from playing 0.3.10)
+
+Cody played 0.3.10, not 0.3.11 yet. In their words, shortened:
+
+1. Old Gasket should slowly gain the hero's trust: a side part of the story, one of the character developments.
+2. The way to the Gardens is too short and not built up enough. The Gardens are where the taken are hidden, so it should be a bigger build, to make reaching them feel like an achievement. The same goes for the first Warden (the Bailiff).
+3. Make it more obvious who is talking, especially the voices "from the walls".
+4. The wall on the screen with the flood countdown must be tall enough that the hero can't jump over it.
+5. Choice 9's "blow the beam" confirm screen: the line about the Breach Charges and the launcher runs off the screen.
+6. Right after the beam, in the next room (the tram station), pressing Up at the winch makes Solder walk across in a straight line in the air.
+7. When Solder says she's going with the tram, it leaves while she's still talking. Wait until she's done, and show her get in, then leave.
+8. Gasket talks about wanting to see the outside world at the Crew Camp, the night after Abel. After that, put more pressure on her: situations where the hero might lose her. (Cody wrote "he" for Gasket and Solder; the game writes both as women.)
+9. Make it more obvious that the Gardener poisoned Wick, so that being asked to hear her out makes sense.
+10. It isn't clear why the villagers climb to the top with the hero, and then climb back down to the Cryo Bay. Make the reason obvious.
+11. During the escape, the music turns calm in the Warrens (the safe area). It should be intense everywhere while running.
+12. "The seal read the Bloom" doesn't make sense. If there's a reason, make it obvious.
+13. Launching the pods said it costs 20 seconds, but the escape was fast and easy anyway. The ship is falling apart: make it look mangled, with other ways out, and rooms that change as things fall.
+14. Don't say "sister" at the end. The build-up makes it clear; leaving it unsaid is nicer.
 
 ## Cody's calls (Oct 30)
 
 | Topic | Call |
 | --- | --- |
-| Mara | She is the hero's sister, revealed slowly. Dreams on each night the hero sleeps, clearer and longer each time. Don't be too forward: "sister" only at the end, and the hero stays a mystery. Shim's "IS SHE A GHOST TOO?" gets "NOT A GHOST." and nothing more. |
+| Mara | She is the hero's sister, revealed slowly. Dreams on each night the hero sleeps, clearer and longer each time. Don't be too forward, and the hero stays a mystery. Shim's "IS SHE A GHOST TOO?" gets "NOT A GHOST." and nothing more. Oct 31: "sister" is never said, at the end either. |
 | Upgrades | Option B: shards still level the weapon in hand; spare shards bank as scrap for Solder's bench. Difficulty modes come later, and upgrades should matter more in them then. |
 | Length | Keep the brief's 4–6 hours on the main path, plus side quests. A first-time player's photo doesn't block anything. |
 | Routes | A death, someone not making it, or a choice can lock a main path, so the hero goes round a harder way (pipes, tunnels). Choices can also close side quests. |
@@ -44,3 +64,7 @@ Their words are in the session log; the story audit doc is [here](https://claude
 - **Oct 30:** Wick's longer escort built (the audit's fix 8; design and as-built in `STORYBOARD.md`, "Wick's longer escort"): `story/gardens.js` (cradles, `wickUp`, the barks, `wickPatch`), triggers and a new pod in `areas/gardens.js` (the Irrigation Works' east ledge), and `catchUp` in `story.js` for any companion. The browser check covers the catch-up and the sit-down. Next: new rooms on the main path (the Ballast and the Labyrinth first), then Sorrel (9, with lock 3b).
 - **Oct 30:** New rooms, first batch (design and as-built in `STORYBOARD.md`, "New rooms on the main path"): the Watch Gallery (`areas/cargo.js`, `story/cargo.js`; the aisle gate) and Odell's Test Tank (`areas/ballast.js`, the boots moved there). A `lever` scenery prop in `scenery.js`. Next: the second batch of new rooms (pick from the free-space list in that section), then Sorrel (9, with lock 3b).
 - **Oct 31:** CI's browser check on Linux failed once at the run for the sleds' falling ceilings ("debris false"): each piece is aimed at a random spot beside the hero and skipped if that spot is a wall or under a low ceiling, and the check gave it only 300 frames (two or three tries). It now steps until a piece falls, up to 1200 frames. The full rooms check passed all 68 rooms with the first batch of new rooms in.
+- **Oct 31:** PR #17 (0.3.11) merged; the branch restarted from `main`, and PR #18 opened (draft) for 0.3.12. Cody's notes from playing 0.3.10 are above. Built so far (3.11's first four boxes, and the seal and the climb): the confirm box wraps (`confirmLayout`, `scenes.js`); people walk on the floor (`keepToFloor`, `story.js`); Solder gets in the tram first and it waits for her (`rideWest`, `story/tram.js`, `world.tramRiders` in `scenery.js`); the Jammed Hatch fills its passage; the run's music in the Warrens; the speaker marker (`drawSay`); "sister" taken out of the end (`story/deck.js`, `endings.js`); the Gardener dosed Wick (`story/gardens.js`, `story/tower.js`); the climb's purpose and the run's reason (`story/warrens.js`, `story/scuttle.js`); the four lines of what closed the other way (`endings.js`). Version 0.3.12. Next: the designs for the bigger builds (the run for the sleds, the Counting House before the Bailiff, the way into the Gardens, Gasket's trust), then build them.
+- **Oct 31:** The run for the sleds made harder (Cody's note 13; design and as-built in `STORYBOARD.md`, "The run for the sleds, coming apart"): `HA.RUN` in `core.js` (the clock 160 s, the pods 30 s), `checkRun` in `rooms-check.js` (the run's par), the `wreck` doors in `areas/warrens.js` and `areas/cryo.js` (drawn by `drawWreck` in `scenery.js`), and the fires, wreckage and dust in `story/scuttle.js`. Next: the Counting House (the way to the Bailiff), then Gasket's trust; the way into the Gardens waits on Cody's answer.
+- **Oct 31:** The Counting House built (the Bailiff half of Cody's note 2; design and as-built in `STORYBOARD.md`, "The Counting House"): `counting-house` in `areas/lockup.js`, the Collection Block's ladder `a` and outer door `E`, the hall's ladder `a`; scenes `bailiffDoor`, `cageRail`, `chuteTop`, `chuteFoot` and log `tally` in `story.js`. Next: Gasket's trust (design in `STORYBOARD.md`), and the way into the Gardens once Cody says which reading they meant.
+- **Oct 31:** Gasket's trust built (Cody's note 1; design and as-built in `STORYBOARD.md`, "Gasket's trust"): `js/story/gasket.js` (new, after `tram.js` in `index.html`), Cleat's `tallymarks` in `areas/warrens.js`, her sky at the Crew Camp in `story/spine.js`. The times the hero could lose her (note 8) are designed and wait on Cody, as does the way into the Gardens. The full rooms check passed all rooms and the run's clock check. Next, without Cody: the paused second batch of new rooms (the Muster and the Pump Heads).

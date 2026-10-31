@@ -38,6 +38,10 @@
       title: "STEWARD'S ORDER · YEAR 309",
       text: 'ALL WARDENS ANSWER TO THE HELM KEY ALONE. HULLFOLK FOUND OUTSIDE THE WALLS ARE TO BE COLLECTED, NOT HARMED. THEY ARE NEEDED IN THE GARDENS.',
     },
+    tally: {
+      title: 'WARDEN TALLY · LIGHTS-OUT',
+      text: "COLLECTED FROM THE WALLS: ONE. SMALL. HEALTHY. NOT UP TO THE GARDENS WITH THE REST: HOLD IN THE BAILIFF'S HALL. THE SLEEPER WILL COME FOR IT.",
+    },
   };
 
   function readLog(world, log) {
@@ -128,7 +132,9 @@
     if (!inScene && !world.scene) {
       if (Math.abs(n.x - n.homeX) > 1) {
         n.facing = Math.sign(n.homeX - n.x);
+        const was = n.x;
         n.x += n.facing * (n.follow ? HA.clamp(Math.abs(n.homeX - n.x) / 20, 0.6, 1.6) : 0.6);
+        if (!keepToFloor(world, n, n.facing)) n.x = n.homeX = was;
         n.walking = true;
       } else {
         n.walking = false;
@@ -136,6 +142,45 @@
       }
       if (Math.abs(n.y - n.homeY) > 0.5) n.y = HA.approach(n.y, n.homeY, 2);
     }
+  }
+
+  // Someone walking keeps to the floor: up a step of a tile or two, and down off a ledge to the floor below it,
+  // over a few frames, as a person would. A gap with floor again just past it is hopped, as before. Called
+  // after each step sideways; returns false if a wall is in the way, and the step should be taken back. Only
+  // people who walk are moved, so anyone set down on purpose stays where they were put.
+  function keepToFloor(world, n, dir) {
+    const room = world.room;
+    const R = HA.room;
+    const floor = (tx, ty) => {
+      const t = room.tile(tx, ty);
+      const a = room.tile(tx, ty - 1);
+      return (t === R.SOLID || t === R.ONEWAY || t === R.CRATE) && a !== R.SOLID && a !== R.CRATE;
+    };
+    const blocked = (tx, ty) => room.tile(tx, ty) === R.SOLID || room.tile(tx, ty) === R.CRATE;
+    const tx = Math.floor((n.x + n.w / 2) / 8);
+    if (tx < 0 || tx >= room.w) return true;
+    // Where their feet are headed: the floor they're on, or the one they're dropping to.
+    const feet = n.homeY + n.h;
+    const row = Math.round(feet / 8);
+    if (floor(tx, row)) return true;
+    if (blocked(tx, row - 1)) {
+      for (const up of [1, 2]) {
+        if (floor(tx, row - up) && !blocked(tx, row - up - 1) && !blocked(tx, row - up - 2)) {
+          n.homeY = (row - up) * 8 - n.h;
+          return true;
+        }
+      }
+      return false;
+    }
+    for (let k = 1; k <= 6; k++) if (floor(tx + dir * k, row)) return true;
+    for (let r = row + 1; r < room.h; r++) {
+      if (floor(tx, r)) {
+        n.homeY = r * 8 - n.h;
+        return true;
+      }
+      if (blocked(tx, r)) break;
+    }
+    return true;
   }
 
   // A companion left on another floor (the hero climbed, or swam) catches up out of sight: once the hero is on
@@ -809,6 +854,38 @@
     },
 
     // The first time the Steward speaks: over the Lockup's intercom, as the hero comes in. He's never named here.
+    // The Counting House (3.11), on the way to the Bailiff. His outer door is shut from his side.
+    *bailiffDoor(world) {
+      think(world, 'SHUT FROM THE FAR SIDE. THE WARDENS TOOK SHIM UP THE LADDER.');
+      setLead(world, 'CLIMB THE COUNTING HOUSE AFTER SHIM');
+    },
+    // Halfway up, Shim's cage goes by on the rail under the roof, east to the chute, and down it.
+    *cageRail(world) {
+      world.state.flags.cageRail = true;
+      const cage = { name: 'SHIM', shim: true, x: 4 * 8, y: 5 * 8, w: 24, h: 22, t: 0 };
+      cage.update = (w, self) => {
+        self.t++;
+        if (self.x < 46 * 8) self.x += 0.9;
+        else self.y += 2.2;
+        if (self.y > 44 * 8) w.actors = w.actors.filter((a) => a !== self);
+      };
+      cage.draw = (g, w, self, cam) => HA.scenery.drawCage(g, w, self, cam);
+      world.actors.push(cage);
+      HA.audio.play('crane');
+      bark(world, cage, 'SLEEPER! UP HERE!');
+      think(world, "SHIM. THEY'RE TAKING HIM ALONG THE RAIL.", 60);
+    },
+    // At the chute's mouth: what's waiting at the bottom.
+    *chuteTop(world) {
+      world.state.flags.chuteTop = true;
+      think(world, 'THE CHUTE DROPS INTO A HALL. SOMETHING BIG IS WAITING BY HIS CAGE.');
+    },
+    // Down the chute: from here the Bailiff's outer door opens from his side.
+    *chuteFoot(world) {
+      world.state.flags.chute = true;
+      setLead(world, 'GET SHIM BACK FROM THE BAILIFF');
+    },
+
     *intercom(world) {
       world.state.flags.intercom = true;
       yield { wait: 20 };
@@ -1022,6 +1099,8 @@
   function music(world) {
     const f = world.state.flags;
     const id = world.def.id;
+    // The run for the sleds keeps its music everywhere, the Warrens too: nowhere is safe while the clock runs.
+    if (f.running) return 'scuttle';
     for (const a of AREAS) {
       const m = a.music && a.music(world);
       if (m !== undefined) return m;
@@ -1037,5 +1116,5 @@
     return undefined;
   }
 
-  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, think, drawBarks };
+  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, keepToFloor, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, think, drawBarks };
 })(window.HA);
