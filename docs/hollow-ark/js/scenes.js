@@ -102,12 +102,34 @@
     }
     if (step.walk) {
       if (scene.skipping) {
-        step.walk.x = step.x;
+        const a = step.walk;
+        for (let i = 0; i < 4000 && walkStep(world, a, step.x, 1); i++);
+        a.y = a.homeY !== undefined && walksOnFloor(world, a) ? a.homeY : a.y;
         return false;
       }
       return true;
     }
     return false;
+  }
+
+  // One frame of a walk: a person keeps to the floor, down and up its steps (story.js), and a machine just
+  // moves. Returns whether there's more to walk (or to drop, off a step).
+  const walksOnFloor = (world, a) => !!(world.npcs && world.npcs.includes(a) && !a.fly);
+  function walkStep(world, a, x, speed) {
+    const d = x - a.x;
+    a.facing = Math.sign(d) || a.facing;
+    if (!walksOnFloor(world, a)) {
+      a.x += HA.clamp(d, -speed, speed);
+      return Math.abs(x - a.x) > 0.5;
+    }
+    const was = a.x;
+    if (Math.abs(d) > 0.5) {
+      a.x += HA.clamp(d, -speed, speed);
+      if (!HA.story.keepToFloor(world, a, Math.sign(d))) a.x = was;
+    }
+    a.y = HA.approach(a.y, a.homeY, 2);
+    const falling = Math.abs(a.y - a.homeY) > 0.5;
+    return falling || (a.x !== was && Math.abs(x - a.x) > 0.5);
   }
 
   function paginate(text, width = LINE_CHARS, perPage = LINES) {
@@ -184,8 +206,7 @@
       const a = step.walk;
       const d = step.x - a.x;
       a.facing = Math.sign(d) || a.facing;
-      a.walking = Math.abs(d) > 0.5;
-      a.x += HA.clamp(d, -(step.speed || 1), step.speed || 1);
+      a.walking = walkStep(world, a, step.x, step.speed || 1);
       if (!a.walking) done = true;
     } else done = true;
 
@@ -279,13 +300,55 @@
     return p.y + p.h - world.cam.y > BOX.y - 4 ? BOX.top : BOX.y;
   }
 
+  // Who is saying a line, if they're in the room: the person of that name (the first one out, if there are
+  // several), or the hero for their own lines.
+  function speakerOf(world, step) {
+    if (!step.say) return world.player && !world.player.hidden && !world.player.dead ? world.player : null;
+    const people = (world.npcs || []).filter((n) => n.name === step.say && n.state !== 'gone');
+    return people.find((n) => n.state === 'out') || people[0] || null;
+  }
+
+  // A marker bobbing over whoever is talking. Someone still hiding in their home speaks from its doorway. If
+  // they're off the screen, it points their way from its edge.
+  function drawSpeaker(world, g, who) {
+    const c = world.cam;
+    const bob = Math.floor(world.time / 12) % 2;
+    const cx = Math.round(who.x + who.w / 2 - c.x);
+    const cy = Math.round(who.y - c.y - 7 + bob);
+    const color = who === world.player ? '#9fd8e8' : '#ffb84d';
+    if (cx < 4 || cx > W - 4) {
+      const y = HA.clamp(Math.round(who.y + who.h / 2 - c.y), 16, H - 12);
+      // a triangle whose tip is toward the edge, the way they are
+      const d = cx > W - 4 ? 1 : -1;
+      const base = d > 0 ? W - 8 - bob : 7 + bob;
+      g.fillStyle = '#05060d';
+      for (let i = -1; i < 5; i++) g.fillRect(base + d * i, y - 5 + Math.max(0, i), 1, 11 - Math.max(0, i) * 2);
+      g.fillStyle = color;
+      for (let i = 0; i < 4; i++) g.fillRect(base + d * i, y - 3 + i, 1, 7 - i * 2);
+      return;
+    }
+    if (cy < 6 || cy > H - 4) return;
+    g.fillStyle = '#05060d';
+    g.fillRect(cx - 4, cy - 1, 9, 2);
+    g.fillRect(cx - 3, cy + 1, 7, 2);
+    g.fillRect(cx - 2, cy + 3, 5, 1);
+    g.fillStyle = color;
+    g.fillRect(cx - 3, cy - 1, 7, 1);
+    g.fillRect(cx - 2, cy, 5, 1);
+    g.fillRect(cx - 1, cy + 1, 3, 1);
+    g.fillRect(cx, cy + 2, 1, 1);
+  }
+
   function drawSay(world, g, step, y = boxY(world)) {
     const page = step.pages[step.page];
+    const who = speakerOf(world, step);
     panel(g, BOX.x, y, BOX.w, BOX.h);
+    if (who && !world.dream && !world.card) drawSpeaker(world, g, who);
     if (step.say) {
-      const nw = HA.font.measure(step.say) + 10;
+      const name = who && who.state === 'hidden' ? step.say + ', IN THE WALLS' : step.say;
+      const nw = HA.font.measure(name) + 10;
       panel(g, BOX.x + 6, y - 9, nw, 12, '#ffb84d');
-      HA.font.draw(g, step.say, BOX.x + 11, y - 6, '#ffb84d');
+      HA.font.draw(g, name, BOX.x + 11, y - 6, '#ffb84d');
     }
     let left = Math.floor(step.shown);
     page.forEach((line, i) => {
@@ -313,23 +376,60 @@
       HA.font.draw(g, (sel ? '> ' : '  ') + o.label, px + 16, py + 21 + i * 12, sel ? '#fff0a8' : '#9fb6c8');
     });
     if (!step.confirming) return;
-    // Before any permanent choice: what is gained, what is lost for good, and a confirmation.
-    const o = c.options[step.sel].confirm;
-    const cw = 264;
-    const ch = 86;
-    const cx = W / 2 - cw / 2;
-    const cy = 40;
-    panel(g, cx, cy, cw, ch, '#ffb84d');
-    HA.font.draw(g, o.title, W / 2, cy + 8, '#fff0a8', { align: 'center' });
-    HA.font.draw(g, 'GAIN:', cx + 12, cy + 24, '#7ad1a0');
-    HA.font.draw(g, o.gain, cx + 50, cy + 24, '#eef4f6');
-    HA.font.draw(g, 'LOSE:', cx + 12, cy + 36, '#ff8a8a');
-    HA.font.draw(g, o.lose, cx + 50, cy + 36, '#eef4f6');
-    HA.font.draw(g, o.note || "THIS CAN'T BE UNDONE.", W / 2, cy + 50, o.note ? '#ff8a8a' : '#9fb6c8', { align: 'center' });
+    // Before any permanent choice: what is gained, what is lost for good, and a confirmation. Each line wraps
+    // inside the box, and the box grows to fit.
+    const L = confirmLayout(c.options[step.sel].confirm);
+    panel(g, L.x, L.y, L.w, L.h, '#ffb84d');
+    for (const t of L.texts) HA.font.draw(g, t.text, t.x, t.y, t.color, t.center ? { align: 'center' } : {});
     ['YES', 'NOT YET'].forEach((label, i) => {
       const sel = step.csel === i;
-      HA.font.draw(g, sel ? '> ' + label + ' <' : label, W / 2, cy + 62 + i * 11, sel ? '#fff0a8' : '#6c7894', { align: 'center' });
+      HA.font.draw(g, sel ? '> ' + label + ' <' : label, W / 2, L.yes + i * 11, sel ? '#fff0a8' : '#6c7894', { align: 'center' });
     });
+  }
+
+  // Splits text into lines no wider than w pixels.
+  function wrapPx(text, w) {
+    const lines = [];
+    let line = '';
+    for (const word of String(text).split(' ')) {
+      const next = line ? line + ' ' + word : word;
+      if (line && HA.font.measure(next) > w) {
+        lines.push(line);
+        line = word;
+      } else line = next;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  // Where everything in a confirm box goes: the title, GAIN and LOSE with their text beside them, the note,
+  // then YES and NOT YET.
+  function confirmLayout(o) {
+    const w = 264;
+    const x = W / 2 - w / 2;
+    const y = 40;
+    const texts = [];
+    let at = y + 8;
+    for (const line of wrapPx(o.title, w - 16)) {
+      texts.push({ text: line, x: W / 2, y: at, color: '#fff0a8', center: true });
+      at += 10;
+    }
+    at += 6;
+    for (const [label, color, text] of [['GAIN:', '#7ad1a0', o.gain], ['LOSE:', '#ff8a8a', o.lose]]) {
+      texts.push({ text: label, x: x + 12, y: at, color });
+      for (const line of wrapPx(text, w - 62)) {
+        texts.push({ text: line, x: x + 50, y: at, color: '#eef4f6' });
+        at += 10;
+      }
+      at += 2;
+    }
+    at += 2;
+    for (const line of wrapPx(o.note || "THIS CAN'T BE UNDONE.", w - 16)) {
+      texts.push({ text: line, x: W / 2, y: at, color: o.note ? '#ff8a8a' : '#9fb6c8', center: true });
+      at += 10;
+    }
+    at += 2;
+    return { x, y, w, h: at + 24 - y, texts, yes: at };
   }
 
   // A dream fills the screen, over the room and its fade, and what's said in it shows over that.
@@ -423,5 +523,5 @@
     g.fillRect(w.x + 2, w.y - Math.floor(w.r / 3), Math.floor(w.r / 2), 1);
   }
 
-  HA.scenes = { run, update, draw, drawCard, skip, paginate, active: (w) => !!(w && w.scene) };
+  HA.scenes = { run, update, draw, drawCard, skip, paginate, confirmLayout, active: (w) => !!(w && w.scene) };
 })(window.HA);

@@ -128,7 +128,9 @@
     if (!inScene && !world.scene) {
       if (Math.abs(n.x - n.homeX) > 1) {
         n.facing = Math.sign(n.homeX - n.x);
+        const was = n.x;
         n.x += n.facing * (n.follow ? HA.clamp(Math.abs(n.homeX - n.x) / 20, 0.6, 1.6) : 0.6);
+        if (!keepToFloor(world, n, n.facing)) n.x = n.homeX = was;
         n.walking = true;
       } else {
         n.walking = false;
@@ -136,6 +138,45 @@
       }
       if (Math.abs(n.y - n.homeY) > 0.5) n.y = HA.approach(n.y, n.homeY, 2);
     }
+  }
+
+  // Someone walking keeps to the floor: up a step of a tile or two, and down off a ledge to the floor below it,
+  // over a few frames, as a person would. A gap with floor again just past it is hopped, as before. Called
+  // after each step sideways; returns false if a wall is in the way, and the step should be taken back. Only
+  // people who walk are moved, so anyone set down on purpose stays where they were put.
+  function keepToFloor(world, n, dir) {
+    const room = world.room;
+    const R = HA.room;
+    const floor = (tx, ty) => {
+      const t = room.tile(tx, ty);
+      const a = room.tile(tx, ty - 1);
+      return (t === R.SOLID || t === R.ONEWAY || t === R.CRATE) && a !== R.SOLID && a !== R.CRATE;
+    };
+    const blocked = (tx, ty) => room.tile(tx, ty) === R.SOLID || room.tile(tx, ty) === R.CRATE;
+    const tx = Math.floor((n.x + n.w / 2) / 8);
+    if (tx < 0 || tx >= room.w) return true;
+    // Where their feet are headed: the floor they're on, or the one they're dropping to.
+    const feet = n.homeY + n.h;
+    const row = Math.round(feet / 8);
+    if (floor(tx, row)) return true;
+    if (blocked(tx, row - 1)) {
+      for (const up of [1, 2]) {
+        if (floor(tx, row - up) && !blocked(tx, row - up - 1) && !blocked(tx, row - up - 2)) {
+          n.homeY = (row - up) * 8 - n.h;
+          return true;
+        }
+      }
+      return false;
+    }
+    for (let k = 1; k <= 6; k++) if (floor(tx + dir * k, row)) return true;
+    for (let r = row + 1; r < room.h; r++) {
+      if (floor(tx, r)) {
+        n.homeY = r * 8 - n.h;
+        return true;
+      }
+      if (blocked(tx, r)) break;
+    }
+    return true;
   }
 
   // A companion left on another floor (the hero climbed, or swam) catches up out of sight: once the hero is on
@@ -1022,6 +1063,8 @@
   function music(world) {
     const f = world.state.flags;
     const id = world.def.id;
+    // The run for the sleds keeps its music everywhere, the Warrens too: nowhere is safe while the clock runs.
+    if (f.running) return 'scuttle';
     for (const a of AREAS) {
       const m = a.music && a.music(world);
       if (m !== undefined) return m;
@@ -1037,5 +1080,5 @@
     return undefined;
   }
 
-  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, think, drawBarks };
+  HA.story = { LOGS, PEOPLE, SCENES, TALK, VOICE, areas: AREAS, overlays: [], run, npcOf, makeNpc, drawNpc, keepToFloor, talk, readLog, begin, enterRoom, update, onWeapon, onBossDefeated, music, useLink, callName, setLead, addStory, addChoice, bark, think, drawBarks };
 })(window.HA);

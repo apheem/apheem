@@ -125,6 +125,7 @@
       yield { wait: 20 };
       HA.audio.play('telegraph');
       yield say('THE SEAL', 'NAVIGATION DECK. CLEAN PERSONNEL ONLY.', COUNT);
+      yield me("IT'S READING ME FOR THE BLOOM. THE DOOR STAYS SHUT TO ANYONE IT'S IN TOO DEEP.");
       world.sealScan = 80;
       HA.audio.play('seal');
       yield { wait: 80 };
@@ -151,14 +152,15 @@
       yield me('THE CRYO DECK. NOT AS IT IS. AS IT WAS, NEW, WITH EVERY POD SHUT.');
       yield nav('YEAR 0. FOUR THOUSAND SLEEPERS, AND FORTY CREW AWAKE TO WATCH OVER THEM.');
       yield nav('ON THE FIRST NIGHT THE CREW SANG OVER THE SLEEPERS. I KEPT THE SONG.');
-      // Mara's thread ends here on the true path: the word itself, at last (STORYBOARD.md, "Mara, and the dreams").
+      // Mara's thread ends here on the true path: the memory itself, at last. What she is to the hero is never said;
+      // the build-up has said it (Cody, Oct 31; STORYBOARD.md, "Mara, and the dreams").
       yield { wait: 30 };
       yield nav('ONE SLEEPER WOULD NOT LIE DOWN UNTIL THE ONE IN 0418 WAS UNDER.');
       yield nav('YOU HELD THE GLASS UNTIL THE FROST CAME. THE CREW HAD TO LIFT YOU INTO 0417.');
       yield me('I REMEMBER NOW. ALL OF IT.');
       yield nav('I HAVE COUNTED HER EVERY NIGHT SINCE. FOR YOU.');
-      yield me('MARA. MY LITTLE SISTER.');
-      S.addStory(world, 'PAST THE SEAL, THE NAVIGATOR SHOWED ME WHAT IT REMEMBERS. FIRST THE CRYO DECK ON THE FIRST NIGHT, WHEN THE CREW SANG OVER THE SLEEPERS, AND I HELD MARA\'S GLASS UNTIL THE FROST CAME. MY SISTER. I REMEMBER ALL OF IT NOW.');
+      yield me('MARA.');
+      S.addStory(world, 'PAST THE SEAL, THE NAVIGATOR SHOWED ME WHAT IT REMEMBERS. FIRST THE CRYO DECK ON THE FIRST NIGHT, WHEN THE CREW SANG OVER THE SLEEPERS, AND I HELD MARA\'S GLASS UNTIL THE FROST CAME. I REMEMBER ALL OF IT NOW.');
       world.save();
     },
     *hallGardens(world) {

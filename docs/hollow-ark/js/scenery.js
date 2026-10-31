@@ -2045,11 +2045,18 @@
     g.fillRect(x, y - 36, w, 33);
     g.fillStyle = '#8a5a2b';
     g.fillRect(x, y - 36, w, 2);
+    // Whoever has got in sits at a window, lit by the car's lamp: head and shoulders.
     for (let i = 0; i < 4; i++) {
       g.fillStyle = '#10121c';
       g.fillRect(x + 6 + i * 16, y - 31, 11, 13);
-      g.fillStyle = world.tramRider && i === 0 ? '#3a2818' : '#1a2a30';
+      const rider = i < (world.tramRiders || 0);
+      g.fillStyle = rider ? '#6a4a28' : '#1a2a30';
       g.fillRect(x + 7 + i * 16, y - 30, 9, 11);
+      if (rider) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 10 + i * 16, y - 27, 4, 4);
+        g.fillRect(x + 8 + i * 16, y - 23, 8, 4);
+      }
     }
     g.fillStyle = (world.tramGo || 0) > 0 ? '#ffd84d' : '#3a2a10';
     g.fillRect(x + 1, y - 23, 3, 3);

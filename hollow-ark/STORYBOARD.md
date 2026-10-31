@@ -176,7 +176,7 @@ These are starting reservations, not exact room positions. Keep areas inside the
 The hero is the Late Waker (brief option A): a colonist thawed from pod 0417, 232 years late. They wear a cryo suit with an amber visor, and they never speak aloud. They have:
 
 - **A trade.** They were a lander pilot. That's why the Navigator woke them, and why the Purser's boat ("THE BOAT WANTS A PILOT") is a real way out.
-- **A person.** Mara is still asleep in pod 0418, hanging in the rack beside the hero's empty clamps in the Cryo Bay. She is the hero's younger sister, but the game doesn't say so until the end: the player works it out from dreams that come back a little clearer each night (Cody's call, Oct 30; see **Mara, and the dreams** below). The hero's journal starts with only: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE." Every ending says what happens to her.
+- **A person.** Mara is still asleep in pod 0418, hanging in the rack beside the hero's empty clamps in the Cryo Bay. She is the hero's younger sister, but the game never says so: the player works it out from dreams that come back a little clearer each night, and from the memory at the end (Cody's calls, Oct 30 and 31; see **Mara, and the dreams** below). The hero's journal starts with only: "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE." Every ending says what happens to her.
 - **A voice.** The first-person journal ("I WOKE IN POD 0417...") is the hero's inner monologue, one or two lines per area. It shifts with the tracks. At Bloom 5: "THE GARDENS SMELLED LIKE HOME." At low Mercy the entries get shorter and start counting things.
 - **A name the Hullfolk give or withhold.** See the Mercy track.
 
@@ -184,7 +184,7 @@ The arc runs from a sleeper who arrived 232 years too late to someone who decide
 
 ### Mara, and the dreams (3.10)
 
-Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dreams about her on each night they sleep, and each dream is a little clearer and a little longer. Nobody says "sister" until the end. The hero stays a mystery.
+Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dreams about her on each night they sleep, and each dream is a little clearer and a little longer. The hero stays a mystery. Cody's call (Oct 31): "sister" is never said, not even at the end. The build-up makes it plain, and leaving the word unsaid is the nicer touch.
 
 **The truth (what the player pieces together).** Mara is the hero's younger sister, about ten when they boarded. Their mother won two places on the Ark and stayed behind. She told the hero to keep hold of Mara's hand the whole way. In the cryo bay Mara was scared, so she went under first while the hero watched. She made the hero promise to be there when she woke, the first thing she'd see, and not late. She kept a list of things to do on the new world:
 
@@ -195,7 +195,7 @@ Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dream
 5. (Added for the hero, in the cryo bay.) Don't be late.
 
 **Rules.**
-- "Sister" is never said before the end. It's said first in the Dreaming Deck's First Night hall (true path) or in the epilogue (every ending).
+- "Sister" is never said (Cody, Oct 31). The end gives the memory and her name: the Dreaming Deck's First Night hall (true path) and the epilogue (every ending).
 - The hero stays a mystery: no name, no face, no gender. Dream pictures show silhouettes. Nobody in them says the hero's name.
 - Why the hero doesn't simply know: 312 years asleep took their memories, and they come back in dreams. The hero learns it at the player's pace.
 - Mara's voice is pale lilac (the Navigator already has the pale cyan); the hero's is the journal's amber; their mother's is a soft green. There are no name tags in the dreams until the fourth, where Mara's reads MARA.
@@ -219,8 +219,8 @@ Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dream
 | Gasket | Crew Camp | Her brother. "YOU'VE GOT THE LOOK HE HAD. LIKE SOMEBODY'S WAITING ON YOU." |
 | Dream 4 | The Crew Camp night | Boarding day, clear: the bright new cryo bay, two open pods. "YOU GO FIRST." "NO. YOU FIRST. I'LL WATCH THE WHOLE TIME." Item 5. "PROMISE?" "PROMISE." |
 | The Dome | Command Tower | The window: "NOT A REAL SKY. NOT YET." (item 1) |
-| The reveal | First Night hall (true path) | The Navigator remembers 0417 holding the glass until the frost came. The hero: "MY SISTER." |
-| The reveal | Every epilogue | Mara's card names her. Homecoming: "MY SISTER WOKE UNDER A REAL SKY." "I WASN'T LATE." Then "THAT NIGHT WE SLEPT OUTSIDE." Others follow what happened to her. |
+| The reveal | First Night hall (true path) | The Navigator remembers 0417 holding the glass until the frost came. The hero: "MARA." |
+| The reveal | Every epilogue | Mara's card follows what happened to her, without saying what she is to the hero. Homecoming: "MARA WOKE UNDER A REAL SKY." "I WASN'T LATE." Then "THAT NIGHT WE SLEPT OUTSIDE." "MARA AND ME." |
 
 **As built (3.10).** The dreams are in `js/story/mara.js` (`HA.story.dream(world, n)`), drawn by `js/pictures.js` (`pods`, `list`, `tickets`, `boarding`) at clarity 0.2, 0.45, 0.7 and 0.95. Each dream leaves a line in the journal and sets `flags.dream1` to `dream4`. The list items while awake are thoughts over the hero's head that don't stop play (`HA.story.think`), apart from the Dome, which is in its scene. Additions to the table:
 - Shim, the morning after the second dream: "YOU TALK IN YOUR SLEEP. YOU SAID 'MAR'." "WHO'S MAR?" The hero doesn't answer.
@@ -228,7 +228,7 @@ Cody's call (Oct 30): Mara is the hero's sister, revealed slowly. The hero dream
 - Gasket, at lights-out before the fourth dream: "MY BROTHER HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM." "GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT."
 - The First Night hall: "ONE SLEEPER WOULD NOT LIE DOWN UNTIL THE ONE IN 0418 WAS UNDER." "YOU HELD THE GLASS UNTIL THE FROST CAME. THE CREW HAD TO LIFT YOU INTO 0417." "I REMEMBER NOW. ALL OF IT." "I HAVE COUNTED HER EVERY NIGHT SINCE. FOR YOU." "MARA. MY LITTLE SISTER."
 - The run for the sleds, at her clamps: "HOLD ON, MAR. I WON'T BE LATE." (pods launched) or "I'M SORRY, MAR." (not).
-- The epilogue's lines for each ending are in `js/endings.js`; the Overgrown one is what's left of the hero, in pink: "I'M RIGHT HERE, LITTLE SISTER." "I'M NOT LATE."
+- The epilogue's lines for each ending are in `js/endings.js`; the Overgrown one is what's left of the hero, in pink: "I'M RIGHT HERE, LITTLE ONE." "I'M NOT LATE."
 
 ---
 
@@ -679,12 +679,14 @@ The highest Mercy possible at the Crew Camp is +10. The Homecoming crew needs 7,
 
 ### Homecoming's requirements, each with a reason in the world
 
+The journal's lines are shown after a Crash, Dominion or Overgrown ending, on the card of what closed the other way. A hero on those paths never saw the lift or the seal, so each line says what was there and why it stayed shut (3.11, after Cody found "the seal read the Bloom" made no sense).
+
 | Requirement | Why, in the story | What the journal says if it's missing |
 | --- | --- | --- |
-| All three Wardens released | The freed Wardens open the sealed lift and hold the doors against the scuttle | "THE WARDENS DID NOT TRUST ME ENOUGH TO SHOW ME WHAT THEY GUARDED." |
-| Solder alive | Only she can mend the old crew lift under the Helm | "WITHOUT SOLDER, NO ONE COULD MEND THE LIFT." |
-| A crew of eight (Mercy 7 or more at the Crew Camp) | The lift's brake takes many hands to release ("I CAN MEND IT. I CAN'T LIFT IT ALONE.") | "TOO FEW OF THEM CLIMBED WITH ME TO MOVE THE LIFT." |
-| Bloom 2 or less | The navigation deck is sealed against Bloom carriers | "THE SEAL READ THE BLOOM IN ME AND STAYED SHUT." |
+| All three Wardens released | The freed Wardens open the sealed lift and hold the doors against the scuttle | "THE OLD CREW LIFT UNDER THE HELM GOES DOWN TO A SEALED DECK. ONLY FREED WARDENS OPEN IT." |
+| Solder alive | Only she can mend the old crew lift under the Helm | "THE OLD CREW LIFT UNDER THE HELM WAS BROKEN. ONLY SOLDER COULD HAVE MENDED IT." |
+| A crew of eight (Mercy 7 or more at the Crew Camp) | The lift's brake takes many hands to release ("I CAN MEND IT. I CAN'T LIFT IT ALONE.") | "THE OLD LIFT'S BRAKE NEEDS EIGHT PAIRS OF HANDS. TOO FEW CLIMBED WITH ME." |
+| Bloom 2 or less | The navigation deck is sealed against Bloom carriers | "THE DECK UNDER THE HELM LETS ONLY THE CLEAN IN. THE BLOOM WAS TOO DEEP IN ME." |
 
 ### The hint table (all placed before the Tower)
 
@@ -861,7 +863,7 @@ Each step ends with a build Cody can play. Tick a box in the same commit that fi
 Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through dreams; upgrades are option B (spare shards bank as scrap); the main path stays at 4–6 hours plus side content, and a first-time player's photo doesn't block the build; deaths and choices can lock a main path so the hero goes round a harder way, and can close side content; the epilogue gets pictures now. Difficulty modes, and making upgrades matter more in them, come later. `HANDOFF.md` says where the work stands between sessions.
 - [x] A picture layer behind cards and dream scenes (pixel art drawn in code: `js/pictures.js`; a card takes `pic`, a scene can `yield { dream }`)
 - [x] Mara: the opening voice, the turn to 0418 and the refused thaw, Shim's "NOT A GHOST.", four dreams on the story's four nights, the list items while awake, the lines from Wick, the Tallyman and Gasket, the LATE line, the reveal in the First Night hall and in every epilogue (`js/story/mara.js`; the browser check plays each dream)
-- [x] Pictures behind the epilogue cards, all five endings (and each ending's Mara card says "sister")
+- [x] Pictures behind the epilogue cards, all five endings (each ending's Mara card said "sister" until 3.11, which takes the word out)
 - [x] Spare shards bank as scrap; Solder's bench turns scrap into suit upgrades (`js/story/bench.js`: Plating, Magnet, Steady Hands; benches in the Warrens and, with Solder alive, the Crew Camp)
 - [x] Routes that close: the design (below, "Routes that close")
 - [x] Routes that close, lock 1: Solder left under the beam floods the keel, and the way to the Spine is the Overflow Pipes (the station's `Z` shutter and `e` hatch; `overflow-pipes`; the Spine Foot's `e`)
@@ -876,12 +878,12 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 
 ### 3.11 Cody's notes from playing 0.3.10
 Cody's notes (Oct 31) are listed in full in `HANDOFF.md`. They come before the rest of 3.10's length work. Bugs first, then what's unclear, then the bigger builds. Each bigger build gets its design written here before it's built.
-- [ ] Bugs: the confirm screen's text wraps inside its box (choice 9's lose line ran off it); Solder walks along the floor at the tram station, not in a straight line through the air; the tram waits for her to finish, and she's seen getting in; the wall during the flood countdown is too tall to jump; the run for the sleds keeps its music in the Warrens
-- [ ] Who is talking: a marker over whoever speaks, and the voices from the walls shown at their doorway
-- [ ] Mara: "sister" is never said; the build-up says it (this replaces the Oct 30 call, "sister" only at the end)
-- [ ] The seal at the foot of Lift B: say why it reads the Bloom, where it happens
-- [ ] The Gardener poisoned Wick: made plain before choice 11
-- [ ] Why the villagers climb the Spine, and why they go back down to the Cryo Bay on the run: made plain where it happens
+- [x] Bugs: the confirm screen's text wraps inside its box (choice 9's lose line ran off it); Solder walks along the floor at the tram station, not in a straight line through the air; the tram waits for her to finish, and she's seen getting in; the wall during the flood countdown is too tall to jump; the run for the sleds keeps its music in the Warrens. As built: `confirmLayout` in `scenes.js` wraps each line to the box and grows it; `keepToFloor` in `story.js` keeps anyone walking (in a scene's `walk`, or going home or following) on the floor, stepping up one or two tiles and dropping off ledges, and still hopping a gap with floor just past it; in `rideWest` (`story/tram.js`) Solder walks to the car and gets in, shown in its front window (`world.tramRiders`), then the hero, then it goes; the Jammed Hatch's `X` now fills its passage from floor to ceiling (the passage was six tiles high, the hatch four); `HA.story.music` plays the run's track first while `flags.running`, before any area's own choice.
+- [x] Who is talking: a marker over whoever speaks, and the voices from the walls shown at their doorway. As built: `drawSay` in `scenes.js` finds the speaker by name among the room's people (or the hero, for their own lines, in blue) and draws a bobbing marker over them; someone still hidden in their home gets it at their doorway, and their tag reads "NAME, IN THE WALLS"
+- [x] Mara: "sister" is never said; the build-up says it (this replaces the Oct 30 call, "sister" only at the end). As built: the First Night hall's last line is "MARA."; every epilogue's Mara card keeps what happened to her and drops the word (the browser check fails if any ending says it)
+- [x] The seal at the foot of Lift B: say why it reads the Bloom, where it happens. As built: at the seal the hero says what it's reading for; the four lines on the card of what closed the other way say what's under the Helm (the old crew lift, the sealed deck) and why it stayed shut, since a hero on those paths never saw them ("Homecoming's requirements" below)
+- [x] The Gardener poisoned Wick: made plain before choice 11. As built: in the Vat House she says she gave Wick a full dose, straight from the vat, and the hero sees Wick's hands going pink; Wick's journal line names her; in the Tower Garden Gallery the hero remembers it on arrival and sees the doses on her bench before choice 11, whose dose option now gains "SHE GOES THE WAY SHE SENT WICK"
+- [x] Why the villagers climb the Spine, and why they go back down to the Cryo Bay on the run: made plain where it happens. As built: in the plan (`story/warrens.js`), Gasket says the Helm key steers the Ark, with a world close enough to land on, and Solder says they'll take the Helm and take the ship down; the journal says so. At the start of the run (`story/scuttle.js`), Gasket says the ship is tearing itself apart and nobody can take it down now, the only way off is the old crew's landing sleds in Cryo Bay 4, and they climbed to take the ship down and now go back down to get there themselves
 - [ ] Gasket's trust, a thread of its own; and after his talk at the Crew Camp, times when the hero could lose him
 - [ ] The way to the Gardens built up, and the way to the Bailiff
 - [ ] The run for the sleds: the ship mangled as it falls apart, ways that change, and a clock that bites (launching the pods should cost something real)

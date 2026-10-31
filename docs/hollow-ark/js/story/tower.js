@@ -183,6 +183,7 @@
       gd.facing = 1;
       yield { wait: 20 };
       yield say('THE GARDENER', "THE SLEEPER. I SAID I'D BE HERE.");
+      yield me('HESTER VALE. SHE DOSED WICK FOR ASKING QUESTIONS, AND WATCHED IT TAKE HER.');
       if (s.bloom >= 3) {
         // a hero with the Bloom in them hears more from her
         yield say('THE GARDENER', 'YOUR VISOR HAS GONE PINK AT THE EDGES. DOES IT FEEL LIKE HOME YET? IT WILL.');
@@ -226,12 +227,13 @@
         S.addStory(world, "THE GARDENER TOLD SHIM ABOUT HIS MOTHER. 'YOUR MOTHER ASKED VERY GOOD QUESTIONS.' ASKED. HE HEARD IT. I SAID NOTHING.");
       }
       yield say('THE GARDENER', "THE STEWARD'S UP THE STAIR. I'M ONLY A GARDENER. I GREW WHAT HE ASKED FOR.");
+      yield me('THERE ARE DOSES ON HER BENCH. THE SAME AS THE ONE SHE GAVE WICK.');
       const pick = yield {
         choice: {
           prompt: 'THE GARDENER, AMONG HER PLANTS.',
           options: [
             { label: 'SPARE HER', confirm: { title: 'SPARE THE GARDENER?', gain: 'SHE LIVES TO SEE WHAT COMES AFTER', lose: 'NOTHING YOU CAN NAME' } },
-            { label: 'MAKE HER TAKE HER OWN DOSE', confirm: { title: 'MAKE HER TAKE THE BLOOM?', gain: 'SHE GOES THE WAY WICK WENT', lose: 'SOMETHING OF YOURSELF' } },
+            { label: 'MAKE HER TAKE HER OWN DOSE', confirm: { title: 'MAKE HER TAKE THE BLOOM?', gain: 'SHE GOES THE WAY SHE SENT WICK', lose: 'SOMETHING OF YOURSELF' } },
             { label: 'WALK PAST', confirm: { title: 'WALK PAST HER?', gain: 'YOU KEEP CLIMBING', lose: 'ANY SAY IN WHAT BECOMES OF HER' } },
           ],
         },

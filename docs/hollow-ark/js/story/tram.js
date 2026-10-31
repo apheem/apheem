@@ -53,10 +53,21 @@
     const p = world.player;
     const n = npcOf(world, 'solder');
     const riders = alive(s) ? 2 : 1;
-    yield { walk: p, x: 28 * 8, speed: 1 };
+    // Solder gets in first, at the car's front door, and takes the front window; then the hero, and only
+    // then does it go.
+    world.tramRiders = 0;
+    if (n && alive(s)) {
+      yield { walk: n, x: 23 * 8, speed: 0.8 };
+      n.state = 'gone';
+      world.tramRiders = 1;
+      HA.audio.play('clamp');
+      yield { wait: 20 };
+    }
+    yield { walk: p, x: 27 * 8, speed: 1 };
     p.hidden = true;
-    if (n) n.state = 'gone';
-    world.tramRider = true;
+    world.tramRiders++;
+    HA.audio.play('clamp');
+    yield { wait: 30 };
     world.tramGo = 1;
     yield { wait: 90 };
     yield { fade: 'out', frames: 40 };
@@ -65,7 +76,7 @@
     yield { card: alive(s) ? ['SOLDER SLEPT THE WHOLE WAY.', "SHE SAYS SHE DIDN'T."] : ['I RODE IT ALONE,', 'AND KEPT HER SEAT.'], hold: 160, pic: 'tram', picOpts: { riders } };
     s.flags.tramWest = true;
     world.tramGo = 0;
-    world.tramRider = false;
+    world.tramRiders = 0;
     p.hidden = false;
     world.enterRoom('sump', 60 * 8, 19 * 8 - p.h, { facing: -1 });
     world.holdFade = false;

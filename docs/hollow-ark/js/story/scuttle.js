@@ -141,7 +141,10 @@
   function* scuttleRun(world) {
     const s = world.state;
     const lifts = (s.flags.lifts || 0) >= 1;
-    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
+    // Why all the way back down: the ship is coming apart, and the only way off it is at the bottom.
+    yield say('OLD GASKET', "IT'S TEARING ITSELF APART. NOBODY'S TAKING THIS SHIP DOWN NOW. WE HAVE TO GET OFF IT.");
+    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT LANDING SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
+    yield say('OLD GASKET', 'WE CLIMBED ALL THIS WAY TO TAKE THE SHIP DOWN TO THAT WORLD. NOW WE GO BACK DOWN, AND GET THERE OURSELVES.');
     if (s.people.solder === 'alive') yield say('SOLDER', "THE TRAM'S STILL AT THE FOOT. EVERYONE, MOVE!");
     yield { fade: 'out', frames: 40 };
     HA.music.play('scuttle');
@@ -162,7 +165,7 @@
     if (s.warrensRaid === 'fell') yield say('OLD GASKET', "THE HALL'S STILL DOWN AT THE WEST END. GO ROUND THROUGH THE WALLS: THE HOLE BY THE HOMES!");
     yield { walk: g, x: 70 * 8, speed: 1.2 };
     g.state = 'gone';
-    S.addStory(world, 'THE SHIP IS COMING APART. THE OLD CREW KEPT SLEDS IN CRYO BAY 4, WHERE I WOKE. I HAVE TO GET THERE BEFORE IT DOES.');
+    S.addStory(world, "THE SHIP IS COMING APART, AND NOBODY CAN TAKE IT DOWN TO THE NEW WORLD NOW. THE WAY OFF IS THE OLD CREW'S LANDING SLEDS IN CRYO BAY 4, WHERE I WOKE, AT THE BOTTOM OF THE SHIP. I HAVE TO GET THERE BEFORE IT COMES APART.");
     S.setLead(world, LEAD);
     world.save();
   }
