@@ -383,18 +383,18 @@
     const solder = npcOf(world, 'solder');
     HA.audio.play('intercom');
     yield { wait: 24 };
-    yield say('THE SPEAKERS', 'TO THE PEOPLE IN THE WALLS.', STEWARD);
+    yield say('THE SPEAKERS', 'TO THE PEOPLE IN THE WALLS. THIS IS IVO MARRANT, STEWARD OF THE ARK, AT THE HELM.', STEWARD);
     yield say('THE SPEAKERS', 'SEND ME THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED.', STEWARD);
     HA.audio.play('intercom');
     s.flags.broadcastHeard = true;
     s.lead = 'TALK TO SOLDER BEFORE SHE GOES';
-    S.addStory(world, "THE STEWARD SPOKE OVER THE WARRENS' OLD SPEAKERS: SEND HIM THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED. NOBODY MOVED.");
+    S.addStory(world, "THE STEWARD, IVO MARRANT, SPOKE OVER THE WARRENS' OLD SPEAKERS: SEND HIM THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED. NOBODY MOVED.");
     // Everyone looks at the hero. Nobody moves.
     for (const n of world.npcs) if (n.state === 'out') n.facing = Math.sign(p.x - n.x) || n.facing;
     yield { wait: 120 };
     yield me("THE VOICE FROM THE LOCKUP'S INTERCOM.");
     if (gasket) gasket.kneel = false;
-    yield say('OLD GASKET', "THE STEWARD. TWENTY YEARS HE'S HELD THAT KEY, AND HE'S NEVER ONCE SPOKEN TO US.");
+    yield say('OLD GASKET', "MARRANT. TWENTY YEARS HE'S HELD THAT KEY, AND HE'S NEVER ONCE SPOKEN TO US.");
     yield { wait: 40 };
     yield say('OLD GASKET', "WE DON'T HAND OVER LOST THINGS.");
     yield { wait: 40 };

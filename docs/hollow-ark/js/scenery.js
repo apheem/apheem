@@ -1618,6 +1618,7 @@
       if (s.kind === 'vats') drawBubbles(g, world, s, cam);
       if (s.kind === 'odell') drawOdell(g, world, s, cam);
       if (s.kind === 'toolbag' && !world.state.flags.toolbag) drawToolbag(g, s, cam);
+      if (s.kind === 'lever') drawSwitch(g, world, { x: s.x * 8, y: s.y * 8 - 8, legend: { crane: s.flag } }, cam);
       if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
       if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
       // Solder's tools at the Crew Camp: only if she came up with the crew (story/bench.js).
@@ -1627,8 +1628,11 @@
         PROPS.workbench(g, s);
         g.restore();
       }
-      // The keel tram: at the Ballast's station until it leaves, and at the Spine Foot once the climbers come in on it.
-      const tram = s.at === 'spine' ? !!world.state.flags.crewCame : !world.state.flags.tram || (world.tramGo || 0) > 0;
+      // The keel tram: at the Ballast's station until it leaves, and at the Spine Foot once the climbers come in on it
+      // (with the hero, story/tram.js). If the keel flooded, it gets no further than the station on the way back.
+      const fl = world.state.flags;
+      const flooded = world.state.people.solder === 'dead';
+      const tram = s.at === 'spine' ? (fl.crewCame && !(fl.tramEast && flooded)) || (fl.tramEast && !flooded) : !fl.tram || (world.tramGo || 0) > 0 || (fl.tramEast && flooded);
       if (s.kind === 'tramcar' && tram) drawTramCar(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
@@ -1851,6 +1855,7 @@
   // it will run. A floor hatch is a plate in the floor, then a hole with a ladder's top once it's open. Its other
   // end is a ladder up through the ceiling.
   function drawLink(g, world, l, cam) {
+    if (l.legend.tram) return; // the keel tram's car is the room's own scenery
     if (l.legend.type === 'lift') return drawLift(g, world, l, cam);
     const x = Math.round(l.tx * 8 - 4 - cam.x);
     if (l.legend.up) {
@@ -2084,7 +2089,8 @@
     for (let ty = 0; ty < m.from.h / 8; ty++) for (let tx = 0; tx < m.from.w / 8; tx++) containerCell(g, x + tx * 8, y + ty * 8, tx, ty, cells, () => true, HAZARD);
   }
 
-  // A crane switch on the wall: a lever, up or down, and a lamp that blinks while the crane moves.
+  // A crane switch on the wall: a lever, up or down, and a lamp that blinks while the crane moves. A lever that only
+  // a story scene throws (scenery `lever`, with the flag it sets) looks the same.
   function drawSwitch(g, world, sw, cam) {
     const x = Math.round(sw.x - cam.x);
     const y = Math.round(sw.y - cam.y);
@@ -2172,10 +2178,52 @@
     g.fillRect(cx, cy - 8, 1, 2);
   }
 
+  // The cave-in at the Warrens' west end, if the gate fell: hull plates, beams and the village's own patchwork,
+  // heaped where the hall came down. Its top edge is ragged.
+  function drawRubble(g, world, d, cam) {
+    const at = new Set(d.cells.map((c) => c.tx + ',' + c.ty));
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      const k = (c.tx * 13 + c.ty * 7) % 5;
+      const top = !at.has(c.tx + ',' + (c.ty - 1));
+      g.fillStyle = '#0b0807';
+      g.fillRect(x, y + (top ? k % 3 : 0), 8, 8 - (top ? k % 3 : 0));
+      g.fillStyle = k < 2 ? '#3a4258' : k < 4 ? '#4a3526' : '#5a4028';
+      g.fillRect(x + 1, y + 1 + (top ? k % 3 : 0), 6, 5 - (top ? k % 3 : 0));
+      g.fillStyle = k < 2 ? '#6c7894' : '#a8743a';
+      g.fillRect(x + 1 + k, y + 2 + (top ? k % 3 : 0), 2, 1);
+      // a beam, end on, every few cells
+      if (k === 3 && !top) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 2, y + 3, 4, 4);
+        g.fillStyle = '#5a6b87';
+        g.fillRect(x + 3, y + 4, 2, 2);
+      }
+    }
+  }
+
+  // The deep walls' door in the Way Down: boards the Hullfolk nailed across it from their side.
+  function drawPlanks(g, world, d, cam) {
+    for (const c of d.cells) {
+      const x = c.tx * 8 - cam.x;
+      const y = c.ty * 8 - cam.y;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y, 8, 8);
+      g.fillStyle = c.ty % 2 ? '#5a4028' : '#4a3420';
+      g.fillRect(x, y + 1, 8, 6);
+      g.fillStyle = '#a8743a';
+      g.fillRect(x + 1, y + 3, 1, 1);
+      g.fillRect(x + 6, y + 3, 1, 1);
+    }
+  }
+
   function drawDoor(g, world, d, cam) {
     if (d.legend.crane) return drawStack(g, world, d, cam);
     if (d.legend.cracked) return drawCracked(g, world, d, cam);
     if (d.legend.vault) return drawVaultDoor(g, world, d, cam);
+    if (d.legend.rubble) return drawRubble(g, world, d, cam);
+    if (d.legend.planks) return drawPlanks(g, world, d, cam);
     // Solder's gate, the one that opens from the Hullfolk's side: patched plates, rivets, and a wheel.
     if (d.legend.kept && d.legend.kept(world.state)) {
       for (const c of d.cells) {

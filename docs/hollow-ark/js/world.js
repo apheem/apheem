@@ -573,7 +573,7 @@
       for (const l of world.logs) consider('log', l, l.label || '{up} READ');
       for (const sw of world.switches) if (!world.craneMove) consider('switch', sw, '{up} THROW THE SWITCH');
       for (const l of world.links) {
-        if (l.legend.type === 'lift') consider('link', l, '{up} USE THE LIFT');
+        if (l.legend.type === 'lift') consider('link', l, l.legend.label || '{up} USE THE LIFT');
         else if (l.legend.up) consider('link', l, '{up} CLIMB UP');
         else if (l.legend.open(world.state)) consider('link', l, '{down} CLIMB DOWN', 'down');
       }

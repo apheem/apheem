@@ -31,7 +31,11 @@
     },
     lists: {
       title: "THE STEWARD'S LISTS · YEARS 305-311",
-      text: 'COLLECTED FROM THE WALLS. TO THE GARDENS: SORREL, TOLLER, MAVE, AND NINE MORE. TO THE GUARD, DOSED: BRAND, OWEN, FLUX.',
+      text: 'COLLECTED FROM THE WALLS. TO THE GARDENS: SORREL, TOLLER, MAVE, AND NINE MORE. TO THE GUARD, DOSED: BRAND, OWEN, FLUX. TO THE REACTOR, TO STOKE: ABEL.',
+    },
+    watch: {
+      title: 'WATCH 4 · STANDING ORDERS',
+      text: "NOBODY THROUGH TO THE DRAIN WITHOUT A STEWARD'S MARK. SHOOT THE RATS. COUNT THE REST. THE GATE STAYS SHUT.",
     },
   });
 
@@ -45,6 +49,8 @@
   Object.assign(S.TALK, { purser: {}, flux: {} });
   const FLUX_SITTING = ['...', "IT DOESN'T STOP."];
   const FLUX_HOME = ["SHIM TALKS ABOUT YOU LIKE YOU'RE A STORY.", "IT'S QUIETER HERE. I CAN NEARLY HEAR MYSELF."];
+  const FLUX_SCRAP = 30; // what his stripped pack is worth at Solder's bench: one Plating
+
 
   // ---- People and things that only appear in scenes ----
   // The deserter's flight home: up off the deck on the Bloomfire pack, and away west in a pink trail.
@@ -237,6 +243,27 @@
     },
 
     // The Drain: Solder's toolbag, by the grate she levered up.
+    // The Long Aisle's gate (the Watch Gallery, STORYBOARD.md "New rooms on the main path"): shut, until the hero
+    // works its lever from the watch room above.
+    *aisleShut(world) {
+      S.think(world, "THE AISLE'S GATED OFF. THERE'S A LADDER UP, BACK THERE.");
+    },
+    *aisleGate(world) {
+      const f = world.state.flags;
+      if (f.aisleGate) {
+        yield me("THE LEVER'S DOWN. THE AISLE GATE IS OPEN.");
+        return;
+      }
+      f.aisleGate = true;
+      HA.audio.play('switch');
+      yield { wait: 20 };
+      HA.audio.play('shutter');
+      world.shake(1.5);
+      yield me('BELOW ME, THE AISLE GATE GRINDS OPEN.');
+      S.addStory(world, "THE STEWARD'S MEN WATCHED THE LONG AISLE FROM A GALLERY OVER IT, AND KEPT ITS GATE SHUT. I OPENED IT FROM THEIR WATCH ROOM.");
+      world.save();
+    },
+
     *toolbag(world) {
       const s = world.state;
       if (s.flags.toolbag) {
@@ -290,7 +317,40 @@
       yield say('OLD GASKET', "THAT WAS SHIM'S FATHER. HE WENT UP THE SHAFTS. WE TOLD SHIM HE WAS LOST.");
       yield me('THE DESERTER. HE SAID HE WAS GOING HOME.');
       yield { wait: 40 };
-      S.addStory(world, "GASKET READ THE STEWARD'S LISTS. FLUX, SHIM'S FATHER, WAS DOSED FOR THE GUARD. HE WAS THE DESERTER. I TOOK HIS WAY HOME.");
+      S.addStory(world, "GASKET READ THE STEWARD'S LISTS. FLUX, SHIM'S FATHER, WAS DOSED FOR THE GUARD. HE WAS THE DESERTER. I TOOK HIS WAY HOME. THERE WON'T BE A MORNING AT HOME FOR SHIM AND HIS FATHER.");
+      world.save();
+    },
+
+    // Lock 3 (STORYBOARD.md, "Routes that close"): the first morning at home with Flux back, after a rest at the
+    // village pod. Shim shows the hero his father, and Flux strips his pack for Solder's bench. If the hero took
+    // the pack (choice 6), this morning never comes, and fluxNamed says so.
+    *fluxMorning(world) {
+      const s = world.state;
+      const p = world.player;
+      const flux = npcOf(world, 'flux');
+      const shim = npcOf(world, 'shim');
+      const withShim = !!shim && shim.state === 'out';
+      s.flags.fluxMorning = true;
+      if (!flux) return;
+      yield { fade: 'out', frames: 40 };
+      yield { card: ['MORNING.'], hold: 90 };
+      Object.assign(flux, { x: 47 * 8, homeX: 47 * 8, facing: -1, kneel: false, lines: FLUX_HOME });
+      if (withShim) Object.assign(shim, { x: 44 * 8, homeX: 44 * 8, facing: 1, kneel: false });
+      world.camTarget = { x: 46 * 8, y: FLOOR(19) - 30 };
+      yield { fade: 'in', frames: 40 };
+      if (withShim) {
+        yield say('SHIM', 'THIS IS MY DAD. HE CAN FLY.');
+        yield me('WE MET.');
+        yield say('SHIM', 'HE FLEW ALL THE WAY HOME. NOBODY CARRIED HIM.');
+        yield say('FLUX', "SOMEBODY LET ME GO. THAT'S NOT THE SAME AS NOBODY.");
+      }
+      yield say('FLUX', "THE PACK'S DONE. IT GOT ME HOME, AND THAT WAS ALL IT HAD LEFT IN IT.");
+      yield say('FLUX', "I STRIPPED IT. TAKE THE PIECES TO SOLDER'S BENCH. SHE'LL KNOW WHAT THEY'RE FOR.");
+      HA.weapons.bank(world, FLUX_SCRAP);
+      HA.audio.play('levelUp');
+      world.floatText(p.x + 4, p.y - 6, '+' + FLUX_SCRAP + ' SCRAP', '#5fd4e8');
+      world.camTarget = null;
+      S.addStory(world, "IN THE MORNING SHIM SHOWED ME HIS FATHER, AS IF WE HADN'T MET. FLUX STRIPPED HIS PACK FOR SOLDER'S BENCH.");
       world.save();
     },
   };
@@ -476,6 +536,8 @@
       const f = s.flags;
       // (Never during the run for the sleds: the Warrens are empty then, and the clock is running.)
       if (world.def.id !== 'warrens' || f.running || world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
+      // (And not before the raid's news, or Solder's: those come first.)
+      if ((s.warrensRaid && !f.raidSeen) || (s.people.solder === 'dead' && f.tram && !f.solderMourned)) return;
       if (s.people.flux === 'home' && !f.fluxHome) run(world, 'fluxHome');
       else if (s.people.flux === 'stripped' && s.logs.lists && !f.fluxNamed) run(world, 'fluxNamed');
     },

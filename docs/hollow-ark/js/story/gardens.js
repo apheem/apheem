@@ -89,18 +89,23 @@
     return a;
   }
 
-  // Wick, walking with the hero from the Bailiff's Hall to the cradles.
+  // Wick, walking with the hero from the Bailiff's Hall to the cradles, and then up as far as the Irrigation Works.
   function spawnCompanion(world) {
     const p = world.player;
     let wick = npcOf(world, 'wick');
     if (!wick) {
-      wick = S.makeNpc(world, 'wick', { x: Math.max(-12, p.x - p.facing * 14), y: FLOOR(18) });
+      wick = S.makeNpc(world, 'wick', { x: HA.clamp(p.x - p.facing * 14, -12, world.room.pw - 4), y: FLOOR(18) });
       world.npcs.push(wick);
+      // Into a room after the cradles, she comes in on the hero's floor, wherever that is.
+      if (world.state.flags.cradlesSeen) wick.y = wick.homeY = p.y + p.h - wick.h;
     }
     wick.follow = true;
     wick.kneel = false;
     return wick;
   }
+  // The rooms Wick walks up through with the hero after the cradles (STORYBOARD.md, "Wick's longer escort").
+  const UP = new Set(['root-cellar', 'garden-lift', 'terraces', 'irrigation']);
+  const goingUp = (f) => f.wickUp && !f.wickPatched;
 
   // ---- The scenes ----
   const SCENES = {
@@ -162,12 +167,79 @@
       yield say('WICK', 'THE SEALS ARE LOCKED FROM ABOVE. THE WARDEN THAT KEEPS THE GARDENS HOLDS THE CODES.');
       yield say('WICK', "THE BLOOM SHUTS DOORS IN PEOPLE. I'VE SEEN IT. IF THEY STAY UNDER TOO LONG, THEY WON'T WAKE UP AS THEMSELVES.");
       if (wick) wick.facing = Math.sign(world.player.x - wick.x) || 1;
-      yield say('WICK', "GO UP. I'LL KEEP THEM BREATHING.");
+      // She goes up with the hero as far as the Irrigation Works, and comes back to them (wickPatch).
+      yield say('WICK', "AND THE AIR IN THESE IS BAD. THE CRADLES BREATHE THROUGH THE WATER WORKS, UP TOP. THERE'S A VALVE.");
+      yield say('WICK', "I'LL SHOW YOU THE WAY UP, AND OPEN IT ON THE WAY. THEN I COME BACK AND SIT WITH THEM.");
       s.flags.cradlesSeen = true;
       s.flags.wickWith = false;
-      if (wick) wick.homeX = wick.x;
+      s.flags.wickUp = true;
+      if (wick) {
+        wick.kneel = false;
+        wick.follow = true;
+      }
       S.setLead(world, 'FIND THE WARDEN THAT HOLDS THE SEALS');
-      S.addStory(world, 'THE TAKEN SLEEP IN OLD CRYO CRADLES UNDER THE GARDENS, DOSED WITH THE BLOOM. THE SEALS ARE LOCKED FROM ABOVE. WICK STAYED TO KEEP THEM BREATHING.');
+      S.addStory(world, "THE TAKEN SLEEP IN OLD CRYO CRADLES UNDER THE GARDENS, DOSED WITH THE BLOOM. THE SEALS ARE LOCKED FROM ABOVE. WICK IS COMING UP WITH ME AS FAR AS THE WATER WORKS, TO OPEN THE CRADLES' AIR.");
+      world.save();
+    },
+
+    // On the way up: a few words from Wick that don't stop play.
+    *wickLift(world) {
+      const wick = npcOf(world, 'wick');
+      if (!wick || !wick.follow) return;
+      S.bark(world, wick, "THAT LIFT GOES DOWN TO THE WARRENS. NOBODY'S RIDDEN IT SINCE THE GARDENER CAME.");
+    },
+    *wickTerraces(world) {
+      const wick = npcOf(world, 'wick');
+      if (!wick || !wick.follow) return;
+      S.bark(world, wick, 'THESE WERE THE BEAN TERRACES. MY MOTHER PICKED HERE AS A GIRL, BEFORE THE GARDENER LOCKED US OUT.');
+      S.bark(world, wick, "IF YOU FALL, FALL ON THE BEANS. THEY'VE HAD WORSE.");
+    },
+    *wickTop(world) {
+      const wick = npcOf(world, 'wick');
+      if (!wick || !wick.follow) return;
+      S.bark(world, wick, "NEARLY THERE. DON'T LOOK DOWN. I NEVER DO.");
+    },
+
+    // The Irrigation Works: Wick sits the hero down on the pod and patches them up, opens the cradles' air, and goes
+    // back down to sit with them.
+    *wickPatch(world) {
+      const s = world.state;
+      const p = world.player;
+      const wick = npcOf(world, 'wick') || spawnCompanion(world);
+      const pod = world.pods[0];
+      s.flags.wickPatched = true;
+      world.barks = [];
+      wick.follow = false;
+      yield { wait: 20 };
+      yield say('WICK', 'THAT POD WILL DO FOR A BENCH. SIT.');
+      if (pod) yield { walk: p, x: pod.x - 10, speed: 1 };
+      yield { walk: wick, x: p.x + 14, speed: 1.2 };
+      wick.facing = -1;
+      wick.kneel = true;
+      p.facing = 1;
+      yield { wait: 30 };
+      yield say('WICK', 'HOLD STILL. WHO PATCHED YOU BEFORE?');
+      yield me('...SOMEONE SMALL. BADLY.');
+      yield say('WICK', "THEN I'LL DO IT BADLY TOO, SO IT FEELS LIKE HOME.");
+      HA.audio.play('heart');
+      p.hp = p.maxHp;
+      world.floatText(p.x + 4, p.y - 6, 'HEALED', '#7ad1a0');
+      yield { wait: 40 };
+      yield say('WICK', 'MOONWORT, BEAN-LEAF AND SPIT. I PATCHED HALF THE WARRENS WITH WHAT GREW UP HERE, BEFORE THE WAY WAS LOCKED.');
+      wick.kneel = false;
+      yield { walk: wick, x: 70 * 8, speed: 1.2 };
+      for (let i = 0; i < 3; i++) {
+        HA.audio.play('clamp');
+        yield { wait: 18 };
+      }
+      HA.audio.play('hiss');
+      yield say('WICK', "THERE. NOW THEY'LL BREATHE EASY.");
+      wick.facing = Math.sign(p.x - wick.x) || -1;
+      yield say('WICK', 'THIS IS AS FAR AS I GO. THROUGH THE WATER, AND UP THE SPORE BEDS. MIND THE PODS; THEY SPIT.');
+      yield say('WICK', 'BRING ME THOSE CODES, SLEEPER.');
+      yield { walk: wick, x: world.room.pw + 8, speed: 1.4 };
+      wick.state = 'gone';
+      S.addStory(world, "WICK WALKED ME UP AS FAR AS THE WATER WORKS, AND PATCHED ME UP ON A POD. SHE OPENED THE CRADLES' AIR, AND WENT BACK DOWN TO SIT WITH THEM.");
       world.save();
     },
 
@@ -318,6 +390,8 @@
         yield say('WICK', '...SLEEPER?');
         yield say('THE GARDENER', 'SHE ASKED SO MANY QUESTIONS ABOUT THE DOSE. I THOUGHT SHE SHOULD SEE FOR HERSELF.');
         yield say('THE GARDENER', 'IT TAKES SOME PEOPLE QUICKLY. THE KIND ONES, MOSTLY.');
+        yield say('THE GARDENER', 'I AM HESTER VALE. I KEEP THE GARDENS. BEFORE THE BLOOM, THE VATS FED HALF THE SHIP, AND THE OTHER HALF FOUGHT FOR IT.');
+        yield say('THE GARDENER', 'NOW NOBODY UP THERE IS HUNGRY, AND NOBODY FIGHTS. IT ASKS SO LITTLE BACK. ONLY THE PART OF YOU THAT ARGUES.');
         yield say('WICK', "DON'T COME CLOSER. I CAN'T... HOLD IT.");
       } else {
         yield say('WICK', 'SLEEPER... RUN.');
@@ -527,9 +601,12 @@
         if (id === 'arena' || id === 'root-cellar') spawnCompanion(world);
         else f.wickWith = false;
       }
+      // After the cradles she's with the hero in the rooms on the way up, until she's patched them up (and anywhere
+      // else, she's with them again when they come back).
+      if (goingUp(f) && UP.has(id)) spawnCompanion(world);
       if (id === 'root-cellar') {
         if (f.wickWith && !f.gardens && !world.scene) run(world, 'intoGreen');
-        if (f.cradlesSeen && !s.wardens.pruner) {
+        if (f.cradlesSeen && !s.wardens.pruner && !goingUp(f)) {
           const wick = S.makeNpc(world, 'wick', { x: 56 * 8, y: FLOOR(18) });
           wick.kneel = true;
           world.npcs.push(wick);

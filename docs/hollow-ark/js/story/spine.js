@@ -164,11 +164,19 @@
       HA.audio.play('rumble');
       world.shake(2);
       yield { wait: 30 };
-      yield me('FAR BELOW, THE KEEL TRAM CAME IN. I HEARD IT STOP, AND VOICES.');
-      yield say(who, name(world) + "! WE'RE AT THE FOOT!");
-      // How many came shows here first; they count themselves properly at the camp.
-      if (n < 5) yield say(who, "THERE AREN'T MANY OF US. SOME WOULDN'T COME. NOT FOR " + name(world) + '.');
-      else yield say(who, 'MORE OF US THAN I THOUGHT. ' + (who === 'SOLDER' ? 'GASKET COUNTED THEM ONTO THE TRAM TWICE.' : 'I COUNTED THEM ONTO THE TRAM TWICE.'));
+      // On the tram home (story/tram.js) the crew came east with the hero, and how many came was said in the sump.
+      // A save from before that has them come in on the tram by themselves, and count here.
+      const pipes = f.tramEast && s.people.solder === 'dead';
+      if (f.tramEast) {
+        yield me(pipes ? 'FAR BELOW, THE CREW CAME UP OUT OF THE PIPES, COUGHING.' : "FAR BELOW, THE CREW HAD THE FIRST LIFT'S FRAME UP.");
+        yield say(who, name(world) + "! WE'RE RIGHT BEHIND YOU!");
+      } else {
+        yield me('FAR BELOW, THE KEEL TRAM CAME IN. I HEARD IT STOP, AND VOICES.');
+        yield say(who, name(world) + "! WE'RE AT THE FOOT!");
+        // How many came shows here first; they count themselves properly at the camp.
+        if (n < 5) yield say(who, "THERE AREN'T MANY OF US. SOME WOULDN'T COME. NOT FOR " + name(world) + '.');
+        else yield say(who, 'MORE OF US THAN I THOUGHT. ' + (who === 'SOLDER' ? 'GASKET COUNTED THEM ONTO THE TRAM TWICE.' : 'I COUNTED THEM ONTO THE TRAM TWICE.'));
+      }
       yield say(who, "STAY THERE. WE'LL BRING THE LIFT UP TO YOU.");
       for (let i = 0; i < 5; i++) {
         HA.audio.play(i % 2 ? 'clamp' : 'stomp');
@@ -193,7 +201,8 @@
       }
       lead.state = 'gone';
       HA.audio.play('lift');
-      S.addStory(world, n < 5 ? 'THE CLIMBERS CAME UP THE KEEL ON THE TRAM. NOT MANY. THEY BUILT THE FIRST LIFT UP THE SPINE BEHIND ME.' : 'THE CLIMBERS CAME UP THE KEEL ON THE TRAM, MORE OF THEM THAN I HAD HOPED. THEY BUILT THE FIRST LIFT UP THE SPINE BEHIND ME.');
+      if (f.tramEast) S.addStory(world, pipes ? 'THE CREW CAME THROUGH THE OVERFLOW PIPES BEHIND ME, AND BUILT THE FIRST LIFT UP THE SPINE.' : 'THE CREW BUILT THE FIRST LIFT UP THE SPINE BEHIND ME.');
+      else S.addStory(world, n < 5 ? 'THE CLIMBERS CAME UP THE KEEL ON THE TRAM. NOT MANY. THEY BUILT THE FIRST LIFT UP THE SPINE BEHIND ME.' : 'THE CLIMBERS CAME UP THE KEEL ON THE TRAM, MORE OF THEM THAN I HAD HOPED. THEY BUILT THE FIRST LIFT UP THE SPINE BEHIND ME.');
       S.setLead(world, 'CLIMB ON. THE CREW WILL BUILD BEHIND YOU');
       world.save();
     },
@@ -268,6 +277,7 @@
       }
       yield { wait: 40 };
       yield say('THE FURNACE', 'I WAS ABEL.', ABEL);
+      if (world.state.logs.lists) yield me("ABEL. THE NAME AT THE END OF THE STEWARD'S LISTS: TO THE REACTOR, TO STOKE.");
       yield say('THE FURNACE', 'I FED THE FIRES.', ABEL);
       yield { wait: 30 };
       yield say('ABEL', "DON'T PUT THEM OUT.", ABEL);
@@ -404,7 +414,12 @@
         S.addStory(world, 'AT LIGHTS-OUT TAMP COUNTED THE CHILDREN DOWN THE LINE. ONE SHORT: SHIM HAD GONE INTO THE VENTS, TO FIND HIS MOTHER.');
       } else {
         const lantern = f.lanternWith === 'shim';
-        yield say('THE LINE', lantern ? "...ALL HERE. SHIM'S ASLEEP WITH THE LANTERN." : '...ALL HERE.', LINE);
+        yield say('THE LINE', lantern ? "...ALL HERE. SHIM'S UP WITH THE LANTERN. HE WANTS THE PHONE." : '...ALL HERE. SHIM WANTS THE PHONE.', LINE);
+        yield say('SHIM', 'IS THE SLEEPER THERE?', LINE);
+        yield me("I'M HERE.");
+        yield say('SHIM', lantern ? "I'VE STILL GOT HER LANTERN. IT'S NOT SO DARK DOWN HERE." : "TAMP SAYS YOU'RE GOING TO THE VERY TOP. IS THERE A WINDOW?", LINE);
+        yield me(lantern ? 'KEEP IT LIT FOR ME.' : 'THERE WILL BE.');
+        yield say('SHIM', lantern ? 'OKAY. NIGHT, SLEEPER.' : 'LOOK OUT OF IT FOR ME. NIGHT, SLEEPER.', LINE);
         yield say('OLD GASKET', 'GOOD.');
       }
       HA.audio.play('intercom');
@@ -413,7 +428,7 @@
       yield say('OLD GASKET', 'I SPENT MY WHOLE LIFE HOLDING MY BREATH.');
       yield say('OLD GASKET', "I'D LIKE TO BREATHE OUT BEFORE THE END.");
       yield { wait: 40 };
-      yield say('OLD GASKET', 'MY BROTHER HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
+      yield say('OLD GASKET', 'MY BROTHER CLEAT HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
       yield say('OLD GASKET', 'GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT.');
       S.addStory(world, 'GASKET SAID SHE HAD SPENT HER WHOLE LIFE HOLDING HER BREATH. SHE WANTS TO BREATHE OUT BEFORE THE END.');
       if (g) g.sleeping = true;
@@ -536,7 +551,7 @@
       if (world.def.area === 'spine' && !f.spine) {
         f.spine = true;
         S.addStory(world, 'THE KEEL LINE ENDS AT THE FOOT OF THE ENGINE SPINE: THE SHIP\'S POWER, ONE SHAFT ALL THE WAY UP TO THE TOWER.');
-        S.setLead(world, 'CLIMB THE ENGINE SPINE. THE CREW WILL FOLLOW ON THE TRAM');
+        S.setLead(world, f.tramEast ? 'CLIMB THE ENGINE SPINE. THE CREW WILL BUILD BEHIND YOU' : 'CLIMB THE ENGINE SPINE. THE CREW WILL FOLLOW ON THE TRAM');
       }
       // Abel, in his furnace: fighting, waiting on his fate (see update), or left to it.
       if (id === 'reactor-throat' && world.bossSpawn) {
@@ -550,7 +565,8 @@
       }
       // Someone of the crew minds each stop of the lift until they've all come up to the camp.
       const crew = f.crewCame && !f.camp ? crewList(s) : [];
-      if (id === 'spine-foot' && crew[3]) crewNpc(world, crew[3], 15, 41, ["THE TRAM WAITS HERE. IF IT ALL GOES WRONG UP THERE, IT'S OUR WAY HOME."]);
+      const tramAway = f.tramEast && s.people.solder === 'dead'; // left at the Ballast stop, the keel flooded past it
+      if (id === 'spine-foot' && crew[3]) crewNpc(world, crew[3], 15, 41, [tramAway ? "THE TRAM'S BACK AT THE BALLAST STOP. IF IT ALL GOES WRONG UP THERE, IT'S THE PIPES AND THEN THE TRAM." : "THE TRAM WAITS HERE. IF IT ALL GOES WRONG UP THERE, IT'S OUR WAY HOME."]);
       if (id === 'boiler-stair' && crew[4] && f.lifts >= 1) crewNpc(world, crew[4], 28, 9, ["I'M MINDING THE LIFT. IT DOESN'T NEED MINDING. I NEED A SIT DOWN."]);
       if (id === 'piston-run' && crew[5] && f.lifts >= 2) crewNpc(world, crew[5], 13, 9, ['THE RAMS NEARLY HAD ME. TWICE. TAKE THE LIFT.']);
       // The camp, before and after the night; the crew on the Tower Lift's deck in the morning.

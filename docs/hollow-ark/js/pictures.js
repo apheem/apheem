@@ -407,6 +407,55 @@
       rect(g, 72, GROUND - 18, 8, 3, '#5fd4e8');
       spr(g, HA.art.hero.idle, 170, GROUND, 2);
     },
+    // The seed vault's box open in a ploughed field, and the first rows coming up green, two of them planting.
+    seeds(g, t) {
+      sky(g, DAY, GROUND);
+      hills(g, GROUND - 10, 6, '#3a5a3a', 11);
+      rect(g, 0, GROUND, W, H - GROUND, '#2e2418');
+      for (let x = 8; x < W; x += 9) {
+        const grown = 2 + ((x * 7) % 4);
+        rect(g, x, GROUND - grown, 1, grown, '#5a8a3a');
+        rect(g, x - 1, GROUND - grown, 3, 1, Math.floor(t / 30 + x) % 9 ? '#7ab04a' : '#9ad06a');
+      }
+      rect(g, 40, GROUND - 14, 26, 14, '#5a4a3a');
+      rect(g, 38, GROUND - 18, 30, 3, '#7a6a52');
+      rect(g, 44, GROUND - 10, 18, 2, '#a9b6cc');
+      spr(g, person('woken2', 'kneel'), 150, GROUND, 2);
+      spr(g, person('tamp', 'kneel'), 200, GROUND, 2, true);
+    },
+    // Dunn and his girl on the hillside at night, the sky full, one star brighter than the rest.
+    star(g, t) {
+      sky(g, NIGHT, GROUND);
+      stars(g, 90, 41, GROUND - 30, t);
+      const k = 0.6 + 0.4 * Math.sin(t * 0.06);
+      rect(g, 236, 26, 3, 3, '#fff0a8');
+      rect(g, 234, 27, 7, 1, 'rgba(255,240,168,' + k + ')');
+      rect(g, 237, 24, 1, 7, 'rgba(255,240,168,' + k + ')');
+      hills(g, GROUND - 4, 8, '#141c18', 6);
+      rect(g, 0, GROUND, W, H - GROUND, '#10160f');
+      spr(g, person('woken3'), 150, GROUND, 2);
+      sil(g, 174, GROUND, 18, '#4a5a6a', { child: true, arm: true, rim: '#8a9aaa', rimSide: 1 });
+    },
+    // The Cold Store: Odell at his terminal, still waiting, and his boots set down beside him in their box.
+    odell(g, t) {
+      rect(g, 0, 0, W, H, '#0b1018');
+      for (let i = 0; i < 40; i++) rect(g, (i * 37) % W, (i * 53) % GROUND, 1, 1, '#2a3a4a');
+      rect(g, 0, GROUND, W, H - GROUND, '#141c26');
+      rect(g, 180, GROUND - 40, 34, 26, '#1a2230');
+      rect(g, 183, GROUND - 37, 28, 18, Math.floor(t / 50) % 2 ? '#b8f4ff' : '#8ad0e0');
+      rect(g, 186, GROUND - 33, 18, 1, '#10121c');
+      rect(g, 186, GROUND - 29, 12, 1, '#10121c');
+      rect(g, 194, GROUND - 14, 4, 14, '#3a4258');
+      rect(g, 160, GROUND - 12, 18, 3, '#3a4258');
+      rect(g, 162, GROUND - 9, 2, 9, '#3a4258');
+      rect(g, 174, GROUND - 9, 2, 9, '#3a4258');
+      sil(g, 169, GROUND - 12, 30, '#3a4656', { sit: true, rim: '#7a8aa0', rimSide: 1 });
+      rect(g, 120, GROUND - 8, 22, 8, '#5a4a3a');
+      rect(g, 122, GROUND - 14, 7, 6, '#6c7894');
+      rect(g, 132, GROUND - 14, 7, 6, '#6c7894');
+      rect(g, 122, GROUND - 9, 9, 2, '#3a4258');
+      rect(g, 132, GROUND - 9, 9, 2, '#3a4258');
+    },
     // Shim at the bottom of a shaft in the Warrens, looking up.
     shaft(g, t) {
       rect(g, 0, 0, W, H, '#0b0d14');
@@ -416,6 +465,39 @@
       rect(g, 0, GROUND, W, H - GROUND, '#10121c');
       spr(g, person('shim'), 154, GROUND, 2);
       lantern(g, 120, GROUND - 10);
+    },
+    // Inside the keel tram in the tunnel: the lamps going by in the windows, and whoever is riding on the bench
+    // (opts.riders, 1 for the hero alone).
+    tram(g, t, o) {
+      g.translate(0, Math.floor(t / 7) % 5 === 0 ? 1 : 0);
+      rect(g, 0, -2, W, H + 2, '#2a1c10');
+      rect(g, 0, 10, W, 3, '#3a2818');
+      for (let i = 0; i < 4; i++) {
+        const x = 22 + i * 74;
+        rect(g, x - 2, 24, 56, 50, '#8a5a2b');
+        rect(g, x, 26, 52, 46, '#05060d');
+        rect(g, x, 62, 52, 1, '#141828');
+        const lx = (((i * 41 - t * 5) % 300) + 300) % 300;
+        if (lx < 52) rect(g, x + lx, 44, Math.min(10, 52 - lx), 2, '#ffd84d');
+      }
+      rect(g, 0, GROUND - 24, W, 8, '#5a4028');
+      rect(g, 0, GROUND - 16, W, 3, '#8a5a2b');
+      rect(g, 0, GROUND - 13, W, 13, '#3a2818');
+      rect(g, 0, GROUND, W, H - GROUND, '#1a1410');
+      const n = Math.max(1, o.riders || 1);
+      for (let i = 0; i < n; i++) {
+        const x = W / 2 + (i - (n - 1) / 2) * 34 + ((i * 7) % 5) - 2;
+        const child = i % 4 === 3;
+        // Sitting on the seat (its top is GROUND - 16): a sitter's body ends 27 (adult) or 21 (child) below the top.
+        const h = child ? 32 : 46;
+        sil(g, x, GROUND - 16 + h - (child ? 21 : 27), h, '#140e08', { sit: true, child, rim: '#d89a5a', rimSide: -1 });
+        rect(g, x - 7, GROUND - 16, 14, 3, '#140e08');
+        rect(g, x - 6, GROUND - 13, 3, 13, '#140e08');
+        rect(g, x + 3, GROUND - 13, 3, 13, '#140e08');
+      }
+      const sway = Math.round(Math.sin(t * 0.05) * 3);
+      rect(g, W / 2 + sway, 13, 1, 6, '#3a2818');
+      rect(g, W / 2 - 2 + sway, 19, 5, 4, '#ffd84d');
     },
   };
 

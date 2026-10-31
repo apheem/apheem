@@ -118,9 +118,11 @@
     if (n.state === 'hidden') return;
     if (n.state !== 'out' || n.carriedBy) return;
     // A companion walks a little behind the hero, on the floor, and catches up when left behind.
+    if (n.fadeIn > 0) n.fadeIn--;
     if (n.follow && !world.scene) {
       const want = p.x - p.facing * 14;
       if (Math.abs(want - n.x) > 10) n.homeX = HA.clamp(want, 8, world.room.pw - 16);
+      if (p.onGround && n.t % 15 === 0) catchUp(world, n);
     }
     const inScene = world.scene && world.scene.step && world.scene.step.walk === n;
     if (!inScene && !world.scene) {
@@ -136,6 +138,32 @@
     }
   }
 
+  // A companion left on another floor (the hero climbed, or swam) catches up out of sight: once the hero is on
+  // firm ground and they're off the screen, they step in behind the hero along the same floor.
+  function catchUp(world, n) {
+    const p = world.player;
+    const feet = p.y + p.h;
+    if (Math.abs(n.y + n.h - feet) < 12) return;
+    const c = world.cam;
+    if (n.x + n.w > c.x && n.x < c.x + HA.VIEW_W && n.y + n.h > c.y && n.y < c.y + HA.VIEW_H) return;
+    const room = world.room;
+    const R = HA.room;
+    const ty = Math.round(feet / 8);
+    const tx = Math.floor((p.x + p.w / 2) / 8);
+    const back = p.facing > 0 ? -1 : 1;
+    let best = tx;
+    for (let i = 1; i <= 6; i++) {
+      const x = tx + back * i;
+      if (x < 1 || x >= room.w - 1) break;
+      const under = room.tile(x, ty);
+      if (room.tile(x, ty - 1) !== R.EMPTY || room.tile(x, ty - 2) !== R.EMPTY || (under !== R.SOLID && under !== R.ONEWAY && under !== R.CRATE)) break;
+      best = x;
+    }
+    n.x = n.homeX = best * 8;
+    n.y = n.homeY = feet - n.h;
+    n.fadeIn = 20;
+  }
+
   function drawNpc(g, world, n, cam) {
     if (n.state === 'gone') return;
     const x = Math.round(n.x - cam.x);
@@ -149,6 +177,7 @@
     const cx = n.carriedBy ? Math.round(n.carriedBy.x + n.carriedBy.facing * 10 - cam.x) : x + 4;
     const cy = n.carriedBy ? Math.round(n.carriedBy.y + 4 - cam.y) : y + (n.kneel || n.sleeping ? n.sprite.h - frame.h + 1 : 0);
     g.save();
+    if (n.fadeIn > 0) g.globalAlpha = 1 - n.fadeIn / 20;
     g.translate(cx, cy);
     g.scale(n.facing || 1, 1);
     g.drawImage(frame.img, -Math.floor(frame.w / 2), 0);
@@ -767,6 +796,16 @@
         addStory(world, "MARA IS STILL ASLEEP IN 0418. I PROMISED I'D BE THERE WHEN SHE WOKE. HER POD WON'T THAW WITHOUT THE NAVIGATOR OR THE HELM KEY.");
         world.toast('JOURNAL UPDATED', 120);
       }
+      // Home by tram, before the climb (story/tram.js): a goodbye, once.
+      const f = world.state.flags;
+      if (f.tramWest && !f.tramEast && !f.maraBye) {
+        f.maraBye = true;
+        yield { wait: 30 };
+        yield { say: '', text: "I'M GOING UP TO THE MAN WITH THE KEY. THEN I'M COMING BACK FOR YOU.", color: VOICE };
+        yield { say: '', text: "DON'T WAKE UP WITHOUT ME.", color: VOICE };
+        addStory(world, "BEFORE THE CLIMB I WENT BACK UP TO 0418. I TOLD MARA I'D COME BACK WITH THE KEY.");
+        world.toast('JOURNAL UPDATED', 120);
+      }
     },
 
     // The first time the Steward speaks: over the Lockup's intercom, as the hero comes in. He's never named here.
@@ -965,6 +1004,12 @@
   // A lift or a hatch: each area's story decides whether it runs and what happens on the way. A link can name its
   // own scene; one to an area a later build adds says so instead.
   function useLink(world, link) {
+    // A way the story holds shut for now says why (shut: (state) => note or null).
+    const held = link.legend.shut && link.legend.shut(world.state);
+    if (held) {
+      world.toast(held, 150);
+      return;
+    }
     world.link = link;
     if (!HA.rooms.byId[link.legend.to]) {
       world.toast(link.legend.unbuilt + ' · COMING IN THE NEXT BUILD', 150);

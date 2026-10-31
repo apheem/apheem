@@ -84,8 +84,8 @@ const ballast = {
     await r.to('pump-gallery'); // Solder, and the Foam Sprayer
     await r.bulbs();
     await r.to('tank-farm');
-    await r.to('odell-workshop');
-    await r.do('PT.read()'); // the boots
+    await r.to('test-tank'); // up from Odell's Workshop
+    await r.do('PT.read("boots")');
     await r.to('silt-tank');
     await r.boss('silt-tank', undefined, { enter: 'PT.trigger(0)' }); // out over her water, and the shutters come down
     await r.to('valve-hall');
@@ -94,14 +94,15 @@ const ballast = {
     await r.do('PT.settle()');
     await r.do('PT.pace("solder", () => PT.scene() === "jammed")');
     await r.do('PT.settle()');
-    await r.do('PT.read("winch")');
+    await r.do('PT.read("winch")'); // and the tram home, to the sump
+    await r.to('warrens'); // the raid's news, Solder's, Flux's; then the tram waits
   },
 };
 
 const spine = {
   name: 'spine',
   async play(r) {
-    await r.to('spine-foot');
+    await r.to('spine-foot'); // east on the tram with the climbers (or to the Ballast stop, and through the pipes)
     await r.bulbs();
     await r.to('boiler-stair');
     await r.to('reactor-throat');
