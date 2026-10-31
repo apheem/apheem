@@ -323,5 +323,6 @@
   });
 
   S.scuttleRun = scuttleRun;
+  S.runClock = CLOCK;
   Object.assign(S.SCENES, SCENES);
 })(window.HA);

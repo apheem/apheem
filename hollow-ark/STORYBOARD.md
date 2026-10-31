@@ -947,6 +947,58 @@ How to build lock 1:
 - Make the station's east shutter a door whose `open` is `s.people.solder !== 'dead'`. Fill the trench with water (`~`) on entry when she's dead, the way the flood fills rooms.
 - Add the rooms to `rooms-check.js`'s expectations as usual, and give the Crash route in `playthrough-routes.js` a step through the pipes, since that route leaves Solder.
 
+### The run for the sleds, coming apart (3.11 design, Cody's note 13)
+
+Cody launched the pods ("TWENTY SECONDS YOU MAY NOT HAVE") and still found the run fast and easy. Measured: the shortest way from the sump to the sleds is about 500 tiles, about 55 seconds for a runner who knows the way (about 71 through the deep walls), against a clock of 4:30. The clock was five times what the run needs. The fix is a clock that bites, and a ship that looks and plays like it's falling apart.
+
+1. **The clock.** 2:40, from 4:30. Launching the pods costs 30 seconds, up from 20. A check (in `rooms-check.js`) works out the run's par from the maps, with the run's collapses in, and fails if the clock leaves less than half the par again, or more than twice it, after the pods.
+2. **Ways that change.** While the clock runs, parts of the run's rooms are not where they were: doors that follow `flags.running` (`wreck: 'hole'`, floor that is there until the run and gone in it; `wreck: 'beam'`, a girder or rack that's only there in the run). Each is drawn for what it is: the floor plates look cracked before they go, and a fallen girder looks like one. Coming into the room, the hero sees the dust still settling on each.
+   - **The Warrens:** a girder pile comes down across the hall, floor to ceiling, west of the old platforms. The way west is up the platforms and over it.
+   - **The Coolant Hall:** its floor gives way over the coolant, a long stretch west of the middle. The way across is the girders that fell into it, standing up out of the coolant.
+   - **The Cryo Bay:** the floor east of the cable pit goes too, so the pit is too wide to jump. A fallen pod rack lies across it.
+3. **The ship falling apart, everywhere on the run.** Fires on the floor in the Warrens, the Coolant Hall and the Thaw Corridor (they hurt, like the Stoker's). Sparks from cut cables. Cracks across the walls, plates hanging loose. The ceilings come down more often: every 80 frames, not 110.
+4. **What stays.** The bar under the clock still says which way. A fall, or the clock running out, still starts the run again from the sump with a full clock. The pods are still a choice.
+
+### The Counting House: the way to the first Warden (3.11 design, Cody's note 2)
+
+Cody: the way to the first Warden (the Bailiff) is too short and not built up. Today the hero follows the taken from the Warrens through the Lockup (two screens) straight into the Bailiff's Hall. The free space above the Lockup and the hall (200–280 × 0–46) takes one tall room between them.
+
+1. **The Counting House** (200, 0, 80x45; four screens). The Lockup's east end has a ladder up into it. The way through it climbs from the floor of the counting hall, where Wardens sort the taken into cages: desks, tally boards, an empty cage with a Hullfolk scarf in it. It goes up through the tiers to the cage rail that runs under the roof, then east along the rail, and down the cage chute at its east end into the Bailiff's Hall. Wardens on every tier (walkers, pickers), and a turret over the rail.
+2. **Seeing the Bailiff first.** Halfway up, through a grate in the floor of the rail, the hero sees Shim's cage being carried along under them, and down the chute. At the chute's top they look down into the hall and see the Bailiff below, waiting by the cage. Then they drop in.
+3. **The Lockup's way east into the hall is the Bailiff's own door,** shut from his side until he falls. The way back after is through it.
+4. **A log** on the counting floor: the Wardens' tally of the night's raid ("COLLECTED: 3. SMALL: 1. HEALTHY: 3. TO THE GARDENS: 3."), which is how the hero first sees that the taken go up to the Gardens.
+
+### The way into the Gardens (3.11 design, Cody's note 2)
+
+Cody: the way to the Gardens is too short and not built up enough. The Gardens are where the taken are hidden, so getting there should feel like an achievement. Today the Bailiff's Hall's east door opens straight onto the Root Cellar, and the cradles with the taken are in that first room.
+
+This is the reading built here; Cody may mean only the walk there. The taken are moved one room deeper, so the hero earns them.
+1. **The Root Cellar becomes the way in:** roots through the floor plates, Warden pickers, the first spore pods, Wick's first barks about sneaking up as a girl. Its west end is where the cradles were: now there's a sealed hatch down, its wheel rusted shut, and drag marks going to it.
+2. **The Cradle Vault** (a new room under the Gardens, below the Root Cellar): reached by going round, up the Garden Lift's stairwell and down through the Seed Vault's hatch, or a new way down at the Root Cellar's east end. The cradles are here, in the dark, with the taken asleep in them. Wick's scene at the cradles plays here.
+3. **Getting there takes the hero through two or three rooms of the Gardens first,** so the taken are found partway in, not on the doorstep, and the climb to open the seals still follows.
+
+Cody's answer decides whether this is built as written, or whether it's the walk to the Gardens that should be longer (in which case the Counting House above covers part of it, and the Root Cellar gets an approach room of its own).
+
+### Gasket's trust (3.11 design, Cody's notes 1 and 8)
+
+Cody: old Gasket should slowly come to trust the hero, as one of the story's character threads, and after his talk about the outside world at the Crew Camp, there should be times the hero could lose him.
+
+**The thread.** Gasket's trust (`s.gasket`, 0 to 5) grows with what the hero does for the village, and shows in what he says and does, never as a number. Each step is a short scene at home, most of them optional (talk to him).
+1. **The wrench** (0, built): "ONE NIGHT, SLEEPER. TOUCH NOTHING."
+2. **Shim brought back** (+1, after the Bailiff): he puts the wrench down for good. "I'VE BEEN WAITING FOR YOU TO TURN INTO WHAT THE LAST ONE WAS. YOU HAVEN'T YET."
+3. **The taken home** (+1, after the cradles; +1 more if the Pruner was released): he shows the hero his brother Cleat's marks on the wall, a count of days. "HE COUNTED THE DAYS TILL SOMEONE CAME DOWN TO HELP. HE STOPPED AT NINE HUNDRED."
+4. **The lantern** (+1 if it stays with the fire, choice 4): "WICK'S LIGHT STAYS HOME. SO DO YOU, IF YOU WANT."
+5. **The plan** (built): he climbs too, whatever his knees say.
+6. **The Crew Camp** (built, his talk about the outside world): with trust 3 or more he adds what he's never told anyone: he's never seen a sky, and he wants to see one before he dies. "IF I DON'T MAKE IT TO THE GROUND, YOU TELL THEM I WANTED TO."
+
+**Times the hero could lose him** (after the Crew Camp):
+- **The Barracks:** the Steward's men cut the crew off on the stair. Gasket is pinned behind a shutter with Bloomsworn coming through. The hero has a short time to reach the shutter's wheel. Too slow, and he's hurt: he limps from then on, and on the run he's slower to the sleds.
+- **The Helm:** in the Steward's last phase he takes Gasket at the rail. The hero has to break off the fight to pull him back, or keep fighting and lose him.
+- **The run for the sleds:** a hurt Gasket falls behind at the Cold Store's lift. The hero can go back for him, which costs time on the clock, or run on.
+- If he's lost, `s.people.gasket = 'dead'`, and the epilogues that have him lighting the lights or counting at lights-out say what happened instead.
+
+Each of these gets its own design pass before it's built, with the endings' lines.
+
 ---
 
 ## Open questions for Cody

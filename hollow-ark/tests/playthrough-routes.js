@@ -144,6 +144,10 @@ const scuttle = {
     await r.do('PT.read("podLaunch")');
     await r.to('cryo-bay');
     await r.do('PT.goCol(22)');
+    // How much of the clock a runner who knows the way, and stops for the pods, has left at the sleds.
+    const left = await r.get('Math.round(HA.ui.world.runLeft / 60)');
+    const clock = await r.get('Math.round(HA.story.runClock / 60)');
+    r.log.push(`the run: ${left}s of ${clock}s left at the sleds`);
     await r.do('PT.walk("left", () => PT.scene() === "sledsAway")');
     await r.do('PT.settle()');
   },
