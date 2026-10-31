@@ -676,6 +676,18 @@ async function play(browserType, url, label) {
       out.wall = !!s.flags.aisleWall;
       HA.debug.step(100, { left: true });
       out.aisle = w().def.id;
+      // The aisle gate (the Watch Gallery, 3.10): shut, so the hero can't walk west to the Drain; its lever in the
+      // watch room over the Drain opens it.
+      at('long-aisle', 8, 18);
+      HA.debug.step(80, { left: true });
+      out.gate = { shut: w().def.id === 'long-aisle', ladder: w().links.some((l) => l.legend.to === 'watch-gallery') };
+      at('watch-gallery', 4, 18);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      out.gate.flag = !!s.flags.aisleGate;
+      at('long-aisle', 8, 18);
+      HA.debug.step(80, { left: true });
+      out.gate.through = w().def.id;
       // The Drain: Solder's toolbag by the grate, and the grate down to the Ballast (Phase 3.4).
       at('drain', 19, 18);
       HA.debug.step(1, { up: true });
@@ -734,6 +746,7 @@ async function play(browserType, url, label) {
     expect(cl.tallyIntro === 'tallyIntro' && cl.fight.fighting && cl.fight.music === 'tallyman' && cl.fight.opened && cl.fight.struck === 40 && cl.fight.after === 'tallymanDefeated', `the Tallyman's fight went wrong (${JSON.stringify(cl.fight)})`);
     expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
     expect(cl.charges === 3 && cl.wall && cl.aisle === 'long-aisle', `the Breach Charges did not open the cracked wall (${cl.charges}, ${cl.wall}, ${cl.aisle})`);
+    expect(cl.gate.shut && cl.gate.ladder && cl.gate.flag && cl.gate.through === 'drain', `the aisle gate and its lever in the Watch Gallery went wrong (${JSON.stringify(cl.gate)})`);
     expect(/BALLAST/.test(cl.toolbag) && cl.grate === 'ballast-intake', `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
     expect(/TRAVEL/.test(cl.podPrompt) && /warrens/.test(cl.travel) && cl.travelled === 'warrens' && cl.flux, `travel between pods, or Flux at home, went wrong (${JSON.stringify(cl)})`);
     expect(cl.boatLose.lose === 'EVERYONE ELSE, AND MARA' && /ENDS HERE/.test(cl.boatLose.note) && cl.ending.mode === 'title' && cl.ending.seen.includes('deserter'), `taking the boat did not play the Deserter ending to the title (${JSON.stringify(cl.ending)})`);
@@ -816,7 +829,14 @@ async function play(browserType, url, label) {
       out.foam = (w().foam || []).length && w().room.tile(10, 19) === HA.room.FOAM;
       HA.debug.step(80, { right: true });
       out.thrown = p.x < 13 * 8;
+      // The ladder at the workshop's far end goes up into Odell's Test Tank; the boots are at the end of its channel.
       HA.debug.goto('odell-workshop', 36, 18);
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      HA.debug.step(40);
+      out.tank = w().def.id;
+      HA.debug.goto('test-tank', 77, 18);
       HA.debug.step(5);
       HA.debug.step(1, { up: true });
       talkThrough();
@@ -960,7 +980,7 @@ async function play(browserType, url, label) {
     });
     expect(bl.into.room === 'ballast-intake' && bl.into.area === 'FLOODED BALLAST' && bl.into.music === 'ballast' && /SOLDER/.test(bl.into.lead), `the Drain's grate did not lead into the Ballast (${JSON.stringify(bl.into)})`);
     expect(bl.found.foam && bl.found.back && bl.found.walk && bl.walk.barks >= 6 && bl.walk.door === 'workshopDoor', `finding Solder, or the walk, went wrong (${JSON.stringify(bl.found)}, ${JSON.stringify(bl.walk)})`);
-    expect(bl.foam && bl.thrown && bl.boots && bl.sank, `the Foam Sprayer, the silt or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.boots}, ${bl.sank})`);
+    expect(bl.foam && bl.thrown && bl.tank === 'test-tank' && bl.boots && bl.sank, `the Foam Sprayer, the silt, the Test Tank or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.tank}, ${bl.boots}, ${bl.sank})`);
     expect(!bl.atDoor.fighting && !bl.atDoor.shut, `the Silt Mother's fight started from the door, or her shutters were already down (${JSON.stringify(bl.atDoor)})`);
     expect(bl.fell.room === 'valve-hall' && !bl.fell.flooding && bl.fell.solder && bl.fell.level, `a fall in the flood did not come back to the Valve Hall with Solder (${JSON.stringify(bl.fell)})`);
     expect(bl.fighting && /bite/.test(bl.states) && /lash/.test(bl.states) && /spit/.test(bl.states) && bl.underwater && bl.drained && bl.defeated === 'siltMotherDefeated', `the Silt Mother's fight went wrong (${JSON.stringify(bl)})`);

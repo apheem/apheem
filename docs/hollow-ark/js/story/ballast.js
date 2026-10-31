@@ -18,6 +18,10 @@
   const LIMP = 0.8; // Solder's pace, at its best
 
   Object.assign(S.LOGS, {
+    trials: {
+      title: 'ODELL · BOOT TRIALS',
+      text: "TRIAL 41: HELD AT NINE FATHOMS. TRIAL 42: THE SUIT HELD. I DIDN'T. TRIAL 43: WITH THE NEW SEALS, BOTH OF US HELD.",
+    },
     valves: {
       title: 'BALLAST CONTROL · YEAR 312',
       text: 'VALVES 1-9 OPENED ON NAVIGATOR AUTHORITY. NO HUMAN COMMAND RECEIVED.',
@@ -232,7 +236,7 @@
       world.save();
     },
 
-    // Odell's pressure boots, at the far end of his workshop.
+    // Odell's pressure boots, at the far end of his test tank, over the workshop.
     *boots(world) {
       const s = world.state;
       if (s.abilities.boots) {
@@ -243,9 +247,9 @@
       yield me("I'LL GIVE THEM BACK. I KNOW WHERE HE'S SITTING.");
       s.abilities.boots = true;
       HA.audio.play('pickup');
-      world.burst(36 * 8 + 4, 17 * 8, ['#ffb84d', '#6fd0b8', '#ffffff'], 18, 1.6);
+      world.burst(world.player.x + 4, world.player.y + 4, ['#ffb84d', '#6fd0b8', '#ffffff'], 18, 1.6);
       world.toast('PRESSURE BOOTS · YOU SINK IN WATER, AND JUMP HIGH OFF THE BOTTOM', 300);
-      S.addStory(world, "ODELL'S PRESSURE BOOTS WERE IN HIS WORKSHOP, IN A BOX MARKED 'IF FOUND, RETURN TO ODELL'. NOW I SINK.");
+      S.addStory(world, "ODELL'S PRESSURE BOOTS WERE AT THE END OF HIS TEST TANK, OVER HIS WORKSHOP, IN A BOX MARKED 'IF FOUND, RETURN TO ODELL'. NOW I SINK.");
       S.setLead(world, 'GO DOWN THROUGH THE EAST TANK TO THE SILT TANK');
       world.save();
     },

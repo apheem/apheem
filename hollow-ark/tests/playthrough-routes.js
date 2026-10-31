@@ -84,8 +84,8 @@ const ballast = {
     await r.to('pump-gallery'); // Solder, and the Foam Sprayer
     await r.bulbs();
     await r.to('tank-farm');
-    await r.to('odell-workshop');
-    await r.do('PT.read()'); // the boots
+    await r.to('test-tank'); // up from Odell's Workshop
+    await r.do('PT.read("boots")');
     await r.to('silt-tank');
     await r.boss('silt-tank', undefined, { enter: 'PT.trigger(0)' }); // out over her water, and the shutters come down
     await r.to('valve-hall');

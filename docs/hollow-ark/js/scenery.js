@@ -1618,6 +1618,7 @@
       if (s.kind === 'vats') drawBubbles(g, world, s, cam);
       if (s.kind === 'odell') drawOdell(g, world, s, cam);
       if (s.kind === 'toolbag' && !world.state.flags.toolbag) drawToolbag(g, s, cam);
+      if (s.kind === 'lever') drawSwitch(g, world, { x: s.x * 8, y: s.y * 8 - 8, legend: { crane: s.flag } }, cam);
       if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
       if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
       // Solder's tools at the Crew Camp: only if she came up with the crew (story/bench.js).
@@ -2088,7 +2089,8 @@
     for (let ty = 0; ty < m.from.h / 8; ty++) for (let tx = 0; tx < m.from.w / 8; tx++) containerCell(g, x + tx * 8, y + ty * 8, tx, ty, cells, () => true, HAZARD);
   }
 
-  // A crane switch on the wall: a lever, up or down, and a lamp that blinks while the crane moves.
+  // A crane switch on the wall: a lever, up or down, and a lamp that blinks while the crane moves. A lever that only
+  // a story scene throws (scenery `lever`, with the flag it sets) looks the same.
   function drawSwitch(g, world, sw, cam) {
     const x = Math.round(sw.x - cam.x);
     const y = Math.round(sw.y - cam.y);

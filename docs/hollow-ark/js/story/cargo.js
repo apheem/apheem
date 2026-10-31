@@ -33,6 +33,10 @@
       title: "THE STEWARD'S LISTS · YEARS 305-311",
       text: 'COLLECTED FROM THE WALLS. TO THE GARDENS: SORREL, TOLLER, MAVE, AND NINE MORE. TO THE GUARD, DOSED: BRAND, OWEN, FLUX. TO THE REACTOR, TO STOKE: ABEL.',
     },
+    watch: {
+      title: 'WATCH 4 · STANDING ORDERS',
+      text: "NOBODY THROUGH TO THE DRAIN WITHOUT A STEWARD'S MARK. SHOOT THE RATS. COUNT THE REST. THE GATE STAYS SHUT.",
+    },
   });
 
   Object.assign(S.PEOPLE, {
@@ -239,6 +243,27 @@
     },
 
     // The Drain: Solder's toolbag, by the grate she levered up.
+    // The Long Aisle's gate (the Watch Gallery, STORYBOARD.md "New rooms on the main path"): shut, until the hero
+    // works its lever from the watch room above.
+    *aisleShut(world) {
+      S.think(world, "THE AISLE'S GATED OFF. THERE'S A LADDER UP, BACK THERE.");
+    },
+    *aisleGate(world) {
+      const f = world.state.flags;
+      if (f.aisleGate) {
+        yield me("THE LEVER'S DOWN. THE AISLE GATE IS OPEN.");
+        return;
+      }
+      f.aisleGate = true;
+      HA.audio.play('switch');
+      yield { wait: 20 };
+      HA.audio.play('shutter');
+      world.shake(1.5);
+      yield me('BELOW ME, THE AISLE GATE GRINDS OPEN.');
+      S.addStory(world, "THE STEWARD'S MEN WATCHED THE LONG AISLE FROM A GALLERY OVER IT, AND KEPT ITS GATE SHUT. I OPENED IT FROM THEIR WATCH ROOM.");
+      world.save();
+    },
+
     *toolbag(world) {
       const s = world.state;
       if (s.flags.toolbag) {

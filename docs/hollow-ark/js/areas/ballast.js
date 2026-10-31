@@ -3,7 +3,7 @@
 // water everywhere: deep water the suit can't take without Odell's pressure boots, and Bloom silt that burns.
 // Solder is down here with the tram motor. So is the Silt Mother.
 // Map legend beyond the shared one: s Bloom silt (see room.js)   u silt eel   i Bloom jelly   x drowned Warden
-// h the grate up to the Drain   N Solder   K Odell's pressure boots   W the Silt Tank's sluice gates   Z the
+// h the grate up to the Drain (or, in the Test Tank, the ladder down)   N Solder   K Odell's pressure boots   W the Silt Tank's sluice gates   Z the
 // shutters over them   M the Silt Mother   Y E the Valve Hall's doors   X the jammed hatch   T the ballast control terminal   V the winch
 // Z (in the tram station) the keel line's shutter, jammed when Solder was left   e the hatch down to the Overflow Pipes   a g their ladders up
 (function (HA) {
@@ -226,19 +226,20 @@
     ],
   });
 
-  // Odell's Workshop: his bench, and his pressure boots at the far end of a floor gone under the silt.
+  // Odell's Workshop: his bench, and at the far end of a floor gone under the silt, the ladder up to his test tank,
+  // where his pressure boots are. (Solder gave the hero her Foam Sprayer in the Pump Gallery.)
   HA.rooms.add({
     id: 'odell-workshop',
     area: 'ballast',
     name: "ODELL'S WORKSHOP",
     gx: 160,
     gy: 184,
-    abilities: { thruster: true, grapple: true },
-    legend: { K: { type: 'log', scene: 'boots', name: "Odell's pressure boots", needs: { foam: true } } },
+    abilities: { thruster: true, grapple: true, foam: true },
+    legend: { a: { type: 'hatch', up: true, to: 'test-tank', name: 'the ladder up' } },
     scenery: [
       { kind: 'workshop', x: 5, y: 18 },
       { kind: 'scrawl', x: 2, y: 5, text: 'ODELL · KNOCK' },
-      { kind: 'boots', x: 36, y: 18 },
+      { kind: 'stencil', x: 29, y: 15, text: 'TEST TANK ↑' },
       { kind: 'rust', n: 12 },
     ],
     map: [
@@ -260,11 +261,60 @@
       '......................................##',
       '......................................##',
       '......................................##',
-      '...S................................K.##',
+      '...S................................a.##',
       '########ssssssssssssssssssssssssssss####',
       '########ssssssssssssssssssssssssssss####',
       '########################################',
       '########################################',
+    ],
+  });
+
+  // Odell's Test Tank, over his workshop: his observation deck, and the trial channel he walked his boots down, under
+  // a low roof, over silt pits and through a pool. The boots are on their stand at the end.
+  HA.rooms.add({
+    id: 'test-tank',
+    area: 'ballast',
+    name: "ODELL'S TEST TANK",
+    gx: 160,
+    gy: 161,
+    abilities: { thruster: true, grapple: true, foam: true },
+    legend: {
+      h: { type: 'hatch', to: 'odell-workshop', open: () => true, name: 'the ladder down' },
+      T: { type: 'log', id: 'trials' },
+      K: { type: 'log', scene: 'boots', name: "Odell's pressure boots" },
+    },
+    scenery: [
+      { kind: 'pipes', y: 5 },
+      { kind: 'stencil', x: 4, y: 5, text: 'TEST TANK 2 · ODELL' },
+      { kind: 'stencil', x: 41, y: 15, text: 'TRIAL CHANNEL →' },
+      { kind: 'scrawl', x: 24, y: 16, text: 'TRIAL 43: BOTH OF US' },
+      { kind: 'boots', x: 77, y: 18 },
+      { kind: 'rust', n: 16 },
+    ],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
+      '##....................................##########################################',
+      '##....................................##########################################',
+      '##....................................##########################################',
+      '##....................................##########################################',
+      '##....................................##########################################',
+      '##....................................##########################################',
+      '##......========......................##########################################',
+      '##......................................########################################',
+      '##......................................########################################',
+      '##......................................########################################',
+      '##......................==========......########################################',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##..................................................................#~~~i~#...##',
+      '##..................T...............h...............................#~u~~~#..K##',
+      '##########################################ssssss####ssssss####sssss#############',
+      '##########################################ssssss####ssssss####sssss#############',
+      '################################################################################',
+      '################################################################################',
     ],
   });
 
