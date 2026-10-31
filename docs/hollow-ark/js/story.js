@@ -38,6 +38,10 @@
       title: "STEWARD'S ORDER · YEAR 309",
       text: 'ALL WARDENS ANSWER TO THE HELM KEY ALONE. HULLFOLK FOUND OUTSIDE THE WALLS ARE TO BE COLLECTED, NOT HARMED. THEY ARE NEEDED IN THE GARDENS.',
     },
+    tally: {
+      title: 'WARDEN TALLY · LIGHTS-OUT',
+      text: "COLLECTED FROM THE WALLS: ONE. SMALL. HEALTHY. NOT UP TO THE GARDENS WITH THE REST: HOLD IN THE BAILIFF'S HALL. THE SLEEPER WILL COME FOR IT.",
+    },
   };
 
   function readLog(world, log) {
@@ -850,6 +854,38 @@
     },
 
     // The first time the Steward speaks: over the Lockup's intercom, as the hero comes in. He's never named here.
+    // The Counting House (3.11), on the way to the Bailiff. His outer door is shut from his side.
+    *bailiffDoor(world) {
+      think(world, 'SHUT FROM THE FAR SIDE. THE WARDENS TOOK SHIM UP THE LADDER.');
+      setLead(world, 'CLIMB THE COUNTING HOUSE AFTER SHIM');
+    },
+    // Halfway up, Shim's cage goes by on the rail under the roof, east to the chute, and down it.
+    *cageRail(world) {
+      world.state.flags.cageRail = true;
+      const cage = { name: 'SHIM', shim: true, x: 4 * 8, y: 5 * 8, w: 24, h: 22, t: 0 };
+      cage.update = (w, self) => {
+        self.t++;
+        if (self.x < 46 * 8) self.x += 0.9;
+        else self.y += 2.2;
+        if (self.y > 44 * 8) w.actors = w.actors.filter((a) => a !== self);
+      };
+      cage.draw = (g, w, self, cam) => HA.scenery.drawCage(g, w, self, cam);
+      world.actors.push(cage);
+      HA.audio.play('crane');
+      bark(world, cage, 'SLEEPER! UP HERE!');
+      think(world, "SHIM. THEY'RE TAKING HIM ALONG THE RAIL.", 60);
+    },
+    // At the chute's mouth: what's waiting at the bottom.
+    *chuteTop(world) {
+      world.state.flags.chuteTop = true;
+      think(world, 'THE CHUTE DROPS INTO A HALL. SOMETHING BIG IS WAITING BY HIS CAGE.');
+    },
+    // Down the chute: from here the Bailiff's outer door opens from his side.
+    *chuteFoot(world) {
+      world.state.flags.chute = true;
+      setLead(world, 'GET SHIM BACK FROM THE BAILIFF');
+    },
+
     *intercom(world) {
       world.state.flags.intercom = true;
       yield { wait: 20 };
