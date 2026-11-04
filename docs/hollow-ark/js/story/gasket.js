@@ -20,8 +20,8 @@
   // people.gasket 'dead', and whoever is left speaks for the crew.
   S.gasketAlive = (s) => s.people.gasket !== 'dead';
   // Who speaks for the crew when he can't: the first climber still with them (Gasket, then Solder, Flux, Brine...),
-  // skipping anyone who has just spoken.
-  S.crewVoice = (s, not = []) => (S.towerCrew(s).find((id) => !not.includes(id)) || 'brine');
+  // skipping anyone who has just spoken. Never Cotter, dosed: he does what he's told (story/cotter.js).
+  S.crewVoice = (s, not = []) => S.towerCrew(s).find((id) => !not.includes(id) && id !== 'cotter') || 'brine';
   // Flux, once he's come home, is Flux, not the deserter.
   S.nameOf = (id) => (id === 'flux' ? 'FLUX' : S.PEOPLE[id] ? S.PEOPLE[id].name : id.toUpperCase());
 

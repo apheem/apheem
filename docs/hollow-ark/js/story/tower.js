@@ -36,8 +36,9 @@
     S.crewList(Object.assign({}, s, { mercy: 99 }))
       .slice(0, Math.max(2, s.crew || 0))
       .filter((id) => id !== 'gasket' || S.gasketAlive(s));
-  // Who fights what the hero became (Overgrown): Solder, or Old Gasket, or the first climber left.
-  const fighter = (s) => (s.people.solder === 'alive' ? 'solder' : crewOf(s)[0] || 'brine');
+  // Who fights what the hero became (Overgrown): Solder, or Old Gasket, or the first climber left. Not Cotter, if he's
+  // dosed: the hero gave him his orders (story/cotter.js).
+  const fighter = (s) => (s.people.solder === 'alive' ? 'solder' : crewOf(s).filter((id) => id !== 'cotter')[0] || 'brine');
   function place(world, id, tx, ty, lines) {
     const n = S.makeNpc(world, id, { x: tx * 8, y: FLOOR(ty) });
     if (id === 'flux') n.name = 'FLUX';

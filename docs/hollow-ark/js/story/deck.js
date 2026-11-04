@@ -22,6 +22,7 @@
       solder: ["SEALED SINCE YEAR 40, AND THE LIGHTS STILL WORK. SOMEBODY'S BEEN KEEPING HOUSE."],
       shim: ["I'M NOT SCARED. I'M JUST STANDING BEHIND GRANDAD."],
       shimAlone: ["I'M NOT SCARED. GRANDAD WASN'T."],
+      cotter: ["THE SEAL WON'T TAKE ME. I'LL HOLD THE LIFT.", "NOBODY'S TOLD ME TO STOP."],
     },
     after: {
       gasket: ["LISTEN TO IT. THE WHOLE SHIP'S GONE QUIET."],
@@ -31,7 +32,8 @@
   };
   function placeCrew(world, at, which) {
     const s = world.state;
-    return crewIds(s).map((id, i) => {
+    // Cotter, dosed, holds the lift: the seal won't take him in (story/cotter.js).
+    return crewIds(s).filter((id) => which !== 'after' || id !== 'cotter').map((id, i) => {
       const n = S.makeNpc(world, id, { x: at[i % at.length] * 8 + (i >= at.length ? 4 : 0), y: FLOOR(19) });
       if (id === 'flux') n.name = 'FLUX';
       n.state = 'out';

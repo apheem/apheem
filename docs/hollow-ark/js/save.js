@@ -52,7 +52,8 @@
       //   wick 'dead' · solder 'alive' | 'dead' · flux 'home' | 'stripped' · abel 'spared' | 'ended'
       //   gardener 'spared' | 'dosed' | 'passed' · steward 'spared' | 'ended' | 'counted'
       //   navigator (choice 14) 'core' | 'rest' | 'stay' · gasket 'dead' once lost in the Tower (story/gasket.js)
-      people: { wick: null, solder: null, flux: null, abel: null, gardener: null, steward: null, navigator: null, gasket: null },
+      //   cotter 'dry' | 'dosed' (Hasp's boy, story/cotter.js)
+      people: { wick: null, solder: null, flux: null, abel: null, gardener: null, steward: null, navigator: null, gasket: null, cotter: null },
       takenHome: 0, // how many of the taken came home from the Gardens (11 or 7)
       crew: 0, // how many Hullfolk climb with the hero (set at the Crew Camp)
       toldShim: null, // choice 4: 'truth' (everything), 'notScared' (only that she wasn't scared) or 'lie'

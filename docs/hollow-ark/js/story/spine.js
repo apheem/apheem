@@ -39,18 +39,22 @@
 
   // ---- The crew ----
   // How many climb is how far the Hullfolk trust the hero: one more than their Mercy, at least two, at most eleven.
-  // Eight is enough hands for any lift on the ship.
-  const crewOf = (s) => HA.clamp(s.mercy + 1, 2, 11);
+  // Eight is enough hands for any lift on the ship. Cotter, given his dose back in the Muster (story/cotter.js), climbs
+  // whatever the village thinks of the hero (he goes where the dose goes): one more pair of hands, past the trust.
+  // Settled after the climbers had gone (cotterLate), he goes home instead.
+  const dosed = (s) => (s.people.cotter === 'dosed' && !s.flags.cotterLate ? 1 : 0);
+  const crewOf = (s) => HA.clamp(s.mercy + 1, 2, 11) + dosed(s);
   // Each lift up the Spine takes this many hands to build: the Boiler Landing's, the Piston Landing's, the camp's.
   const HANDS = [0, 2, 5, 8];
   const WOKEN = ['toller', 'mave', 'pell', 'corra', 'dunn', 'iska', 'rook', 'hale', 'wren'];
   for (const [i, id] of WOKEN.entries()) S.PEOPLE[id] = { name: id.toUpperCase(), sprite: 'woken' + (1 + (i % 4)), away: true };
   for (const id of WOKEN) S.TALK[id] = {};
 
-  // Who climbs, in the order they count off: Gasket always, Solder if he lived, Flux if he came home, Brine, and
-  // as many of the woken as there are places left.
+  // Who climbs, in the order they count off: Gasket always, Cotter if he's dosed, Solder if he lived, Flux if he came
+  // home, Brine, and as many of the woken as there are places left.
   function crewList(s) {
     const out = ['gasket'];
+    if (dosed(s)) out.push('cotter');
     if (s.people.solder === 'alive') out.push('solder');
     if (s.people.flux === 'home') out.push('flux');
     out.push('brine');
@@ -59,7 +63,7 @@
     return out.slice(0, crewOf(s));
   }
   const leader = (s) => (s.people.solder === 'alive' ? 'SOLDER' : 'OLD GASKET');
-  const WORDS = ['NONE', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN'];
+  const WORDS = ['NONE', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE'];
 
   // ---- The crew's lift ----
   const STOPS = [
@@ -160,6 +164,7 @@
       flux: 'FATHER. HOME, MOSTLY.',
       brine: s.people.sorrel === 'home' ? 'SISTER. FOUND HER.' : 'SISTER. STILL LOOKING.',
       sorrel: 'COUNTS.',
+      cotter: "DOES AS HE'S TOLD.",
       toller: s.flags.stitched ? 'STITCHED.' : 'SORE ARM.',
       mave: 'WOKE UP. STAYING UP.',
       pell: 'AFRAID OF LIFTS.',

@@ -70,7 +70,7 @@
 
   // The people whose fates only matter where the story reached them. Sorrel's card is the ending's own.
   function others(s, id) {
-    const out = HA.story.sorrelCards(s, id).map((lines) => card(...lines));
+    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id)).map((lines) => card(...lines));
     const p = s.people;
     if (p.flux === 'home') out.push(card('FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'));
     if (p.flux === 'stripped') out.push(card('NO ONE SAW FLUX AGAIN.'));
@@ -84,16 +84,16 @@
     return out;
   }
 
-  // The Hullfolk: the Warrens' twenty, the taken who came home from the Gardens, and Sorrel, if she came home (or,
-  // left counting, if the ship came down whole: story/sorrel.js).
+  // The Hullfolk: the Warrens' twenty, the taken who came home from the Gardens, Sorrel, if she came home (or,
+  // left counting, if the ship came down whole: story/sorrel.js), and Cotter, if he came home (story/cotter.js).
   function hullfolkCount(s, id) {
-    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0) - (gasketAlive(s) ? 0 : 1);
+    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0) + (HA.story.cotterCounted(s) ? 1 : 0) - (gasketAlive(s) ? 0 : 1);
   }
 
   // ---- Who reached the new world, out of everyone who could have: the results after the credits ----
-  // The Warrens are twenty, plus all twelve of the taken: the eleven in the cradles, and Sorrel. The sleepers are
-  // every pod still in the stacks. Every number follows a line the epilogue says.
-  const HULLFOLK_MOST = 20 + 12;
+  // The Warrens are twenty, plus all twelve of the taken (the eleven in the cradles, and Sorrel), and Cotter, who went
+  // after them. The sleepers are every pod still in the stacks. Every number follows a line the epilogue says.
+  const HULLFOLK_MOST = 20 + 12 + 1;
   const SLEEPERS = 3986;
   function landed(s, id) {
     const pods = id === 'homecoming' || (id === 'crash' && s.podsLaunched > 0);
@@ -221,8 +221,8 @@
     },
 
     overgrown(s) {
-      // Solder, or Old Gasket, or whoever climbed with them and is left (story/tower.js).
-      const id = solderAlive(s) ? 'solder' : HA.story.towerCrew(s)[0] || 'brine';
+      // Solder, or Old Gasket, or whoever climbed with them and is left (story/tower.js); never Cotter, dosed.
+      const id = solderAlive(s) ? 'solder' : HA.story.towerCrew(s).filter((c) => c !== 'cotter')[0] || 'brine';
       const said = { solder: "HE DIDN'T TALK ABOUT IT.", gasket: "HE DIDN'T TALK ABOUT IT.", flux: "HE DIDN'T TALK ABOUT IT.", brine: "SHE DIDN'T TALK ABOUT IT.", sorrel: "SHE DIDN'T TALK ABOUT IT." }[id];
       return [
         card(HA.story.nameOf(id) + ' WALKED OUT OF THE HELM ALIVE.', said || 'NOBODY ASKED ABOUT IT.'),
