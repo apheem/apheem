@@ -17,6 +17,10 @@
   const TALLY = 'FIND THE TALLYMAN AT THE TOP OF THE SORTING FLOOR';
 
   Object.assign(S.LOGS, {
+    muster: {
+      title: 'MUSTER · DOSE BOOK',
+      text: 'EVERY HAND, EVERY SHIFT. A HAND THAT MISSES A DOSE STARTS TO REMEMBER. A HAND THAT REMEMBERS GOES OVER THE SIDE IN A LIFEBOAT, IF IT CAN FIND ONE.',
+    },
     charter: {
       title: 'COLONY CHARTER · ARTICLE 9',
       text: 'ON ARRIVAL, ALL SHIP SYSTEMS WILL BE RETIRED WITH THANKS AND BROKEN DOWN FOR THE FIRST CITY.',
@@ -160,11 +164,24 @@
         yield say('THE DESERTER', "...IT DOESN'T STOP.");
         yield say('THE PURSER', 'SENSIBLE.');
       }
+      // The Purser draws the bolt on his office door: the way back, without the Muster (3.12).
+      HA.audio.play('clamp');
+      yield say('THE PURSER', "I'VE DRAWN THE BOLT ON MY OFFICE DOOR. YOU'VE SEEN THE MUSTER ONCE. ONCE IS ENOUGH.");
       // The Purser knows where Solder went: past the Tallyman, which counts everything.
       yield say('THE PURSER', 'YOUR TINKER CAME THROUGH LAST NIGHT. THE TALLYMAN WILL HAVE COUNTED HIM. IT COUNTS EVERYTHING.');
       yield say('THE PURSER', 'ITS YARD IS AT THE TOP OF THE SORTING FLOOR. AND WHEN YOU WANT A WORD ABOUT THIS BOAT, I AM RIGHT HERE.');
       S.setLead(world, s.lead);
       world.save();
+    },
+
+    // The Muster's floor: the chairs the Steward's soldiers are dosed in (3.12).
+    *muster(world) {
+      world.state.flags.musterSeen = true;
+      S.think(world, 'CHAIRS IN A ROW, WITH STRAPS. THIS IS WHERE THEY DOSE THE SOLDIERS.', 240);
+    },
+    // The Purser's Office, from his side of the bolt.
+    *dockBolt(world) {
+      S.think(world, 'BOLTED FROM THE DOCK SIDE. THE PURSER LIKES HIS PRIVACY.', 200);
     },
 
     // Choice 7: the Purser's offer, by the last boat with a pilot's seat. It stands until the climb.

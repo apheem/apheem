@@ -228,6 +228,7 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 
 - **Old Gasket and Solder are men.** Their names read as men's names, so the game now calls them he. Gasket is Shim's grandad, Wick's father and Cleat's brother.
 - **The taken are found deeper in the Gardens.** The cradles aren't in the Root Cellar any more: the racks are empty, and the Wardens have hoisted the taken up and run the hoist up after them. Wick takes you up through the Gardens as far as the water works, where the cradles' air shows the way: up over the Spore Beds, to the old Nursery. Climb the Spore Beds alone, fight through the Nursery's potting floor and over its thorn pit, and find them. Send the hoist down for Wick. The Pruner's Seal Room is through a hatch under the Nursery, and the hoist is a shortcut down once it's been sent.
+- **Two more rooms on the main path.** In the Labyrinth, the Muster: east of the Armory, where the Steward's soldiers are dosed. Cross its pit of live grating on the harpoon's rings, walk the girder over the dosing chairs, and drop through its hatch into the Lifeboat Dock, since the Purser keeps his office door bolted. In the Ballast, the Pump Heads: Solder wedged the Pump Gallery's door behind him, so go up the Drain Shaft's wall and over the heads of the three great pumps, and down his wet ladder.
 
 ## 0.3.12: Cody's notes from playing 0.3.10
 

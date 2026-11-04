@@ -633,6 +633,12 @@ async function play(browserType, url, label) {
       HA.debug.step(30);
       out.hung = !!(p.grapple && p.grapple.phase === 'hang');
       HA.debug.step(10, { down: true });
+      // The Purser's Office door to the dock is bolted on the dock's side (3.12): the way in is the Muster, east of
+      // the Armory, and its hatch down into the dock.
+      at('pursers-office', 33, 18);
+      out.bolt = { shut: !w().doors.find((d) => d.id === 'dockBolt').open };
+      at('muster', 32, 18);
+      out.bolt.hatch = w().links.some((l) => l.legend.to === 'lifeboat-dock');
       // The Lifeboat Dock: the deserter, shaking. Choice 6: let him fly home.
       at('lifeboat-dock', 3, 18);
       HA.debug.step(80, { right: true });
@@ -640,6 +646,8 @@ async function play(browserType, url, label) {
       talkThrough();
       out.deserterLose = choose(0);
       out.fluxFate = { flux: s.people.flux, coldOpen: !!s.flags.coldOpen, thruster: s.abilities.thruster, lead: s.lead };
+      // The Purser drew his bolt in the scene: the office is the way back.
+      out.bolt.purser = s.journal.talk.some((x) => /DRAWN THE BOLT/.test(x.text));
       // The Purser's boat: not yet.
       const purser = w().npcs.find((n) => n.id === 'purser');
       p.x = purser.x + 12;
@@ -732,6 +740,7 @@ async function play(browserType, url, label) {
       // Travel: at a pod, the map rings the others; picking one goes there.
       s.rested.warrens = true;
       at('pursers-office', 8, 18);
+      out.bolt.open = w().doors.find((d) => d.id === 'dockBolt').open;
       HA.debug.step(1, { up: true });
       HA.debug.step(100);
       out.podPrompt = w().near && w().near.label;
@@ -771,6 +780,7 @@ async function play(browserType, url, label) {
     expect(/SWITCH/.test(cl.switchPrompt) && cl.craneMoving && cl.cranes.a && cl.cranes.corridor && cl.cranes.hole && cl.cranes.b && cl.cranes.wayOut, `the Stacks' cranes did not move their stacks (${JSON.stringify(cl.cranes)})`);
     expect(cl.chalk === 'chalkStops' && cl.belt > 10, `the Sorting Floor's chalk or belts went wrong (${cl.chalk}, ${cl.belt})`);
     expect(cl.harpoon && cl.hung, `the Grapple Harpoon did not pull the hero up to the Armory's ring (${cl.harpoon}, ${cl.hung})`);
+    expect(cl.bolt.shut && cl.bolt.hatch && cl.bolt.purser && cl.bolt.open, `the dock's bolt from the Purser's Office, or the Muster's hatch, went wrong (${JSON.stringify(cl.bolt)})`);
     expect(cl.deserter === 'deserter' && /BLOOMFIRE/.test(cl.deserterLose) && cl.fluxFate.flux === 'home' && cl.fluxFate.coldOpen && !cl.fluxFate.thruster && /COLD STORE/.test(cl.fluxFate.lead), `choice 6 went wrong (${JSON.stringify(cl)})`);
     expect(cl.boat === 'STAY/TAKE THE BOAT', `the Purser did not offer the boat (${cl.boat})`);
     expect(cl.ice && /READ/.test(cl.odellPrompt) && cl.odell.thruster === 'odell' && /TALLYMAN/.test(cl.odell.lead) && cl.odell.music === 'coldStore' && cl.coldLift === 'coolant-hall', `Odell, his pack or the cold lift went wrong (${JSON.stringify(cl)})`);
@@ -835,11 +845,20 @@ async function play(browserType, url, label) {
       talkThrough();
       HA.debug.step(10);
       out.into = { room: w().def.id, area: w().area.name, music: HA.music.playing, lead: s.lead };
+      // The Pump Gallery's door from the Intake is wedged until Solder is found (3.12): the way to him is over the
+      // Pump Heads and down his ladder.
+      HA.debug.goto('ballast-intake', 33, 41);
+      HA.debug.step(5);
+      out.wedge = { shut: !w().doors.find((d) => d.id === 'wedge').open };
+      HA.debug.goto('pump-heads', 36, 18);
+      HA.debug.step(5);
+      out.wedge.ladder = w().links.some((l) => l.legend.to === 'pump-gallery');
       // 1. Solder, with the motor: the toolbag back, the Foam Sprayer, and the walk begins.
       HA.debug.goto('pump-gallery', 4, 18);
       HA.debug.step(5);
       talkThrough();
       out.found = { foam: p.weapons.some((x) => x.id === 'foam'), back: !!s.flags.toolbagBack, walk: !!s.flags.solderWalk };
+      out.wedge.open = !!HA.rooms.byId['ballast-intake'].legend.D.open(s);
       // 2. The walk along the Tank Farm, and Solder's goodbye at the workshop door.
       HA.debug.goto('tank-farm', 2, 41);
       HA.debug.step(5);
@@ -1032,6 +1051,7 @@ async function play(browserType, url, label) {
       return out;
     });
     expect(bl.into.room === 'ballast-intake' && bl.into.area === 'FLOODED BALLAST' && bl.into.music === 'ballast' && /SOLDER/.test(bl.into.lead), `the Drain's grate did not lead into the Ballast (${JSON.stringify(bl.into)})`);
+    expect(bl.wedge.shut && bl.wedge.ladder && bl.wedge.open, `the Pump Gallery's wedged door, or the way round over the Pump Heads, went wrong (${JSON.stringify(bl.wedge)})`);
     expect(bl.found.foam && bl.found.back && bl.found.walk && bl.walk.barks >= 6 && bl.walk.door === 'workshopDoor', `finding Solder, or the walk, went wrong (${JSON.stringify(bl.found)}, ${JSON.stringify(bl.walk)})`);
     expect(bl.foam && bl.thrown && bl.tank === 'test-tank' && bl.boots && bl.sank, `the Foam Sprayer, the silt, the Test Tank or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.tank}, ${bl.boots}, ${bl.sank})`);
     expect(!bl.atDoor.fighting && !bl.atDoor.shut, `the Silt Mother's fight started from the door, or her shutters were already down (${JSON.stringify(bl.atDoor)})`);

@@ -157,6 +157,11 @@
 
   // ---- The scenes ----
   const SCENES = {
+    // The Pump Gallery's door from the Intake, wedged from its side (3.12).
+    *wedged(world) {
+      S.think(world, "WEDGED SHUT FROM THE OTHER SIDE. SOLDER'S CHALK GOES UP THE WALL.", 220);
+    },
+
     // 1. Found: Solder, by Pump 3, with the motor and a leg that won't hold him.
     *found(world) {
       const s = world.state;
@@ -170,6 +175,7 @@
       yield say('SOLDER', 'TOOK YOU LONG ENOUGH. HELP ME CARRY THIS.');
       yield me('THE TRAM MOTOR. AND HIS LEG, OUT STRAIGHT IN FRONT OF HIM.');
       yield say('SOLDER', 'THE LADDER WAS WET. THE LEG LOST. THE MOTOR WAS FINE, SO THAT IS SOMETHING.');
+      yield say('SOLDER', "I WEDGED THE INTAKE DOOR, FOR THE EELS. KICK THE WEDGE OUT ON YOUR WAY PAST.");
       if (s.flags.toolbag) {
         yield me('I GIVE HIM THE TOOLBAG.');
         yield say('SOLDER', '...YOU CARRIED MY BAG ALL THE WAY DOWN HERE.');

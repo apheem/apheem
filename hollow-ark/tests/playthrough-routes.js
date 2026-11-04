@@ -53,7 +53,7 @@ const cargo = {
     await r.do('PT.flip("craneB")');
     await r.to('armory');
     await r.do('PT.take("harpoon")');
-    await r.to('lifeboat-dock'); // the deserter
+    await r.to('lifeboat-dock'); // through the Muster and down its hatch (the office door is bolted): the deserter
     await r.do('PT.talk("purser")');
     // With Flux's Bloomfire the Yard is in reach at once, and the Cold Store's ice waits for a Breach Charge.
     const bloomfire = (await r.get('HA.ui.world.state.abilities.thruster')) === 'bloomfire';
@@ -82,7 +82,8 @@ const cargo = {
 const ballast = {
   name: 'ballast',
   async play(r) {
-    await r.to('pump-gallery'); // Solder, and the Foam Sprayer
+    await r.to('pump-heads'); // the Pump Gallery's door from the Intake is wedged: round over the pump heads
+    await r.to('pump-gallery'); // down Solder's ladder: Solder, and the Foam Sprayer
     await r.bulbs();
     await r.to('tank-farm');
     await r.to('test-tank'); // up from Odell's Workshop
