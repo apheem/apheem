@@ -120,7 +120,7 @@
     if (n.alert > 0) n.alert--;
     const p = world.player;
     if (n.state === 'hidden') return;
-    if (n.state !== 'out' || n.carriedBy) return;
+    if (n.state !== 'out' || n.carriedBy || n.lying) return;
     // A companion walks a little behind the hero, on the floor, and catches up when left behind.
     if (n.fadeIn > 0) n.fadeIn--;
     if (n.follow && !world.scene) {
@@ -214,6 +214,17 @@
     const x = Math.round(n.x - cam.x);
     const y = Math.round(n.y - cam.y);
     if (n.state === 'hidden') return; // hiding: only their eyes show, in the doorways (see scenery.js)
+    if (n.lying) {
+      // laid on the floor, eyes shut, head toward where they faced (Old Gasket, fallen: story/gasket.js)
+      const f = n.sprite.blink;
+      g.save();
+      const d = n.facing || 1;
+      g.translate(x + 4, y + n.h);
+      g.rotate((d * Math.PI) / 2);
+      g.drawImage(f.img, d > 0 ? -f.w : 0, -Math.floor(f.h / 2));
+      g.restore();
+      return;
+    }
     let frame = n.sprite.idle;
     if (n.walking) frame = Math.floor(n.t / 8) % 2 ? n.sprite.walk : n.sprite.idle;
     else if (n.sleeping) frame = n.sprite.sleep;

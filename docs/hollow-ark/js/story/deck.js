@@ -21,6 +21,7 @@
       gasket: ["GO ON. WE'LL KEEP THE LIFT, LIKE WE KEPT THE OTHER ONE."],
       solder: ["SEALED SINCE YEAR 40, AND THE LIGHTS STILL WORK. SOMEBODY'S BEEN KEEPING HOUSE."],
       shim: ["I'M NOT SCARED. I'M JUST STANDING BEHIND GRANDAD."],
+      shimAlone: ["I'M NOT SCARED. GRANDAD WASN'T."],
     },
     after: {
       gasket: ["LISTEN TO IT. THE WHOLE SHIP'S GONE QUIET."],
@@ -35,7 +36,8 @@
       if (id === 'flux') n.name = 'FLUX';
       n.state = 'out';
       n.facing = which === 'after' ? -1 : 1;
-      n.lines = LINES[which][id] || [which === 'after' ? "WE'RE GOING IN. WE'RE ACTUALLY GOING IN." : "WE'LL BE HERE."];
+      const key = id === 'shim' && which === 'lift' && !S.gasketAlive(s) ? 'shimAlone' : id;
+      n.lines = LINES[which][key] || [which === 'after' ? "WE'RE GOING IN. WE'RE ACTUALLY GOING IN." : "WE'LL BE HERE."];
       n.talkable = (w, self) => self.state === 'out';
       if (id === 'shim' && s.toldShim === 'lie') n.lantern = true;
       world.npcs.push(n);
@@ -85,7 +87,7 @@
       const f = s.flags;
       HA.audio.play('lift');
       if (!f.deckDown) {
-        yield say('OLD GASKET', 'EVERYONE ON. NOBODY STAYS UP HERE WITH THE ALARMS.');
+        yield say(S.nameOf(S.crewVoice(s)), 'EVERYONE ON. NOBODY STAYS UP HERE WITH THE ALARMS.');
         yield say('THE WARDENS', 'WE WILL HOLD THE DOORS. GO DOWN.', COUNT);
         world.npcs.forEach((n, i) => (n.homeX = (69 + (i % 6) * 1.4) * 8));
         yield* walkTo(world.npcs, 70);
@@ -108,7 +110,7 @@
       yield { fade: 'in', frames: 40 };
       yield me('DOWN, NOT OUT. LIFT B WENT FARTHER DOWN THAN THE SPINE DOES.');
       yield me('THE ALARMS WERE STILL GOING. DOWN HERE THEY SOUNDED A LONG WAY OFF.');
-      yield say(s.people.solder === 'alive' ? 'SOLDER' : 'OLD GASKET', 'THE NAVIGATION DECK. SEALED IN YEAR 40. NOBODY ALIVE HAS SEEN IT.');
+      yield say(s.people.solder === 'alive' ? 'SOLDER' : S.nameOf(S.crewVoice(s)), 'THE NAVIGATION DECK. SEALED IN YEAR 40. NOBODY ALIVE HAS SEEN IT.');
       S.addStory(world, 'LIFT B TOOK ALL OF US DOWN UNDER THE HELM, TO THE NAVIGATION DECK. NOBODY HAD BEEN DOWN THERE SINCE YEAR 40.');
       S.setLead(world, 'GO THROUGH THE SEAL');
       world.save();
@@ -136,7 +138,7 @@
       world.shake(2);
       world.refreshMusic();
       yield { wait: 40 };
-      yield say('OLD GASKET', 'ONE. THAT MEANS YOU.');
+      yield say(S.nameOf(S.crewVoice(s)), 'ONE. THAT MEANS YOU.');
       if (s.people.solder === 'alive') yield say('SOLDER', "IT WON'T COUNT THE REST OF US. GO ON. WE'LL KEEP THE LIFT.");
       if (s.flags.shimWith) yield say('SHIM', 'YOU HAVE TO COME BACK UP AFTER. YOU HAVE TO.');
       yield me("'THE SHIP KNOWS WHO'S CLEAN.' SOMEONE SCRAWLED THAT ON A WALL IN THE GARDENS.");
@@ -242,17 +244,19 @@
       const crew = placeCrew(world, SPHERE_AT, 'after');
       crew.forEach((n, i) => (n.x = 34 * 8 + (i % 3) * 3));
       yield* walkTo(crew, 90);
-      yield say('OLD GASKET', 'EVERY SEAL ON THE DECK OPENED AT ONCE. SO WE CAME.');
+      yield say(S.nameOf(S.crewVoice(s)), 'EVERY SEAL ON THE DECK OPENED AT ONCE. SO WE CAME.');
       yield { wait: 30 };
       const shim = crew.find((n) => n.id === 'shim');
       world.navSong = 'hum';
       world.refreshMusic();
       if (shim) HA.music.setLayers(2);
-      yield me(shim ? 'SHIM STARTED IT. THE SONG FROM EVERY DECK, THE ONE THE HULLFOLK HUM WITHOUT KNOWING WHERE IT CAME FROM.' : 'GASKET STARTED IT. THE SONG FROM EVERY DECK, THE ONE THE HULLFOLK HUM WITHOUT KNOWING WHERE IT CAME FROM.');
+      const first = shim ? 'SHIM' : S.gasketAlive(s) ? 'GASKET' : S.nameOf(S.crewVoice(s, ['solder']));
+      yield me(first + ' STARTED IT. THE SONG FROM EVERY DECK, THE ONE THE HULLFOLK HUM WITHOUT KNOWING WHERE IT CAME FROM.');
       yield me('THEN ALL OF THEM, HUMMING IT BACK TO THE SHIP.');
       yield { wait: 200 };
       yield nav('...THAT IS MY SONG.');
-      yield say('OLD GASKET', 'MY MOTHER SAID THE SHIP SANG IT AT NIGHT. WE THOUGHT IT WAS OURS.');
+      if (S.gasketAlive(s)) yield say('OLD GASKET', 'MY MOTHER SAID THE SHIP SANG IT AT NIGHT. WE THOUGHT IT WAS OURS.');
+      else yield say(S.nameOf(S.crewVoice(s, ['solder'])), "GASKET'S MOTHER SAID THE SHIP SANG IT AT NIGHT. WE THOUGHT IT WAS OURS.");
       yield nav('IT WAS YOURS FIRST. THE FIRST CREW SANG IT OVER THE SLEEPERS. I ONLY KEPT IT FOR YOU.');
       yield { wait: 40 };
       world.navSong = 'full';
@@ -268,7 +272,7 @@
       world.alarm = 0;
       yield { wait: 140 };
       yield me('THE WHOLE SHIP LEANED. FAR BEHIND US, THE STERN DRIVE LIT FOR THE FIRST TIME SINCE YEAR 38.');
-      yield say(s.people.solder === 'alive' ? 'SOLDER' : 'OLD GASKET', 'THE SHAKING STOPPED. LISTEN. SHE STOPPED TEARING HERSELF APART.');
+      yield say(s.people.solder === 'alive' ? 'SOLDER' : S.nameOf(S.crewVoice(s)), 'THE SHAKING STOPPED. LISTEN. SHE STOPPED TEARING HERSELF APART.');
       yield nav('COME AND SEE ME. IN THE QUIET.');
       S.addStory(world, 'I HELD THE NAVIGATOR\'S COURSE ON THE WORLD UNTIL IT STOPPED PULLING. THE CREW CAME DOWN AND HUMMED ITS OWN SONG BACK TO IT. THEN IT LIT THE STERN DRIVE ITSELF, AND THE ARK TURNED IN.');
       S.setLead(world, 'GO INTO THE QUIET');

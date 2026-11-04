@@ -9,6 +9,8 @@
 //              lectures while the hero fights them.
 //   The man    he comes down off the dais with the captain's sidearm: from cover behind the consoles he rises,
 //              paints the hero with the sidearm's sight, and fires. Close in, he rolls away. Above him, he fans.
+//              A quarter of the way down, Old Gasket comes at him over his brother's boots, and he holds the
+//              sidearm on the old man until the hero pulls him back, or fires (story/gasket.js).
 // The fight has a checkpoint at its start (see story/tower.js).
 (function (HA) {
   const FLOOR = 19 * 8;
@@ -281,7 +283,50 @@
     world.flashes.push({ x: gx, y: gy, life: 3, r: 2 });
   }
 
+  // Old Gasket comes at him (story/gasket.js): he stands and holds the sidearm on the old man until the hero
+  // reaches him, or fires. Whatever the hero does to him meanwhile, he doesn't look away.
+  function updateHostage(world, b, p) {
+    const h = b.hostage;
+    const g = h.npc;
+    b.vx = 0;
+    b.crouch = false;
+    b.rolling = false;
+    b.state = 'hold';
+    const gx = g.x + 4;
+    b.facing = HA.sign(gx - (b.x + b.w / 2)) || b.facing;
+    const sx = b.x + b.w / 2 + b.facing * 7;
+    const sy = b.y + 9;
+    b.sight = { x: sx, y: sy, a: Math.atan2(g.y + 6 - sy, gx - sx) };
+    b.timer = h.left; // the sight blinks as it runs out
+    if (Math.abs(p.x + p.w / 2 - gx) < 14 && Math.abs(p.y + p.h - (g.y + g.h)) < 20) {
+      // pulled back: the shot he'd readied goes at the hero instead
+      b.hostage = null;
+      h.saved(world);
+      const s = aimAt(b, p);
+      fire(world, b, s.a, s.gx, s.gy, 3.4);
+      b.shots = 0;
+      set(b, 'recoil', 14);
+    } else if (--h.left <= 0) {
+      b.hostage = null;
+      b.sight = null;
+      HA.audio.play('sidearm');
+      world.flashes.push({ x: sx, y: sy, life: 3, r: 2 });
+      h.lost(world);
+      set(b, 'run', 0);
+    }
+    if (b.h !== 22) {
+      b.y += b.h - 22;
+      b.h = 22;
+    }
+  }
+
   function updateMan(world, b, p) {
+    if (b.hostage) return updateHostage(world, b, p);
+    if (!b.charged && b.manHp <= MAN_HP * 0.75 && HA.story.gasketCharge) {
+      b.charged = true;
+      HA.story.gasketCharge(world);
+      if (world.scene) return;
+    }
     const px = p.x + p.w / 2;
     const bx = b.x + b.w / 2;
     const close = Math.abs(px - bx) < 36 && Math.abs(p.y - b.y) < 24;
@@ -388,6 +433,12 @@
       bark(world, b, 'I AM SEVENTY-NINE YEARS OLD. I AM STILL QUICKER THAN YOU.', 150);
     }
     if (b.manHp <= 0) {
+      // beaten while he held the old man: he's let go
+      if (b.hostage) {
+        const h = b.hostage;
+        b.hostage = null;
+        h.saved(world);
+      }
       b.hp = 0;
       b.fighting = false;
       b.sight = null;

@@ -128,6 +128,15 @@ const spine = {
 const tower = {
   name: 'tower',
   async play(r) {
+    // The far end of the Barracks wakes the Steward's night watch, and they go for Old Gasket by the lift
+    // (story/gasket.js). Most runs go back for him; a run that leaves him walks on, out into the Dome.
+    await r.to('barracks');
+    await r.do('PT.goCol(70)');
+    await r.do('PT.settle()');
+    if (!r.route.leaveGasket) {
+      await r.do('PT.walk("left", () => !HA.ui.world.gasketHold || HA.ui.world.gasketHold.state !== "holding")');
+      await r.do('PT.clear("nightWatch")');
+    }
     await r.to('observation-dome');
     await r.to('garden-gallery'); // the Gardener
     await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter
@@ -204,6 +213,7 @@ module.exports = {
     segments: [...THROUGH_TOWER, deck],
     check: {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
+      'Gasket held the night watch, and was pulled back at the Helm': (e) => e.people.gasket === null && e.lines.includes("HE SAID CLEAT'S NAME TO THE SKY."),
       'the Navigator let rest': (e) => e.people.navigator === 'rest',
       'the freed Wardens remember their names': (e) => e.lines.includes('MY NAME WAS USHER.'),
       'Sorrel brought home': (e) => e.people.sorrel === 'home' && e.lines.includes('SORREL COUNTED THEM IN.'),
@@ -224,9 +234,11 @@ module.exports = {
       'SPARE HER': 'WALK PAST',
       'SPARE HIM': "WARDENS' COUNT",
     },
+    leaveGasket: true,
     segments: [...THROUGH_TOWER, scuttle],
     check: {
       'Solder left behind, the gate fallen': (e) => e.people.solder === 'dead' && e.warrensRaid === 'fell',
+      'Gasket left to the night watch': (e) => e.people.gasket === 'dead' && e.lines.includes('TAMP COUNTED THEM AT LIGHTS-OUT NOW.'),
       'the pods launched': (e) => e.podsLaunched > 0 && e.lines.includes('THE PODS CAME DOWN LIKE SEEDS.'),
       'the Old Greenhouse stayed welded': (e) => !e.people.sorrel,
       'two cores taken': (e) => e.wardens.pruner === 'salvage' && e.wardens.tallyman === 'salvage' && e.lines.includes('COUNT: WARDENS, 1.'),

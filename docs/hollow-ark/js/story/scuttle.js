@@ -119,7 +119,8 @@
       world.runLeft = undefined;
       s.flags.running = false;
       world.checkpoint = null;
-      yield say('TAMP', "THERE YOU ARE! THE VILLAGE IS IN. GASKET'S CREW CAME UP THE COLD LIFT. ALL OF THEM.");
+      if (S.gasketAlive(s)) yield say('TAMP', "THERE YOU ARE! THE VILLAGE IS IN. GASKET'S CREW CAME UP THE COLD LIFT. ALL OF THEM.");
+      else yield say('TAMP', 'THERE YOU ARE! THE VILLAGE IS IN. THE CREW CAME UP THE COLD LIFT. THEY TOLD ME ABOUT GASKET.');
       yield say('TAMP', 'ALL BUT YOU. IN! GET IN!');
       yield { walk: p, x: 1 * 8, speed: 1.4 };
       p.hidden = true;
@@ -141,10 +142,13 @@
   function* scuttleRun(world) {
     const s = world.state;
     const lifts = (s.flags.lifts || 0) >= 1;
+    // Old Gasket says it, or, if he was lost in the Tower (story/gasket.js), whoever speaks for the crew now.
+    const id = S.crewVoice(s);
+    const who = S.nameOf(id);
     // Why all the way back down: the ship is coming apart, and the only way off it is at the bottom.
-    yield say('OLD GASKET', "IT'S TEARING ITSELF APART. NOBODY'S TAKING THIS SHIP DOWN NOW. WE HAVE TO GET OFF IT.");
-    yield say('OLD GASKET', 'THE SLEDS! THE OLD CREW KEPT LANDING SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
-    yield say('OLD GASKET', 'WE CLIMBED ALL THIS WAY TO TAKE THE SHIP DOWN TO THAT WORLD. NOW WE GO BACK DOWN, AND GET THERE OURSELVES.');
+    yield say(who, "IT'S TEARING ITSELF APART. NOBODY'S TAKING THIS SHIP DOWN NOW. WE HAVE TO GET OFF IT.");
+    yield say(who, 'THE SLEDS! THE OLD CREW KEPT LANDING SLEDS IN CRYO BAY 4. BY YOUR POD, SLEEPER. WHERE YOU WOKE!');
+    yield say(who, 'WE CLIMBED ALL THIS WAY TO TAKE THE SHIP DOWN TO THAT WORLD. NOW WE GO BACK DOWN, AND GET THERE OURSELVES.');
     if (s.people.solder === 'alive') yield say('SOLDER', "THE TRAM'S STILL AT THE FOOT. EVERYONE, MOVE!");
     yield { fade: 'out', frames: 40 };
     HA.music.play('scuttle');
@@ -155,14 +159,15 @@
     yield { card: pipes ? ['BACK THROUGH THE OVERFLOW PIPES, AND', 'THE KEEL TRAM HOME FROM THE BALLAST STOP.', 'NOBODY SPOKE.'] : ['THE KEEL TRAM TOOK US HOME.', 'NOBODY SPOKE.'], hold: pipes ? 200 : 160 };
     world.enterRoom(START.room, START.x, START.ty * 8 - world.player.h, { facing: -1 });
     startRun(world);
-    const g = S.makeNpc(world, 'gasket', { x: 50 * 8, y: FLOOR(19) });
+    const g = S.makeNpc(world, id, { x: 50 * 8, y: FLOOR(19) });
+    g.name = who;
     Object.assign(g, { state: 'out', facing: -1, talkable: () => false });
     world.npcs.push(g);
     world.holdFade = false;
     yield { fade: 'in', frames: 30 };
-    yield say('OLD GASKET', "TAMP'S TAKEN THE VILLAGE UP TO THE SLEDS. THE CREW'S GOING ROUND BY THE COLD LIFT.");
-    yield say('OLD GASKET', "YOU'RE FASTER THROUGH THE WARRENS ALONE. BACK UP TO WHERE YOU WOKE. GO! WE'LL SEE YOU AT THE SLEDS!");
-    if (s.warrensRaid === 'fell') yield say('OLD GASKET', "THE HALL'S STILL DOWN AT THE WEST END. GO ROUND THROUGH THE WALLS: THE HOLE BY THE HOMES!");
+    yield say(who, "TAMP'S TAKEN THE VILLAGE UP TO THE SLEDS. THE CREW'S GOING ROUND BY THE COLD LIFT.");
+    yield say(who, "YOU'RE FASTER THROUGH THE WARRENS ALONE. BACK UP TO WHERE YOU WOKE. GO! WE'LL SEE YOU AT THE SLEDS!");
+    if (s.warrensRaid === 'fell') yield say(who, "THE HALL'S STILL DOWN AT THE WEST END. GO ROUND THROUGH THE WALLS: THE HOLE BY THE HOMES!");
     yield { walk: g, x: 70 * 8, speed: 1.2 };
     g.state = 'gone';
     S.addStory(world, "THE SHIP IS COMING APART, AND NOBODY CAN TAKE IT DOWN TO THE NEW WORLD NOW. THE WAY OFF IS THE OLD CREW'S LANDING SLEDS IN CRYO BAY 4, WHERE I WOKE, AT THE BOTTOM OF THE SHIP. I HAVE TO GET THERE BEFORE IT COMES APART.");

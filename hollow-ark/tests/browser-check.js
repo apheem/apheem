@@ -1465,6 +1465,22 @@ async function play(browserType, url, label) {
       out.lift = w().scene && w().scene.name;
       talkThrough();
       out.barracks = { room: w().def.id, crew: w().npcs.filter((n) => n.state === 'out').length, music: HA.music.playing, lead: s.lead, area: w().area.name };
+      // The night watch (story/gasket.js): the far end of the Barracks wakes them, and they go for Old Gasket by the
+      // lift. He holds them off with his wrench until the hero is back with him.
+      w().assist.invincible = true;
+      HA.debug.goto('barracks', 62, 18);
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.watch = { scene: w().scene && w().scene.name, said: listen().join(' | ') };
+      out.watch.hold = w().gasketHold && w().gasketHold.state;
+      let back = 0;
+      for (; back < 600 && w().gasketHold && w().gasketHold.state === 'holding'; back++) HA.debug.step(1, { left: true, jump: back % 30 < 12 });
+      Object.assign(out.watch, { back, flag: s.flags.gasketBarracks });
+      for (const e of w().enemies.filter((e) => e.nightWatch)) HA.actors.hurtEnemy(w(), e, 99, e.facing);
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1);
+      out.watch.held = w().scene && w().scene.name;
+      out.watch.thanks = listen().join(' | ');
+      out.watch.alive = s.people.gasket;
+      w().assist.invincible = false;
       // The Observation Dome: the world, dark; Shim at the glass; the Navigator's terminal.
       HA.debug.goto('observation-dome', 1, 18);
       for (let i = 0; i < 40 && !w().scene; i++) HA.debug.step(1, { right: true });
@@ -1578,8 +1594,20 @@ async function play(browserType, url, label) {
         states.add(b2.state);
         sight = sight || !!b2.sight;
       }
-      w().assist.invincible = false;
       out.man = { phase: b2.phase, states: [...states].join(','), sight };
+      // A quarter of the way into the man, Old Gasket goes for him over his brother's boots (story/gasket.js); the
+      // sidearm turns on the old man, and the hero gets to him first.
+      b2.rolling = false;
+      HA.bosses.steward.hurt(w(), b2, 35, 1);
+      for (let i = 0; i < 30 && !w().scene; i++) HA.debug.step(1);
+      out.charge = { scene: w().scene && w().scene.name, said: listen().join(' | ') };
+      out.charge.aimed = !!b2.hostage && !!b2.sight;
+      const old = w().npcs.find((n) => n.id === 'gasket');
+      p.x = old.x + 20;
+      p.y = old.y + old.h - p.h;
+      for (let i = 0; i < 200 && b2.hostage; i++) HA.debug.step(1, { left: true });
+      Object.assign(out.charge, { flag: s.flags.gasketHelm, alive: s.people.gasket, bark: w().barks.map((k) => k.text).join(' | ') });
+      w().assist.invincible = false;
       b2.manHp = 1;
       b2.rolling = false;
       HA.bosses.steward.hurt(w(), b2, 5, 1);
@@ -1646,6 +1674,8 @@ async function play(browserType, url, label) {
       return out;
     });
     expect(tw.lift === 'towerLift' && tw.barracks.room === 'barracks' && tw.barracks.crew === 6 && tw.barracks.music === 'tower' && tw.barracks.area === 'COMMAND TOWER' && /UP TO THE HELM/.test(tw.barracks.lead), `the Tower Lift did not take the crew up into the Barracks (${tw.lift}, ${JSON.stringify(tw.barracks)})`);
+    const wa = tw.watch;
+    expect(wa.scene === 'guardWake' && /NIGHT WATCH/.test(wa.said) && /BEHIND ME/.test(wa.said) && wa.hold === 'holding' && wa.flag === 'held' && wa.back < 480 && wa.held === 'gasketHeld' && /TOOK YOUR TIME/.test(wa.thanks) && wa.alive === null, `the night watch in the Barracks went wrong (${JSON.stringify(wa)})`);
     expect(tw.dome.scene === 'domeView' && tw.dome.music === null && /NO LIGHTS/.test(tw.dome.said), `the Dome's view went wrong (${JSON.stringify(tw.dome)})`);
     expect(tw.shimScene === 'shimDome' && /WHERE IS MY MOTHER/.test(tw.shimSaid) && tw.fourB === 'TELL HIM THE TRUTH/KEEP LYING' && tw.lied.knows === false && tw.lied.mercy === -1 && tw.lied.follow, `choice 4b went wrong (${tw.shimScene}, ${tw.fourB}, ${JSON.stringify(tw.lied)})`);
     expect(/YOU ARE STILL HERE/.test(tw.nav) && tw.navSpoke, `the Navigator did not speak in the Dome (${tw.nav})`);
@@ -1660,6 +1690,8 @@ async function play(browserType, url, label) {
     expect(tw.fall.room === 'helm' && /CHECKPOINT/.test(tw.fall.toast) && tw.fall.scene === 'stewardIntro' && /AGAIN, THEN/.test(tw.again) && !/BOOTS/.test(tw.again) && tw.refight, `a fall in the Steward's fight did not come back to its checkpoint (${JSON.stringify(tw.fall)}, ${tw.again}, ${tw.refight})`);
     expect(tw.guardScene === 'stewardGuard' && /MEASURE: FULL/.test(tw.guardSaid) && tw.guards === 3 && /DO IT MYSELF/.test(tw.manSaid), `the Steward's guard went wrong (${tw.guardScene}, ${tw.guardSaid}, ${tw.guards}, ${tw.manSaid})`);
     expect(tw.man.phase === 3 && /aim/.test(tw.man.states) && /crouch/.test(tw.man.states) && /run/.test(tw.man.states) && tw.man.sight, `the Steward's last phase went wrong (${JSON.stringify(tw.man)})`);
+    const ch = tw.charge;
+    expect(ch.scene === 'gasketCharge' && /MY BROTHER'S BOOTS/.test(ch.said) && /SIT DOWN, OLD MAN/.test(ch.said) && ch.aimed && ch.flag === 'held' && ch.alive === null && /FINE|GOING/.test(ch.bark), `Gasket's charge at the Helm went wrong (${JSON.stringify(ch)})`);
     expect(tw.defeated === 'stewardDefeated' && /AFRAID OF NOTHING/.test(tw.beaten) && tw.twelve === "SPARE HIM/END HIM/LEAVE HIM TO THE WARDENS' COUNT", `the Steward's defeat or choice 12 went wrong (${tw.defeated}, ${tw.twelve})`);
     expect(tw.steward.fate === 'spared' && tw.steward.mercy === 1 && tw.steward.key === 'broken' && /NOT YET/.test(tw.after) && /SLEDS/.test(tw.after), `choice 12 or the Key breaking went wrong (${JSON.stringify(tw.steward)}, ${tw.after})`);
     expect(tw.run.room === 'sump' && tw.run.running && tw.run.scuttle && tw.run.left === 160 && tw.run.music === 'scuttle' && tw.run.check === 'sump' && /SLEDS/.test(tw.run.lead) && tw.run.alarm, `the run for the sleds did not start (${JSON.stringify(tw.run)})`);
@@ -1669,6 +1701,152 @@ async function play(browserType, url, label) {
     expect(tw.failScene === 'runFail' && tw.retry.room === 'sump' && tw.retry.left === 160, `running out of time did not start the run again (${tw.failScene}, ${JSON.stringify(tw.retry)})`);
     expect(/LAUNCH THE PODS/.test(tw.consolePrompt) && tw.launchAsk === 'LAUNCH THE PODS/KEEP RUNNING' && tw.launch.cost === 30 && tw.launch.pods > 0, `the pod launch went wrong (${tw.consolePrompt}, ${tw.launchAsk}, ${JSON.stringify(tw.launch)})`);
     expect(/CLAMPS WERE EMPTY/.test(tw.mara) && tw.sleds === 'sledsAway' && tw.title === 'title' && tw.ending === 'crash', `the sleds and the Crash ending went wrong (${tw.mara}, ${tw.sleds}, ${tw.title}, ${tw.ending})`);
+
+    // Old Gasket lost (story/gasket.js). In the Barracks, walked out on: he's where he fell when the hero comes back,
+    // and the crew say what he asked; the Helm without him (the boots are the hero's to know, the Key counts one
+    // fewer), and the run for the sleds opened by whoever speaks for the crew now. Then, on another save, shot at the
+    // Helm because the hero kept fighting.
+    const said = () =>
+      get(() => {
+        const w = HA.debug.world;
+        const out = [];
+        for (let i = 0; i < 8000 && w.scene && !(w.scene.step && w.scene.step.choice); i++) {
+          const st = w.scene.step;
+          const line = st && st.say !== undefined ? (st.say ? st.say + ': ' : '') + st.text : null;
+          if (line && out[out.length - 1] !== line) out.push(line);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return out.join(' | ');
+      });
+    await towerSave({ people: { solder: 'dead' }, flags: { gasketSky: true } });
+    await startSaved();
+    const gl = await get(() => {
+      const { w, talkThrough, listen, press } = window.tw;
+      const out = {};
+      const s = w().state;
+      HA.debug.goto('tower-lift', 14, 18);
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      w().assist.invincible = true;
+      HA.debug.goto('barracks', 62, 18);
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { right: true });
+      listen();
+      for (let i = 0; i < 600 && w().def.id === 'barracks'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(3);
+      talkThrough();
+      out.left = { room: w().def.id, gasket: s.people.gasket, flag: s.flags.gasketBarracks, kept: s.journal.story.some((t) => /I KEPT GOING/.test(t)) };
+      HA.debug.goto('barracks', 34, 18);
+      HA.debug.step(3);
+      out.body = w().npcs.some((n) => n.id === 'gasket' && n.lying);
+      for (let i = 0; i < 300 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.late = { scene: w().scene && w().scene.name, said: listen().join(' | ') };
+      out.late.gone = (w().npcs.find((n) => n.id === 'gasket') || {}).state;
+      out.trigger = HA.rooms.byId.barracks.triggers[0].when(s);
+      s.flags.stewardShutter = true;
+      HA.debug.goto('bridge-stair', 5, 8);
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.speech = listen().join(' | ');
+      out.crew = w().npcs.filter((n) => n.state === 'out').map((n) => n.id);
+      const b = w().boss;
+      for (const r of b.relays) HA.bosses.relay.hurt(w(), r, 50);
+      HA.debug.step(2);
+      talkThrough();
+      for (const g of b.guards) {
+        g.hp = 1;
+        HA.actors.hurtEnemy(w(), g, 5, 1);
+      }
+      HA.debug.step(12);
+      talkThrough();
+      b.rolling = false;
+      HA.bosses.steward.hurt(w(), b, 35, 1);
+      HA.debug.step(30);
+      out.noCharge = !w().scene && !b.hostage;
+      b.manHp = 1;
+      HA.bosses.steward.hurt(w(), b, 5, 1);
+      HA.debug.step(20);
+      listen();
+      window.tw.choose(0);
+      return out;
+    });
+    const glRun = await said();
+    expect(gl.left.room === 'observation-dome' && gl.left.gasket === 'dead' && gl.left.flag === 'lost' && gl.left.kept && gl.body, `walking out on Gasket in the Barracks went wrong (${JSON.stringify(gl.left)}, body ${gl.body})`);
+    expect(gl.late.scene === 'gasketLast' && /ASKED WHERE YOU WERE/.test(gl.late.said) && /TELL THEM HE WANTED TO/.test(gl.late.said) && gl.late.gone === 'gone' && !gl.trigger, `coming back to Gasket in the Barracks went wrong (${JSON.stringify(gl.late)}, trigger ${gl.trigger})`);
+    expect(!/THOSE WERE HIS BOOTS/.test(gl.speech) && /CLEAT'S BOOTS/.test(gl.speech) && /COUNT: 6\./.test(gl.speech) && !gl.crew.includes('gasket') && gl.noCharge, `the Helm without Gasket went wrong (${gl.speech}, ${gl.crew}, charge ${!gl.noCharge})`);
+    expect(!/OLD GASKET:/.test(glRun) && /FLUX: THE SLEDS!/.test(glRun) && /FLUX: TAMP'S TAKEN THE VILLAGE/.test(glRun), `the run for the sleds without Gasket went wrong (${glRun})`);
+    await towerSave({ flags: { towerUp: true, guardWoke: true, gasketBarracks: 'held', domeSeen: true, navSpoke: true, helmSeen: true, stewardShutter: true }, room: 'bridge-stair', x: 5 * 8, y: 9 * 8 - 14 });
+    await startSaved();
+    const gs = await get(() => {
+      const { w, talkThrough, listen, press, choose } = window.tw;
+      const out = {};
+      const s = w().state;
+      HA.debug.goto('bridge-stair', 5, 8);
+      HA.debug.step(3);
+      press('up');
+      talkThrough();
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1, { right: true });
+      talkThrough();
+      const b = w().boss;
+      for (const r of b.relays) HA.bosses.relay.hurt(w(), r, 50);
+      HA.debug.step(2);
+      talkThrough();
+      for (const g of b.guards) {
+        g.hp = 1;
+        HA.actors.hurtEnemy(w(), g, 5, 1);
+      }
+      HA.debug.step(12);
+      talkThrough();
+      w().assist.invincible = true;
+      b.rolling = false;
+      HA.bosses.steward.hurt(w(), b, 35, 1);
+      for (let i = 0; i < 30 && !w().scene; i++) HA.debug.step(1);
+      talkThrough();
+      // the hero keeps fighting, far from him
+      w().player.x = 70 * 8;
+      let f = 0;
+      for (; f < 400 && !w().scene; f++) HA.debug.step(1);
+      out.frames = f;
+      out.scene = w().scene && w().scene.name;
+      out.said = listen().join(' | ');
+      out.lying = w().npcs.some((n) => n.id === 'gasket' && n.lying);
+      Object.assign(out, { gasket: s.people.gasket, flag: s.flags.gasketHelm, saved: JSON.parse(localStorage.getItem('hollow-ark.save.v1')).people.gasket });
+      b.manHp = 1;
+      b.rolling = false;
+      HA.bosses.steward.hurt(w(), b, 5, 1);
+      HA.debug.step(20);
+      out.beaten = listen().join(' | ');
+      choose(1);
+      out.ended = listen().join(' | ');
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(gs.scene === 'gasketShot' && gs.frames >= 290 && /I TOLD HIM TO SIT DOWN/.test(gs.said) && gs.lying && gs.gasket === 'dead' && gs.flag === 'lost' && gs.saved === 'dead', `Gasket shot at the Helm went wrong (${JSON.stringify(gs)})`);
+    expect(/KNEELING BY GASKET/.test(gs.beaten) && /TO BURY WITH GASKET/.test(gs.ended), `the Steward's end after Gasket went wrong (${gs.beaten} / ${gs.ended})`);
+    // The endings with Gasket lost: his cards, one fewer of the Warrens, one fewer pair of hands for Lift B's brake,
+    // and whoever is left to fight what the hero became.
+    const gone = await get(() => {
+      const s0 = HA.debug.world.state;
+      const mk = (o) => Object.assign({}, s0, o, { people: Object.assign({}, s0.people, { flux: null, sorrel: null }, o.people), flags: Object.assign({}, s0.flags, o.flags) });
+      const free = { bailiff: 'release', pruner: 'release', tallyman: 'release' };
+      const lines = (id, o) => HA.endings.lines(id, mk(o)).join(' | ');
+      const eight = mk({ crew: 8, bloom: 0, mercy: 9, wardens: free, takenHome: 11, people: { solder: 'alive', gasket: 'dead' } });
+      return {
+        home: lines('homecoming', { crew: 9, mercy: 9, wardens: free, people: { solder: 'alive', gasket: 'dead', navigator: 'rest' }, flags: { gasketSky: true } }),
+        crash: lines('crash', { people: { gasket: 'dead' } }),
+        dominion: lines('dominion', { people: { gasket: 'dead' } }),
+        overgrown: lines('overgrown', { crew: 4, people: { solder: 'dead', gasket: 'dead' } }),
+        branch: HA.endings.afterSteward(eight),
+        closed: HA.endings.closedCard(eight, 'crash').map((l) => (Array.isArray(l) ? l[0] : l)).join(' '),
+        hullfolk: HA.endings.landed(Object.assign(eight, { crew: 9 }), 'homecoming').hullfolk,
+        pics: ['homecoming', 'crash'].every((id) => HA.endings.epilogue(id, mk({ people: { gasket: 'dead' } })).every((c) => !c.pic || HA.pictures.names().includes(c.pic))),
+      };
+    });
+    expect(/OLD GASKET NEVER SAW THE SKY/.test(gone.home) && /I TOLD THEM HE WANTED TO/.test(gone.home) && !/BREATHED OUT/.test(gone.home), `the Homecoming epilogue with Gasket lost went wrong (${gone.home})`);
+    expect(/TAMP COUNTED THEM AT LIGHTS-OUT NOW/.test(gone.crash) && /THEY BURIED OLD GASKET/.test(gone.dominion) && /BRINE WALKED OUT OF THE HELM ALIVE/.test(gone.overgrown) && /SHE DIDN'T TALK ABOUT IT/.test(gone.overgrown), `the other epilogues with Gasket lost went wrong (${gone.crash} / ${gone.dominion} / ${gone.overgrown})`);
+    expect(gone.branch === 'crash' && /WITHOUT GASKET'S/.test(gone.closed) && gone.hullfolk === 30 && gone.pics, `losing Gasket did not cost a pair of hands, or a place in the count (${JSON.stringify(gone)})`);
 
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };
