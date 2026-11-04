@@ -37,7 +37,7 @@
   for (const [i, id] of WOKEN.entries()) S.PEOPLE[id] = { name: id.toUpperCase(), sprite: 'woken' + (1 + (i % 4)), away: true };
   for (const id of WOKEN) S.TALK[id] = {};
 
-  // Who climbs, in the order they count off: Gasket always, Solder if she lived, Flux if he came home, Brine, and
+  // Who climbs, in the order they count off: Gasket always, Solder if he lived, Flux if he came home, Brine, and
   // as many of the woken as there are places left.
   function crewList(s) {
     const out = ['gasket'];
@@ -356,7 +356,7 @@
       placeCamp(world);
       yield { wait: 20 };
       yield { fade: 'in', frames: 20 };
-      if (n >= HANDS[3]) yield say(who, who === 'SOLDER' ? 'THE THIRD LIFT. EVERYONE RODE IT. EVEN GASKET, AND SHE HATES LIFTS.' : 'I HATE LIFTS. I RODE IT ANYWAY. EVERYONE DID.');
+      if (n >= HANDS[3]) yield say(who, who === 'SOLDER' ? 'THE THIRD LIFT. EVERYONE RODE IT. EVEN GASKET, AND HE HATES LIFTS.' : 'I HATE LIFTS. I RODE IT ANYWAY. EVERYONE DID.');
       else yield say(who, "WE CLIMBED. ALL OF IT. DON'T ASK ME TO DO IT AGAIN.");
       yield say('OLD GASKET', 'WE STOP HERE TONIGHT. NOBODY GOES INTO THE TOWER TIRED.');
       S.addStory(world, 'THE CREW CAMPED AT THE TOP OF THE SPINE. ' + WORDS[n] + ' OF THEM CLIMBED WITH ME.');
@@ -383,7 +383,7 @@
       world.save();
     },
 
-    // Lights-out: Gasket's count down the line, the last of her held breath, and the Purser's last call.
+    // Lights-out: Gasket's count down the line, the last of his held breath, and the Purser's last call.
     *lightsOut(world) {
       const s = world.state;
       const f = s.flags;
@@ -427,18 +427,18 @@
       if (g) g.kneel = true;
       yield say('OLD GASKET', 'I SPENT MY WHOLE LIFE HOLDING MY BREATH.');
       yield say('OLD GASKET', "I'D LIKE TO BREATHE OUT BEFORE THE END.");
-      // With her trust (story/gasket.js), what she's never told anyone.
+      // With his trust (story/gasket.js), what he's never told anyone.
       if (S.gasketTrust(s) >= 3) {
         yield { wait: 30 };
         yield say('OLD GASKET', "I'VE NEVER SEEN A SKY. NOBODY DOWN THERE HAS. THEY SAY IT'S A CEILING NOBODY BUILT.");
         yield say('OLD GASKET', "IF I DON'T MAKE IT TO THE GROUND, YOU TELL THEM I WANTED TO.");
         f.gasketSky = true;
-        S.addStory(world, "GASKET TOLD ME SHE'S NEVER SEEN A SKY. IF SHE DOESN'T MAKE IT TO THE GROUND, I'M TO TELL THEM SHE WANTED TO.");
+        S.addStory(world, "GASKET TOLD ME HE'S NEVER SEEN A SKY. IF HE DOESN'T MAKE IT TO THE GROUND, I'M TO TELL THEM HE WANTED TO.");
       }
       yield { wait: 40 };
       yield say('OLD GASKET', 'MY BROTHER CLEAT HAD A LOOK LIKE YOURS. LIKE SOMEBODY WAS WAITING ON HIM.');
       yield say('OLD GASKET', 'GO TO SLEEP. WHOEVER IT IS, THEY CAN WAIT ONE MORE NIGHT.');
-      S.addStory(world, 'GASKET SAID SHE HAD SPENT HER WHOLE LIFE HOLDING HER BREATH. SHE WANTS TO BREATHE OUT BEFORE THE END.');
+      S.addStory(world, 'GASKET SAID HE HAD SPENT HIS WHOLE LIFE HOLDING HIS BREATH. HE WANTS TO BREATHE OUT BEFORE THE END.');
       if (g) g.sleeping = true;
       yield { wait: 90 };
       // The Purser, if the hero turned his boat down: it's still waiting, and this is the last time he'll ask.

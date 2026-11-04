@@ -1,8 +1,8 @@
 'use strict';
 // Solder's bench (3.10, the audit's option B). Shards still level the weapon in hand; any it can't use (it's at
 // its top level, or the hero has no weapon out) are kept as scrap (weapons.js, bank), and the bench turns scrap
-// into parts for the suit. The bench stands by Solder's door in the Warrens all game. With Solder alive, she sets
-// up her tools at the Crew Camp too; if she was lost, that bench never comes.
+// into parts for the suit. The bench stands by Solder's door in the Warrens all game. With Solder alive, he sets
+// up his tools at the Crew Camp too; if he was lost, that bench never comes.
 (function (HA) {
   const S = HA.story;
   const say = (who, text) => ({ say: who, text });
@@ -42,9 +42,9 @@
       if (here) {
         yield say('SOLDER', 'YOUR GUN CAN ONLY EAT SO MANY SHARDS. WHAT IT CAN\'T, YOU CARRY. THAT\'S SCRAP.');
         yield say('SOLDER', 'BRING ME SCRAP. I CAN BEAT IT INTO PLATE, OR A MAGNET, OR STEADIER HANDS.');
-      } else yield me("SOLDER'S BENCH. HER TOOLS ARE ALL HERE, EACH IN ITS PLACE. I CAN MANAGE.");
+      } else yield me("SOLDER'S BENCH. HIS TOOLS ARE ALL HERE, EACH IN ITS PLACE. I CAN MANAGE.");
       S.addStory(world, "SOLDER'S BENCH TURNS SCRAP INTO PARTS FOR MY SUIT. SCRAP IS THE SHARDS MY GUN CAN'T USE.");
-    } else if (!here && s.people.solder === 'dead') yield me("HER TOOLS. SHE WON'T BE BACK FOR THEM.");
+    } else if (!here && s.people.solder === 'dead') yield me("HIS TOOLS. HE WON'T BE BACK FOR THEM.");
     for (;;) {
       const left = UPGRADES.filter((u) => (s.upgrades[u.id] || 0) < u.costs.length);
       if (!left.length) {

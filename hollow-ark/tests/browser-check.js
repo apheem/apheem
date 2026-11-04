@@ -5,7 +5,7 @@
 // game's debug helpers: rooms, saving, the raid, the boss, the choice, the reunion and the night after it,
 // and continuing a save, then the Hydroponic Gardens (a bulb, the cradles, the Pruner and its choice, the
 // taken waking, Wick's fight and the Gardener's offer), the Warrens return (the lift home, telling Shim,
-// the broadcast, the pistol, the night Solder leaves, her gate, the hatch to the sump), and the Cargo Labyrinth
+// the broadcast, the pistol, the night Solder leaves, his gate, the hatch to the sump), and the Cargo Labyrinth
 // (the cranes, the harpoon, the deserter, Odell, the Tallyman, the Breach Charges, travel between pods, and the
 // Purser's boat to the Deserter ending). Then it loads a Phase 2 save to check it upgrades, and plays all five
 // endings.
@@ -508,8 +508,8 @@ async function play(browserType, url, label) {
       out.night = w().scene && w().scene.name;
       talkThrough();
       out.morning = { lead: s.lead, newGate: !!s.flags.newGate, hatch: !!s.flags.hatch, planned: !!s.flags.climbPlanned, solderGone: !w().npcs.some((n) => n.id === 'solder' && n.state !== 'gone'), name: HA.story.callName(s) };
-      // Gasket's trust (story/gasket.js): her grief has had its say, so talking to her now she hangs up her wrench,
-      // and the next time she shows Cleat's count on the wall.
+      // Gasket's trust (story/gasket.js): his grief has had its say, so talking to him now he hangs up his wrench,
+      // and the next time he shows Cleat's count on the wall.
       const px = p.x;
       const trust0 = HA.story.gasketTrust(s);
       out.wrench = talkTo('gasket');
@@ -557,7 +557,7 @@ async function play(browserType, url, label) {
     });
     expect(wr.room === 'warrens' && wr.arrival && wr.woken === 11 && wr.lead1 === 'TELL SHIM' && wr.music1 === 'warrensHush', `the lift home did not bring the hero back to the woken and Gasket (${JSON.stringify(wr)})`);
     expect(wr.tellScene === 'tellShim' && wr.tellLose === 'HIS HOPE' && wr.told.told === 'truth' && !wr.told.heroHas && wr.told.with === 'shim' && wr.told.shimHolds, `telling Shim everything went wrong (${JSON.stringify(wr.told)})`);
-    expect(wr.griefScene === 'grief' && wr.broadcast && wr.lead2 === 'TALK TO SOLDER BEFORE SHE GOES', `Gasket's grief and the broadcast did not play (${JSON.stringify(wr)})`);
+    expect(wr.griefScene === 'grief' && wr.broadcast && wr.lead2 === 'TALK TO SOLDER BEFORE HE GOES', `Gasket's grief and the broadcast did not play (${JSON.stringify(wr)})`);
     expect(wr.marrant, `the Steward did not name himself in his broadcast (${JSON.stringify(wr)})`);
     expect(wr.pistolScene === 'pistol' && /FALLS/.test(wr.pistolLose) && wr.gun.includes('repeater') && !wr.gun.includes('pistol') && wr.twin === 2, `the pistol did not become the Repeater (${JSON.stringify(wr)})`);
     expect(wr.night === 'solderLeaves' && wr.morning.newGate && wr.morning.hatch && wr.morning.planned && wr.morning.solderGone && wr.morning.lead === 'FOLLOW SOLDER DOWN THROUGH THE CARGO LABYRINTH', `the night Solder leaves did not play out (${JSON.stringify(wr.morning)})`);
@@ -898,7 +898,7 @@ async function play(browserType, url, label) {
       talkThrough();
       HA.debug.step(30); // past the hit-stop of her last blow, which the skipped scene outran
       out.after = { down: !!s.flags.siltDown, raid: s.warrensRaid, withHer: !!s.flags.solderWith, solder: !!solder(), gates: w().doors.every((d) => d.open) };
-      // 3. The flood. The first time, the water is let catch her, and she's pulled back to the Valve Hall.
+      // 3. The flood. The first time, the water is let catch him, and he's pulled back to the Valve Hall.
       HA.debug.goto('valve-hall', 8, 41);
       HA.debug.step(5);
       for (let i = 0; i < 400 && !(w().scene && w().scene.name === 'flood'); i++) pace(i);
@@ -920,7 +920,7 @@ async function play(browserType, url, label) {
       w().assist.invincible = true;
       HA.debug.step(30);
       out.fell = { room: w().def.id, flooding: !!s.flags.flooding, solder: !!solder(), level: w().floodLevel === undefined };
-      // Then up the culvert, keeping her close, to the hatch.
+      // Then up the culvert, keeping him close, to the hatch.
       for (let i = 0; i < 600 && !(w().scene && w().scene.name === 'flood'); i++) pace(i);
       talkThrough();
       const rooms = [];
@@ -946,7 +946,7 @@ async function play(browserType, url, label) {
       const bloom = s.bloom;
       choose(1);
       out.choice = { solder: s.people.solder, by: s.flags.solderBy, bloom: s.bloom - bloom, room: w().def.id, flooded: !!s.flags.flooded, flooding: !!s.flags.flooding, charges: p.weapons.some((x) => x.id === 'charges') };
-      // 5. The tram: the motor in, and the hero rides it home to the sump with Solder (story/tram.js). She starts
+      // 5. The tram: the motor in, and the hero rides it home to the sump with Solder (story/tram.js). He starts
       // up on the platform by the terminal, and walks down its steps to the winch, not across the air.
       HA.debug.goto('tram-station', 33, 18);
       HA.debug.step(5);
@@ -954,7 +954,7 @@ async function play(browserType, url, label) {
       if (sol) Object.assign(sol, { x: 10 * 8, homeX: 10 * 8, y: 9 * 8 - sol.h, homeY: 9 * 8 - sol.h });
       HA.debug.step(1, { up: true });
       out.ride = [];
-      // Wherever she walks, there's floor under her feet (or she's dropping a step to it); she gets in before the
+      // Wherever he walks, there's floor under his feet (or he's dropping a step to it); he gets in before the
       // hero; and the tram doesn't move while anyone is still talking.
       out.board = { floating: 0, atWinch: null, firstIn: null, talkingWhileGone: 0 };
       const R = HA.room;
@@ -1023,10 +1023,10 @@ async function play(browserType, url, label) {
     expect(bl.after.down && bl.after.raid === 'held' && bl.after.withHer && bl.after.solder && bl.after.gates, `after the Silt Mother, Solder or the raid went wrong (${JSON.stringify(bl.after)})`);
     expect(bl.flood.flooding && bl.flood.music === 'flood' && /hallWest- culvert\+/.test(bl.flood.doors) && bl.failed === 'floodFail' && bl.retry.room === 'valve-hall' && !bl.retry.flooding && bl.retry.solder, `the flood, or its retry, went wrong (${JSON.stringify(bl.flood)}, ${bl.failed}, ${JSON.stringify(bl.retry)})`);
     expect(bl.culvert.rooms === 'valve-hall/long-culvert/jammed-hatch' && bl.culvert.under === 0 && bl.culvert.scene === 'jammed', `the escape up the culvert went wrong (${JSON.stringify(bl.culvert)})`);
-    expect(bl.nine === 'BLOW THE BEAM/EAT THE BLOOM ON THE HATCH/LEAVE HER' && /BLOOM GROWS/.test(bl.bloomLose) && bl.choice.solder === 'alive' && bl.choice.by === 'bloom' && bl.choice.bloom === 2 && bl.choice.room === 'tram-station' && bl.choice.flooded && !bl.choice.flooding && bl.choice.charges, `choice 9 went wrong (${JSON.stringify(bl.choice)})`);
+    expect(bl.nine === 'BLOW THE BEAM/EAT THE BLOOM ON THE HATCH/LEAVE HIM' && /BLOOM GROWS/.test(bl.bloomLose) && bl.choice.solder === 'alive' && bl.choice.by === 'bloom' && bl.choice.bloom === 2 && bl.choice.room === 'tram-station' && bl.choice.flooded && !bl.choice.flooding && bl.choice.charges, `choice 9 went wrong (${JSON.stringify(bl.choice)})`);
     expect(bl.tram.tram && bl.tram.west && bl.tram.room === 'sump' && /VILLAGE/.test(bl.tram.lead) && bl.tram.solder && !bl.tram.tramLink && bl.ride.length === 2 && /WEST/.test(bl.ride[0]) && /NAVIGATOR AUTHORITY/.test(bl.log), `the tram home, or the valves log, went wrong (${JSON.stringify(bl.tram)}, ${JSON.stringify(bl.ride)}, ${bl.log})`);
     expect(bl.boxes.length === 3 && bl.boxes.every((b) => b.inside && b.onScreen) && bl.boxes[0].lines > 6, `a confirm box for choice 9 spills out (${JSON.stringify(bl.boxes)})`);
-    expect(bl.board.floating === 0 && bl.board.atWinch && bl.board.atWinch.feet === 19 && bl.board.firstIn === 'solder' && bl.board.talkingWhileGone === 0, `Solder walked across the air, didn't get in first, or the tram left while she was talking (${JSON.stringify(bl.board)})`);
+    expect(bl.board.floating === 0 && bl.board.atWinch && bl.board.atWinch.feet === 19 && bl.board.firstIn === 'solder' && bl.board.talkingWhileGone === 0, `Solder walked across the air, didn't get in first, or the tram left while he was talking (${JSON.stringify(bl.board)})`);
     expect(bl.held.room === 'tram-station' && /NOT WITHOUT THE CLIMBERS/.test(bl.held.note), `the way east didn't wait for the climbers (${JSON.stringify(bl.held)})`);
     expect(bl.home.raidSeen && bl.home.story && bl.home.waits && /TRAM/.test(bl.home.lead) && !bl.home.solder, `home after the raid went wrong (${JSON.stringify(bl.home)})`);
     expect(bl.bye.flag && bl.bye.story === 1, `the goodbye at Mara's pod went wrong (${JSON.stringify(bl.bye)})`);
@@ -1909,7 +1909,7 @@ async function play(browserType, url, label) {
       dominion: ['COUNT THEM.', 'THANK YOU.', 'THEY ARE SAFER ASLEEP.', 'I HAD THE KEY. I COULD HAVE WOKEN HER.'],
       overgrown: ['OLD GASKET WALKED OUT OF THE HELM ALIVE.', 'ON 0418 FIRST.', "I'M RIGHT HERE, LITTLE ONE.", 'THE GARDENER WENT INTO THE BLOOM SHE MADE.'],
       crash: ['COUNT: SURVIVORS, 6.', 'THE PODS CAME DOWN LIKE SEEDS.', 'I GOT THERE BEFORE SHE WOKE.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', 'COUNT: WARDENS, 2.'],
-      homecoming: ['THE SEED VAULT WAS OPENED UNDER A REAL SKY.', "DUNN'S GIRL GOT HER STAR.", 'RETURNED, AS ASKED. HE HAD HIS ANSWER.', "SHE SAID CLEAT'S NAME TO THE SKY.", 'THE ONE IN 0417 STAYED WITH THE SHIP.', 'FORGIVE ME FOR BEING LATE, MARA.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
+      homecoming: ['THE SEED VAULT WAS OPENED UNDER A REAL SKY.', "DUNN'S GIRL GOT HER STAR.", 'RETURNED, AS ASKED. HE HAD HIS ANSWER.', "HE SAID CLEAT'S NAME TO THE SKY.", 'THE ONE IN 0417 STAYED WITH THE SHIP.', 'FORGIVE ME FOR BEING LATE, MARA.', "HE CARRIED HIS MOTHER'S LANTERN.", 'MY NAME WAS USHER.', 'NOT ALONE.', 'FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'],
     };
     const LANDED = {
       deserter: () => ({ hullfolk: 0, sleepers: 0, mara: false, hero: true }),

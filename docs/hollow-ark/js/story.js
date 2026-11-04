@@ -228,7 +228,7 @@
     g.drawImage(frame.img, -Math.floor(frame.w / 2), 0);
     if (n.lantern) HA.scenery.miniLantern(g, 2, frame.h - 7);
     if (n.pack && HA.story.drawPack) HA.story.drawPack(g, -8, 5, true);
-    if (n.motor && HA.story.drawMotor) HA.story.drawMotor(g, -11, 4); // Solder, with the tram motor on her back
+    if (n.motor && HA.story.drawMotor) HA.story.drawMotor(g, -11, 4); // Solder, with the tram motor on his back
     if (n.wrench) {
       g.fillStyle = '#6c7894';
       g.fillRect(4, 5, 1, 6);
@@ -331,7 +331,7 @@
     },
     shim: {
       night: [
-        ['ARE YOU A GHOST? GRAN SAYS SLEEPERS ARE GHOSTS THAT FORGOT TO LIE DOWN.', 'I SAW YOU WAKE UP. YOU FELL OUT OF YOUR BOX. IT WAS FUNNY.', "THERE WAS ANOTHER BOX NEXT TO YOURS. SHE DIDN'T FALL OUT. IS SHE A GHOST TOO?", { me: 'NOT A GHOST.' }],
+        ['ARE YOU A GHOST? GRANDAD SAYS SLEEPERS ARE GHOSTS THAT FORGOT TO LIE DOWN.', 'I SAW YOU WAKE UP. YOU FELL OUT OF YOUR BOX. IT WAS FUNNY.', "THERE WAS ANOTHER BOX NEXT TO YOURS. SHE DIDN'T FALL OUT. IS SHE A GHOST TOO?", { me: 'NOT A GHOST.' }],
         ['WHEN THE SHIP GETS THERE, I AM GOING TO STAND ON THE GROUND. NOT A FLOOR. GROUND.'],
       ],
       'after-release': [['IT HAD A NAME, YOU KNOW. BEFORE. IT TOLD ME IN THE CAGE. IT DID NOT REMEMBER IT.']],
@@ -532,7 +532,7 @@
       world.burst(shim.x + 4, shim.y + 4, ['#3a2a1a', '#6a4a2a'], 5, 0.8);
       yield { walk: shim, x: 23 * 8, speed: 1.4 };
       shim.facing = -1;
-      yield { say: 'SHIM', text: "IT DIDN'T SHOOT ME, GRAN. IT SHOT THE CRAWLERS." };
+      yield { say: 'SHIM', text: "IT DIDN'T SHOOT ME, GRANDAD. IT SHOT THE CRAWLERS." };
       gasket.facing = 1;
       yield { say: 'OLD GASKET', text: 'SHIM. INSIDE.' };
       yield { say: 'SHIM', text: "IT'S COLD AND IT'S LOST. YOU SAID WE DON'T LEAVE LOST THINGS IN THE DARK." };

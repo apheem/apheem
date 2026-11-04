@@ -106,8 +106,8 @@
         gasket.kneel = true;
       }
       yield { wait: 70 };
-      yield me('NOBODY SAID ANYTHING. SHE KNEW FROM THE LANTERN.');
-      yield say('TAMP', "SHE'S MAKING THE BROTH.");
+      yield me('NOBODY SAID ANYTHING. HE KNEW FROM THE LANTERN.');
+      yield say('TAMP', "HE'S MAKING THE BROTH.");
       yield say('TAMP', "THAT WAS WICK'S JOB.");
       yield { wait: 40 };
       yield say('A WOKEN VILLAGER', "THE BOY'S BEEN SITTING BY HIS DOOR SINCE WE CAME DOWN. HE SAYS SHE'LL BE BACK BY LIGHTS-OUT.");
@@ -232,13 +232,13 @@
       yield* broadcast(world);
     },
 
-    // Choice 5, at Solder's bench before she goes.
+    // Choice 5, at Solder's bench before he goes.
     *pistol(world) {
       const s = world.state;
       const p = world.player;
       const pistol = p.weapons.find((w) => w.id === 'pistol');
       if (!pistol) {
-        // A hero who never took the pistol from the Cryo Deck has nothing to trade: Solder arms the gate herself.
+        // A hero who never took the pistol from the Cryo Deck has nothing to trade: Solder arms the gate himself.
         s.flags.pistolDone = true;
         s.flags.pistolGiven = true;
         yield say('SOLDER', "NO PISTOL? THEN THE GATE GETS MY OLD RIVET GUN. IT JAMS, BUT IT BITES.");
@@ -348,7 +348,7 @@
       }
       p.hp = p.maxHp;
       p.facing = -1;
-      S.addStory(world, 'SOLDER BUILT A NEW GATE IN THE NIGHT, ONE THAT OPENS FROM OUR SIDE. THEN SHE WENT DOWN THE FLOOR HATCH TO FETCH A MOTOR FOR THE OLD KEEL TRAM. THE TRAM GOES TO THE ENGINE SPINE, AND THE SPINE GOES UP TO THE STEWARD AND THE KEY THAT STEERS THE SHIP. THE ABLE ARE CLIMBING WITH ME, TO TAKE IT AND TAKE THE SHIP DOWN.');
+      S.addStory(world, 'SOLDER BUILT A NEW GATE IN THE NIGHT, ONE THAT OPENS FROM OUR SIDE. THEN HE WENT DOWN THE FLOOR HATCH TO FETCH A MOTOR FOR THE OLD KEEL TRAM. THE TRAM GOES TO THE ENGINE SPINE, AND THE SPINE GOES UP TO THE STEWARD AND THE KEY THAT STEERS THE SHIP. THE ABLE ARE CLIMBING WITH ME, TO TAKE IT AND TAKE THE SHIP DOWN.');
       world.refreshMusic();
       world.save();
       yield { wait: 30 };
@@ -387,7 +387,7 @@
     yield say('THE SPEAKERS', 'SEND ME THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED.', STEWARD);
     HA.audio.play('intercom');
     s.flags.broadcastHeard = true;
-    s.lead = 'TALK TO SOLDER BEFORE SHE GOES';
+    s.lead = 'TALK TO SOLDER BEFORE HE GOES';
     S.addStory(world, "THE STEWARD, IVO MARRANT, SPOKE OVER THE WARRENS' OLD SPEAKERS: SEND HIM THE SLEEPER, AND NO ONE ELSE WILL BE COUNTED. NOBODY MOVED.");
     // Everyone looks at the hero. Nobody moves.
     for (const n of world.npcs) if (n.state === 'out') n.facing = Math.sign(p.x - n.x) || n.facing;
@@ -415,7 +415,7 @@
     yield say('SOLDER', armed ? 'COME TO MY BENCH BEFORE I GO. BRING THAT PISTOL.' : 'COME TO MY BENCH BEFORE I GO.');
     if (gasket) gasket.kneel = true;
     if (solder) solder.homeX = 86 * 8;
-    S.setLead(world, 'TALK TO SOLDER BEFORE SHE GOES');
+    S.setLead(world, 'TALK TO SOLDER BEFORE HE GOES');
     world.save();
   }
 
@@ -441,7 +441,7 @@
     yield { walk: shim, x: p.x + (shim.x < p.x ? -14 : 14), speed: 1.2 };
     shim.facing = Math.sign(p.x - shim.x) || 1;
     p.facing = -shim.facing;
-    yield say('SHIM', "GRAN SAYS IF YOU'RE GOING TO KEEP COMING BACK, YOU NEED A PROPER NAME.");
+    yield say('SHIM', "GRANDAD SAYS IF YOU'RE GOING TO KEEP COMING BACK, YOU NEED A PROPER NAME.");
     yield say('SHIM', "YOU'RE NOT A SLEEPER ANYMORE. YOU'RE LATE.");
     yield say('SHIM', "THAT'S YOUR NAME.");
     yield { wait: 30 };
@@ -456,13 +456,13 @@
     home: (w) => {
       const s = w.state;
       if (!s.toldShim) return [["GO TO THE BOY FIRST. HE'S BY HIS DOOR."]];
-      if (lie(s)) return [["SOLDER'S AT HER BENCH."], ['...']];
-      return [["SOLDER'S AT HER BENCH. SHE'S GOING TONIGHT, WHATEVER I SAY."], ['THE SHIP HUMS AT NIGHT. MY MOTHER SAID IT WAS SINGING.']];
+      if (lie(s)) return [["SOLDER'S AT HIS BENCH."], ['...']];
+      return [["SOLDER'S AT HIS BENCH. HE'S GOING TONIGHT, WHATEVER I SAY."], ['THE SHIP HUMS AT NIGHT. MY MOTHER SAID IT WAS SINGING.']];
     },
     climb: (w) => {
       if (lie(w.state)) return [["SOLDER'S CHALK GOES DOWN THROUGH THE HATCH. GO ON."], ['...']];
       return [
-        [(w2) => "SOLDER'S CHALK GOES DOWN THROUGH THE HATCH BY HER BENCH. FOLLOW IT, " + name(w2) + '.'],
+        [(w2) => "SOLDER'S CHALK GOES DOWN THROUGH THE HATCH BY HIS BENCH. FOLLOW IT, " + name(w2) + '.'],
         ["THE CREW'S LIFTS UP THE SPINE ARE BIG. A LIFT THAT BIG NEEDS HANDS. YOU'LL HAVE THEM IF THEY TRUST YOU."],
         ['THE SHIP HUMS AT NIGHT. MY MOTHER SAID IT WAS SINGING.'],
       ];

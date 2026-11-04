@@ -558,7 +558,7 @@
       g.fillStyle = '#10121c';
       for (const wx of [8, 50]) g.fillRect(x + wx, y - 3, 6, 3);
     },
-    // Solder's chalk: quick white letters, the way she marks a route.
+    // Solder's chalk: quick white letters, the way he marks a route.
     chalk(g, s) {
       g.globalAlpha = 0.7;
       HA.font.draw(g, s.text, s.x * 8, s.y * 8, '#e6e2d6', { shadow: null });
@@ -1631,7 +1631,7 @@
       if (s.kind === 'lever') drawSwitch(g, world, { x: s.x * 8, y: s.y * 8 - 8, legend: { crane: s.flag } }, cam);
       if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
       if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
-      // Solder's tools at the Crew Camp: only if she came up with the crew (story/bench.js).
+      // Solder's tools at the Crew Camp: only if he came up with the crew (story/bench.js).
       if (s.kind === 'campBench' && world.state.people.solder === 'alive') {
         g.save();
         g.translate(-Math.round(cam.x), -Math.round(cam.y));
@@ -2000,7 +2000,7 @@
     }
   }
 
-  // Solder's toolbag, where she left it by the grate, a wrench sticking out.
+  // Solder's toolbag, where he left it by the grate, a wrench sticking out.
   function drawToolbag(g, s, cam) {
     const x = Math.round(s.x * 8 - cam.x);
     const y = Math.round(s.y * 8 - cam.y);

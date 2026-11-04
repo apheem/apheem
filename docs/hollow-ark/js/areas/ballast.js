@@ -83,7 +83,7 @@
     ],
   });
 
-  // The Pump Gallery: three great pumps, and Solder by the third with the tram motor she came for.
+  // The Pump Gallery: three great pumps, and Solder by the third with the tram motor he came for.
   HA.rooms.add({
     id: 'pump-gallery',
     area: 'ballast',
@@ -227,7 +227,7 @@
   });
 
   // Odell's Workshop: his bench, and at the far end of a floor gone under the silt, the ladder up to his test tank,
-  // where his pressure boots are. (Solder gave the hero her Foam Sprayer in the Pump Gallery.)
+  // where his pressure boots are. (Solder gave the hero his Foam Sprayer in the Pump Gallery.)
   HA.rooms.add({
     id: 'odell-workshop',
     area: 'ballast',

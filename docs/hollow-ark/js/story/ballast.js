@@ -1,5 +1,5 @@
 'use strict';
-// The Flooded Ballast's story (Phase 3.4): finding Solder with the tram motor and a bad leg, her Foam Sprayer, the
+// The Flooded Ballast's story (Phase 3.4): finding Solder with the tram motor and a bad leg, his Foam Sprayer, the
 // walk to Odell's Workshop and his pressure boots, the Silt Mother, the flood (the valves open by themselves), the
 // Jammed Hatch (choice 9) and the keel tram. While the hero is down here the Bloomsworn raid the Warrens, and the
 // gate holds or falls by choice 5. All text is original to Hollow Ark.
@@ -13,7 +13,7 @@
   const me = (text) => ({ say: '', text, color: VOICE });
   const ROOMS = new Set(['silt-tank', 'settling-pools', 'valve-hall', 'long-culvert', 'jammed-hatch']); // where Solder walks with the hero, after the Silt Mother
   // The flood, on the ship grid in pixels: it comes up from four rows under the Valve Hall's floor (so Solder is on
-  // her way before it reaches her feet) to the top of the Jammed Hatch, in 45 seconds.
+  // his way before it reaches his feet) to the top of the Jammed Hatch, in 45 seconds.
   const FLOOD = { start: (184 + 42 + 4) * 8, top: (207 + 5) * 8, frames: 2700 };
   const LIMP = 0.8; // Solder's pace, at its best
 
@@ -28,8 +28,8 @@
     },
   });
 
-  // ---- Solder, limping along behind the hero: she walks the floor, steps up one tile at a time, wades, and if
-  // the hero gets more than a screen ahead she stops and calls. ----
+  // ---- Solder, limping along behind the hero: he walks the floor, steps up one tile at a time, wades, and if
+  // the hero gets more than a screen ahead he stops and calls. ----
   const blocked = (room, b) => {
     for (let ty = Math.floor(b.y / 8); ty <= Math.floor((b.y + b.h - 0.01) / 8); ty++) {
       for (let tx = Math.floor(b.x / 8); tx <= Math.floor((b.x + b.w - 0.01) / 8); tx++) {
@@ -55,7 +55,7 @@
     const hit = HA.room.move(room, n, n.vx, n.vy);
     if (hit.down) n.vy = 0;
     if ((hit.left || hit.right) && want) {
-      // one tile up, if there's room for her there
+      // one tile up, if there's room for him there
       const up = { x: n.x + want * 2, y: n.y - 9, w: n.w, h: n.h };
       if (!blocked(room, up)) {
         n.y -= 9;
@@ -133,7 +133,7 @@
     world.floodLevel -= (FLOOD.start - FLOOD.top) / FLOOD.frames;
     applyFlood(world);
     if (world.time % 90 === 0) HA.audio.play('rumble');
-    // Solder can't swim with that leg: under for more than two seconds and the water has her. The water at the top
+    // Solder can't swim with that leg: under for more than two seconds and the water has him. The water at the top
     // of the hatch, or Solder lost on the way, ends it too (never a clock stopped at 0:00 with nothing happening).
     const n = npcOf(world, 'solder');
     if (n) {
@@ -157,7 +157,7 @@
 
   // ---- The scenes ----
   const SCENES = {
-    // 1. Found: Solder, by Pump 3, with the motor and a leg that won't hold her.
+    // 1. Found: Solder, by Pump 3, with the motor and a leg that won't hold him.
     *found(world) {
       const s = world.state;
       const p = world.player;
@@ -168,10 +168,10 @@
       solder.kneel = true;
       yield { wait: 20 };
       yield say('SOLDER', 'TOOK YOU LONG ENOUGH. HELP ME CARRY THIS.');
-      yield me('THE TRAM MOTOR. AND HER LEG, OUT STRAIGHT IN FRONT OF HER.');
+      yield me('THE TRAM MOTOR. AND HIS LEG, OUT STRAIGHT IN FRONT OF HIM.');
       yield say('SOLDER', 'THE LADDER WAS WET. THE LEG LOST. THE MOTOR WAS FINE, SO THAT IS SOMETHING.');
       if (s.flags.toolbag) {
-        yield me('I GIVE HER THE TOOLBAG.');
+        yield me('I GIVE HIM THE TOOLBAG.');
         yield say('SOLDER', '...YOU CARRIED MY BAG ALL THE WAY DOWN HERE.');
         yield say('SOLDER', "DON'T TELL ANYONE I SAID THIS. THANK YOU.");
         s.flags.toolbagBack = true;
@@ -193,12 +193,12 @@
       solder.kneel = false;
       s.flags.solderWalk = true;
       S.setLead(world, "WALK WITH SOLDER TO ODELL'S WORKSHOP");
-      S.addStory(world, "I FOUND SOLDER IN THE PUMP GALLERY WITH THE TRAM MOTOR AND A BAD LEG. SHE GAVE ME A FOAM SPRAYER. 'MADE IT FOR THE BATH.'");
+      S.addStory(world, "I FOUND SOLDER IN THE PUMP GALLERY WITH THE TRAM MOTOR AND A BAD LEG. HE GAVE ME A FOAM SPRAYER. 'MADE IT FOR THE BATH.'");
       Object.assign(solder, { limping: true, lines: ["I'M RIGHT BEHIND YOU. SLOWLY."] });
       world.save();
     },
 
-    // 2. The walk: Solder talks as she limps along the walkway, and play goes on.
+    // 2. The walk: Solder talks as he limps along the walkway, and play goes on.
     *walkTram(world) {
       const n = npcOf(world, 'solder');
       if (!n) return;
@@ -217,7 +217,7 @@
       S.bark(world, n, 'WICK WOULD HAVE HATED IT DOWN HERE. NOTHING GROWS.');
       S.bark(world, n, "SHE'D HAVE TALKED THE WHOLE WAY. I KEEP LEAVING GAPS FOR HER.");
     },
-    // She stops at the workshop door, and goes back to sit with the motor.
+    // He stops at the workshop door, and goes back to sit with the motor.
     *workshopDoor(world) {
       const s = world.state;
       const n = npcOf(world, 'solder');
@@ -296,7 +296,7 @@
       yield { wait: 60 };
       S.addStory(world, 'THE SILT MOTHER IS DEAD. SHE WAS ONLY AN EEL ONCE.');
       world.save();
-      // Solder, who heard it go quiet, with the motor on her back.
+      // Solder, who heard it go quiet, with the motor on his back.
       const p = world.player;
       const n = placeSolder(world, 1 * 8);
       n.y = 19 * 8 - n.h;
@@ -338,7 +338,7 @@
       for (let i = 0; i < 9; i++) world.burst((22 + (i % 3) * 6) * 8, (12 + Math.floor(i / 3) * 8) * 8 + 14, ['#6fd0b8', '#d8f4ff'], 8, 2);
       startFlood(world);
       S.setLead(world, 'GET SOLDER UP THE CULVERT TO THE HATCH');
-      world.toast("KEEP SOLDER CLOSE · SHE CAN'T SWIM", 200);
+      world.toast("KEEP SOLDER CLOSE · HE CAN'T SWIM", 200);
     },
     *floodFail(world) {
       const s = world.state;
@@ -353,11 +353,11 @@
       yield { wait: 20 };
       world.holdFade = false;
       yield { fade: 'in', frames: 30 };
-      yield me('THE WATER TOOK HER UNDER. I GOT HER BACK TO THE HALL, AND IT WENT DOWN AS FAST AS IT CAME.');
+      yield me('THE WATER TOOK HIM UNDER. I GOT HIM BACK TO THE HALL, AND IT WENT DOWN AS FAST AS IT CAME.');
       yield say('SOLDER', "...ALL RIGHT. ALL RIGHT. I'M ALL RIGHT. STAY WHERE I CAN SEE YOU THIS TIME.");
     },
 
-    // 4. The Jammed Hatch: Solder gets it open, and the beam over it comes down on her. Choice 9.
+    // 4. The Jammed Hatch: Solder gets it open, and the beam over it comes down on him. Choice 9.
     *jammed(world) {
       const s = world.state;
       const p = world.player;
@@ -408,7 +408,7 @@
       n.kneel = true;
       yield { wait: 40 };
       yield say('SOLDER', "...OH. THAT'S NOT GOOD.");
-      yield me('THE BEAM HAS HER LEGS. BEHIND US, THE WATER IS COMING UP THE CULVERT.');
+      yield me('THE BEAM HAS HIS LEGS. BEHIND US, THE WATER IS COMING UP THE CULVERT.');
       yield say('SOLDER', "IT WON'T LIFT. I'VE GOT ONE CHARGE IN MY BAG. WITH YOUR LAUNCHER IT WOULD BLOW THE BEAM CLEAR. AND THE LAUNCHER WITH IT.");
       yield me('THERE IS BLOOM GROWING THICK ON THE HATCH FRAME. I KNOW WHAT EATING IT WOULD DO.');
       const last = HA.bloom.closes(s, 2);
@@ -418,7 +418,7 @@
           options: [
             { label: 'BLOW THE BEAM', confirm: { title: 'BLOW THE BEAM WITH THE CHARGES?', gain: 'SOLDER LIVES', lose: 'THE BREACH CHARGES AND THE LAUNCHER, FOR GOOD' } },
             { label: 'EAT THE BLOOM ON THE HATCH', confirm: { title: 'EAT THE BLOOM TO LIFT THE BEAM?', gain: 'SOLDER LIVES', lose: last ? 'THIS WILL BE THE LAST OF YOU.' : 'MORE OF YOURSELF · THE BLOOM GROWS' } },
-            { label: 'LEAVE HER', confirm: { title: 'LEAVE SOLDER UNDER THE BEAM?', gain: 'EVERYTHING YOU CARRY', lose: 'SOLDER' } },
+            { label: 'LEAVE HIM', confirm: { title: 'LEAVE SOLDER UNDER THE BEAM?', gain: 'EVERYTHING YOU CARRY', lose: 'SOLDER' } },
           ],
         },
       };
@@ -431,7 +431,7 @@
           p.weapons.splice(i, 1);
           p.wi = Math.min(p.wi, p.weapons.length - 1);
         }
-        S.addChoice(world, "I BLEW THE BEAM OFF SOLDER WITH HER LAST CHARGE AND MY LAUNCHER. THE LAUNCHER WENT WITH IT.");
+        S.addChoice(world, "I BLEW THE BEAM OFF SOLDER WITH HIS LAST CHARGE AND MY LAUNCHER. THE LAUNCHER WENT WITH IT.");
         yield say('SOLDER', 'BAG. FRONT POCKET. MIND THE FUSE.');
         world.flash('#ffb84d', 8);
         world.shake(6);
@@ -464,7 +464,7 @@
         yield say('SOLDER', 'GO. SOMEONE HAS TO START THE TRAM.');
         yield say('SOLDER', "TAKE THE MOTOR. IT GOES IN THE WINCH WITH THE BIG END DOWN. TELL GASKET I WAS RUDE ABOUT IT TO THE END.");
         n.motor = false;
-        yield me('SHE PUSHES THE MOTOR INTO MY HANDS, AND DOESN\'T LOOK AT ME AGAIN.');
+        yield me('HE PUSHES THE MOTOR INTO MY HANDS, AND DOESN\'T LOOK AT ME AGAIN.');
       }
       // Through the hatch, which shuts behind; the flood stays on the other side of it.
       s.flags.flooding = false;
@@ -511,7 +511,7 @@
         n.facing = 1;
         yield say('SOLDER', 'MOTOR GOES IN HERE. HOLD THIS. NO, THE OTHER END.');
         n.motor = false;
-      } else yield me("SHE'D HAVE HAD THIS IN IN A MINUTE. IT TAKES ME TEN.");
+      } else yield me("HE'D HAVE HAD THIS IN IN A MINUTE. IT TAKES ME TEN.");
       for (let i = 0; i < 4; i++) {
         HA.audio.play('clamp');
         yield { wait: 20 };
@@ -557,17 +557,17 @@
       s.flags.solderMourned = true;
       if (gasket) gasket.facing = Math.sign(world.player.x - gasket.x) || 1;
       if (s.flags.tramWest) {
-        yield say('OLD GASKET', 'THE TRAM CAME IN WITH JUST YOU ON IT. WHERE IS SHE?');
-        yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. SHE SAID SOMEONE HAD TO START THE TRAM.');
+        yield say('OLD GASKET', 'THE TRAM CAME IN WITH JUST YOU ON IT. WHERE IS HE?');
+        yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. HE SAID SOMEONE HAD TO START THE TRAM.');
       } else {
-        yield say('OLD GASKET', 'THE TRAM CAME IN EMPTY. WHERE IS SHE?');
-        yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. SHE SENT THE TRAM.');
+        yield say('OLD GASKET', 'THE TRAM CAME IN EMPTY. WHERE IS HE?');
+        yield me('UNDER A BEAM, AT THE TOP OF THE CULVERT. HE SENT THE TRAM.');
       }
       yield { wait: 40 };
-      yield say('OLD GASKET', 'WAS SHE RUDE ABOUT IT?');
+      yield say('OLD GASKET', 'WAS HE RUDE ABOUT IT?');
       yield me('TO THE END.');
       yield say('OLD GASKET', 'GOOD.');
-      S.addStory(world, 'I TOLD GASKET ABOUT SOLDER. SHE ASKED IF SHE WAS RUDE ABOUT IT.');
+      S.addStory(world, 'I TOLD GASKET ABOUT SOLDER. HE ASKED IF HE WAS RUDE ABOUT IT.');
       world.save();
     },
   };
@@ -635,7 +635,7 @@
       if (id === 'pump-gallery' && !f.siltDown) {
         const n = npcOf(world, 'solder');
         if (n) {
-          n.state = 'out'; // whatever the Warrens' rules say, down here she's always out
+          n.state = 'out'; // whatever the Warrens' rules say, down here he's always out
           if (!f.solderFound) n.kneel = true;
           else if (f.solderWalk) Object.assign(n, { limping: true, lines: ["I'M RIGHT BEHIND YOU. SLOWLY."] });
           else n.lines = ["THE SILT TANK'S UNDER THE EAST TANK. SOMETHING BIG LIVES IN IT.", "I'LL BE HERE. ME AND THE MOTOR."];
@@ -646,7 +646,7 @@
         if (ROOMS.has(id)) placeSolder(world);
         else f.solderWith = false;
       }
-      // Gone back west without her, the hero finds her waiting in the Silt Tank, and she falls in behind again.
+      // Gone back west without him, the hero finds him waiting in the Silt Tank, and he falls in behind again.
       if (id === 'silt-tank' && f.siltDown && !f.solderWith && !s.people.solder && !world.scene) {
         f.solderWith = true;
         placeSolder(world);
@@ -732,7 +732,7 @@
     if (id === 'foam') S.addStory(world, 'SOLDER\'S FOAM SPRAYER SETS A PLATFORM ON WATER OR ON BLOOM SILT. IT DOESN\'T LAST.');
   };
 
-  // Is Solder close behind? (The Jammed Hatch waits for her.)
+  // Is Solder close behind? (The Jammed Hatch waits for him.)
   S.solderNear = (world) => {
     const n = npcOf(world, 'solder');
     return !!n && Math.abs(n.x - world.player.x) < 64;

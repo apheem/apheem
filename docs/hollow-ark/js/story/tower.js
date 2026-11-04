@@ -41,7 +41,7 @@
     ({
       gasket: ["WE'LL HOLD THE LIFT. GO ON. WE'RE RIGHT BEHIND YOU.", 'WE WANT TO BE IN THE ROOM. ALL OF US.'],
       solder: ["MARBLE. HE'S GOT MARBLE UP HERE. WE'VE GOT RUST.", "MY LEG'S FINE. STOP LOOKING AT IT."],
-      shim: ["GRAN SAYS I HAVE TO STAY BEHIND HER. I'M BEHIND HER."],
+      shim: ["GRANDAD SAYS I HAVE TO STAY BEHIND HIM. I'M BEHIND HIM."],
     })[id] || ['WE WANT TO BE IN THE ROOM.'];
   function placeCrew(world, at, ty) {
     const s = world.state;
@@ -157,7 +157,7 @@
         yield { wait: 60 };
         yield say('SHIM', '...I KNEW. I THINK I KNEW.');
         yield say('SHIM', 'I KEPT THE LANTERN LIT ANYWAY.');
-        yield say('SHIM', "I'M GOING DOWN TO GRAN.");
+        yield say('SHIM', "I'M GOING DOWN TO GRANDAD.");
         yield { walk: shim, x: 2 * 8, speed: 0.7 };
         shim.state = 'gone';
         s.flags.shimWith = true;
@@ -268,7 +268,7 @@
       }
       // Shim goes back down to the crew now, whatever he knows.
       if (shim) {
-        if (s.shimKnows === false) yield say('SHIM', "...I'M GOING BACK TO GRAN.");
+        if (s.shimKnows === false) yield say('SHIM', "...I'M GOING BACK TO GRANDAD.");
         shim.follow = false;
         yield { walk: shim, x: 70 * 8, speed: 0.8 };
         shim.state = 'gone';

@@ -191,7 +191,7 @@
     *wickTerraces(world) {
       const wick = npcOf(world, 'wick');
       if (!wick || !wick.follow) return;
-      S.bark(world, wick, 'THESE WERE THE BEAN TERRACES. MY MOTHER PICKED HERE AS A GIRL, BEFORE THE GARDENER LOCKED US OUT.');
+      S.bark(world, wick, 'THESE WERE THE BEAN TERRACES. MY FATHER PICKED HERE AS A BOY, BEFORE THE GARDENER LOCKED US OUT.');
       S.bark(world, wick, "IF YOU FALL, FALL ON THE BEANS. THEY'VE HAD WORSE.");
     },
     *wickTop(world) {
