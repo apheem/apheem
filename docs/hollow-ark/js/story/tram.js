@@ -23,15 +23,18 @@
   // Between riding home and riding east with the climbers, the ways on to the Spine wait for them.
   S.tramHeld = (s) => (s.flags.tramWest && !s.flags.tramEast ? 'NOT WITHOUT THE CLIMBERS. THE TRAM WAITS IN THE SUMP.' : null);
 
-  // Has home told the hero everything it was waiting to? (The raid, Solder, Flux: ballast.js and cargo.js.)
-  function newsTold(s) {
+  // Has home told the hero everything it was waiting to? (The raid, Solder, Flux: ballast.js and cargo.js; and,
+  // unless asked not to, Sorrel home and found: sorrel.js, which waits for the rest.)
+  function newsTold(s, sorrel = true) {
     const f = s.flags;
     if (s.warrensRaid && !f.raidSeen) return false;
     if (s.people.solder === 'dead' && !f.solderMourned) return false;
     if (s.people.flux === 'home' && !f.fluxHome) return false;
     if (s.people.flux === 'stripped' && s.logs.lists && !f.fluxNamed) return false;
+    if (sorrel && s.people.sorrel === 'home' && !f.sorrelHome) return false;
     return true;
   }
+  S.newsTold = newsTold;
 
   function stand(world, id, tx, ty, lines) {
     const n = S.makeNpc(world, id, { x: tx * 8, y: FLOOR(ty) });

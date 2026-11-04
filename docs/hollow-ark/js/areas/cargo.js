@@ -655,9 +655,14 @@
       D: { type: 'door', id: 'aisleGate', open: (s) => !!s.flags.aisleGate },
       a: { type: 'hatch', up: true, to: 'watch-gallery', name: 'the ladder up' },
     },
-    triggers: [{ x0: 4, x1: 12, when: (s) => !s.flags.aisleGate, run: 'aisleShut' }],
+    triggers: [
+      { x0: 4, x1: 12, when: (s) => !s.flags.aisleGate, run: 'aisleShut' },
+      // Sorrel's chalk, once she's run (3.13; story/sorrel.js).
+      { x0: 14, x1: 24, when: (s) => !!s.flags.greenhouse && !s.flags.sorrelAisle, run: 'sorrelAisle' },
+    ],
     scenery: [
       { kind: 'shelves', x0: 4, x1: 116, y: 19, h: 15 },
+      { kind: 'sorrel', what: 'chalk', x: 14, y: 16.6, text: 'SORREL · DOWN WITH THE WATER ←' },
       { kind: 'stencil', x: 100, y: 5, text: 'AISLE 1-120' },
       { kind: 'stencil', x: 4, y: 7, text: 'AISLE GATE · WATCH 4 ↑' },
     ],

@@ -262,7 +262,10 @@
       } else if (legend.type === 'switch') world.switches.push({ legend, x: sp.x, y: sp.y + 8 - 16, w: 8, h: 16 });
       else if (ch === 'H') {
         if (!s.taken[id]) world.pickups.push({ kind: 'capsule', key: id, x: sp.x, y: sp.y - 2, w: 8, h: 10, life: Infinity, t: 0 });
-      } else if (legend.type === 'log') world.logs.push({ id: legend.id, scene: legend.scene, x: sp.x - 1, y: sp.y + 8 - 12, w: 10, h: 12, read: !!s.logs[legend.id] });
+      } else if (legend.type === 'log') {
+        // A log can wait on the story (when: (state) => bool): Sorrel's frost in the Seed Vault, once she's run.
+        if (!legend.when || legend.when(s, world)) world.logs.push({ id: legend.id, scene: legend.scene, label: legend.label, x: sp.x - 1, y: sp.y + 8 - 12, w: 10, h: 12, read: !!s.logs[legend.id] });
+      }
       else if (legend.type === 'npc') {
         if (!legend.when || legend.when(s, world)) world.npcs.push(HA.story.makeNpc(world, legend.id, sp));
       } else if (legend.type === 'door') addDoorCell(world, legend, sp);

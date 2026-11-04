@@ -424,22 +424,21 @@
       world.actors = world.actors.filter((a) => a !== lantern);
       p.kneel = 0;
       yield me('HER LANTERN WAS STILL LIT.');
+      // Released, the Pruner has one more thing to cut: the door it welded shut on Sorrel (story/sorrel.js).
+      if (pruner) yield* S.cutGreenhouse(world, pruner, first);
       yield say('A WOKEN VILLAGER', "WE'LL TAKE THE HOIST DOWN, AND THE GARDEN LIFT HOME. GO. BRING HER BACK.");
       // Down the hoist to the Root Cellar, a few at a time.
       woken.forEach((a, i) => {
         a.kneel = false;
         a.goX = NURSERY_HOIST * 8 - 4 + (i % 3) * 4;
       });
-      if (pruner) {
-        pruner.walking = true;
-        yield { walk: pruner, x: 112 * 8, speed: 0.5 };
-        pruner.walking = false;
-      }
       yield { until: () => woken.every((a) => Math.abs(a.x - a.goX) < 1) };
       HA.audio.play('lift');
       world.actors = world.actors.filter((a) => !woken.includes(a));
       yield { wait: 40 };
       yield { card: [release ? 'ELEVEN CAME HOME.' : 'SEVEN CAME HOME.'], hold: 140 };
+      // Finished, the Pruner's welds stay, and so does whoever is behind them (lock 3b, story/sorrel.js).
+      if (!release) yield* S.weldedIn(world);
       S.setLead(world, 'FIND WICK IN THE VATS');
       if (pruner) {
         pruner.leaving = true;

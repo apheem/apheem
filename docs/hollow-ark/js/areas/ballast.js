@@ -431,11 +431,25 @@
     gy: 184,
     music: 'ballastWater',
     abilities: { thruster: true, grapple: true, boots: true },
-    legend: { n: { needs: { foam: true } } }, // the bulb across the settling bed
+    legend: {
+      n: { needs: { foam: true } }, // the bulb across the settling bed
+      // The hatch at the bottom of the east pool's sump, down to the Dry Pumps (3.13). Once Sorrel has run, it's
+      // open, and barred from below until the hero knows her game; otherwise it's a plate rusted shut.
+      h: {
+        type: 'hatch',
+        to: 'dry-pumps',
+        name: 'the hatch in the sump',
+        open: () => true,
+        shut: (s) => (!s.flags.greenhouse ? "RUSTED SHUT. NOBODY'S OPENED THIS IN A HUNDRED YEARS." : s.flags.sorrelOpen || s.logs.sorrelGlass ? null : 'BARRED FROM BELOW.'),
+        scene: 'knock',
+      },
+    },
     scenery: [
       { kind: 'rust', n: 24 },
       { kind: 'stencil', x: 10, y: 33, text: 'SETTLING BED 2' },
       { kind: 'pipes', y: 25 },
+      // Her tally along the sump's lip, once she's run (3.13).
+      { kind: 'sorrel', what: 'tally', x: 27, y: 41.2, n: 33 },
     ],
     map: [
       '########################################',
@@ -481,6 +495,50 @@
       '........................................',
       '..................................x.....',
       '########~~~~~#####~~~~~~####~~~~~#######',
+      '############################~~h~~#######',
+      '########################################',
+    ],
+  });
+
+  // The Dry Pumps (3.13): under the Settling Pools, in by the hatch at the bottom of their sump. A pump room that still
+  // runs dry, and Sorrel at its lever, counting the strokes (story/sorrel.js).
+  HA.rooms.add({
+    id: 'dry-pumps',
+    area: 'ballast',
+    name: 'THE DRY PUMPS',
+    gx: 240,
+    gy: 229,
+    legend: { a: { type: 'hatch', up: true, to: 'settling-pools', name: 'the ladder up' } },
+    scenery: [
+      { kind: 'rust', n: 10 },
+      { kind: 'pipes', y: 10 },
+      { kind: 'stencil', x: 9, y: 11, text: 'BED 2 · DRY PUMPS 1-3' },
+      { kind: 'sorrel', what: 'pumps', x: 14, y: 18 },
+      { kind: 'sorrel', what: 'tally', x: 4, y: 13, n: 140, every: true },
+      { kind: 'sorrel', what: 'nest', x: 31, y: 18 },
+    ],
+    map: [
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##...a................................##',
+      '########################################',
+      '########################################',
       '########################################',
       '########################################',
     ],

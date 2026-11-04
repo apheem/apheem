@@ -59,9 +59,9 @@
     return [count('COUNT: WARDENS, 0.', 'NAMES: NOT RECORDED.')];
   }
 
-  // The people whose fates only matter where the story reached them.
-  function others(s) {
-    const out = [];
+  // The people whose fates only matter where the story reached them. Sorrel's card is the ending's own.
+  function others(s, id) {
+    const out = HA.story.sorrelCards(s, id).map((lines) => card(...lines));
     const p = s.people;
     if (p.flux === 'home') out.push(card('FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'));
     if (p.flux === 'stripped') out.push(card('NO ONE SAW FLUX AGAIN.'));
@@ -75,21 +75,23 @@
     return out;
   }
 
-  function hullfolkCount(s) {
-    return 20 + (s.takenHome || 0);
+  // The Hullfolk: the Warrens' twenty, the taken who came home from the Gardens, and Sorrel, if she came home (or,
+  // left counting, if the ship came down whole: story/sorrel.js).
+  function hullfolkCount(s, id) {
+    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0);
   }
 
   // ---- Who reached the new world, out of everyone who could have: the results after the credits ----
-  // The Warrens are twenty, plus the taken who came home from the Gardens (eleven at most). The sleepers are
+  // The Warrens are twenty, plus all twelve of the taken: the eleven in the cradles, and Sorrel. The sleepers are
   // every pod still in the stacks. Every number follows a line the epilogue says.
-  const HULLFOLK_MOST = 20 + 11;
+  const HULLFOLK_MOST = 20 + 12;
   const SLEEPERS = 3986;
   function landed(s, id) {
     const pods = id === 'homecoming' || (id === 'crash' && s.podsLaunched > 0);
     let hullfolk = 0;
-    if (id === 'homecoming') hullfolk = hullfolkCount(s); // "THE WARRENS CAME DOWN WHOLE", or those who hid came too
+    if (id === 'homecoming') hullfolk = hullfolkCount(s, id); // "THE WARRENS CAME DOWN WHOLE", or those who hid came too
     // On the sleds the whole village made it if the gate held; if it fell, only the few left (the crew and Tamp).
-    if (id === 'crash') hullfolk = s.warrensRaid === 'fell' ? Math.min(hullfolkCount(s), s.crew + 1) : hullfolkCount(s);
+    if (id === 'crash') hullfolk = s.warrensRaid === 'fell' ? Math.min(hullfolkCount(s, id), s.crew + 1) : hullfolkCount(s, id);
     return {
       hullfolk,
       sleepers: pods ? SLEEPERS : 0,
@@ -172,7 +174,7 @@
       if (stayed) out.push(pic({ lines: [['NOT ALONE.', NAV]] }, 'navigator'));
       else if (s.people.navigator === 'core') out.push(pic(card("THE NAVIGATOR'S CORE LIT A SCHOOL.", 'IT HUMMED AT NIGHT.'), 'navigator', { school: true }));
       else out.push(pic({ lines: [['THE NAVIGATOR SLEPT.', NAV]] }, 'navigator'));
-      return out.concat(others(s));
+      return out.concat(others(s, 'homecoming'));
     },
 
     crash(s) {
@@ -186,7 +188,7 @@
         solderAlive(s) ? pic(card('SOLDER STARTED ON A GATE', 'BEFORE THE FIRES WERE OUT.'), 'gate') : card("SOLDER'S GATE WENT DOWN WITH THE ARK."),
         warrensCard(s, 'THE WARRENS RODE THE SLEDS DOWN TOGETHER.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', { sleds: true }),
         ...wardensCount(s),
-        ...others(s),
+        ...others(s, 'crash'),
         { lines: [], space: true, ark: { x: 124, y: 78, s: 2, broken: 1 } },
       ];
     },
@@ -200,7 +202,7 @@
         voice('THEY ARE SAFER ASLEEP.'),
         pic(card('THE SLEEPERS STAYED ASLEEP.', ['MARA AMONG THEM.', DIM]), 'sleepers', { dark: true }),
         pic(voice('I HAD THE KEY. I COULD HAVE WOKEN HER.', 'I TOLD MYSELF SHE WAS SAFER ASLEEP.'), 'sleepers', { dark: true }),
-        ...others(s),
+        ...others(s, 'dominion'),
         { lines: ['THE SHIP KEPT CIRCLING.'], space: true, ark: { x: 124, y: 104, s: 1 } },
       ];
     },
@@ -214,7 +216,7 @@
         pic(card('PINK FUNGUS GREW ON THE POD GLASS.', ['ON 0418 FIRST.', DIM]), 'mara', { pink: true }),
         pic({ lines: [["I'M RIGHT HERE, LITTLE ONE.", BLOOM], ["I'M NOT LATE.", BLOOM]] }, 'mara', { pink: true, hero: true }),
         ...wardensCount(s),
-        ...others(s),
+        ...others(s, 'overgrown'),
         { lines: [['NOT YET.', NAV]] },
       ];
     },
@@ -226,7 +228,7 @@
       const solder = s.people.solder === 'alive' ? (climbing ? 'COUNT: SOLDER. LOCATION: THE SPINE.' : 'COUNT: SOLDER. AT THE GATE.') : s.people.solder === 'dead' ? 'COUNT: SOLDER, 0.' : 'COUNT: SOLDER. NOT RECORDED.';
       const shim = s.flags.shimRanOff ? ['COUNT: SHIM. LOCATION: THE VENTS.', 'CLIMBING.'] : ['COUNT: SHIM. LOCATION: THE WARRENS.', 'WATCHING THE GATE.'];
       return [
-        count('COUNT: HULLFOLK, ' + hullfolkCount(s) + '.'),
+        count('COUNT: HULLFOLK, ' + hullfolkCount(s, 'deserter') + '.'),
         count(solder),
         count(...shim),
         { lines: [['...', COUNT]], hold: 90 },

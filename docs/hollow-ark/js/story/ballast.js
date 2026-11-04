@@ -11,7 +11,7 @@
   const NAV = '#b8f4ff';
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
-  const ROOMS = new Set(['silt-tank', 'settling-pools', 'valve-hall', 'long-culvert', 'jammed-hatch']); // where Solder walks with the hero, after the Silt Mother
+  const ROOMS = new Set(['silt-tank', 'settling-pools', 'dry-pumps', 'valve-hall', 'long-culvert', 'jammed-hatch']); // where Solder walks with the hero, after the Silt Mother (and down to Sorrel's pumps: sorrel.js)
   // The flood, on the ship grid in pixels: it comes up from four rows under the Valve Hall's floor (so Solder is on
   // his way before it reaches his feet) to the top of the Jammed Hatch, in 45 seconds.
   const FLOOD = { start: (184 + 42 + 4) * 8, top: (207 + 5) * 8, frames: 2700 };
