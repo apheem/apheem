@@ -1908,6 +1908,21 @@ async function play(browserType, url, label) {
       talk();
       talkThrough();
       b = w().boss;
+      // Each move from its wind-up. He picks them at random, and with the hero standing still by him a lunge can go a
+      // whole fit without coming up.
+      for (let i = 0; i < 300 && (w().scene || b.state !== 'think'); i++) HA.debug.step(1);
+      const moves = {};
+      for (const [tele, want] of [['lungeTele', 'lunge'], ['leapTele', 'drop'], ['slamTele', 'wave']]) {
+        w().shots = w().shots.filter((sh) => sh.kind !== 'wave');
+        b.state = tele;
+        b.timer = 1;
+        for (let i = 0; i < 200 && !moves[tele]; i++) {
+          HA.debug.step(1);
+          if (want === 'wave' ? w().shots.some((sh) => sh.kind === 'wave') : b.state === want) moves[tele] = true;
+        }
+        for (let i = 0; i < 300 && b.state !== 'think'; i++) HA.debug.step(1);
+      }
+      out.moves = Object.keys(moves).sort().join(',');
       const states = new Set();
       out.shards = 0; // the most in the air at once: the hero, standing by the racks, picks them up
       for (let i = 0; i < 2700 && !w().scene; i++) {
@@ -1941,7 +1956,7 @@ async function play(browserType, url, label) {
     expect(rv.chair === 'out' && rv.seen && rv.found === 'cotterFound' && /HASP SENT ME/.test(rv.foundSaid), `Cotter in his chair in the Muster went wrong (${JSON.stringify(rv)})`);
     expect(rv.fight.type === 'cotter' && rv.fight.fighting && rv.fight.music === 'wick' && rv.fight.check === 'muster' && rv.hit, `Cotter's fight did not start, or hits shortened it (${JSON.stringify(rv.fight)}, ${rv.hit})`);
     expect(rv.fell.room === 'muster' && rv.fell.chair && !rv.fell.boss && !rv.fell.cotter, `a fall in Cotter's fight did not put him back in his chair (${JSON.stringify(rv.fell)})`);
-    expect(['lunge', 'slamTele', 'cling', 'drop', 'down'].every((st) => rv.states.split(',').includes(st)) && rv.shards > 0, `Cotter's fight is missing a move, or its shards (${rv.states}, ${rv.shards})`);
+    expect(rv.moves === 'leapTele,lungeTele,slamTele' && rv.states.split(',').includes('down') && rv.shards > 0, `Cotter's fight is missing a move, or its shards (${rv.moves}; ${rv.states}, ${rv.shards})`);
     expect(rv.defeated === 'cotterDefeated' && /MA'S GOING TO KILL ME/.test(rv.beaten) && rv.choice === 'WALK HIM HOME DRY/GIVE HIM HIS DOSE', `the end of Cotter's fit went wrong (${rv.defeated}, ${rv.choice}: ${rv.beaten})`);
     expect(rv.after.cotter === 'dry' && rv.after.mercy === 1 && !rv.after.check && !rv.after.boss && rv.after.gone === 'gone' && rv.after.music !== 'wick' && /TELL HER I'M COMING/.test(rv.dry), `Cotter sent home dry went wrong (${JSON.stringify(rv.after)}: ${rv.dry})`);
     expect(rv.home === 'cotterHome' && /HANDS AND KNEES/.test(rv.homeSaid) && rv.bed === 'hidden:true' && rv.count === 32 && /COTTER CARRIED HASP DOWN TO THE SLEDS/.test(rv.crash) && !rv.crew, `Cotter home dry went wrong (${JSON.stringify(rv)})`);
