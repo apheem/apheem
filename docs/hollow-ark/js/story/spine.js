@@ -11,6 +11,7 @@
   const VOICE = S.VOICE;
   const ABEL = '#f2a0c8'; // Abel's voice, from inside the furnace
   const LINE = '#c9a070'; // a voice down the line phone
+  const LOG = '#b8f4ff'; // something read off a wall
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
   const name = (w) => S.callName(w.state);
@@ -24,6 +25,15 @@
     sealed: {
       title: 'SECURITY · YEAR 40',
       text: 'NAVIGATION DECK SEALED. ACCESS: WARDENS ONLY, ON RELEASE FROM THE HELM KEY.',
+    },
+    // The Stokers' Bunks, beside the Piston Run (the third batch of new rooms)
+    stokers: {
+      title: "REACTOR · STOKERS' ROSTER",
+      text: 'A STOKER LASTS A YEAR AT THE FIRES. TWO, ON A FULL DOSE, WHEN THEY STOP FEELING THE HEAT. KEEP THEM ON A FULL DOSE. WHEN ONE IS USED UP, TAKE ANOTHER FROM THE WALLS. LAST IN: ABEL, YEAR 307. ABEL HAS NOT NEEDED REPLACING.',
+    },
+    abelCount: {
+      title: 'THE LAST BUNK',
+      text: 'SCRATCHED INTO THE FRAME: A COUNT IN FIVES, THE WAY THE HULLFOLK COUNT DAYS. IT RUNS FOR A YEAR. THEN THE FIVES COME APART, AND IT IS ONLY SCRATCHES, ALL OVER THE FRAME, UNTIL THERE IS NO ROOM LEFT. CUT DEEP AT THE TOP, IN THE FIRST HAND: ABEL.',
     },
   });
 
@@ -218,6 +228,43 @@
       world.save();
     },
 
+    // The Piston Run's way up is plated over, bolted on the landing's side; the stokers' door is beside it.
+    *plateShut(world) {
+      yield me("THE SHAFT'S PLATED OVER ABOVE ME, BOLTED FROM THE TOP. THE DOOR BESIDE IT SAYS STOKERS.");
+    },
+    // Come round through the bunks onto the landing: the plate's bolt is on this side.
+    *plateBolt(world) {
+      yield { wait: 20 };
+      world.state.flags.stokersPlate = true;
+      yield { wait: 30 };
+      yield me("THE PLATE OVER THE SHAFT WAS BOLTED ON THIS SIDE. I DREW THE BOLT. IT'S THE SHORT WAY DOWN NOW.");
+      world.save();
+    },
+    // The Stokers' Bunks: where the Steward kept the stokers he took from the walls. Someone above is humming.
+    *stokers(world) {
+      world.state.flags.stokersSeen = true;
+      yield { wait: 30 };
+      yield me('BUNKS, BOLTED TO THE WALL, IN THE HEAT OFF THE REACTOR. NOBODY COULD SLEEP IN HERE. SOMEBODY HAD TO.');
+      yield { wait: 40 };
+      yield me('FROM SOMEWHERE ABOVE, OVER THE ROAR OF THE FIRES, SOMEONE IS HUMMING.');
+      yield say('THE FURNACE', 'MM. MM-MM. MM-MM-MM.', ABEL);
+      yield me('I KNOW THAT TUNE. THEY HUM IT IN THE WARRENS.');
+      S.addStory(world, "THE STEWARD KEPT HIS STOKERS IN BUNKS BESIDE THE PISTON RUN. SOMEONE UP IN THE FURNACE WAS HUMMING THE TUNE THEY HUM IN THE WARRENS.");
+    },
+    // The last bunk, alone at the east end: a count kept for a year, and a name.
+    *abelBunk(world) {
+      const s = world.state;
+      const first = !s.logs.abelCount;
+      s.logs.abelCount = true;
+      HA.audio.play('tally');
+      const L = S.LOGS.abelCount;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      S.addStory(world, "THE LAST STOKER'S BUNK HAS A HULLFOLK COUNT SCRATCHED INTO ITS FRAME: A YEAR OF FIVES, THEN ONLY SCRATCHES. THE NAME CUT AT THE TOP IS ABEL.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
+    },
+
     // The Piston Landing: the second lift, if there are hands enough.
     *liftTwo(world) {
       const s = world.state;
@@ -288,7 +335,8 @@
       }
       yield { wait: 40 };
       yield say('THE FURNACE', 'I WAS ABEL.', ABEL);
-      if (world.state.logs.lists) yield me("ABEL. THE NAME AT THE END OF THE STEWARD'S LISTS: TO THE REACTOR, TO STOKE.");
+      if (world.state.logs.abelCount) yield me('ABEL. THE NAME CUT INTO THE LAST BUNK, OVER A YEAR OF FIVES.');
+      else if (world.state.logs.lists) yield me("ABEL. THE NAME AT THE END OF THE STEWARD'S LISTS: TO THE REACTOR, TO STOKE.");
       yield say('THE FURNACE', 'I FED THE FIRES.', ABEL);
       yield { wait: 30 };
       yield say('ABEL', "DON'T PUT THEM OUT.", ABEL);
