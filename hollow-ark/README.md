@@ -227,6 +227,7 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 ## 0.3.13: Cody's notes from Nov 4
 
 - **Old Gasket and Solder are men.** Their names read as men's names, so the game now calls them he. Gasket is Shim's grandad, Wick's father and Cleat's brother.
+- **The taken are found deeper in the Gardens.** The cradles aren't in the Root Cellar any more: the racks are empty, and the Wardens have hoisted the taken up and run the hoist up after them. Wick takes you up through the Gardens as far as the water works, where the cradles' air shows the way: up over the Spore Beds, to the old Nursery. Climb the Spore Beds alone, fight through the Nursery's potting floor and over its thorn pit, and find them. Send the hoist down for Wick. The Pruner's Seal Room is through a hatch under the Nursery, and the hoist is a shortcut down once it's been sent.
 
 ## 0.3.12: Cody's notes from playing 0.3.10
 

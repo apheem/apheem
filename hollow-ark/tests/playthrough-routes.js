@@ -20,13 +20,14 @@ const gardens = {
   name: 'gardens',
   async play(r) {
     await r.to('arena'); // Wick waits in the Bailiff's Hall in the morning
-    await r.to('root-cellar');
+    await r.to('root-cellar'); // the racks are empty: the Wardens hoisted the taken up to the Nursery
     await r.bulbs();
     await r.to('terraces');
     await r.do('PT.take("scatter")');
+    await r.to('nursery'); // up through the water works (Wick's sit-down) and the Spore Beds; the taken, found
     await r.to('seal-room');
     await r.boss('seal-room');
-    await r.to('root-cellar'); // the cradles open
+    await r.to('nursery'); // the cradles open
     await r.to('vat-house');
     await r.boss('vat-house');
     await r.to('warrens');

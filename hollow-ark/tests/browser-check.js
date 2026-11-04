@@ -3,7 +3,7 @@
 // (like GitHub Pages) and straight from disk (like a downloaded folder). Exits non-zero on any failure.
 // Each run plays by hand-held keys first (move, jump, fire), then runs the story so far quickly through the
 // game's debug helpers: rooms, saving, the raid, the boss, the choice, the reunion and the night after it,
-// and continuing a save, then the Hydroponic Gardens (a bulb, the cradles, the Pruner and its choice, the
+// and continuing a save, then the Hydroponic Gardens (a bulb, the empty racks and the taken found in the Nursery, the Pruner and its choice, the
 // taken waking, Wick's fight and the Gardener's offer), the Warrens return (the lift home, telling Shim,
 // the broadcast, the pistol, the night Solder leaves, his gate, the hatch to the sump), and the Cargo Labyrinth
 // (the cranes, the harpoon, the deserter, Odell, the Tallyman, the Breach Charges, travel between pods, and the
@@ -320,15 +320,21 @@ async function play(browserType, url, label) {
       out.bulbAsks = !!(w().scene && w().scene.step && w().scene.step.choice);
       choose(0);
       out.ate = { bloom: s.bloom, bulbs: s.bulbs, healed: p.hp === p.maxHp, rush: p.rush > 0 };
-      // The cradles: Wick stays with them, and the lead goes up to the Warden that holds the seals.
+      // The racks in the Root Cellar are empty: the Wardens hoisted the taken up to the Nursery, and ran the hoist up
+      // after them, so it's shut from below (STORYBOARD.md, "The way into the Gardens").
       HA.debug.goto('root-cellar', 48, 18);
       HA.debug.step(5);
-      out.cradleScene = w().scene && w().scene.name;
+      out.berthScene = w().scene && w().scene.name;
       talkThrough();
-      out.lead1 = s.lead;
+      out.lead0 = s.lead;
+      HA.debug.goto('root-cellar', 66, 18);
+      HA.debug.step(5);
+      HA.debug.step(2, { up: true });
+      HA.debug.step(5);
+      out.hoistShut = { toast: w().toastText, room: w().def.id, scene: !!w().scene };
       // Wick goes up with the hero (STORYBOARD.md, "Wick's longer escort"). Left on the Terraces' floor while the
       // hero climbs, she catches up out of sight; in the Irrigation Works she patches the hero up on the pod, opens
-      // the cradles' air, and goes back down to them.
+      // the cradles' air (it goes up, to the Nursery), and goes back down to wait by the hoist.
       const wk = () => w().npcs.find((n) => n.id === 'wick' && n.state === 'out');
       out.up = { wickUp: !!s.flags.wickUp, following: !!(wk() && wk().follow) };
       HA.debug.goto('terraces', 4, 41);
@@ -344,9 +350,18 @@ async function play(browserType, url, label) {
       out.patchScene = w().scene && w().scene.name;
       talkThrough();
       out.patched = { flag: !!s.flags.wickPatched, healed: p.hp === p.maxHp, gone: !wk(), story: s.journal.story.some((t) => /PATCHED ME UP/.test(t)), said: s.journal.talk.some((t) => /SOMEONE SMALL\. BADLY/.test(t.text)) };
+      out.lead0b = s.lead;
       HA.debug.goto('root-cellar', 40, 18);
       HA.debug.step(5);
-      out.backDown = !!(wk() && wk().kneel && !wk().follow);
+      out.backDown = !!(wk() && !wk().follow && Math.abs(wk().x - 62 * 8) < 16);
+      // The Nursery, over the Spore Beds: the taken, found at last. The hero sends the hoist down, and Wick comes up
+      // it to stay with them; the lead goes on to the Warden that holds the seals, in the room under it.
+      HA.debug.goto('nursery', 62, 18);
+      HA.debug.step(5);
+      out.cradleScene = w().scene && w().scene.name;
+      talkThrough();
+      out.lead1 = s.lead;
+      out.found = { hoist: !!s.flags.hoist, seen: !!s.flags.cradlesSeen, wick: !!(wk() && wk().kneel), story: s.journal.story.some((t) => /OLD NURSERY/.test(t)) };
       // The Scatter Launcher, on the Terraces.
       HA.debug.goto('terraces', 4, 32);
       HA.debug.step(20);
@@ -376,8 +391,9 @@ async function play(browserType, url, label) {
       HA.debug.goto('dome-stair', 12, 64);
       HA.debug.step(140, { left: true });
       out.shortcut = w().def.id;
-      // Back at the cradles they open; eleven wake and go home; Wick is gone and her lantern is on the floor.
-      HA.debug.goto('root-cellar', 40, 18);
+      // Back up in the Nursery the cradles open; eleven wake and go home down the hoist; Wick is gone and her lantern
+      // is on the floor.
+      HA.debug.goto('nursery', 98, 18);
       HA.debug.step(5);
       out.wakeScene = w().scene && w().scene.name;
       // Quit to the title as soon as the cradles open, then continue: what the scene decided is kept.
@@ -436,7 +452,8 @@ async function play(browserType, url, label) {
       return out;
     });
     expect(gd.bulbs === 1 && gd.bulbAsks && gd.ate.bloom === 1 && gd.ate.bulbs === 0 && gd.ate.healed && gd.ate.rush, `the Bloom bulb was not picked up, asked about, and eaten (${JSON.stringify(gd)})`);
-    expect(gd.cradleScene === 'cradles' && gd.lead1 === 'FIND THE WARDEN THAT HOLDS THE SEALS', `the cradles scene did not play (${gd.cradleScene}, ${gd.lead1})`);
+    expect(gd.berthScene === 'berths' && gd.lead0 === 'FIND WHERE THE WARDENS TOOK THE TAKEN' && gd.hoistShut.room === 'root-cellar' && /HOIST/.test(gd.hoistShut.toast) && !gd.hoistShut.scene, `the empty racks, or the hoist shut from below, went wrong (${gd.berthScene}, ${gd.lead0}, ${JSON.stringify(gd.hoistShut)})`);
+    expect(gd.lead0b === 'FIND THE NURSERY, OVER THE SPORE BEDS' && gd.cradleScene === 'nursery' && gd.lead1 === 'FIND THE WARDEN THAT HOLDS THE SEALS' && gd.found.hoist && gd.found.seen && gd.found.wick && gd.found.story, `the taken were not found in the Nursery, or Wick didn't come up the hoist (${gd.lead0b}, ${gd.cradleScene}, ${gd.lead1}, ${JSON.stringify(gd.found)})`);
     expect(gd.up.wickUp && gd.up.following && gd.caught.before === 42 && gd.caught.after === gd.caught.hero && gd.caught.hero === 15, `Wick didn't go up with the hero, or didn't catch up (${JSON.stringify(gd.up)}, ${JSON.stringify(gd.caught)})`);
     expect(gd.patchScene === 'wickPatch' && gd.patched.flag && gd.patched.healed && gd.patched.gone && gd.patched.story && gd.patched.said && gd.backDown, `Wick's sit-down in the Irrigation Works went wrong (${gd.patchScene}, ${JSON.stringify(gd.patched)}, back down ${gd.backDown})`);
     expect(gd.vale, `the Gardener did not name herself and make her case in the Vat House (${gd.vale})`);

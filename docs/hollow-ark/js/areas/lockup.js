@@ -147,13 +147,13 @@
       // The foot of the Counting House's chute, the way the hero first comes in (3.11).
       a: { type: 'hatch', up: true, to: 'counting-house', name: 'the chute' },
       // Wick waits by the east door the morning after the reunion, and walks into the Gardens with the hero.
-      2: { type: 'npc', id: 'wick', name: 'Wick', when: (s) => !!s.flags.goodbye && !s.flags.wickWith && !s.flags.cradlesSeen },
+      2: { type: 'npc', id: 'wick', name: 'Wick', when: (s) => !!s.flags.goodbye && !s.flags.wickWith && !s.flags.berths && !s.flags.cradlesSeen },
     },
     noRespawn: true,
     scenery: [{ kind: 'hazard', x: 2, y: 19, w: 36, h: 1 }, { kind: 'chains', x: 20, y: 3 }],
     triggers: [
       { x0: 6, x1: 14, when: (s) => !s.flags.bossDefeated, run: 'bossIntro' },
-      { x0: 27, x1: 33, when: (s) => !!s.flags.goodbye && !s.flags.wickWith && !s.flags.cradlesSeen, run: 'wickJoins' },
+      { x0: 27, x1: 33, when: (s) => !!s.flags.goodbye && !s.flags.wickWith && !s.flags.berths && !s.flags.cradlesSeen, run: 'wickJoins' },
     ],
     map: [
       '########################################',

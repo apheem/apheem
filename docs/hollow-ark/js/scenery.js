@@ -620,6 +620,31 @@
         g.fillRect(x + 6, y + h - 6, 28, 2);
       }
     },
+    // The Root Cellar's cradle racks, empty since the Wardens hoisted the cradles up to the Nursery (3.12): the
+    // brackets the cradles sat in, two racks of six like the cradles themselves, the air hoses cut, and the scrapes
+    // on the floor plates, all going east to the hoist.
+    racksEmpty(g, s) {
+      for (let i = 0; i < 12; i++) {
+        const x = s.x * 8 + (i % 6) * 34;
+        const y = s.y * 8 + Math.floor(i / 6) * 24;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, y + 8, 30, 4);
+        g.fillStyle = '#3a4258';
+        g.fillRect(x, y + 9, 28, 2);
+        g.fillStyle = '#6c7894';
+        g.fillRect(x, y + 10, 28, 1);
+        g.fillRect(x + 4, y + 11, 2, 6);
+        g.fillRect(x + 22, y + 11, 2, 6);
+        // the hose, cut, and the Bloom dried pink on its end
+        g.fillStyle = '#2a3046';
+        g.fillRect(x + 13, y - 6, 2, 8 + (i % 3) * 2);
+        g.fillStyle = '#b04ad0';
+        g.fillRect(x + 13, y + 2 + (i % 3) * 2, 2, 1);
+      }
+      g.fillStyle = '#4a4440';
+      const fy = s.floor * 8 - 1;
+      for (let i = 0; i < 5; i++) g.fillRect(s.x * 8 + i * 11, fy - (i % 2), (s.to - s.x) * 8 - i * 11, 1);
+    },
     // ---- The Cargo Labyrinth ----
     // Stacks of containers far back in the dark, for depth. y is the floor row they stand on.
     stacks(g, s, rnd) {
@@ -1780,7 +1805,7 @@
     }
   }
 
-  // The cradles where the taken sleep: two racks of six along the back wall of the Root Cellar.
+  // The cradles where the taken sleep: two racks of six along the back wall of the Nursery (the Root Cellar's, before 3.12).
   // Shut, they're frosted, with a sleeper inside and the Bloom pink at the seams. Once opened they lie empty,
   // except the ones whose sleepers didn't wake (if the Pruner was finished). The last is Sorrel's, empty all along.
   const DARK = [2, 4, 7, 9];
