@@ -45,6 +45,11 @@ const home = {
     await r.do('PT.talk("shim")');
     await r.do('PT.talk("gasket")');
     await r.do('PT.talk("solder")');
+    // Hasp at her door, asking after her son (story/cotter.js), on the routes that go and find him.
+    if (r.route.cotter) {
+      await r.do('PT.near(HA.ui.world.npcs.find((n) => n.id === "hasp"))');
+      await r.do('PT.settle()');
+    }
     await r.do('PT.rest()'); // the night Solder leaves
     await r.to('sump');
   },
@@ -58,6 +63,14 @@ const cargo = {
     await r.do('PT.flip("craneB")');
     await r.to('armory');
     await r.do('PT.take("harpoon")');
+    // Cotter in the Muster's chairs: told his mother's name, he fights the dose until the fit breaks; then the choice.
+    if (r.route.cotter) {
+      await r.to('muster');
+      await r.do('PT.clear()');
+      await r.do('PT.talk("cotter")');
+      await r.do('PT.fight(() => !!HA.ui.world.state.people.cotter)');
+      await r.do('PT.settle()');
+    }
     await r.to('lifeboat-dock'); // through the Muster and down its hatch (the office door is bolted): the deserter
     await r.do('PT.talk("purser")');
     // With Flux's Bloomfire the Yard is in reach at once, and the Cold Store's ice waits for a Breach Charge.
@@ -200,6 +213,7 @@ const TRUE = {
   'SPARE HER': 'SPARE HER',
   'SPARE HIM': 'SPARE HIM',
   'BRING HER HOME': 'BRING HER HOME',
+  'WALK HIM HOME DRY': 'DRY',
   'LAUNCH THE PODS': 'LAUNCH',
   'TAKE ITS CORE TO THE NEW WORLD': 'LET IT REST',
 };
@@ -210,6 +224,7 @@ module.exports = {
   homecoming: {
     ending: 'homecoming',
     policy: TRUE,
+    cotter: true,
     segments: [...THROUGH_TOWER, deck],
     check: {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
@@ -217,6 +232,7 @@ module.exports = {
       'the Navigator let rest': (e) => e.people.navigator === 'rest',
       'the freed Wardens remember their names': (e) => e.lines.includes('MY NAME WAS USHER.'),
       'Sorrel brought home': (e) => e.people.sorrel === 'home' && e.lines.includes('SORREL COUNTED THEM IN.'),
+      'Cotter walked home dry': (e) => e.people.cotter === 'dry' && e.lines.includes('HASP WALKED BEHIND HIM, IN CASE.'),
       'Shim carries the lantern': (e) => e.lines.includes("HE CARRIED HIS MOTHER'S LANTERN."),
     },
   },
@@ -260,11 +276,14 @@ module.exports = {
       'SPARE HER': 'OWN DOSE',
       'SPARE HIM': 'END HIM',
       'CLAIM THE KEY': 'CLAIM',
+      'WALK HIM HOME DRY': 'DOSE',
     },
+    cotter: true,
     segments: THROUGH_TOWER,
     check: {
       'Mercy -3 or less': (e) => e.mercy <= -3,
       'every Warden counted for a new master': (e) => Object.values(e.wardens).every((x) => x === 'salvage') && e.lines.includes('COUNT THEM.'),
+      'Cotter given his dose, and climbing': (e) => e.people.cotter === 'dosed' && e.lines.includes('I HAD THE RACKS NOW.'),
     },
   },
   // Bloom 8 and more: the Thorn, Bloomfire, the Bloom on the hatch, and every bulb eaten. Mercy stays kind.

@@ -464,6 +464,11 @@
     flux: person({ H: '#2e2a3e', C: '#4a4060', c: '#2e2a3e', D: '#2e2a3e', e: '#e8c8d8', E: '#c890b0' }, false, (r) => r.map((row, i) => (i === 7 ? '0CcPCCCC0' : row))),
     // Sorrel (3.13): Brine's dark-blue hair, in the taken's grey shift, gone pinkish at the skin from the Bloom.
     sorrel: person({ H: '#3d5a8a', C: '#a8a0b8', c: '#7d7590', D: '#625a76', e: '#ecccd8', E: '#d49ab8' }),
+    // Hasp (3.15): a Warrens mother in a patched brown wrap. Her son Cotter, in the Steward's uniform from the Muster,
+    // pink to the skin; and Cotter dry, at home, pale, in his own clothes again.
+    hasp: person({ H: '#6a5040', C: '#5a6a7a', c: '#3e4a58', D: '#4a3a2e' }),
+    cotter: person({ H: '#5a4028', C: '#4a4060', c: '#2e2a3e', D: '#2e2a3e', e: '#ecccd8', E: '#d49ab8' }, false, (r) => r.map((row, i) => (i === 7 ? '0CcPCCCC0' : row))),
+    cotterDry: person({ H: '#5a4028', C: '#8a6a4a', c: '#6a4e34', D: '#3e3328', e: '#dcd8cc', E: '#b4ac9c' }),
   };
 
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----

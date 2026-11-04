@@ -1848,6 +1848,151 @@ async function play(browserType, url, label) {
     expect(/TAMP COUNTED THEM AT LIGHTS-OUT NOW/.test(gone.crash) && /THEY BURIED OLD GASKET/.test(gone.dominion) && /BRINE WALKED OUT OF THE HELM ALIVE/.test(gone.overgrown) && /SHE DIDN'T TALK ABOUT IT/.test(gone.overgrown), `the other epilogues with Gasket lost went wrong (${gone.crash} / ${gone.dominion} / ${gone.overgrown})`);
     expect(gone.branch === 'crash' && /WITHOUT GASKET'S/.test(gone.closed) && gone.hullfolk === 30 && gone.pics, `losing Gasket did not cost a pair of hands, or a place in the count (${JSON.stringify(gone)})`);
 
+    // ---- Hasp's boy (3.15), from a save in the Warrens before the climb: Hasp asks, the tally's line, Cotter in his
+    // chair in the Muster, his fight (a fall puts him back in the chair; hits don't shorten it), and the choice. Dry:
+    // he's home in bed, and counted. Dosed: he climbs, as one more pair of hands, and does as he's told. ----
+    const before = { crew: 0, flags: { crewCame: false, camp: false, campDone: false, verdict: false, lifts: 0, spine: false, namedLate: true, fluxHome: true, fluxMorning: true } };
+    await towerSave(Object.assign({}, before, { room: 'warrens', x: 60 * 8, y: 19 * 8 - 14 }));
+    await startSaved();
+    const rv = await get(() => {
+      const { w, listen, talkThrough, choose, options } = window.tw;
+      const out = {};
+      const s = w().state;
+      const p = w().player;
+      const npc = (id) => HA.story.npcOf(w(), id);
+      const still = () => {
+        for (const e of w().enemies) if (!e.boss) Object.assign(e, { dead: true, spawn: Object.assign(e.spawn, { respawn: -1 }) });
+      };
+      const talk = () => {
+        p.x = npc('cotter').x - 10;
+        HA.debug.step(3);
+        HA.debug.step(1, { up: true });
+      };
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      out.hasp = npc('hasp') && npc('hasp').state;
+      for (let i = 0; i < 300 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.asks = w().scene && w().scene.name;
+      out.asked = listen().join(' | ');
+      HA.debug.goto('counting-house', 14, 40);
+      HA.debug.step(5);
+      HA.debug.step(1, { up: true });
+      out.log = w().scene && w().scene.name;
+      out.tally = listen().join(' | ');
+      HA.debug.goto('muster', 36, 18);
+      HA.debug.step(3);
+      still();
+      out.chair = npc('cotter') && npc('cotter').kneel && npc('cotter').state;
+      p.x = npc('cotter').x - 20;
+      HA.debug.step(10);
+      out.seen = !!s.flags.cotterSeen;
+      talk();
+      out.found = w().scene && w().scene.name;
+      out.foundSaid = listen().join(' | ');
+      HA.debug.step(5);
+      let b = w().boss;
+      out.fight = { type: b && b.type, fighting: b && b.fighting, music: HA.music.playing, check: w().checkpoint && w().checkpoint.room };
+      // Hits don't shorten the fit: only staying on your feet does.
+      const fit = b.fit;
+      HA.actors.hurtEnemy(w(), b, 50, 1);
+      out.hit = b.fit >= fit - 2;
+      // A fall: back at the fight's checkpoint, and Cotter back in his chair.
+      for (let i = 0; i < 300 && p.invuln > 0; i++) HA.debug.step(1);
+      w().assist.invincible = false;
+      w().hurtPlayer(p.hp, p.x + 20);
+      for (let i = 0; i < 400 && (p.dead || w().transition); i++) HA.debug.step(1);
+      HA.debug.step(30);
+      out.fell = { room: w().def.id, chair: !!(npc('cotter') && npc('cotter').kneel && npc('cotter').state === 'out'), boss: !!w().boss, cotter: s.people.cotter };
+      w().assist.invincible = true;
+      still();
+      talk();
+      talkThrough();
+      b = w().boss;
+      const states = new Set();
+      out.shards = 0; // the most in the air at once: the hero, standing by the racks, picks them up
+      for (let i = 0; i < 2700 && !w().scene; i++) {
+        HA.debug.step(1);
+        states.add(b.state);
+        out.shards = Math.max(out.shards, w().pickups.filter((k) => k.kind === 'shard').length);
+      }
+      out.states = [...states].sort().join(',');
+      out.defeated = w().scene && w().scene.name;
+      out.beaten = listen().join(' | ');
+      out.choice = options();
+      const m = s.mercy;
+      choose(0);
+      out.dry = listen().join(' | ');
+      talkThrough();
+      HA.debug.step(400);
+      out.after = { cotter: s.people.cotter, mercy: s.mercy - m, check: !!w().checkpoint, boss: !!w().boss, gone: npc('cotter') && npc('cotter').state, music: HA.music.playing };
+      HA.debug.goto('warrens', 60, 18);
+      HA.debug.step(10);
+      out.home = w().scene && w().scene.name;
+      out.homeSaid = listen().join(' | ');
+      out.bed = npc('cotter') && npc('cotter').state + ':' + (npc('cotter').sprite === HA.art.people.cotterDry);
+      out.count = HA.endings.landed(s, 'homecoming').hullfolk;
+      out.crash = HA.endings.lines('crash', s).join(' | ');
+      out.crew = HA.story.crewList(s).includes('cotter');
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(rv.hasp === 'out' && rv.asks === 'haspAsks' && /NINETEEN/.test(rv.asked) && /WITH A PIPE/.test(rv.asked), `Hasp asking after her son went wrong (${JSON.stringify(rv)})`);
+    expect(rv.log === 'tallyCotter' && /OUTSIDE THE COUNT/.test(rv.tally) && /THE MUSTER\. THEY MADE A SOLDIER OF HIM/.test(rv.tally), `the tally's line for Cotter went wrong (${rv.log}: ${rv.tally})`);
+    expect(rv.chair === 'out' && rv.seen && rv.found === 'cotterFound' && /HASP SENT ME/.test(rv.foundSaid), `Cotter in his chair in the Muster went wrong (${JSON.stringify(rv)})`);
+    expect(rv.fight.type === 'cotter' && rv.fight.fighting && rv.fight.music === 'wick' && rv.fight.check === 'muster' && rv.hit, `Cotter's fight did not start, or hits shortened it (${JSON.stringify(rv.fight)}, ${rv.hit})`);
+    expect(rv.fell.room === 'muster' && rv.fell.chair && !rv.fell.boss && !rv.fell.cotter, `a fall in Cotter's fight did not put him back in his chair (${JSON.stringify(rv.fell)})`);
+    expect(['lunge', 'slamTele', 'cling', 'drop', 'down'].every((st) => rv.states.split(',').includes(st)) && rv.shards > 0, `Cotter's fight is missing a move, or its shards (${rv.states}, ${rv.shards})`);
+    expect(rv.defeated === 'cotterDefeated' && /MA'S GOING TO KILL ME/.test(rv.beaten) && rv.choice === 'WALK HIM HOME DRY/GIVE HIM HIS DOSE', `the end of Cotter's fit went wrong (${rv.defeated}, ${rv.choice}: ${rv.beaten})`);
+    expect(rv.after.cotter === 'dry' && rv.after.mercy === 1 && !rv.after.check && !rv.after.boss && rv.after.gone === 'gone' && rv.after.music !== 'wick' && /TELL HER I'M COMING/.test(rv.dry), `Cotter sent home dry went wrong (${JSON.stringify(rv.after)}: ${rv.dry})`);
+    expect(rv.home === 'cotterHome' && /HANDS AND KNEES/.test(rv.homeSaid) && rv.bed === 'hidden:true' && rv.count === 32 && /COTTER CARRIED HASP DOWN TO THE SLEDS/.test(rv.crash) && !rv.crew, `Cotter home dry went wrong (${JSON.stringify(rv)})`);
+    // Dosed: one more pair of hands on the climb, who does as he's told, and the Dominion's own card.
+    await towerSave(Object.assign({}, before, { room: 'muster', x: 36 * 8, y: 19 * 8 - 14, mercy: 6, flags: Object.assign({}, before.flags, { haspAsked: true }) }));
+    await startSaved();
+    const rd = await get(() => {
+      const { w, listen, talkThrough, choose } = window.tw;
+      const out = {};
+      const s = w().state;
+      const p = w().player;
+      w().assist.invincible = true;
+      HA.debug.step(3);
+      for (const e of w().enemies) if (!e.boss) Object.assign(e, { dead: true, spawn: Object.assign(e.spawn, { respawn: -1 }) });
+      p.x = HA.story.npcOf(w(), 'cotter').x - 10;
+      HA.debug.step(3);
+      HA.debug.step(1, { up: true });
+      talkThrough();
+      w().boss.fit = 5;
+      for (let i = 0; i < 80 && !(w().scene && w().scene.name === 'cotterDefeated'); i++) HA.debug.step(1);
+      talkThrough();
+      const m = s.mercy;
+      choose(1);
+      out.said = listen().join(' | ');
+      talkThrough();
+      HA.debug.step(300);
+      out.cotter = s.people.cotter;
+      out.mercy = s.mercy - m;
+      out.crew = HA.story.crewList(s).join(',');
+      out.hands = HA.story.crewOf(s);
+      HA.debug.goto('warrens', 60, 18);
+      HA.debug.step(10);
+      out.home = w().scene && w().scene.name;
+      out.homeSaid = listen().join(' | ');
+      out.door = HA.story.npcOf(w(), 'cotter') && HA.story.npcOf(w(), 'cotter').state;
+      // Once the crew have gone up he's with them, not at Hasp's door; and he's nobody's voice, or the Overgrown's fight.
+      s.flags.crewCame = true;
+      s.crew = out.hands;
+      HA.debug.goto('warrens', 60, 18);
+      HA.debug.step(5);
+      out.climbing = !HA.story.npcOf(w(), 'cotter');
+      out.dominion = HA.endings.lines('dominion', s).join(' | ');
+      const over = Object.assign({}, s, { crew: 4, people: Object.assign({}, s.people, { solder: 'dead', gasket: 'dead' }) });
+      out.overgrown = HA.endings.lines('overgrown', over).join(' | ');
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(rd.cotter === 'dosed' && rd.mercy === -1 && /WHO GIVES THE DOSE GIVES THE ORDERS/.test(rd.said) && rd.crew.startsWith('gasket,cotter,') && rd.hands === 7, `Cotter given his dose went wrong (${JSON.stringify(rd)})`);
+    expect(rd.home === 'cotterHome' && /HE CALLS ME MA'AM/.test(rd.homeSaid) && rd.door === 'out' && rd.climbing, `Cotter home dosed went wrong (${JSON.stringify(rd)})`);
+    expect(/I HAD THE RACKS NOW/.test(rd.dominion) && /COTTER DIDN'T NOTICE ANY DIFFERENCE/.test(rd.overgrown) && /WALKED OUT OF THE HELM ALIVE/.test(rd.overgrown) && !/COTTER WALKED OUT OF THE HELM/.test(rd.overgrown), `the endings with Cotter dosed went wrong (${rd.dominion} / ${rd.overgrown})`);
+
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };
     const branch = async (extra, fn) => {
