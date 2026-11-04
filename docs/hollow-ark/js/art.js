@@ -462,6 +462,8 @@
     // Mara, out of 0418: a sleeper's child, dark-haired, in the pale shift the pods dress them in.
     mara: person({ H: '#3a2a1e', C: '#9fd8e8', c: '#5fa8c0', D: '#6c7894', e: '#f0dcc8', E: '#d8b8a0' }, true),
     flux: person({ H: '#2e2a3e', C: '#4a4060', c: '#2e2a3e', D: '#2e2a3e', e: '#e8c8d8', E: '#c890b0' }, false, (r) => r.map((row, i) => (i === 7 ? '0CcPCCCC0' : row))),
+    // Sorrel (3.13): Brine's dark-blue hair, in the taken's grey shift, gone pinkish at the skin from the Bloom.
+    sorrel: person({ H: '#3d5a8a', C: '#a8a0b8', c: '#7d7590', D: '#625a76', e: '#ecccd8', E: '#d49ab8' }),
   };
 
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----

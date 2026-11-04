@@ -1693,6 +1693,7 @@
       const flooded = world.state.people.solder === 'dead';
       const tram = s.at === 'spine' ? (fl.crewCame && !(fl.tramEast && flooded)) || (fl.tramEast && !flooded) : !fl.tram || (world.tramGo || 0) > 0 || (fl.tramEast && flooded);
       if (s.kind === 'tramcar' && tram) drawTramCar(g, world, s, cam);
+      if (s.kind === 'sorrel') drawSorrel(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -2326,6 +2327,7 @@
     if (d.legend.vault) return drawVaultDoor(g, world, d, cam);
     if (d.legend.rubble) return drawRubble(g, world, d, cam);
     if (d.legend.planks) return drawPlanks(g, world, d, cam);
+    if (d.legend.welded) return drawWelded(g, world, d, cam);
     // Solder's gate, the one that opens from the Hullfolk's side: patched plates, rivets, and a wheel.
     if (d.legend.kept && d.legend.kept(world.state)) {
       for (const c of d.cells) {
@@ -2359,6 +2361,152 @@
       g.fillRect(x + 1, y, 6, 8);
       g.fillStyle = (c.ty + Math.floor(world.time / 30)) % 2 ? '#ffb84d' : '#3a2a10';
       g.fillRect(x + 1, y + 3, 6, 2);
+    }
+  }
+
+  // The door the Pruner welded shut on Sorrel (3.13): a plate cut to fit, its seams beaded with the Pruner's welds,
+  // still warm. Once it's cut open, nothing (the door is gone).
+  function drawWelded(g, world, d, cam) {
+    const xs = d.cells.map((c) => c.tx);
+    const ys = d.cells.map((c) => c.ty);
+    const x = Math.min(...xs) * 8 - Math.round(cam.x);
+    const y = Math.min(...ys) * 8 - Math.round(cam.y);
+    const w = (Math.max(...xs) + 1) * 8 - Math.min(...xs) * 8;
+    const h = (Math.max(...ys) + 1) * 8 - Math.min(...ys) * 8;
+    g.fillStyle = '#10121c';
+    g.fillRect(x, y, w, h);
+    g.fillStyle = '#4a5068';
+    g.fillRect(x + 1, y + 1, w - 2, h - 2);
+    g.fillStyle = '#5c6480';
+    g.fillRect(x + 2, y + 2, w - 4, 2);
+    // the seams, all the way round and once across, beaded
+    const warm = 0.5 + 0.5 * Math.sin(world.time / 40);
+    for (let i = 0; i < h; i += 2) {
+      g.fillStyle = (i / 2) % 2 ? '#c98a4a' : '#ffb84d';
+      g.fillRect(x, y + i, 1, 1);
+      g.fillRect(x + w - 1, y + i, 1, 1);
+    }
+    for (let i = 0; i < w; i += 2) {
+      g.fillStyle = (i / 2) % 2 ? '#c98a4a' : '#ffb84d';
+      g.fillRect(x + i, y, 1, 1);
+      g.fillRect(x + i, y + h - 1, 1, 1);
+      g.fillRect(x + i, y + Math.floor(h / 2), 1, 1);
+    }
+    g.globalAlpha = 0.25 * warm;
+    g.fillStyle = '#ff6a2a';
+    g.fillRect(x - 1, y + Math.floor(h / 2) - 1, w + 2, 3);
+    g.globalAlpha = 1;
+  }
+
+  // Sorrel's signs (3.13; story/sorrel.js), drawn live since most are only there once she's run (the Pruner
+  // released cut her door open, flags.greenhouse). Her tally is in fives, in a small round hand. The greenhouse's own
+  // signs, and her pumps, are there whenever the room is.
+  function tally(g, x, y, n, color) {
+    g.fillStyle = color;
+    for (let i = 0; i < n; i++) {
+      const grp = Math.floor(i / 5);
+      const k = i % 5;
+      const gx = x + (grp % 12) * 8;
+      const gy = y + Math.floor(grp / 12) * 7;
+      if (k < 4) g.fillRect(gx + k * 2, gy, 1, 5);
+      else for (let j = 0; j < 7; j++) g.fillRect(gx - 1 + j, gy + 4 - Math.floor((j * 5) / 7), 1, 1);
+    }
+  }
+  function drawSorrel(g, world, s, cam) {
+    const st = world.state;
+    const ran = !!st.flags.greenhouse;
+    const own = world.def.id === 'greenhouse' || world.def.id === 'dry-pumps';
+    if (!ran && !own) return;
+    const x = Math.round(s.x * 8 - cam.x);
+    const y = Math.round(s.y * 8 - cam.y);
+    if (x < -120 || x > HA.VIEW_W + 120 || y < -80 || y > HA.VIEW_H + 80) return;
+    const what = s.what;
+    if (what === 'tally') {
+      g.globalAlpha = 0.55;
+      tally(g, x, y, s.n, world.def.id === 'greenhouse' ? '#f2c8dc' : '#e6e2d6');
+      g.globalAlpha = 1;
+    } else if (what === 'chalk') {
+      g.globalAlpha = 0.75;
+      HA.font.draw(g, s.text, x, y, '#f2c8dc', { shadow: null });
+      g.globalAlpha = 1;
+    } else if (what === 'frost') {
+      // frost up the wall, the days scratched through it, and the floor grate she went on down by
+      g.globalAlpha = 0.35;
+      g.fillStyle = '#d8f4ff';
+      for (let i = 0; i < 14; i++) g.fillRect(x - 30 + ((i * 37) % 70), y - 8 + ((i * 23) % 40), 6 + (i % 4) * 3, 4 + (i % 3) * 2);
+      g.globalAlpha = 0.7;
+      tally(g, x - 20, y, 31, '#4a5a78');
+      g.globalAlpha = 1;
+      const gx = x + 20;
+      const gy = Math.round((s.y + 9) * 8 - cam.y);
+      g.fillStyle = '#05060d';
+      g.fillRect(gx, gy - 1, 14, 2);
+      g.fillStyle = '#6c7894';
+      for (let i = 0; i < 14; i += 3) g.fillRect(gx + i, gy - 2, 1, 2);
+    } else if (what === 'packets') {
+      const colors = ['#d8c890', '#7ad1a0', '#e8b45a', '#d8c890', '#c87a5a', '#d8c890', '#7ad1a0'];
+      for (let i = 0; i < 7; i++) {
+        const px = x + i * 9 + ((i * 5) % 4);
+        g.fillStyle = '#10121c';
+        g.fillRect(px - 1, y + 3, 7, 5);
+        g.fillStyle = colors[i];
+        g.fillRect(px, y + 4, 5, 4);
+        g.fillStyle = '#efe6d4';
+        g.fillRect(px + 1, y + 5, 3, 1);
+        // the beans she ate, the husks left
+        g.fillStyle = '#5a6a3a';
+        g.fillRect(px + 6, y + 7, 1, 1);
+      }
+    } else if (what === 'nest') {
+      // sacking, a folded shift, bean husks, a cup
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, y + 3, 30, 6);
+      g.fillStyle = '#6a5038';
+      g.fillRect(x, y + 4, 28, 4);
+      g.fillStyle = '#8a6a48';
+      g.fillRect(x + 3, y + 3, 10, 2);
+      g.fillStyle = '#a8a0b8';
+      g.fillRect(x + 16, y + 3, 8, 2);
+      g.fillStyle = '#5a6a3a';
+      for (let i = 0; i < 6; i++) g.fillRect(x + 2 + i * 5, y + 8, 2, 1);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 26, y + 2, 3, 4);
+    } else if (what === 'drain') {
+      // the drain under the bench, its grate pried up and leant against the wall
+      g.fillStyle = '#05060d';
+      g.fillRect(x, y + 6, 10, 2);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 11, y - 2, 1, 10);
+      for (let i = 0; i < 10; i += 3) g.fillRect(x + 11 - Math.floor(i / 3), y - 2 + i, 3, 1);
+    } else if (what === 'pumps') {
+      // three old pumps, thumping in time while she counts; still, once she's gone home
+      const running = st.people.sorrel !== 'home';
+      const beat = running ? Math.abs(Math.sin(world.time / 28)) : 0;
+      for (let i = 0; i < 3; i++) {
+        const px = x + i * 48;
+        g.fillStyle = '#10121c';
+        g.fillRect(px - 1, y - 23, 26, 31);
+        g.fillStyle = '#3a2a20';
+        g.fillRect(px, y - 22, 24, 30);
+        g.fillStyle = '#5a3a26';
+        g.fillRect(px, y - 22, 24, 2);
+        g.fillStyle = '#241812';
+        for (let k = 0; k < 3; k++) g.fillRect(px + 4 + k * 6, y - 16, 3, 18);
+        // the rod and its head, going up and down
+        const ry = Math.round(y - 34 - beat * 8 * (i === 1 ? -1 : 1) + (i === 1 ? -8 : 0));
+        g.fillStyle = '#10121c';
+        g.fillRect(px + 9, ry, 6, y - 22 - ry);
+        g.fillStyle = '#6c7894';
+        g.fillRect(px + 10, ry, 4, y - 22 - ry);
+        g.fillStyle = '#a9b6cc';
+        g.fillRect(px + 6, ry - 2, 12, 3);
+        g.globalAlpha = 0.6;
+        HA.font.draw(g, String(i + 1), px + 10, y - 6, '#ffb84d', { shadow: null });
+        g.globalAlpha = 1;
+        // a lamp over each, lit while they run
+        g.fillStyle = running ? (Math.floor(world.time / 28) % 3 === i ? '#ffb84d' : '#7a5a2a') : '#3a2a10';
+        g.fillRect(px + 11, y - 52, 3, 2);
+      }
     }
   }
 

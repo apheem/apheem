@@ -28,6 +28,11 @@ const gardens = {
     await r.to('seal-room');
     await r.boss('seal-room');
     await r.to('nursery'); // the cradles open
+    // Released, the Pruner cut the Old Greenhouse's door in the wake, and someone ran: Sorrel's trail starts.
+    if (await r.get('!!HA.ui.world.state.flags.greenhouse')) {
+      await r.to('greenhouse');
+      await r.do('PT.read("sorrelGlass")');
+    }
     await r.to('vat-house');
     await r.boss('vat-house');
     await r.to('warrens');
@@ -90,6 +95,11 @@ const ballast = {
     await r.do('PT.read("boots")');
     await r.to('silt-tank');
     await r.boss('silt-tank', undefined, { enter: 'PT.trigger(0)' }); // out over her water, and the shutters come down
+    // The glass said down the drain: the hatch at the bottom of the Settling Pools, and Sorrel at the Dry Pumps.
+    if (await r.get('!!HA.ui.world.state.logs.sorrelGlass')) {
+      await r.to('dry-pumps');
+      await r.do('PT.settle()');
+    }
     await r.to('valve-hall');
     await r.bulbs();
     await r.do('PT.pace("solder", () => PT.scene() === "flood")');
@@ -178,6 +188,7 @@ const TRUE = {
   'TELL HIM THE TRUTH': 'TRUTH',
   'SPARE HER': 'SPARE HER',
   'SPARE HIM': 'SPARE HIM',
+  'BRING HER HOME': 'BRING HER HOME',
   'LAUNCH THE PODS': 'LAUNCH',
   'TAKE ITS CORE TO THE NEW WORLD': 'LET IT REST',
 };
@@ -193,6 +204,7 @@ module.exports = {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
       'the Navigator let rest': (e) => e.people.navigator === 'rest',
       'the freed Wardens remember their names': (e) => e.lines.includes('MY NAME WAS USHER.'),
+      'Sorrel brought home': (e) => e.people.sorrel === 'home' && e.lines.includes('SORREL COUNTED THEM IN.'),
       'Shim carries the lantern': (e) => e.lines.includes("HE CARRIED HIS MOTHER'S LANTERN."),
     },
   },
@@ -214,6 +226,7 @@ module.exports = {
     check: {
       'Solder left behind, the gate fallen': (e) => e.people.solder === 'dead' && e.warrensRaid === 'fell',
       'the pods launched': (e) => e.podsLaunched > 0 && e.lines.includes('THE PODS CAME DOWN LIKE SEEDS.'),
+      'the Old Greenhouse stayed welded': (e) => !e.people.sorrel,
       'two cores taken': (e) => e.wardens.pruner === 'salvage' && e.wardens.tallyman === 'salvage' && e.lines.includes('COUNT: WARDENS, 1.'),
     },
   },
@@ -248,6 +261,7 @@ module.exports = {
       ...TRUE,
       'EAT IT': 'EAT IT',
       "KEEP WICK'S LANCETS": 'THORN',
+      'BRING HER HOME': 'LEAVE HER COUNTING',
       'LET HIM FLY HOME': 'TAKE HIS PACK',
       'BLOW THE BEAM': 'EAT THE BLOOM',
     },
@@ -255,6 +269,7 @@ module.exports = {
     check: {
       'Bloom 8 or more': (e) => e.bloom >= 8,
       'the pod glass': (e) => e.lines.includes('ON 0418 FIRST.'),
+      'Sorrel left counting': (e) => e.people.sorrel === 'stayed' && e.lines.includes('THEN THE COUNTING DID.'),
     },
   },
   // The Purser's boat, taken in the Labyrinth, from the save the Homecoming run left as it went down the hatch.

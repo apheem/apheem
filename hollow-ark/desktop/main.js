@@ -141,17 +141,26 @@ function watchSmokeTest(w) {
       await js('HA.debug.skipScene(); true');
       await new Promise((r) => setTimeout(r, 400));
       const playerX = () => js('HA.debug.world ? HA.debug.world.player.x : -1');
-      // CI machines may not keep the window focused, and the game pauses when focus is lost, so keep resuming.
-      const holdFor = async (ms) => {
-        for (let t = 0; t < ms; t += 100) {
+      // Hold for a number of the game's own frames, not a length of time: a CI window can be given far fewer
+      // frames than a display would (macOS CI once gave it a handful in 1.2 s, and the hero walked under 5 px).
+      // Capped, so a game that has stopped drawing still fails. CI machines may not keep the window focused,
+      // and the game pauses when focus is lost, so keep resuming while holding.
+      const holds = [];
+      const holdFor = async (frames, capMs = 8000) => {
+        const f0 = await js('HA.debug.frames');
+        const t0 = Date.now();
+        let f = f0;
+        while (f - f0 < frames && Date.now() - t0 < capMs) {
           await js('HA.ui.stack.length = 0; HA.audio.setPaused(false); true');
           await new Promise((r) => setTimeout(r, 100));
+          f = await js('HA.debug.frames');
         }
+        holds.push({ frames: f - f0, ms: Date.now() - t0 });
       };
       const x0 = await playerX();
       // First through the OS input path, as a real key press arrives.
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
-      await holdFor(600);
+      await holdFor(36);
       w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
       let x1 = await playerX();
       let keyPath = 'os';
@@ -159,7 +168,7 @@ function watchSmokeTest(w) {
       if (x1 - x0 < 10) {
         keyPath = 'page';
         await js("dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', key: 'ArrowRight' })); true");
-        await holdFor(600);
+        await holdFor(36);
         await js("dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight', key: 'ArrowRight' })); true");
         x1 = await playerX();
       }
@@ -168,7 +177,7 @@ function watchSmokeTest(w) {
       // The save file: write it, read it back, and check it holds the room the hero is in.
       const saved = await js('HA.save.write(HA.debug.world); (HA.save.load() || {}).room === HA.debug.world.def.id');
       const saveFileWritten = fs.existsSync(saveFile());
-      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10 && saved && saveFileWritten, info, mode, moved: x1 - x0, keyPath, keysSeen, focused, saved, saveFileWritten });
+      finish({ ok: !info.error && mode === 'play' && x1 - x0 >= 10 && saved && saveFileWritten, info, mode, moved: x1 - x0, keyPath, keysSeen, holds, focused, saved, saveFileWritten });
     } catch (err) {
       finish({ ok: false, reason: String(err) });
     }

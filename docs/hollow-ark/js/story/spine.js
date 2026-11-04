@@ -43,7 +43,9 @@
     const out = ['gasket'];
     if (s.people.solder === 'alive') out.push('solder');
     if (s.people.flux === 'home') out.push('flux');
-    out.push('brine', ...WOKEN);
+    out.push('brine');
+    if (s.people.sorrel === 'home') out.push('sorrel'); // brought home from the Dry Pumps (story/sorrel.js)
+    out.push(...WOKEN);
     return out.slice(0, crewOf(s));
   }
   const leader = (s) => (s.people.solder === 'alive' ? 'SOLDER' : 'OLD GASKET');
@@ -98,7 +100,15 @@
       gasket: lie ? ['...', 'GO AND TALK TO THE OTHERS.'] : ["A LIFT THAT BIG NEEDS HANDS. THAT'S WHAT I KEPT TELLING THEM ON THE TRAM.", 'THE SHIP HUMS LOUDER UP HERE. MY MOTHER WOULD HAVE LIKED THAT.'],
       solder: ["MY LEG'S WORSE. DON'T TELL GASKET.", 'THE BRIDGE HAS A LIFT OF ITS OWN. LIFT B. IT GOES DOWN, NOT OUT. NOBODY KNOWS WHERE TO.'].concat(f.solderBy === 'bloom' ? ["YOUR EYES ARE STILL A LITTLE PINK. I'M NOT SAYING ANYTHING. I'M JUST SAYING."] : []),
       flux: ["I FLEW HOME ON THAT PACK. NOW I'M CLIMBING BACK UP. SHIM THINKS IT'S FUNNY.", "IT'S STILL GETTING QUIETER. A LITTLE EVERY DAY."],
-      brine: ["IF SORREL'S UP THERE, I'LL KNOW HER. EVEN PINK. EVEN COUNTED."],
+      brine:
+        s.people.sorrel === 'home'
+          ? crewList(s).includes('sorrel')
+            ? ["SHE COUNTED EVERY RUNG ON THE WAY UP. OUT LOUD. I'D FORGOTTEN HOW ANNOYING SHE IS.", "EMPTY ISN'T DEAD."]
+            : ["SHE STAYED HOME TO DO THE COUNT. SOMEONE HAS TO.", "EMPTY ISN'T DEAD."]
+          : s.people.sorrel === 'stayed'
+            ? ["SHE'S DOWN THERE COUNTING. WHEN THIS IS DONE I'LL GO AND GET HER."]
+            : ["IF SORREL'S UP THERE, I'LL KNOW HER. EVEN PINK. EVEN COUNTED."],
+      sorrel: ['FOUR HUNDRED AND TWELVE RUNGS FROM THE FOOT TO HERE. NOBODY ELSE COUNTED.', "GASKET LETS ME DO THE COUNT AT LIGHTS-OUT NOW. HE'S TOO SLOW."],
       toller: f.stitched ? ["NEATER THAN I'D HAVE DONE IT. NOT AS NEAT AS WICK."] : ["A STEAM PIPE GOT MY ARM ON THE STAIR. IT'S NOTHING.", "IT'S SOMETHING."],
       mave: ['I DREAMED THE SAME FIELD THE WHOLE TIME I WAS UNDER. I WANT TO SEE IF IT\'S REAL.'],
       pell: ["I DON'T LIKE LIFTS. I DON'T LIKE LADDERS. I CAME ANYWAY."],
@@ -138,7 +148,8 @@
       gasket: 'OLD. STUBBORN.',
       solder: 'TINKERER. RUDE ABOUT IT.',
       flux: 'FATHER. HOME, MOSTLY.',
-      brine: 'SISTER. STILL LOOKING.',
+      brine: s.people.sorrel === 'home' ? 'SISTER. FOUND HER.' : 'SISTER. STILL LOOKING.',
+      sorrel: 'COUNTS.',
       toller: s.flags.stitched ? 'STITCHED.' : 'SORE ARM.',
       mave: 'WOKE UP. STAYING UP.',
       pell: 'AFRAID OF LIFTS.',
