@@ -21,6 +21,14 @@
   const FLOOR = (ty) => (ty - 1) * 8; // a person stands on map row ty
   const has = (world, id) => world.player.weapons.some((w) => w.id === id);
 
+  Object.assign(S.LOGS, {
+    // The Steward's Rooms, beside the Bridge Stair (the third batch of new rooms)
+    daybook: {
+      title: "THE STEWARD'S DAYBOOK · YEAR 312",
+      text: 'ASKED THE NAVIGATOR FOR ARRIVAL. NOT YET. IT HAS SAID NOT YET FOR TWENTY YEARS. IT IS GIVING ME TIME, AND I WILL NOT WASTE IT. THE GUARD: TWO HUNDRED HANDS. THE GARDENS WILL GIVE ME FOUR HUNDRED MORE. WHOEVER IS DOWN THERE, WE WILL NOT ARRIVE AS BEGGARS.',
+    },
+  });
+
   // ---- The crew, up the Tower ----
   // Who climbed is settled at the verdict (s.crew); later choices don't send anyone home.
   const crewOf = (s) => S.crewList(Object.assign({}, s, { mercy: 99 })).slice(0, Math.max(2, s.crew || 0));
@@ -279,6 +287,41 @@
       world.save();
     },
 
+    // The Bridge Stair's way up is shut by a shutter, bolted on the landing's side; his door is beside it.
+    *shutterShut(world) {
+      yield me('THE STAIR IS SHUT ABOVE ME: A SHUTTER, BOLTED FROM THE TOP. THE DOOR IN THE EAST WALL SAYS PRIVATE.');
+    },
+    // The Steward's Rooms: he speaks for the first time since the Lockup's intercom.
+    *stewardRooms(world) {
+      const f = world.state.flags;
+      f.stewardRoomsSeen = true;
+      yield { wait: 30 };
+      HA.audio.play('intercom');
+      yield { wait: 16 };
+      yield steward("YOU'RE IN MY ROOMS. LOOK AROUND. I HAVE NOTHING TO HIDE FROM A SLEEPER.");
+      if (f.intercom) yield me("THE VOICE FROM THE LOCKUP'S INTERCOM. THE ONE THAT SAID I WASN'T IN THE COUNT.");
+      yield steward('MY GUARD WILL SEE YOU UP. TRY NOT TO BREAK THEM. THEY TAKE YEARS TO GROW.');
+      HA.audio.play('intercom');
+      S.addStory(world, "THE STEWARD'S OWN ROOMS ARE BESIDE THE BRIDGE STAIR. HE SPOKE TO ME THERE, OVER HIS INTERCOM, LIKE A HOST.");
+    },
+    // His bedroom: everything new but one thing.
+    *bootcase(world) {
+      world.state.flags.bootsSeen = true;
+      yield me('A PAIR OF OLD BOOTS ON A STAND, UNDER GLASS. HULLFOLK BOOTS, MENDED SO OFTEN THERE IS MORE MENDING THAN BOOT.');
+      yield me('EVERYTHING ELSE IN HERE IS NEW.');
+    },
+    // Come round through his rooms onto the landing: the shutter's bolt is on this side.
+    *shutterBolt(world) {
+      yield { wait: 20 };
+      world.state.flags.stewardShutter = true;
+      yield { wait: 30 };
+      yield me("THE SHUTTER OVER THE STAIR WAS BOLTED ON THIS SIDE. I DREW THE BOLT. IT'S THE SHORT WAY DOWN NOW.");
+      HA.audio.play('intercom');
+      yield { wait: 16 };
+      yield steward("COME UP, THEN. I'VE WAITED FORTY-TWO YEARS FOR SOMEONE WORTH TALKING TO.");
+      world.save();
+    },
+
     // Up the ladder into the Helm, the crew behind.
     *helmLadder(world) {
       const f = world.state.flags;
@@ -332,6 +375,7 @@
         const g = npcOf(world, 'gasket');
         if (g) g.facing = 1;
         yield say('OLD GASKET', '...THOSE WERE HIS BOOTS.');
+        if (f.bootsSeen) yield me('THE BOOTS UNDER GLASS, IN HIS ROOMS.');
         yield { wait: 50 };
         yield steward('KEY. COUNT THEM.');
         HA.audio.play('terminal');

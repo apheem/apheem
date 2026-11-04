@@ -177,8 +177,9 @@
     fail(`no floor in column ${tx} can be reached`);
   };
 
-  // Stand in reach of something with x, y, w, h (a person, a log, a pod, a pickup, a lift).
-  PT.near = (o, opts) => {
+  // Where to stand in reach of something with x, y, w, h (a person, a log, a pod, a pickup, a lift), or null if
+  // nothing near it can be reached from where the hero is.
+  function spotNear(o) {
     const room = w().room;
     const tx = HA.clamp(Math.floor((o.x + o.w / 2) / 8), 0, room.w - 1);
     const ty = HA.clamp(Math.floor((o.y + o.h - 1) / 8), 0, room.h - 1);
@@ -187,10 +188,16 @@
       const x = tx + dx;
       if (x < 0 || x >= room.w) continue;
       for (let y = Math.max(0, ty - 2); y <= Math.min(room.h - 1, ty + 1); y++) {
-        if (open(room, x, y) && reg[y * room.w + x]) return PT.go(x, y, opts);
+        if (open(room, x, y) && reg[y * room.w + x]) return { x, y, tx, ty };
       }
     }
-    fail(`nothing near ${tx},${ty} can be reached`);
+    return { tx, ty };
+  }
+  // Stand in reach of it.
+  PT.near = (o, opts) => {
+    const at = spotNear(o);
+    if (at.x === undefined) fail(`nothing near ${at.tx},${at.ty} can be reached`);
+    return PT.go(at.x, at.y, opts);
   };
 
   // ---- Things to do in a room ----
@@ -397,7 +404,8 @@
     PT.settle();
     const W = w();
     if (!W) return;
-    if (PT.restAtPods && W.pods.length && !W.state.rested[W.def.id] && !W.scene && !(W.boss && W.boss.fighting) && !W.state.flags.scuttle) PT.rest();
+    // (A pod the hero can't get to yet, above a shut way, waits until they come round to it.)
+    if (PT.restAtPods && W.pods.length && !W.state.rested[W.def.id] && !W.scene && !(W.boss && W.boss.fighting) && !W.state.flags.scuttle && spotNear(W.pods[0]).x !== undefined) PT.rest();
   };
 
   PT.exit = (side, to) => {

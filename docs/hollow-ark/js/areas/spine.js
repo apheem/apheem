@@ -5,7 +5,8 @@
 // Rooms here join top to bottom by ladders and floor hatches; the crew's lift runs between the landings it reaches.
 // Map legend beyond the shared one: ^ hot grilles   m Bloomsworn climber   8 steam drone   0 heat slug
 // a the ladder up   e the hatch down   L the crew's lift   T a terminal   M Abel, in his furnace
-// Z the Tower Lift. A room's vents (see abilities.js) carry the hero up; its pistons (see hazards.js) strike.
+// Z the Tower Lift   D the Piston Run's plate, bolted from above   l the last stoker's bunk. A room's vents (see
+// abilities.js) carry the hero up, its belts carry them along, and its pistons (see hazards.js) strike.
 (function (HA) {
   HA.rooms.area('spine', { name: 'ENGINE SPINE', theme: 'spine', music: 'spine', mapColor: '#ff8f4a' });
 
@@ -228,6 +229,8 @@
       e: down('boiler-stair'),
       a: up('reactor-throat'),
       L: stop(2, 'crew-camp'),
+      // the shaft's way up to the landing, plated over and bolted from above, until the hero comes round
+      D: { type: 'door', id: 'stokersPlate', open: (s) => !!s.flags.stokersPlate },
     },
     vents: [{ x0: 21, x1: 24, y0: 48, y1: 69 }],
     pistons: [
@@ -238,7 +241,6 @@
       { x: 37, y: 55, len: 17, dir: 'left', period: 200, offset: 100 },
       { x: 7, y: 35, len: 7, dir: 'down', period: 150, offset: 40 },
       { x: 37, y: 22, len: 8, dir: 'left', period: 160, offset: 0 },
-      { x: 37, y: 14, len: 8, dir: 'left', period: 160, offset: 80 },
     ],
     scenery: [
       { kind: 'reactor', x: 15 },
@@ -248,26 +250,32 @@
       { kind: 'shaft', x: 17, y0: 4, y1: 8 },
       { kind: 'stencil', x: 3, y: 5, text: 'PISTON LANDING' },
       { kind: 'stencil', x: 26, y: 47, text: 'MIND THE RAMS' },
+      { kind: 'stencil', x: 29, y: 13.5, text: 'STOKERS →' },
     ],
-    triggers: [{ x0: 2, x1: 25, y1: 8, when: (s) => !s.flags.liftTwoSeen, run: 'liftTwo' }],
+    triggers: [
+      { x0: 2, x1: 25, y1: 8, when: (s) => !s.flags.liftTwoSeen, run: 'liftTwo' },
+      // under the plate, by the stokers' door; and, come round onto the landing, its bolt (off the plate first)
+      { x0: 30, x1: 37, y0: 12, y1: 15, when: (s) => !s.flags.stokersPlate, run: 'plateShut' },
+      { x0: 2, x1: 21, y1: 8, when: (s) => !s.flags.stokersPlate, run: 'plateBolt' },
+    ],
     map: [
       '########################################',
       '########################################',
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##..a...S........L....................##',
-      '##########################............##',
-      '##########################............##',
+      '##......................................',
+      '##......................................',
+      '##......................................',
+      '##..a...S........L......................',
+      '##########################DDDDDDDDDDDD##',
+      '##########################DDDDDDDDDDDD##',
       '##....................................##',
       '##........................======......##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##............................======..##',
+      '##......................................',
+      '##......................................',
+      '##......................................',
+      '##............................========##',
       '##....................................##',
       '##....................................##',
       '##....................................##',
@@ -341,6 +349,62 @@
       '########################################',
       '########################################',
       '########################################',
+    ],
+  });
+
+  // The Stokers' Bunks: where the Steward kept the stokers he took from the walls, beside the Piston Run. The shaft's
+  // way up to the Piston Landing is plated over, so the climb goes round through here: in at the low door, past the
+  // bunks, up the steam at the east end, and west along the fuel line, out onto the landing above the plate.
+  HA.rooms.add({
+    id: 'stokers-bunks',
+    area: 'spine',
+    name: "THE STOKERS' BUNKS",
+    gx: 520,
+    gy: 5,
+    abilities: { thruster: true, grapple: true, foam: true, boots: true },
+    musicLayers: layers,
+    legend: {
+      T: { type: 'log', id: 'stokers', name: "the stokers' roster" },
+      l: { type: 'log', id: 'abelCount', scene: 'abelBunk', label: '{up} LOOK AT THE BUNK' },
+    },
+    vents: [{ x0: 72, x1: 75, y0: 3, y1: 18 }],
+    belts: [
+      { x0: 2, x1: 45, y: 9, dir: -1 },
+      { x0: 50, x1: 68, y: 9, dir: -1 },
+    ],
+    scenery: [
+      { kind: 'pipes', y: 2 },
+      { kind: 'bunks', x: 12, y: 12 },
+      { kind: 'bunks', x: 40, y: 12 },
+      { kind: 'lastbunk', x: 60, y: 19 },
+      { kind: 'stencil', x: 3, y: 11, text: 'STOKERS' },
+      { kind: 'stencil', x: 18, y: 4, text: '← FUEL LINE · TO THE FURNACE' },
+    ],
+    triggers: [{ x0: 0, x1: 12, y0: 11, y1: 18, when: (s) => !s.flags.stokersSeen, run: 'stokers' }],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##........................................................8...................##',
+      '..............................8...............................................##',
+      '..............................................................................##',
+      '..............................................................................##',
+      '..............................................................................##',
+      '##############################################....###################.........##',
+      '##############################################....###################.........##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '..............................................................................##',
+      '..............................................................................##',
+      '..............................................................................##',
+      '##########....................................................................##',
+      '##########....................................................................##',
+      '##########............0.....T.......................0..........l..............##',
+      '##################################^^^^^#########################################',
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
     ],
   });
 

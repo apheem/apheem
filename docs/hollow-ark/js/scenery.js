@@ -1128,6 +1128,43 @@
         }
       }
     },
+    // The last stoker's bunk (the Stokers' Bunks), alone at the east end: a Hullfolk count scratched behind it, a
+    // year of fives, then the fives come apart into scratches. Cut deep over it, in the first hand, a name.
+    lastbunk(g, s, rnd) {
+      const x = s.x * 8;
+      const y = s.y * 8; // the floor it stands on
+      for (let i = 0; i < 28; i++) {
+        const cx = x + 2 + (i % 7) * 10;
+        const cy = y - 50 + Math.floor(i / 7) * 8;
+        if (i < 18) {
+          // four strokes and one across
+          g.fillStyle = 'rgba(232,226,214,0.4)';
+          for (let k = 0; k < 4; k++) g.fillRect(cx + k * 2, cy, 1, 6);
+          for (let k = 0; k < 8; k++) g.fillRect(cx - 1 + k, cy + 5 - Math.floor(k * 0.6), 1, 1);
+          continue;
+        }
+        g.fillStyle = 'rgba(232,226,214,0.3)';
+        for (let k = 0; k < 6; k++) {
+          const sx = cx - 1 + Math.floor(rnd() * 8);
+          const sy = cy + Math.floor(rnd() * 3);
+          const lean = rnd() < 0.5 ? 1 : -1;
+          const len = 2 + Math.floor(rnd() * 4);
+          for (let j = 0; j < len; j++) g.fillRect(sx + (j >> 1) * lean, sy + j, 1, 1);
+        }
+      }
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y - 30, 2, 30);
+      g.fillRect(x + 26, y - 30, 2, 30);
+      for (const ly of [y - 24, y - 10]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, ly, 28, 4);
+        g.fillStyle = '#4a3a2e';
+        g.fillRect(x + 2, ly, 24, 2);
+      }
+      g.globalAlpha = 0.55;
+      HA.font.draw(g, 'ABEL', x + 4, y - 60, '#e8e2d6', { shadow: null });
+      g.globalAlpha = 1;
+    },
     // The line phone the crew strung along the keel tram's cable, down to the Warrens.
     phone(g, s) {
       const x = s.x * 8;
@@ -1210,6 +1247,52 @@
         g.fillStyle = '#2e2a3e';
         g.fillRect(x + 7, 23, 2, 2);
       }
+    },
+    // The Steward's Rooms: his narrow bed, made tight.
+    cot(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y - 12, 32, 12);
+      g.fillStyle = '#4a4060';
+      g.fillRect(x + 1, y - 11, 30, 3);
+      g.fillStyle = '#2e2a3e';
+      g.fillRect(x + 1, y - 8, 30, 2);
+      g.fillStyle = '#e6e2d6';
+      g.fillRect(x + 2, y - 13, 7, 3);
+      g.fillStyle = '#6a5630';
+      g.fillRect(x + 1, y - 6, 2, 6);
+      g.fillRect(x + 29, y - 6, 2, 6);
+    },
+    // And on a stand under glass, the one old thing in them: a pair of Hullfolk boots, mended and mended.
+    bootcase(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 2, y - 14, 20, 14);
+      g.fillStyle = '#6a5630';
+      g.fillRect(x + 3, y - 13, 18, 12);
+      g.fillStyle = '#c9a050';
+      g.fillRect(x + 2, y - 15, 20, 1);
+      for (const bx of [x + 5, x + 13]) {
+        g.fillStyle = '#3a2418';
+        g.fillRect(bx, y - 28, 5, 10);
+        g.fillRect(bx, y - 20, 8, 4);
+        g.fillStyle = '#5a3a24';
+        g.fillRect(bx + 1, y - 27, 2, 3);
+        g.fillStyle = '#7a6a5a';
+        g.fillRect(bx + 2, y - 23, 3, 2);
+        g.fillRect(bx + 5, y - 19, 2, 1);
+        g.fillStyle = '#10121c';
+        g.fillRect(bx, y - 16, 8, 1);
+      }
+      g.fillStyle = 'rgba(184,244,255,0.10)';
+      g.fillRect(x, y - 34, 24, 19);
+      g.fillStyle = 'rgba(184,244,255,0.35)';
+      g.fillRect(x, y - 34, 24, 1);
+      g.fillRect(x, y - 34, 1, 19);
+      g.fillRect(x + 23, y - 34, 1, 19);
+      g.fillRect(x + 3, y - 31, 1, 6);
     },
     // The Observation Dome: glass from wall to wall, the stars, the bow below, and the new world: a pale dot, dark.
     domeglass(g, s, rnd, T, room) {

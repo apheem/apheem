@@ -117,6 +117,7 @@ const spine = {
     await r.to('spine-foot'); // east on the tram with the climbers (or to the Ballast stop, and through the pipes)
     await r.bulbs();
     await r.to('boiler-stair');
+    await r.to('stokers-bunks'); // the Piston Run's shaft is plated over: round through the bunks, out above the plate
     await r.to('reactor-throat');
     await r.boss('reactor-throat');
     await r.to('crew-camp'); // the night, and the Purser's last call
@@ -129,6 +130,7 @@ const tower = {
   async play(r) {
     await r.to('observation-dome');
     await r.to('garden-gallery'); // the Gardener
+    await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter
     await r.to('helm');
     await r.boss('helm', 'HA.ui.world.state.people.steward');
   },

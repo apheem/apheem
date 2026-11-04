@@ -5,16 +5,17 @@ This file is for the next session, on this account or another, so that nothing i
 ## Right now
 
 - **Branch:** `claude/practical-heisenberg-1chpy5`. It restarts from `main` after each merge. Open a draft PR for it if there isn't an open one.
-- **Last merged:** 0.3.13, Cody's answers of Nov 4 and the second batch of new rooms (PR #19, Nov 4).
-- **Working on:** Sorrel (the audit's 9, with lock 3b), as 0.3.14: built (`STORYBOARD.md`, "Sorrel", design and as built).
-- **Then:** the rest of the length work: more new rooms on the main path, or the other side quests (none designed yet), whichever Cody wants first.
-- **Still waiting on Cody:** where the hero could lose Gasket (the Barracks, the Helm, the run, or one of them), and whether 2:40 is the right clock for the run.
+- **Last merged:** 0.3.14, Sorrel (PR #20, Nov 4; merged on Cody's word, "go ahead and merge").
+- **Working on:** the third batch of new rooms, the Stokers' Bunks (Spine) and the Steward's Rooms (Tower), as 0.3.15: built (`STORYBOARD.md`, "New rooms on the main path", third batch, design and as built).
+- **Then:** the rest of the length work: the other side quests (none designed yet), or more new rooms on the main path, whichever Cody wants first.
+- **Still waiting on Cody:** where the hero could lose Gasket (the Barracks, the Helm, the run, or one of them); whether 2:40 is the right clock for the run; whether Sorrel's trail is too easy to miss or too plain, and whether leaving her should cost Mercy; and whether the third batch's shape (a shaft shut from above, the way round through the new room, the bolt drawn from the top) should be varied next time.
 
 ## Cody's answers (Nov 4)
 
 1. "Gasket and Solder have man names, so it is a bit weird reading she. So either change the pronoun or change the name." The pronoun changed: both are men.
 2. The Gardens: "The taken are found too soon. It doesn't feel worked for."
 3. "But continue."
+4. After 0.3.14: "Go ahead and merge. Go ahead and continue." PR #20 was merged on that, and the third batch of new rooms followed.
 
 ## Cody's notes (Oct 31, from playing 0.3.10)
 
@@ -51,7 +52,7 @@ Their words are in the session log; the story audit doc is [here](https://claude
 ## Rules that carry over
 
 - Commits end with the `Co-Authored-By` and `Claude-Session` lines the session gives. No model names in commits, PRs or files.
-- Never merge or approve a PR. Cody merges.
+- Never approve a PR, and merge only when Cody says to (they did for PR #20). Otherwise Cody merges.
 - Cody's pronouns aren't stated: use they/them.
 - Run the checks before pushing: in `hollow-ark/tests`, `npm run rooms`, `npm run check` and `npm run playthrough`. A change to the story's order usually needs a step in `tests/playthrough-routes.js`.
 - Bump `HA.VERSION` in `docs/hollow-ark/js/core.js` and the desktop app's `package.json` and lock file for each release, and add a section to the README.
@@ -79,3 +80,4 @@ Their words are in the session log; the story audit doc is [here](https://claude
 - **Nov 4:** New rooms, second batch (design and as-built in `STORYBOARD.md`, "New rooms on the main path"): `muster` in `areas/cargo.js` (the Armory's east wall open, the office's bolted door `dockBolt`, the dock's ladder up), `pump-heads` in `areas/ballast.js` (the Drain Shaft's way up and its wedged door `wedge`, the Pump Gallery's ladder up), `dosechairs` in `scenery.js`, the thoughts `muster`, `dockBolt` and `wedged` and the logs `muster`. Next: Sorrel (9, with lock 3b), unless Cody says otherwise.
 - **Nov 4:** PR #19 (0.3.13) merged; the branch restarted from `main`. Sorrel built (the audit's 9, with lock 3b; design and as-built in `STORYBOARD.md`, "Sorrel"): `js/story/sorrel.js` (new, after `gasket.js` in `index.html`); the Nursery's welded door `W` and `greenhouse` in `areas/gardens.js`; the Seed Vault's frost `F`, a log with `when` (new in `world.js`); the Long Aisle's chalk and trigger in `areas/cargo.js`; the sump's hatch `h` and `dry-pumps` in `areas/ballast.js`; `drawWelded` and the `sorrel` scenery kind in `scenery.js`; the Pruner's cut in the wake (`story/gardens.js`); `newsTold(s, sorrel)` in `story/tram.js`; her place in the climb (`story/spine.js`); her cards and the count of 32 in `endings.js`. The Homecoming playthrough brings her home and the Overgrown one leaves her counting; the browser check plays the cut, the glass, the hatch, the choice and home. Version 0.3.14. Watch out: `G` in a map is the pistol's pickup (`WEAPON_CHARS` in `world.js`), not a free letter. Next: more length work, as Cody wants it.
 - **Nov 4:** CI's macOS desktop launch check failed on PR #20: the hero walked 4.6 px, not 10, though Linux and Windows passed on the same commit. The check held Right for 600 ms of wall time, and the macOS runner gave the window only a few frames in that time. It now holds for 36 of the game's own frames (capped at 8 s) and reports each hold's frames and time in `smoke.json` (`hollow-ark/desktop/main.js`). Locally, with `requestAnimationFrame` slowed to one frame per 500 ms, the old check fails the same way (5.8 px) and the new one passes.
+- **Nov 4:** PR #20 (0.3.14) merged on Cody's word; the branch restarted from `main`. Cody said to continue without picking, so the third batch of new rooms came first (the checklist's order): the Stokers' Bunks and the Steward's Rooms, each the way up to a boss, round a shaft shut from above (design and as-built in `STORYBOARD.md`, "New rooms on the main path"). `areas/spine.js`: the Piston Run's plate `D` and doors, `stokers-bunks` (520, 5); `story/spine.js`: logs `stokers` and `abelCount`, scenes `plateShut`, `plateBolt`, `stokers`, `abelBunk`, and Abel's last words; `areas/tower.js`: the Bridge Stair's shutter `D` and doors, `steward-rooms` (560, −133); `story/tower.js`: log `daybook`, scenes `shutterShut`, `stewardRooms`, `bootcase`, `shutterBolt`, and the Helm's boots line; props `lastbunk`, `cot` and `bootcase` in `scenery.js`. The playthroughs go round through both rooms (explicit steps in `playthrough-routes.js`, since the route finder won't pass through the same room twice), and the runner rests at a pod only once it can reach it. Version 0.3.15. Watch out: a story door that opens a shut way (a plate, a shutter, a bolt) is treated as open by `rooms-check.js`, so the shut state is tested by the playthroughs and the browser check, not the room checker.

@@ -1128,6 +1128,16 @@ async function play(browserType, url, label) {
           HA.debug.step(1);
         }
       };
+      // Every line said until the next choice (or the scene's end), confirming as a player would.
+      const listen = () => {
+        const said = [];
+        for (let i = 0; i < 8000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          const st = w().scene.step;
+          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return said;
+      };
       const choose = (i) => {
         for (let k = 0; k < i; k++) {
           HA.debug.step(1, { down: true });
@@ -1191,12 +1201,30 @@ async function play(browserType, url, label) {
       out.rammed = p.hp < hp;
       w().assist.invincible = true;
       p.hp = p.maxHp;
-      // The Piston Landing: the second lift (seven of them is hands enough).
-      HA.debug.goto('piston-run', 10, 8);
+      // The shaft under the Piston Landing is plated over (the third batch of new rooms), so the way up is round
+      // through the Stokers' Bunks: the plate shut, the bunks and the humming, and Abel's count on the last bunk.
+      HA.debug.goto('piston-run', 33, 15);
+      HA.debug.step(5);
+      out.plate = { shut: !w().doors.find((d) => d.id === 'stokersPlate').open, thought: listen().join(' ') };
+      HA.debug.goto('stokers-bunks', 5, 15);
+      HA.debug.step(40);
+      out.plate.bunks = listen().join(' ');
+      HA.debug.goto('stokers-bunks', 63, 18);
+      HA.debug.step(3);
+      out.plate.prompt = w().near && w().near.label;
+      press('up');
+      out.plate.count = listen().join(' ');
+      out.plate.read = !!s.logs.abelCount;
+      // The Piston Landing: the second lift (seven of them is hands enough), then the plate's bolt.
+      HA.debug.goto('piston-run', 24, 8); // come out of the bunks onto the landing, east of the plate's bolt
       HA.debug.step(30);
       out.landing2 = w().scene && w().scene.name;
       talkThrough();
       out.lift2 = s.flags.lifts;
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.plate.bolt = w().scene && w().scene.name;
+      out.plate.drawn = listen().join(' ');
+      out.plate.open = w().doors.find((d) => d.id === 'stokersPlate').open;
       // Abel: up the ladder from the landing into the Reactor Throat.
       HA.debug.goto('piston-run', 4, 8);
       HA.debug.step(3);
@@ -1248,7 +1276,8 @@ async function play(browserType, url, label) {
       HA.bosses.abel.hurt(w(), b, 999);
       HA.debug.step(5);
       out.defeated = w().scene && w().scene.name;
-      talkThrough();
+      out.abelSaid = listen().join(' ');
+      HA.debug.step(2); // let go of Confirm: a choice answers to a fresh press
       out.ten = (options() || []).map((o) => o.label).join('/');
       const mercy = s.mercy;
       choose(0);
@@ -1333,8 +1362,11 @@ async function play(browserType, url, label) {
     expect(sp.liftTo === 'DOWN TO THE FOOT/STAY' && sp.down.room === 'spine-foot' && sp.down.minder, `the crew's lift did not run down to the Foot (${sp.liftTo}, ${JSON.stringify(sp.down)})`);
     expect(sp.embers && sp.gripping && sp.rammed, `the Spine's heat slugs, climbers or pistons went wrong (${sp.embers}, ${sp.gripping}, ${sp.rammed})`);
     expect(sp.landing2 === 'liftTwo' && sp.lift2 === 2, `the second lift was not built (${sp.landing2}, ${sp.lift2})`);
+    const pl = sp.plate;
+    expect(pl.shut && /PLATED OVER/.test(pl.thought) && /STOKERS/.test(pl.thought) && /HUMMING/.test(pl.bunks) && /HUM IT IN THE WARRENS/.test(pl.bunks) && pl.prompt === '{up} LOOK AT THE BUNK' && /A COUNT IN FIVES/.test(pl.count) && pl.read && pl.bolt === 'plateBolt' && /DREW THE BOLT/.test(pl.drawn) && pl.open, `the plated shaft, or the way round through the Stokers' Bunks, went wrong (${JSON.stringify(pl)})`);
     expect(sp.throat.room === 'reactor-throat' && sp.throat.fighting && sp.throat.music === 'abel' && !sp.throat.shut, `Abel's fight did not start with the shutter shut (${JSON.stringify(sp.throat)})`);
     expect(/throw/.test(sp.states) && /blow/.test(sp.states) && sp.fire && sp.barred && sp.phase === 2 && sp.grates && sp.burnt, `Abel's moves went wrong (${JSON.stringify(sp)})`);
+    expect(/CUT INTO THE LAST BUNK/.test(sp.abelSaid), `Abel's name did not bring back his count on the last bunk (${sp.abelSaid})`);
     expect(sp.defeated === 'abelDefeated' && sp.ten === 'LEAVE HIM HIS FIRES/PUT THE FIRES OUT OF HIM' && sp.abel.fate === 'spared' && sp.abel.mercy === 1 && sp.abel.open && sp.abel.floor, `choice 10 went wrong (${sp.defeated}, ${sp.ten}, ${JSON.stringify(sp.abel)})`);
     expect(sp.camp.room === 'crew-camp' && sp.camp.crew === 8 && sp.camp.lifts === 3 && sp.camp.people === 8 && sp.camp.music === 'camp', `the climbers did not reach the camp (${JSON.stringify(sp.camp)})`);
     expect(sp.sky.said === sp.sky.trust >= 3 && sp.sky.trust >= 3, `Gasket's sky at the camp went wrong (${JSON.stringify(sp.sky)})`);
@@ -1350,7 +1382,7 @@ async function play(browserType, url, label) {
     const towerSave = (extra) =>
       get((extra) => {
         const s = HA.save.newState();
-        Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'shim', cargo: true, chalkStops: true, deserterMet: true, deserterOffered: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true, ballast: true, solderFound: true, toolbagBack: true, siltSeen: true, siltDown: true, floodSeen: true, flooded: true, hatchOpen: true, tram: true, raidSeen: true, spine: true, crewCame: true, lifts: 2, liftTwoSeen: true, abelSeen: true, abelDown: true, camp: true, lightsOut: true, shimRanOff: true, purserGone: true, campDone: true, verdict: true });
+        Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'shim', cargo: true, chalkStops: true, deserterMet: true, deserterOffered: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true, ballast: true, solderFound: true, toolbagBack: true, siltSeen: true, siltDown: true, floodSeen: true, flooded: true, hatchOpen: true, tram: true, raidSeen: true, intercom: true, spine: true, crewCame: true, lifts: 2, liftTwoSeen: true, abelSeen: true, abelDown: true, camp: true, lightsOut: true, shimRanOff: true, purserGone: true, campDone: true, verdict: true });
         Object.assign(s.wardens, { bailiff: 'salvage', pruner: 'release', tallyman: 'release' });
         Object.assign(s.people, { wick: 'dead', flux: 'home', solder: 'alive', abel: 'spared' });
         Object.assign(s.abilities, { thruster: 'odell', grapple: true, boots: true });
@@ -1468,6 +1500,28 @@ async function play(browserType, url, label) {
       choose(0);
       talkThrough();
       out.gardener = { fate: s.people.gardener, mercy: s.mercy - m2, shimWith: s.flags.shimWith, lead: s.lead };
+      // The Bridge Stair is shut above (the third batch of new rooms), so the way up is round through the Steward's
+      // Rooms: the shutter, his voice, his daybook, the boots under glass, and the shutter's bolt from the landing.
+      HA.debug.goto('bridge-stair', 28, 20);
+      HA.debug.step(5);
+      out.shutter = { shut: !w().doors.find((d) => d.id === 'stewardShutter').open, thought: listen().join(' ') };
+      HA.debug.goto('steward-rooms', 5, 20);
+      HA.debug.step(40);
+      out.shutter.rooms = listen().join(' | ');
+      HA.debug.goto('steward-rooms', 36, 20);
+      HA.debug.step(3);
+      press('up');
+      out.shutter.daybook = listen().join(' ');
+      HA.debug.goto('steward-rooms', 50, 8);
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.shutter.boots = listen().join(' ');
+      HA.debug.goto('bridge-stair', 30, 8);
+      HA.debug.step(3);
+      out.shutter.under = !w().doors.find((d) => d.id === 'stewardShutter').open;
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.shutter.bolt = w().scene && w().scene.name;
+      out.shutter.drawn = listen().join(' | ');
+      out.shutter.open = w().doors.find((d) => d.id === 'stewardShutter').open;
       // Up the Bridge Stair's ladder into the Helm: the speech, and the fight.
       HA.debug.goto('bridge-stair', 12, 8);
       HA.debug.step(3);
@@ -1599,7 +1653,9 @@ async function play(browserType, url, label) {
     expect(/KEEP WICK'S LANCETS/.test(tw.thorn) && /ASKED VERY GOOD QUESTIONS/.test(tw.toShim) && tw.eleven === 'SPARE HER/MAKE HER TAKE HER OWN DOSE/WALK PAST', `the Gardener's offer or choice 11 went wrong (${tw.thorn}, ${tw.eleven}, ${tw.toShim})`);
     expect(tw.gardener.fate === 'spared' && tw.gardener.mercy === 1 && tw.gardener.shimWith && /BRIDGE STAIR/.test(tw.gardener.lead), `choice 11 did not spare the Gardener (${JSON.stringify(tw.gardener)})`);
     expect(tw.podPrompt === '{up} REST' && tw.helm === 'helm', `the Bridge Stair's pod or ladder went wrong (${tw.podPrompt}, ${tw.helm})`);
-    expect(/DEAD MAN'S BOOTS/.test(tw.speech) && /THOSE WERE HIS BOOTS/.test(tw.speech) && /TELL ME AGAIN WHO THE MONSTER IS/.test(tw.speech), `the Steward's speech went wrong (${tw.speech})`);
+    const sh = tw.shutter;
+    expect(sh.shut && /SHUT ABOVE ME/.test(sh.thought) && /PRIVATE/.test(sh.thought) && /YOU'RE IN MY ROOMS/.test(sh.rooms) && /LOCKUP'S INTERCOM/.test(sh.rooms) && /NOT YET FOR TWENTY YEARS/.test(sh.daybook) && /OLD BOOTS ON A STAND/.test(sh.boots) && sh.under && sh.bolt === 'shutterBolt' && /DREW THE BOLT/.test(sh.drawn) && /FORTY-TWO YEARS/.test(sh.drawn) && sh.open, `the Bridge Stair's shutter, or the way round through the Steward's Rooms, went wrong (${JSON.stringify(sh)})`);
+    expect(/DEAD MAN'S BOOTS/.test(tw.speech) && /THOSE WERE HIS BOOTS/.test(tw.speech) && /TELL ME AGAIN WHO THE MONSTER IS/.test(tw.speech) && /THE BOOTS UNDER GLASS/.test(tw.speech), `the Steward's speech went wrong (${tw.speech})`);
     expect(tw.fight.fighting && tw.fight.music === 'steward' && tw.fight.check === 'helm' && tw.fight.crew >= 6 && tw.field && tw.ordered && tw.gate, `the Steward's first phase went wrong (${JSON.stringify(tw.fight)}, field ${tw.field}, turrets ${tw.ordered}, gates ${tw.gate})`);
     expect(tw.fall.room === 'helm' && /CHECKPOINT/.test(tw.fall.toast) && tw.fall.scene === 'stewardIntro' && /AGAIN, THEN/.test(tw.again) && !/BOOTS/.test(tw.again) && tw.refight, `a fall in the Steward's fight did not come back to its checkpoint (${JSON.stringify(tw.fall)}, ${tw.again}, ${tw.refight})`);
     expect(tw.guardScene === 'stewardGuard' && /MEASURE: FULL/.test(tw.guardSaid) && tw.guards === 3 && /DO IT MYSELF/.test(tw.manSaid), `the Steward's guard went wrong (${tw.guardScene}, ${tw.guardSaid}, ${tw.guards}, ${tw.manSaid})`);
