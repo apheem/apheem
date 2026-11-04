@@ -3,7 +3,7 @@
 // ROOM"); the Observation Dome, where the world shows dark and empty and the Navigator speaks for the first time
 // (and on the lie path Shim, come up the vents, asks where his mother is: choice 4b); the Gardener in her gallery
 // (her last offer of the Thorn, and choice 11); Steward Marrant at the Helm (his speech, the fight, choice 12);
-// and what follows his fall: Overgrown (fought as Solder or Gasket), the Key offered (choice 13, Dominion), or the
+// and what follows his fall: Overgrown (fought as Solder, or Gasket, or whoever is left), the Key offered (choice 13, Dominion), or the
 // Key broken and the ship's scuttle: the lift down for the true path, the run for the sleds for Crash (see
 // scuttle.js). All text is original to Hollow Ark.
 (function (HA) {
@@ -30,9 +30,14 @@
   });
 
   // ---- The crew, up the Tower ----
-  // Who climbed is settled at the verdict (s.crew); later choices don't send anyone home.
-  const crewOf = (s) => S.crewList(Object.assign({}, s, { mercy: 99 })).slice(0, Math.max(2, s.crew || 0));
-  const fighter = (s) => (s.people.solder === 'alive' ? 'solder' : 'gasket');
+  // Who climbed is settled at the verdict (s.crew); later choices don't send anyone home. Old Gasket, lost in the
+  // Barracks or at the Helm (story/gasket.js), is no longer with them, and nobody takes his place.
+  const crewOf = (s) =>
+    S.crewList(Object.assign({}, s, { mercy: 99 }))
+      .slice(0, Math.max(2, s.crew || 0))
+      .filter((id) => id !== 'gasket' || S.gasketAlive(s));
+  // Who fights what the hero became (Overgrown): Solder, or Old Gasket, or the first climber left.
+  const fighter = (s) => (s.people.solder === 'alive' ? 'solder' : crewOf(s)[0] || 'brine');
   function place(world, id, tx, ty, lines) {
     const n = S.makeNpc(world, id, { x: tx * 8, y: FLOOR(ty) });
     if (id === 'flux') n.name = 'FLUX';
@@ -49,7 +54,7 @@
     ({
       gasket: ["WE'LL HOLD THE LIFT. GO ON. WE'RE RIGHT BEHIND YOU.", 'WE WANT TO BE IN THE ROOM. ALL OF US.'],
       solder: ["MARBLE. HE'S GOT MARBLE UP HERE. WE'VE GOT RUST.", "MY LEG'S FINE. STOP LOOKING AT IT."],
-      shim: ["GRANDAD SAYS I HAVE TO STAY BEHIND HIM. I'M BEHIND HIM."],
+      shim: S.gasketAlive(s) ? ["GRANDAD SAYS I HAVE TO STAY BEHIND HIM. I'M BEHIND HIM."] : ["I'M STAYING BEHIND YOU NOW. GRANDAD WOULD WANT ME TO."],
     })[id] || ['WE WANT TO BE IN THE ROOM.'];
   function placeCrew(world, at, ty) {
     const s = world.state;
@@ -374,14 +379,16 @@
         yield { wait: 60 };
         const g = npcOf(world, 'gasket');
         if (g) g.facing = 1;
-        yield say('OLD GASKET', '...THOSE WERE HIS BOOTS.');
+        // Lost in the Barracks, Gasket isn't there to say it; the hero knows whose they were.
+        if (g) yield say('OLD GASKET', '...THOSE WERE HIS BOOTS.');
+        else yield me("CLEAT'S BOOTS. GASKET'S BROTHER. THE LAST SLEEPER SHOT HIM FOR THEM.");
         if (f.bootsSeen) yield me('THE BOOTS UNDER GLASS, IN HIS ROOMS.');
         yield { wait: 50 };
         yield steward('KEY. COUNT THEM.');
         HA.audio.play('terminal');
         yield say('HELM KEY', 'COUNT: ' + (crewOf(s).length + 1 + (f.shimWith ? 1 : 0)) + '. AUTHORITY: THE STEWARD. AWAITING ORDERS.', COUNT);
         f.stewardSeen = true;
-        S.addStory(world, "AT THE HELM, THE STEWARD SAID THE FIRST THING HE EVER DID ON THIS SHIP WAS TAKE A DEAD MAN'S BOOTS. GASKET SAID: THOSE WERE HIS BOOTS.");
+        S.addStory(world, g ? "AT THE HELM, THE STEWARD SAID THE FIRST THING HE EVER DID ON THIS SHIP WAS TAKE A DEAD MAN'S BOOTS. GASKET SAID: THOSE WERE HIS BOOTS." : "AT THE HELM, THE STEWARD SAID THE FIRST THING HE EVER DID ON THIS SHIP WAS TAKE A DEAD MAN'S BOOTS. THEY WERE CLEAT'S, GASKET'S BROTHER'S.");
         world.save();
       } else {
         yield { wait: 20 };
@@ -421,6 +428,7 @@
       yield steward('...THE WORLD DOWN THERE.');
       yield steward('TELL ME SOMEONE GOT THERE FIRST. TELL ME I WASN\'T AFRAID OF NOTHING.');
       yield me("I DIDN'T TELL HIM ANYTHING.");
+      if (s.flags.gasketHelm === 'lost') yield me('THE OTHERS WERE KNEELING BY GASKET.');
       S.addStory(world, 'I BEAT STEWARD MARRANT AT THE HELM. AN OLD MAN, ON HIS KNEES, ASKING IF ANYONE GOT TO THE WORLD FIRST.');
       world.save();
       yield* stewardChoice(world);
@@ -435,7 +443,7 @@
     *overgrownDefeated(world) {
       const s = world.state;
       const b = world.boss;
-      const who = fighter(s) === 'solder' ? 'SOLDER' : 'OLD GASKET';
+      const who = S.nameOf(fighter(s));
       HA.music.play(null);
       world.checkpoint = null;
       yield { wait: 60 };
@@ -494,7 +502,7 @@
       HA.audio.play('kill');
       yield { wait: 50 };
       yield { fade: 'in', frames: 30 };
-      yield me('NOBODY SAID ANYTHING. GASKET LOOKED AT HIS BOOTS.');
+      yield me(S.gasketAlive(s) ? 'NOBODY SAID ANYTHING. GASKET LOOKED AT HIS BOOTS.' : 'NOBODY SAID ANYTHING. SOMEONE TOOK THE BOOTS OFF HIM, TO BURY WITH GASKET.');
     } else {
       s.people.steward = 'counted';
       S.addChoice(world, "I LEFT STEWARD MARRANT TO THE WARDENS' COUNT. THEY TOOK HIM DOWN TO THE LOCKUP.");
@@ -578,7 +586,8 @@
     yield say('THE WARDENS', 'WE WILL HOLD THE DOORS.', COUNT);
     yield say('SOLDER', "LIFT B. IT'S RIGHT THERE, UNDER THE PLATES. 'GOES DOWN, NOT OUT.'");
     yield say('SOLDER', "I CAN MEND IT. I CAN'T LIFT THE BRAKE ALONE.");
-    yield say('OLD GASKET', 'THEN WE ALL LIFT. EVERYONE. ON THREE.');
+    if (S.gasketAlive(s)) yield say('OLD GASKET', 'THEN WE ALL LIFT. EVERYONE. ON THREE.');
+    else yield say(S.nameOf(S.crewVoice(s, ['solder'])), "THEN WE ALL LIFT. GASKET WOULD HAVE SAID SO. ON THREE.");
     // the crew go to the lift, past the Wardens at the door
     world.npcs.forEach((n, i) => {
       n.homeX = (48 + i * 1.1) * 8;
@@ -605,7 +614,8 @@
   function* overgrownTurn(world) {
     const s = world.state;
     const p = world.player;
-    const who = fighter(s) === 'solder' ? 'SOLDER' : 'OLD GASKET';
+    const id = fighter(s);
+    const who = S.nameOf(id);
     yield me('THE KEY WAS STILL IN THE HELM. IT WAS WARM. I DIDN\'T MEAN TO PICK IT UP.');
     if (world.boss) world.boss.keyGone = true;
     yield me('THE PINK CAME UP OVER MY VISOR LIKE WATER.');
@@ -622,7 +632,7 @@
     setupOvergrown(world);
     yield { fade: 'in', frames: 40 };
     yield say(who, '...NO. NO, NO, NO.');
-    yield say(who, who === 'SOLDER' ? "SOMEBODY PICK UP THAT GUN. ...FINE. ME. IT'S ALWAYS ME." : "I'M TOO OLD FOR THIS. GIVE ME THAT GUN.");
+    yield say(who, id === 'solder' ? "SOMEBODY PICK UP THAT GUN. ...FINE. ME. IT'S ALWAYS ME." : id === 'gasket' ? "I'M TOO OLD FOR THIS. GIVE ME THAT GUN." : '...SOMEBODY HAS TO. GIVE ME THAT GUN.');
     beginOvergrown(world);
   }
 

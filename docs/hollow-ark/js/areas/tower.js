@@ -32,6 +32,8 @@
       { kind: 'racks', x0: 49, x1: 61, y: 9 },
       { kind: 'stencil', x: 3, y: 5, text: 'HONOUR GUARD · BARRACKS' },
     ],
+    // The far end, the first time, with the crew by the lift: the Steward wakes his night watch (story/gasket.js).
+    triggers: [{ x0: 64, x1: 77, y0: 11, y1: 18, when: (s) => !!s.flags.towerUp && !s.flags.guardWoke && !s.flags.stewardSeen && s.people.gasket !== 'dead', run: 'guardWake' }],
     map: [
       '################################################################################',
       '################################################################################',

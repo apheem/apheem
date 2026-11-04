@@ -266,9 +266,11 @@
     ctx.restore();
   }
 
-  // In the Overgrown ending someone else fights for the hero: Solder, or Old Gasket, with the hero's dropped weapon.
+  // In the Overgrown ending someone else fights for the hero, with the hero's dropped weapon: Solder, or Old Gasket,
+  // or whoever climbed with them and is left.
   function drawStandIn(ctx, world, p, cam) {
-    const S = HA.art.people[world.playAs];
+    const who = HA.story.PEOPLE[world.playAs];
+    const S = HA.art.people[(who && who.sprite) || world.playAs];
     let spr = S.idle;
     if (!p.onGround || (Math.abs(p.vx) > 0.2 && Math.floor(p.anim) % 2)) spr = S.walk;
     const flash = p.invuln > 60;
@@ -365,8 +367,10 @@
     const room = world.room;
     e.t++;
     if (e.flash > 0) e.flash--;
-    const px = p.x + p.w / 2;
-    const py = p.y + p.h / 2;
+    // Whoever it's after: the hero, or someone it was sent at (the Barracks' guard and Old Gasket, story/gasket.js).
+    const t = e.prey && e.prey.state !== 'gone' ? e.prey : p;
+    const px = t.x + t.w / 2;
+    const py = t.y + t.h / 2;
     const ex = e.x + e.w / 2;
     const ey = e.y + e.h / 2;
     const dist = Math.hypot(px - ex, py - ey);
@@ -375,7 +379,7 @@
     if (e.yank > 0) {
       e.yank--;
       e.cling = false;
-      const tx = px + p.facing * 9 - e.w / 2;
+      const tx = p.x + p.w / 2 + p.facing * 9 - e.w / 2;
       const ty = p.y + p.h - e.h;
       const d = Math.hypot(tx - e.x, ty - e.y);
       if (d < 3) e.yank = 0;
@@ -1045,6 +1049,7 @@
   function hurtEnemy(world, e, dmg, dir) {
     if (e.dead) return;
     if (e.boss) return HA.bosses[e.type].hurt(world, e, dmg, dir);
+    e.prey = null; // hurt by the hero, it turns on the hero
     if (e.type === 'drowned') {
       // The first hit starts it swelling; killing it sets it off at once.
       e.hp -= dmg;

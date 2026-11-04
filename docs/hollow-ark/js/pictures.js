@@ -249,14 +249,15 @@
       spr(g, person('shim'), 150, GROUND, 3);
       if (v.lantern) lantern(g, 172, GROUND - 16);
     },
-    // Old Gasket, sitting on the ground, breathing out; or by the fire, counting them at lights-out.
+    // Old Gasket, sitting on the ground, breathing out; or by the fire, counting them at lights-out. Lost in the
+    // Tower (v.gone): his wrench on a cairn under the sky, or Tamp at the fire in his place.
     gasket(g, t, v) {
       if (v.fire) {
         sky(g, NIGHT, GROUND);
         stars(g, 40, 5, GROUND - 30, t);
         rect(g, 0, GROUND, W, H - GROUND, '#0d1010');
         fire(g, 160, GROUND, t);
-        spr(g, person('gasket', 'kneel'), 112, GROUND, 2);
+        spr(g, person(v.gone ? 'tamp' : 'gasket', 'kneel'), 112, GROUND, 2);
         for (let i = 0; i < 5; i++) spr(g, person(i % 2 ? 'tamp' : 'brine', 'sleep'), 190 + i * 22, GROUND, 2);
         return;
       }
@@ -264,6 +265,20 @@
       hills(g, GROUND - 10, 6, '#3a5a3a', 4);
       rect(g, 0, GROUND, W, H - GROUND, '#2a3a2a');
       grass(g, GROUND, '#4a6a3a', 6, t);
+      if (v.gone) {
+        // a cairn of stones, his wrench laid across the top
+        const stones = [[138, 0, 14, 7], [152, 0, 12, 6], [164, 0, 13, 7], [144, 7, 13, 6], [157, 6, 12, 6], [150, 12, 12, 5]];
+        for (const [x, y, w, h] of stones) {
+          rect(g, x, GROUND - y - h, w, h, '#10121c');
+          rect(g, x + 1, GROUND - y - h + 1, w - 2, h - 2, '#6c7480');
+          rect(g, x + 1, GROUND - y - h + 1, w - 2, 1, '#8a929e');
+        }
+        rect(g, 146, GROUND - 20, 22, 3, '#10121c');
+        rect(g, 147, GROUND - 19, 20, 1, '#a9b6cc');
+        rect(g, 144, GROUND - 22, 5, 6, '#10121c');
+        rect(g, 145, GROUND - 21, 3, 4, '#a9b6cc');
+        return;
+      }
       spr(g, person('gasket', 'kneel'), 150, GROUND, 3);
       const k = (t % 120) / 120;
       if (k < 0.5) rect(g, 178 + k * 20, GROUND - 32 - k * 6, 3 + k * 6, 2, 'rgba(238,244,246,' + (0.6 - k) + ')');

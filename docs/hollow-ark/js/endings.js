@@ -13,6 +13,9 @@
 
   const released = (s) => ['bailiff', 'pruner', 'tallyman'].filter((k) => s.wardens[k] === 'release').length;
   const solderAlive = (s) => s.people.solder === 'alive';
+  // Old Gasket can be lost in the Tower (story/gasket.js): one fewer pair of hands, and one fewer of the Warrens.
+  const gasketAlive = (s) => s.people.gasket !== 'dead';
+  const hands = (s) => (s.crew || 0) - (gasketAlive(s) ? 0 : 1);
 
   // ---- What the true ending needs (Part 4), with the journal line for each one that's missing ----
   // Each line says what was down there and why it stayed shut, since a hero who missed it never saw it: the old
@@ -20,10 +23,16 @@
   const REQUIREMENTS = [
     { id: 'wardens', ok: (s) => released(s) === 3, line: 'THE OLD CREW LIFT UNDER THE HELM GOES DOWN TO A SEALED DECK. ONLY FREED WARDENS OPEN IT.' },
     { id: 'solder', ok: (s) => solderAlive(s), line: 'THE OLD CREW LIFT UNDER THE HELM WAS BROKEN. ONLY SOLDER COULD HAVE MENDED IT.' },
-    { id: 'crew', ok: (s) => s.crew >= 8, line: "THE OLD LIFT'S BRAKE NEEDS EIGHT PAIRS OF HANDS. TOO FEW CLIMBED WITH ME." },
+    {
+      id: 'crew',
+      ok: (s) => hands(s) >= 8,
+      line: "THE OLD LIFT'S BRAKE NEEDS EIGHT PAIRS OF HANDS. TOO FEW CLIMBED WITH ME.",
+      lineFor: (s) => (s.crew >= 8 ? "THE OLD LIFT'S BRAKE NEEDS EIGHT PAIRS OF HANDS. WITHOUT GASKET'S, THERE WERE TOO FEW." : null),
+    },
     { id: 'bloom', ok: (s) => s.bloom <= 2, line: 'THE DECK UNDER THE HELM LETS ONLY THE CLEAN IN. THE BLOOM WAS TOO DEEP IN ME.' },
   ];
   const missing = (s) => REQUIREMENTS.filter((r) => !r.ok(s));
+  const lineOf = (r, s) => (r.lineFor && r.lineFor(s)) || r.line;
   // Where the story goes once the Steward falls: Overgrown takes the hero, Dominion is offered, the lift
   // opens for Homecoming, or the scuttle starts and it's Crash.
   function afterSteward(s) {
@@ -78,7 +87,7 @@
   // The Hullfolk: the Warrens' twenty, the taken who came home from the Gardens, and Sorrel, if she came home (or,
   // left counting, if the ship came down whole: story/sorrel.js).
   function hullfolkCount(s, id) {
-    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0);
+    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0) - (gasketAlive(s) ? 0 : 1);
   }
 
   // ---- Who reached the new world, out of everyone who could have: the results after the credits ----
@@ -91,7 +100,7 @@
     let hullfolk = 0;
     if (id === 'homecoming') hullfolk = hullfolkCount(s, id); // "THE WARRENS CAME DOWN WHOLE", or those who hid came too
     // On the sleds the whole village made it if the gate held; if it fell, only the few left (the crew and Tamp).
-    if (id === 'crash') hullfolk = s.warrensRaid === 'fell' ? Math.min(hullfolkCount(s, id), s.crew + 1) : hullfolkCount(s, id);
+    if (id === 'crash') hullfolk = s.warrensRaid === 'fell' ? Math.min(hullfolkCount(s, id), hands(s) + 1) : hullfolkCount(s, id);
     return {
       hullfolk,
       sleepers: pods ? SLEEPERS : 0,
@@ -141,7 +150,7 @@
     if (id === 'deserter') why.push('I TOOK THE BOAT, AND LEFT THE REST OF IT UNFINISHED.');
     if (id === 'overgrown') why.push('THE BLOOM HAD TOO MUCH OF ME BY THE END.');
     if (id === 'dominion') why.push('BY THE END I WANTED THE KEY MORE THAN THE GROUND.');
-    if (id !== 'deserter') for (const r of missing(s)) if (!why.includes(r.line)) why.push(r.line);
+    if (id !== 'deserter') for (const r of missing(s)) if (!why.includes(lineOf(r, s))) why.push(lineOf(r, s));
     if (!why.length) return null;
     const lines = [['WHAT CLOSED THE OTHER WAY', DIM], ''];
     for (const w of why) lines.push(...wrap(w).map((l) => [l, VOICE]), '');
@@ -159,7 +168,9 @@
         : [pic(voice('MARA WOKE UNDER A REAL SKY.', "I WAS THE FIRST THING SHE SAW. I WASN'T LATE."), 'mara', { hero: true, list: true }), pic(card('THAT NIGHT WE SLEPT OUTSIDE.', ['MARA AND ME. WE LEFT ROOM FOR A THIRD.', DIM]), 'mara', { hero: true, night: true })];
       const out = [
         shimCard(s, 'SHIM STOOD ON THE GROUND. NOT A FLOOR.'),
-        pic(card('OLD GASKET BREATHED OUT.', "HE SAID CLEAT'S NAME TO THE SKY."), 'gasket'),
+        gasketAlive(s)
+          ? pic(card('OLD GASKET BREATHED OUT.', "HE SAID CLEAT'S NAME TO THE SKY."), 'gasket')
+          : pic(card('OLD GASKET NEVER SAW THE SKY.', s.flags.gasketSky ? 'I TOLD THEM HE WANTED TO.' : "WE SAID HIS NAME TO IT, AND CLEAT'S."), 'gasket', { gone: true }),
         pic(card("SOLDER BUILT THE FIRST CITY'S FIRST GATE.", 'IT OPENS FROM BOTH SIDES.'), 'gate'),
         warrensCard(s, 'THE WARRENS CAME DOWN WHOLE, LANTERNS AND ALL.', 'THE ONES WHO HID IN THE DEEP WALLS CAME DOWN TOO.'),
         ...wardensCount(s),
@@ -184,7 +195,9 @@
         pods ? pic(card('THE PODS CAME DOWN LIKE SEEDS.', 'MOST OF THEM OPENED.'), 'sleepers', { falling: true }) : pic(card('THE POD STACKS WENT DOWN WITH THE ARK.'), 'sleepers', { dark: true }),
         pods ? pic(voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE SHE WOKE.'), 'mara', { grass: true, hero: true }) : voice("I PROMISED I'D BE THERE WHEN MARA WOKE.", 'SHE NEVER DID.'),
         shimCard(s, 'SHIM STOOD ON THE GROUND. IT WAS STILL BURNING.', { burning: true }),
-        pic(card('OLD GASKET COUNTED THEM AT LIGHTS-OUT, LIKE ALWAYS.'), 'gasket', { fire: true }),
+        gasketAlive(s)
+          ? pic(card('OLD GASKET COUNTED THEM AT LIGHTS-OUT, LIKE ALWAYS.'), 'gasket', { fire: true })
+          : pic(card('TAMP COUNTED THEM AT LIGHTS-OUT NOW.', ['HE ALWAYS COUNTED GASKET TOO.', DIM]), 'gasket', { fire: true, gone: true }),
         solderAlive(s) ? pic(card('SOLDER STARTED ON A GATE', 'BEFORE THE FIRES WERE OUT.'), 'gate') : card("SOLDER'S GATE WENT DOWN WITH THE ARK."),
         warrensCard(s, 'THE WARRENS RODE THE SLEDS DOWN TOGETHER.', 'THE FEW LEFT FROM THE WARRENS RODE THE LAST SLED.', { sleds: true }),
         ...wardensCount(s),
@@ -196,7 +209,7 @@
     dominion(s) {
       return [
         pic(card('THE HULLFOLK SEALED THEIR GATE', 'AND HELD THEIR BREATH.'), 'shaft'),
-        card('OLD GASKET NEVER SAID MY NAME AGAIN.'),
+        gasketAlive(s) ? card('OLD GASKET NEVER SAID MY NAME AGAIN.') : card('THEY BURIED OLD GASKET IN THE WALLS.', 'NOBODY ASKED ME TO COME.'),
         solderAlive(s) ? pic(card('SOLDER BUILT A GATE THAT OPENED', 'FROM ONE SIDE ONLY. THEIRS.'), 'gate', { shut: true }) : card('NO ONE BUILT THE WARRENS A NEW GATE.'),
         pic(count('COUNT: WARDENS, ALL.', 'FOR THE NEW HOLDER.'), 'wardens', { holder: true }),
         voice('THEY ARE SAFER ASLEEP.'),
@@ -208,9 +221,11 @@
     },
 
     overgrown(s) {
-      const fighter = solderAlive(s) ? 'SOLDER' : 'OLD GASKET';
+      // Solder, or Old Gasket, or whoever climbed with them and is left (story/tower.js).
+      const id = solderAlive(s) ? 'solder' : HA.story.towerCrew(s)[0] || 'brine';
+      const said = { solder: "HE DIDN'T TALK ABOUT IT.", gasket: "HE DIDN'T TALK ABOUT IT.", flux: "HE DIDN'T TALK ABOUT IT.", brine: "SHE DIDN'T TALK ABOUT IT.", sorrel: "SHE DIDN'T TALK ABOUT IT." }[id];
       return [
-        card(fighter + ' WALKED OUT OF THE HELM ALIVE.', "HE DIDN'T TALK ABOUT IT."),
+        card(HA.story.nameOf(id) + ' WALKED OUT OF THE HELM ALIVE.', said || 'NOBODY ASKED ABOUT IT.'),
         pic(card('SHIM STOPPED ASKING ABOUT THE GROUND.'), 'shaft'),
         card('THE WARRENS WENT BACK INTO HIDING.'),
         pic(card('PINK FUNGUS GREW ON THE POD GLASS.', ['ON 0418 FIRST.', DIM]), 'mara', { pink: true }),
