@@ -1,12 +1,17 @@
 'use strict';
-// The Hydroponic Gardens' story (Phase 3.1): Wick walks in with the hero, the taken sleep in the cradles, the
-// Pruner holds the seals (choice 2), the taken wake and go home, and Wick is lost in the Vat House. The Gardener
-// offers the Bloom Thorn for her lancets (choice 3). All text is original to Hollow Ark.
+// The Hydroponic Gardens' story (Phase 3.1): Wick walks in with the hero, and the taken's racks in the Root Cellar
+// are empty: the Wardens hoisted them up to the Nursery, at the top of the Gardens (3.12). Wick goes up with the hero
+// as far as the water works, and the hero finds the taken alone and sends the hoist down for her. The Pruner holds
+// the seals (choice 2), the taken wake and go home, and Wick is lost in the Vat House. The Gardener offers the Bloom
+// Thorn for her lancets (choice 3). All text is original to Hollow Ark.
 (function (HA) {
   const S = HA.story;
   const run = (world, name) => S.run(world, name);
   const npcOf = S.npcOf;
   const FLOOR = (ty) => ty * 8;
+  const CELLAR_HOIST = 66; // the cradle hoist's column in the Root Cellar
+  const NURSERY_HOIST = 90; // and in the Nursery
+  const WICK_KNEELS = 72; // by the cradles in the Nursery
   const VOICE = S.VOICE;
   const COUNT = '#ff8a8a'; // a Warden, counting
   const FREED = '#b8f4ff'; // a Warden, freed
@@ -23,17 +28,28 @@
       title: 'NOTICE · NAVIGATION DECK',
       text: 'NAVIGATION DECK ACCESS: CLEAN PERSONNEL ONLY. BLOOM CARRIERS WILL BE REFUSED.',
     },
+    dosebook: {
+      title: 'NURSERY · DOSE BOOK',
+      text: 'NEW STOCK FROM THE WALLS: ELEVEN. HOISTED UP FROM THE CELLAR, SINCE THE SLEEPER IS LOOSE. DOSE THEM DEEPER THAN THE LAST LOT. THE DEEPER THE DOSE, THE QUIETER THE WAKING.',
+    },
     seeds: {
       title: 'SEED VAULT · YEAR 0',
       text: 'SEALED FOR ARRIVAL: TWELVE THOUSAND KINDS OF SEED, AND THE SOIL TO START THEM. TO BE OPENED UNDER A REAL SKY.',
     },
   });
 
-  // Wick at the cradles, keeping the taken breathing while the hero goes up.
-  S.TALK.wick.cellar = [
-    ["I'M TALKING TO THEM. GASKET SAYS THE SLEEPING CAN HEAR.", "WHO'S WAITING ON YOU, SLEEPER? EVERYBODY'S GOT SOMEBODY.", { me: "SOMEONE WHO'S STILL ASLEEP." }, "THEN WE'RE IN THE SAME LINE OF WORK.", 'GO ON, SLEEPER. THE SEALS.'],
-    ["MOONWORT TEA FOR WHEN THEY WAKE. IF THEY WAKE. WHEN THEY WAKE.", "I'M NOT GOING ANYWHERE."],
-  ];
+  // Wick in the Gardens: walking in, going up, waiting by the hoist, and at the cradles keeping the taken breathing
+  // while the hero goes on.
+  S.TALK.wick.cellar = (w) => {
+    const f = w.state.flags;
+    if (!f.berths && !f.cradlesSeen) return [['STAY CLOSE, SLEEPER. I KNOW THE WAY.']];
+    if (!f.wickPatched && !f.cradlesSeen) return [["UP, SLEEPER. THE AIR GOES UP, SO WE GO UP."]];
+    if (!f.cradlesSeen) return [["FIND THEM, SLEEPER. SEND THE HOIST DOWN, AND I'LL COME UP IT."]];
+    return [
+      ["I'M TALKING TO THEM. GASKET SAYS THE SLEEPING CAN HEAR.", "WHO'S WAITING ON YOU, SLEEPER? EVERYBODY'S GOT SOMEBODY.", { me: "SOMEONE WHO'S STILL ASLEEP." }, "THEN WE'RE IN THE SAME LINE OF WORK.", 'GO ON, SLEEPER. THE SEALS.'],
+      ["MOONWORT TEA FOR WHEN THEY WAKE. IF THEY WAKE. WHEN THEY WAKE.", "I'M NOT GOING ANYWHERE."],
+    ];
+  };
 
   // ---- People who only appear in scenes ----
   function wokenActor(world, i, x) {
@@ -89,21 +105,21 @@
     return a;
   }
 
-  // Wick, walking with the hero from the Bailiff's Hall to the cradles, and then up as far as the Irrigation Works.
+  // Wick, walking with the hero from the Bailiff's Hall to the empty racks, and then up as far as the Irrigation Works.
   function spawnCompanion(world) {
     const p = world.player;
     let wick = npcOf(world, 'wick');
     if (!wick) {
       wick = S.makeNpc(world, 'wick', { x: HA.clamp(p.x - p.facing * 14, -12, world.room.pw - 4), y: FLOOR(18) });
       world.npcs.push(wick);
-      // Into a room after the cradles, she comes in on the hero's floor, wherever that is.
-      if (world.state.flags.cradlesSeen) wick.y = wick.homeY = p.y + p.h - wick.h;
+      // Into a room on the way up, she comes in on the hero's floor, wherever that is.
+      if (world.state.flags.berths) wick.y = wick.homeY = p.y + p.h - wick.h;
     }
     wick.follow = true;
     wick.kneel = false;
     return wick;
   }
-  // The rooms Wick walks up through with the hero after the cradles (STORYBOARD.md, "Wick's longer escort").
+  // The rooms Wick walks up through with the hero after the empty racks (STORYBOARD.md, "Wick's longer escort").
   const UP = new Set(['root-cellar', 'garden-lift', 'terraces', 'irrigation']);
   const goingUp = (f) => f.wickUp && !f.wickPatched;
 
@@ -146,8 +162,9 @@
       S.bark(world, wick, 'TRY NOT TO DISAPPOINT HIM.');
     },
 
-    // 2. The cradles. Wick stays to keep the taken alive, which gives the hero a reason to climb.
-    *cradles(world) {
+    // 2. The racks where the taken were, empty: the Wardens hoisted the cradles up, and the hoist after them. The
+    // cradles breathe through the water works, so the way to them is up (3.12).
+    *berths(world) {
       const s = world.state;
       const wick = npcOf(world, 'wick');
       world.barks = [];
@@ -156,29 +173,82 @@
       if (wick) {
         yield say('WICK', 'THERE. ALONG THE WALL.');
         yield { walk: wick, x: 56 * 8, speed: 1.6 };
-        wick.kneel = true;
       }
+      yield { wait: 50 };
+      yield say('WICK', '...THEY WERE HERE. I CAME UP THE NIGHT AFTER THE RAID AND SAW THEM, ASLEEP IN ROWS.');
+      yield me('EMPTY RACKS. CUT HOSES. SCRAPES ON THE FLOOR, ALL GOING ONE WAY.');
+      if (wick) yield { walk: wick, x: (CELLAR_HOIST - 4) * 8, speed: 1.2 };
+      yield say('WICK', "TO THE HOIST. THEY'VE TAKEN THEM UP, AND RUN THE HOIST UP AFTER THEM.");
+      yield say('WICK', 'THE WARDENS KNEW SOMEBODY WOULD COME LOOKING.');
+      if (wick) wick.facing = Math.sign(world.player.x - wick.x) || -1;
+      yield say('WICK', "THE CRADLES BREATHE THROUGH THE WATER WORKS, AT THE TOP OF THE TERRACES. WHEREVER THEY'VE PUT THEM, THE AIR GOES THERE.");
+      yield say('WICK', 'SO WE GO UP. ALL THE WAY UP. COME ON.');
+      s.flags.berths = true;
+      s.flags.wickWith = false;
+      s.flags.wickUp = true;
+      if (wick) wick.follow = true;
+      S.setLead(world, 'FIND WHERE THE WARDENS TOOK THE TAKEN');
+      S.addStory(world, "THE TAKEN WERE KEPT IN CRADLES UNDER THE GARDENS, BUT THE WARDENS HOISTED THEM UP BEFORE WE CAME, AND RAN THE HOIST UP AFTER THEM. THE CRADLES BREATHE THROUGH THE WATER WORKS, SO WICK AND I ARE GOING UP.");
+      world.save();
+    },
+
+    // The cradle hoist, between the Root Cellar and the Nursery. From below it's shut (the legend's `shut` says so)
+    // until it's sent down from the top; then it runs both ways.
+    *hoist(world) {
+      world.state.flags.hoist = true;
+      HA.audio.play('lift');
+      yield { fade: 'out', frames: 30 };
+      yield { wait: 30 };
+      world.travel(world.link);
+      yield { fade: 'in', frames: 30 };
+    },
+
+    // 3. The Nursery: in at the potting floor, then the cradles, found at last. The hero sends the hoist down, and
+    // it comes back up with Wick, who stays with them while the hero goes down to the seals.
+    *nurseryIn(world) {
+      S.think(world, 'WARM. TOO WARM. AND THE LIGHT IS PINK.', 200);
+    },
+    *nursery(world) {
+      const s = world.state;
+      const p = world.player;
+      world.barks = [];
+      HA.music.play(null);
+      yield { wait: 30 };
+      yield { walk: p, x: 66 * 8, speed: 0.8 };
+      p.facing = 1;
+      yield { wait: 50 };
+      yield me("THEY'RE HERE.");
+      yield { wait: 40 };
+      yield me('ELEVEN CRADLES, SLEEPING, AND ONE EMPTY. THE GLASS IS PINK AT THE SEAMS.');
+      yield me('THE HOIST. WICK.');
+      yield { walk: p, x: (NURSERY_HOIST - 3) * 8, speed: 1.4 };
+      p.facing = 1;
+      HA.audio.play('clamp');
+      yield { wait: 20 };
+      HA.audio.play('lift');
+      s.flags.hoist = true;
+      yield { wait: 150 };
+      HA.audio.play('lift');
+      const wick = S.makeNpc(world, 'wick', { x: NURSERY_HOIST * 8, y: FLOOR(18) });
+      world.npcs.push(wick);
+      wick.facing = -1;
+      yield { wait: 30 };
+      yield say('WICK', 'SLEEPER. YOU FOUND THEM.');
+      yield { walk: wick, x: WICK_KNEELS * 8, speed: 1.6 };
+      wick.kneel = true;
       yield { wait: 40 };
       yield say('WICK', "THEY'RE HERE. ALL OF THEM. ASLEEP.");
-      yield me('THE GLASS IS PINK AT THE SEAMS.');
       yield say('WICK', "THEY'RE BEING DOSED WHILE THEY SLEEP. THAT'S WHAT THE GARDENS ARE FOR.");
       yield { wait: 30 };
       yield say('WICK', "THAT ONE'S EMPTY. THE NAME ON IT IS SORREL. BRINE'S SISTER.");
-      yield say('WICK', 'THE SEALS ARE LOCKED FROM ABOVE. THE WARDEN THAT KEEPS THE GARDENS HOLDS THE CODES.');
       yield say('WICK', "THE BLOOM SHUTS DOORS IN PEOPLE. I'VE SEEN IT. IF THEY STAY UNDER TOO LONG, THEY WON'T WAKE UP AS THEMSELVES.");
-      if (wick) wick.facing = Math.sign(world.player.x - wick.x) || 1;
-      // She goes up with the hero as far as the Irrigation Works, and comes back to them (wickPatch).
-      yield say('WICK', "AND THE AIR IN THESE IS BAD. THE CRADLES BREATHE THROUGH THE WATER WORKS, UP TOP. THERE'S A VALVE.");
-      yield say('WICK', "I'LL SHOW YOU THE WAY UP, AND OPEN IT ON THE WAY. THEN I COME BACK AND SIT WITH THEM.");
+      wick.facing = Math.sign(p.x - wick.x) || 1;
+      yield say('WICK', 'THE SEALS ARE WORKED FROM THE ROOM UNDER US. THE WARDEN THAT KEEPS THE GARDENS HOLDS THE CODES.');
+      yield say('WICK', "THERE'S A HATCH DOWN, PAST THE HOIST. I'LL STAY WITH THEM. GO ON, SLEEPER.");
       s.flags.cradlesSeen = true;
-      s.flags.wickWith = false;
-      s.flags.wickUp = true;
-      if (wick) {
-        wick.kneel = false;
-        wick.follow = true;
-      }
       S.setLead(world, 'FIND THE WARDEN THAT HOLDS THE SEALS');
-      S.addStory(world, "THE TAKEN SLEEP IN OLD CRYO CRADLES UNDER THE GARDENS, DOSED WITH THE BLOOM. THE SEALS ARE LOCKED FROM ABOVE. WICK IS COMING UP WITH ME AS FAR AS THE WATER WORKS, TO OPEN THE CRADLES' AIR.");
+      S.addStory(world, "I FOUND THE TAKEN IN THE OLD NURSERY OVER THE SPORE BEDS, ASLEEP IN CRADLES AND DOSED WITH THE BLOOM. I SENT THE HOIST DOWN FOR WICK, AND SHE'S STAYING WITH THEM. THE SEALS ARE WORKED FROM THE ROOM UNDER THE NURSERY.");
+      world.refreshMusic();
       world.save();
     },
 
@@ -191,7 +261,7 @@
     *wickTerraces(world) {
       const wick = npcOf(world, 'wick');
       if (!wick || !wick.follow) return;
-      S.bark(world, wick, 'THESE WERE THE BEAN TERRACES. MY MOTHER PICKED HERE AS A GIRL, BEFORE THE GARDENER LOCKED US OUT.');
+      S.bark(world, wick, 'THESE WERE THE BEAN TERRACES. MY FATHER PICKED HERE AS A BOY, BEFORE THE GARDENER LOCKED US OUT.');
       S.bark(world, wick, "IF YOU FALL, FALL ON THE BEANS. THEY'VE HAD WORSE.");
     },
     *wickTop(world) {
@@ -200,8 +270,8 @@
       S.bark(world, wick, "NEARLY THERE. DON'T LOOK DOWN. I NEVER DO.");
     },
 
-    // The Irrigation Works: Wick sits the hero down on the pod and patches them up, opens the cradles' air, and goes
-    // back down to sit with them.
+    // The Irrigation Works: Wick sits the hero down on the pod and patches them up, and opens the cradles' air, which
+    // says where they are: up, over the Spore Beds. She goes back down to wait by the hoist.
     *wickPatch(world) {
       const s = world.state;
       const p = world.player;
@@ -233,13 +303,17 @@
         yield { wait: 18 };
       }
       HA.audio.play('hiss');
-      yield say('WICK', "THERE. NOW THEY'LL BREATHE EASY.");
+      yield say('WICK', 'THERE. LISTEN.');
+      yield { wait: 50 };
+      yield me('THE AIR RUNS UP THE PIPE, AND OUT THROUGH THE ROOF. UP, OVER THE SPORE BEDS.');
+      yield say('WICK', "THE OLD NURSERY. I USED TO SNEAK IN AMONG THE SEEDLINGS AS A GIRL. THAT'S WHERE THEY ARE.");
       wick.facing = Math.sign(p.x - wick.x) || -1;
-      yield say('WICK', 'THIS IS AS FAR AS I GO. THROUGH THE WATER, AND UP THE SPORE BEDS. MIND THE PODS; THEY SPIT.');
-      yield say('WICK', 'BRING ME THOSE CODES, SLEEPER.');
+      yield say('WICK', "THIS IS AS FAR AS I GO. THE SPORE BEDS SPIT, AND I'VE NO SUIT. THROUGH THE WATER, AND UP. MIND THE PODS.");
+      yield say('WICK', "I'LL WAIT BY THE HOIST. FIND THEM, AND SEND IT DOWN FOR ME, SLEEPER.");
       yield { walk: wick, x: world.room.pw + 8, speed: 1.4 };
       wick.state = 'gone';
-      S.addStory(world, "WICK WALKED ME UP AS FAR AS THE WATER WORKS, AND PATCHED ME UP ON A POD. SHE OPENED THE CRADLES' AIR, AND WENT BACK DOWN TO SIT WITH THEM.");
+      S.setLead(world, 'FIND THE NURSERY, OVER THE SPORE BEDS');
+      S.addStory(world, "WICK WALKED ME UP AS FAR AS THE WATER WORKS, AND PATCHED ME UP ON A POD. SHE OPENED THE CRADLES' AIR: IT GOES UP TO THE OLD NURSERY, OVER THE SPORE BEDS. SHE'S WAITING BY THE HOIST FOR ME TO SEND IT DOWN.");
       world.save();
     },
 
@@ -295,16 +369,16 @@
       const p = world.player;
       const release = s.wardens.pruner === 'release';
       const c = world.def.cradles;
-      const lantern = lanternActor(world, 57 * 8);
-      p.x = Math.max(p.x, 2);
+      const lantern = lanternActor(world, WICK_KNEELS * 8);
+      // Up the ladder from the Seal Room, at the far end: back along to the cradles.
       yield { wait: 30 };
-      yield { walk: p, x: 50 * 8, speed: 1.2 };
-      p.facing = 1;
+      yield { walk: p, x: (NURSERY_HOIST - 4) * 8, speed: 1.2 };
+      p.facing = -1;
       yield { wait: 30 };
       yield me('WICK SHOULD BE HERE.');
       let pruner = null;
       if (release) {
-        pruner = HA.bosses.pruner.actor(world, 70 * 8, FLOOR(19));
+        pruner = HA.bosses.pruner.actor(world, 104 * 8, FLOOR(19));
         Object.assign(pruner, { freed: true, facing: -1 });
         world.actors.push(pruner);
         yield { wait: 30 };
@@ -350,17 +424,18 @@
       world.actors = world.actors.filter((a) => a !== lantern);
       p.kneel = 0;
       yield me('HER LANTERN WAS STILL LIT.');
-      yield say('A WOKEN VILLAGER', "WE'LL TAKE THE LIFT DOWN TO THE WARRENS. GO. BRING HER BACK.");
-      for (const a of woken) {
+      yield say('A WOKEN VILLAGER', "WE'LL TAKE THE HOIST DOWN, AND THE GARDEN LIFT HOME. GO. BRING HER BACK.");
+      // Down the hoist to the Root Cellar, a few at a time.
+      woken.forEach((a, i) => {
         a.kneel = false;
-        a.goX = world.room.pw + 24 + Math.random() * 20;
-      }
+        a.goX = NURSERY_HOIST * 8 - 4 + (i % 3) * 4;
+      });
       if (pruner) {
         pruner.walking = true;
-        yield { walk: pruner, x: 74 * 8, speed: 0.5 };
+        yield { walk: pruner, x: 112 * 8, speed: 0.5 };
         pruner.walking = false;
       }
-      yield { until: () => woken.every((a) => a.x > world.room.pw + 8) };
+      yield { until: () => woken.every((a) => Math.abs(a.x - a.goX) < 1) };
       HA.audio.play('lift');
       world.actors = world.actors.filter((a) => !woken.includes(a));
       yield { wait: 40 };
@@ -597,22 +672,28 @@
       const s = world.state;
       const f = s.flags;
       const id = world.def.id;
-      // Wick walks with the hero from the Hall to the cradles; anywhere else, she waits back at the Hall's door.
-      if (f.wickWith && !f.cradlesSeen) {
+      // Wick walks with the hero from the Hall to the empty racks; anywhere else, she waits back at the Hall's door.
+      if (f.wickWith && !f.berths && !f.cradlesSeen) {
         if (id === 'arena' || id === 'root-cellar') spawnCompanion(world);
         else f.wickWith = false;
       }
-      // After the cradles she's with the hero in the rooms on the way up, until she's patched them up (and anywhere
+      // After the racks she's with the hero in the rooms on the way up, until she's patched them up (and anywhere
       // else, she's with them again when they come back).
       if (goingUp(f) && UP.has(id)) spawnCompanion(world);
       if (id === 'root-cellar') {
         if (f.wickWith && !f.gardens && !world.scene) run(world, 'intoGreen');
-        if (f.cradlesSeen && !s.wardens.pruner && !goingUp(f)) {
-          const wick = S.makeNpc(world, 'wick', { x: 56 * 8, y: FLOOR(18) });
-          wick.kneel = true;
+        // Patched up and sent on, she waits by the hoist for the hero to send it down from the Nursery.
+        if (f.wickPatched && !f.cradlesSeen) {
+          const wick = S.makeNpc(world, 'wick', { x: (CELLAR_HOIST - 4) * 8, y: FLOOR(18) });
+          wick.facing = 1;
           world.npcs.push(wick);
         }
-        if (s.wardens.pruner && !f.cradles && !world.scene) run(world, 'wake');
+      }
+      // In the Nursery she kneels by the cradles until the seals are open (the wake is the Nursery's trigger).
+      if (id === 'nursery' && f.cradlesSeen && !s.wardens.pruner && !goingUp(f)) {
+        const wick = S.makeNpc(world, 'wick', { x: WICK_KNEELS * 8, y: FLOOR(18) });
+        wick.kneel = true;
+        world.npcs.push(wick);
       }
       if (id === 'seal-room' && world.bossSpawn) {
         const P = HA.bosses.pruner;

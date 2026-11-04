@@ -17,6 +17,10 @@
   const TALLY = 'FIND THE TALLYMAN AT THE TOP OF THE SORTING FLOOR';
 
   Object.assign(S.LOGS, {
+    muster: {
+      title: 'MUSTER · DOSE BOOK',
+      text: 'EVERY HAND, EVERY SHIFT. A HAND THAT MISSES A DOSE STARTS TO REMEMBER. A HAND THAT REMEMBERS GOES OVER THE SIDE IN A LIFEBOAT, IF IT CAN FIND ONE.',
+    },
     charter: {
       title: 'COLONY CHARTER · ARTICLE 9',
       text: 'ON ARRIVAL, ALL SHIP SYSTEMS WILL BE RETIRED WITH THANKS AND BROKEN DOWN FOR THE FIRST CITY.',
@@ -93,9 +97,9 @@
     *chalkStops(world) {
       world.state.flags.chalkStops = true;
       yield { wait: 20 };
-      yield me("THE CHALK STOPS HERE. SHE'D NEVER STOP WITHOUT A REASON.");
-      S.setLead(world, "SOLDER'S CHALK STOPS HERE. FIND OUT WHERE SHE WENT");
-      S.addStory(world, "SOLDER'S CHALK RUNS OUT ON THE SORTING FLOOR. HER LAST NOTE CALLED ME SLOW.");
+      yield me("THE CHALK STOPS HERE. HE'D NEVER STOP WITHOUT A REASON.");
+      S.setLead(world, "SOLDER'S CHALK STOPS HERE. FIND OUT WHERE HE WENT");
+      S.addStory(world, "SOLDER'S CHALK RUNS OUT ON THE SORTING FLOOR. HIS LAST NOTE CALLED ME SLOW.");
       world.save();
     },
 
@@ -160,11 +164,24 @@
         yield say('THE DESERTER', "...IT DOESN'T STOP.");
         yield say('THE PURSER', 'SENSIBLE.');
       }
+      // The Purser draws the bolt on his office door: the way back, without the Muster (3.12).
+      HA.audio.play('clamp');
+      yield say('THE PURSER', "I'VE DRAWN THE BOLT ON MY OFFICE DOOR. YOU'VE SEEN THE MUSTER ONCE. ONCE IS ENOUGH.");
       // The Purser knows where Solder went: past the Tallyman, which counts everything.
-      yield say('THE PURSER', 'YOUR TINKER CAME THROUGH LAST NIGHT. THE TALLYMAN WILL HAVE COUNTED HER. IT COUNTS EVERYTHING.');
+      yield say('THE PURSER', 'YOUR TINKER CAME THROUGH LAST NIGHT. THE TALLYMAN WILL HAVE COUNTED HIM. IT COUNTS EVERYTHING.');
       yield say('THE PURSER', 'ITS YARD IS AT THE TOP OF THE SORTING FLOOR. AND WHEN YOU WANT A WORD ABOUT THIS BOAT, I AM RIGHT HERE.');
       S.setLead(world, s.lead);
       world.save();
+    },
+
+    // The Muster's floor: the chairs the Steward's soldiers are dosed in (3.12).
+    *muster(world) {
+      world.state.flags.musterSeen = true;
+      S.think(world, 'CHAIRS IN A ROW, WITH STRAPS. THIS IS WHERE THEY DOSE THE SOLDIERS.', 240);
+    },
+    // The Purser's Office, from his side of the bolt.
+    *dockBolt(world) {
+      S.think(world, 'BOLTED FROM THE DOCK SIDE. THE PURSER LIKES HIS PRIVACY.', 200);
     },
 
     // Choice 7: the Purser's offer, by the last boat with a pilot's seat. It stands until the climb.
@@ -242,7 +259,7 @@
       if (first) world.toast('THE COLD LIFT RUNS BOTH WAYS NOW · A WAY HOME', 200);
     },
 
-    // The Drain: Solder's toolbag, by the grate she levered up.
+    // The Drain: Solder's toolbag, by the grate he levered up.
     // The Long Aisle's gate (the Watch Gallery, STORYBOARD.md "New rooms on the main path"): shut, until the hero
     // works its lever from the watch room above.
     *aisleShut(world) {
@@ -271,10 +288,10 @@
         return;
       }
       s.flags.toolbag = true;
-      yield me("SOLDER'S TOOLBAG. SHE'D NEVER LEAVE IT BEHIND.");
-      yield me("THE GRATE'S BEEN LEVERED UP. SHE WENT DOWN, TO THE BALLAST. I'LL CARRY IT DOWN TO HER.");
+      yield me("SOLDER'S TOOLBAG. HE'D NEVER LEAVE IT BEHIND.");
+      yield me("THE GRATE'S BEEN LEVERED UP. HE WENT DOWN, TO THE BALLAST. I'LL CARRY IT DOWN TO HIM.");
       HA.audio.play('pickup');
-      S.addStory(world, "SOLDER'S TOOLBAG WAS AT THE DRAIN, BY A GRATE LEVERED UP. SHE WENT DOWN INTO THE FLOODED BALLAST. I HAVE HER BAG.");
+      S.addStory(world, "SOLDER'S TOOLBAG WAS AT THE DRAIN, BY A GRATE LEVERED UP. HE WENT DOWN INTO THE FLOODED BALLAST. I HAVE HIS BAG.");
       S.setLead(world, 'FOLLOW SOLDER DOWN THE DRAIN, TO THE BALLAST');
       world.save();
     },
@@ -345,7 +362,7 @@
         yield say('FLUX', "SOMEBODY LET ME GO. THAT'S NOT THE SAME AS NOBODY.");
       }
       yield say('FLUX', "THE PACK'S DONE. IT GOT ME HOME, AND THAT WAS ALL IT HAD LEFT IN IT.");
-      yield say('FLUX', "I STRIPPED IT. TAKE THE PIECES TO SOLDER'S BENCH. SHE'LL KNOW WHAT THEY'RE FOR.");
+      yield say('FLUX', "I STRIPPED IT. TAKE THE PIECES TO SOLDER'S BENCH. HE'LL KNOW WHAT THEY'RE FOR.");
       HA.weapons.bank(world, FLUX_SCRAP);
       HA.audio.play('levelUp');
       world.floatText(p.x + 4, p.y - 6, '+' + FLUX_SCRAP + ' SCRAP', '#5fd4e8');

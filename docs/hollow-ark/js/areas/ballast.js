@@ -26,12 +26,17 @@
     legend: {
       h: { type: 'hatch', name: 'the grate', to: 'drain', up: true },
       H: { needs: { boots: true } },
+      // The Pump Gallery's door, wedged from its side until Solder is found (3.12): the way to him is round, through
+      // the Pump Heads.
+      D: { type: 'door', id: 'wedge', open: (s) => !!s.flags.solderFound },
     },
+    triggers: [{ x0: 29, x1: 35, y0: 36, when: (s) => !s.flags.solderFound, run: 'wedged' }],
     pressure: [{ x0: 2, x1: 18, y: 33 }],
     scenery: [
       { kind: 'rust', n: 30 },
       { kind: 'pipes', y: 6 },
       { kind: 'chalk', x: 14, y: 8.4, text: 'MIND THE PINK STUFF. IT BITES.' },
+      { kind: 'chalk', x: 29, y: 13.4, text: 'UP HERE. -S' },
       { kind: 'stencil', x: 22, y: 40, text: 'BALLAST · INTAKE 2' },
     ],
     map: [
@@ -47,11 +52,11 @@
       '##....h...............................##',
       '#############.........................##',
       '#############.........................##',
-      '##....................................##',
-      '##....................................##',
-      '##..............=======...............##',
-      '##....................................##',
-      '##....................................##',
+      '##......................................',
+      '##......................................',
+      '##..............=======.................',
+      '##......................................',
+      '##...............................#######',
       '##....................................##',
       '##......................=======.......##',
       '##....................................##',
@@ -73,17 +78,62 @@
       '##~~~~~~~u~~~~~######.................##',
       '##~~~~~~~~~~~~~######.................##',
       '##~~~~~~~~~~~~~######.................##',
-      '##~~~~~~~~~##########...=======.........',
-      '##~~~~~~~~~##########...................',
-      '##~~~~~~~~~##########...................',
-      '##~~H~~~~~~##########...................',
+      '##~~~~~~~~~##########...=======.....DD..',
+      '##~~~~~~~~~##########...............DD..',
+      '##~~~~~~~~~##########...............DD..',
+      '##~~H~~~~~~##########...............DD..',
       '########################################',
       '########################################',
       '########################################',
     ],
   });
 
-  // The Pump Gallery: three great pumps, and Solder by the third with the tram motor she came for.
+  // The Pump Heads (3.12): over the Pump Gallery, the heads of its three great pumps and the flooded floor between
+  // them. Solder came this way and went down his own wet ladder at the far end, and wedged the Gallery's door from the
+  // Intake behind him, for the eels.
+  HA.rooms.add({
+    id: 'pump-heads',
+    area: 'ballast',
+    name: 'THE PUMP HEADS',
+    gx: 40,
+    gy: 161,
+    abilities: { thruster: true, grapple: true },
+    legend: { h: { type: 'hatch', to: 'pump-gallery', open: () => true, name: "Solder's ladder" } },
+    scenery: [
+      { kind: 'rust', n: 18 },
+      { kind: 'pipes', y: 5 },
+      // The motors on the pump heads, over the Pump Gallery's pumps.
+      { kind: 'pumps', at: [[11, 15, 1], [21, 13, 2], [31, 15, 3]] },
+      { kind: 'chalk', x: 28, y: 11.4, text: 'WET. HOLD ON. -S' },
+    ],
+    map: [
+      '########################################',
+      '########################################',
+      '########################################',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##........................i...........##',
+      '##....................................##',
+      '##..............i.....................##',
+      '##....................................##',
+      '......................................##',
+      '......................................##',
+      '...................#####..............##',
+      '...................#####..............##',
+      '######...######....#####.....#####....##',
+      '######...######~~~~#####.....#####....##',
+      '######~~~######~u~~#####~~~~~#####..h.##',
+      '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+    ],
+  });
+
+  // The Pump Gallery: three great pumps, and Solder by the third with the tram motor he came for.
   HA.rooms.add({
     id: 'pump-gallery',
     area: 'ballast',
@@ -91,7 +141,10 @@
     gx: 40,
     gy: 184,
     abilities: { thruster: true, grapple: true },
-    legend: { N: { type: 'npc', id: 'solder', when: (s) => !s.flags.siltDown } },
+    legend: {
+      N: { type: 'npc', id: 'solder', when: (s) => !s.flags.siltDown },
+      a: { type: 'hatch', up: true, to: 'pump-heads', name: "Solder's ladder" },
+    },
     scenery: [
       { kind: 'pumps', at: [[11, 18, 1], [21, 18, 2], [31, 18, 3]] },
       { kind: 'rust', n: 16 },
@@ -117,7 +170,7 @@
       '........................................',
       '........................................',
       '........................................',
-      '......S........................N........',
+      '......S........................N....a...',
       '########################################',
       '########################################',
       '########################################',
@@ -227,7 +280,7 @@
   });
 
   // Odell's Workshop: his bench, and at the far end of a floor gone under the silt, the ladder up to his test tank,
-  // where his pressure boots are. (Solder gave the hero her Foam Sprayer in the Pump Gallery.)
+  // where his pressure boots are. (Solder gave the hero his Foam Sprayer in the Pump Gallery.)
   HA.rooms.add({
     id: 'odell-workshop',
     area: 'ballast',

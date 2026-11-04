@@ -97,7 +97,7 @@
       D: { type: 'door', id: 'gate', open: (s) => !!s.flags.raid, kept: (s) => !!s.flags.newGate && s.warrensRaid !== 'fell' },
       // The old crew's lift up to the Gardens, locked by the Steward until the cradles open.
       L: { type: 'lift', name: 'the Garden Lift', to: 'garden-lift' },
-      // Down to the sump and the keel tram. Solder opens it the night she leaves.
+      // Down to the sump and the keel tram. Solder opens it the night he leaves.
       h: { type: 'hatch', name: 'the floor hatch', to: 'sump', open: (s) => !!s.flags.hatch },
       R: CAVE_IN,
       // Where the village went when the gate fell, and the way round the cave-in since.
@@ -117,7 +117,7 @@
       { kind: 'scrawl', x: 8, y: 6, text: 'MANY HANDS. COUNT THEM.' },
       { kind: 'hazard', x: 110, y: 15, w: 5, h: 4 },
     ],
-    // Solder explains shards in her own words. The exact rule sits on the wall above her bench.
+    // Solder explains shards in his own words. The exact rule sits on the wall above his bench.
     hints: [{ x: 64, y: 14, text: 'A HIT COSTS SHARDS · NEVER MORE THAN ONE LEVEL', when: (w) => w.state.flags.metHullfolk && w.player.weapons.length > 0 }],
     triggers: [
       { x0: 3, x1: 14, when: (s) => !s.flags.metHullfolk, run: 'meetHullfolk' },
@@ -161,7 +161,7 @@
   });
 
   // The sump, under the village: the old crew's keel tram, dead at its platform, and the way on west into the
-  // Cargo Labyrinth. Reached by the floor hatch by Solder's bench, once she opens it.
+  // Cargo Labyrinth. Reached by the floor hatch by Solder's bench, once he opens it.
   HA.rooms.add({
     id: 'sump',
     area: 'warrens',

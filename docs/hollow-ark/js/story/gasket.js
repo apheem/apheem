@@ -1,8 +1,8 @@
 'use strict';
-// Old Gasket's trust (3.11, Cody's notes): she comes round to the hero slowly, and it shows in what she says, never
+// Old Gasket's trust (3.11, Cody's notes): he comes round to the hero slowly, and it shows in what he says, never
 // as a number. Trust is worked out from the save: the wrench hung up, Cleat's count shown, Shim told the truth about
 // his mother (choice 4), Flux home (choice 6), and the village calling the hero LATE. The scenes are short, at home,
-// when the hero talks to her, each once; the main conversations at home always come first. All text is original
+// when the hero talks to him, each once; the main conversations at home always come first. All text is original
 // to Hollow Ark.
 (function (HA) {
   const S = HA.story;
@@ -15,7 +15,7 @@
     [s.flags.gasketWrench, s.flags.gasketCleat, s.toldShim === 'truth', s.people.flux === 'home', S.callName(s) === 'LATE'].filter(Boolean).length;
 
   const SCENES = {
-    // Shim brought back: the wrench she's kept by her since the hero came down the walkway goes on its hook.
+    // Shim brought back: the wrench he's kept by him since the hero came down the walkway goes on its hook.
     *gasketWrench(world) {
       const g = npcOf(world, 'gasket');
       world.state.flags.gasketWrench = true;
@@ -27,33 +27,33 @@
       yield say('OLD GASKET', "YOU HAVEN'T. YET.");
       if (g) g.wrench = false;
       HA.audio.play('clamp');
-      yield me('SHE HANGS IT ON A HOOK BY HER DOOR.');
-      S.addStory(world, "OLD GASKET HUNG UP THE WRENCH SHE'D KEPT BY HER SINCE I CAME. I HAVEN'T TURNED INTO THE LAST SLEEPER. YET, SHE SAID.");
+      yield me('HE HANGS IT ON A HOOK BY HIS DOOR.');
+      S.addStory(world, "OLD GASKET HUNG UP THE WRENCH HE'D KEPT BY HIM SINCE I CAME. I HAVEN'T TURNED INTO THE LAST SLEEPER. YET, HE SAID.");
       world.save();
     },
-    // The taken home: her brother Cleat's count of days on the wall by her door.
+    // The taken home: his brother Cleat's count of days on the wall by his door.
     *gasketCleat(world) {
       world.state.flags.gasketCleat = true;
       yield { wait: 20 };
       yield say('OLD GASKET', 'SEE THESE MARKS?');
-      yield me('SCRATCHES IN THE WALL BY HER DOOR. HUNDREDS OF THEM, IN FIVES.');
+      yield me('SCRATCHES IN THE WALL BY HIS DOOR. HUNDREDS OF THEM, IN FIVES.');
       yield say('OLD GASKET', 'MY BROTHER CLEAT COUNTED THE DAYS ON THIS WALL, TILL SOMEBODY CAME DOWN TO HELP US. HE GOT TO NINE HUNDRED AND TWELVE.');
       yield say('OLD GASKET', 'THEN A SLEEPER CAME DOWN.');
       yield me("I'M NOT HIM.");
       yield { wait: 40 };
       yield say('OLD GASKET', 'NO. YOU BROUGHT THEM HOME.');
-      S.addStory(world, "GASKET SHOWED ME HER BROTHER CLEAT'S MARKS ON THE WALL: NINE HUNDRED AND TWELVE DAYS, WAITING FOR SOMEBODY TO COME AND HELP. THEN A SLEEPER CAME. 'YOU BROUGHT THEM HOME,' SHE SAID.");
+      S.addStory(world, "GASKET SHOWED ME HIS BROTHER CLEAT'S MARKS ON THE WALL: NINE HUNDRED AND TWELVE DAYS, WAITING FOR SOMEBODY TO COME AND HELP. THEN A SLEEPER CAME. 'YOU BROUGHT THEM HOME,' HE SAID.");
       world.save();
     },
   };
 
   S.areas.push({
-    // Talking to her at home, once the main conversations there are done: the next step, if it's due.
+    // Talking to him at home, once the main conversations there are done: the next step, if it's due.
     talk(world, npc) {
       const s = world.state;
       const f = s.flags;
       if (npc.id !== 'gasket' || world.def.id !== 'warrens' || f.running || world.nightScene) return null;
-      // The wrench: between the reunion and the Gardens, or (missed then) once her grief for Wick has had its say.
+      // The wrench: between the reunion and the Gardens, or (missed then) once his grief for Wick has had its say.
       const settled = f.homeAgain && f.broadcastHeard;
       if (!f.gasketWrench && ((f.reunion && f.homeDone && !f.gardens) || settled)) return 'gasketWrench';
       if (f.gasketWrench && settled && !f.gasketCleat) return 'gasketCleat';

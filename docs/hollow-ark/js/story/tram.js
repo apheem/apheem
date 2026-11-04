@@ -1,6 +1,6 @@
 'use strict';
 // The tram home (3.10, the story audit's fix 5; STORYBOARD.md, "The tram home"). Once the motor is in, the hero
-// rides the keel tram west to the Warrens, with Solder or with her news, and sees what the raid left. Then the hero
+// rides the keel tram west to the Warrens, with Solder or with his news, and sees what the raid left. Then the hero
 // rides back east with the climbers: to the Spine Foot, or, with the keel flooded behind Solder (lock 1), as far
 // as the Ballast stop and on through the Overflow Pipes, the crew coming behind. Before that, Gasket gives the hero
 // time to say goodbye at Mara's pod (story.js) and to sleep at home (Flux's morning, in cargo.js).
@@ -17,7 +17,7 @@
   const name = (w) => S.callName(w.state);
   const FLOOR = (ty) => (ty - 1) * 8; // a person stands on map row ty
   const alive = (s) => s.people.solder === 'alive';
-  const dry = (s) => s.people.solder !== 'dead'; // the keel line past the Ballast stop floods if she was left
+  const dry = (s) => s.people.solder !== 'dead'; // the keel line past the Ballast stop floods if he was left
   const leader = (s) => (alive(s) ? 'SOLDER' : 'OLD GASKET');
 
   // Between riding home and riding east with the climbers, the ways on to the Spine wait for them.
@@ -73,7 +73,7 @@
     yield { fade: 'out', frames: 40 };
     world.holdFade = true;
     yield { card: ['THE KEEL TRAM TOOK ' + (alive(s) ? 'US' : 'ME') + ' WEST,', 'UNDER THE BALLAST, UNDER THE LABYRINTH.'], hold: 170, pic: 'tram', picOpts: { riders } };
-    yield { card: alive(s) ? ['SOLDER SLEPT THE WHOLE WAY.', "SHE SAYS SHE DIDN'T."] : ['I RODE IT ALONE,', 'AND KEPT HER SEAT.'], hold: 160, pic: 'tram', picOpts: { riders } };
+    yield { card: alive(s) ? ['SOLDER SLEPT THE WHOLE WAY.', "HE SAYS HE DIDN'T."] : ['I RODE IT ALONE,', 'AND KEPT HIS SEAT.'], hold: 160, pic: 'tram', picOpts: { riders } };
     s.flags.tramWest = true;
     world.tramGo = 0;
     world.tramRiders = 0;

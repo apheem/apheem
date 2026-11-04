@@ -558,7 +558,7 @@
       g.fillStyle = '#10121c';
       for (const wx of [8, 50]) g.fillRect(x + wx, y - 3, 6, 3);
     },
-    // Solder's chalk: quick white letters, the way she marks a route.
+    // Solder's chalk: quick white letters, the way he marks a route.
     chalk(g, s) {
       g.globalAlpha = 0.7;
       HA.font.draw(g, s.text, s.x * 8, s.y * 8, '#e6e2d6', { shadow: null });
@@ -619,6 +619,31 @@
         g.fillRect(x - 1, y - 4, 42, 3);
         g.fillRect(x + 6, y + h - 6, 28, 2);
       }
+    },
+    // The Root Cellar's cradle racks, empty since the Wardens hoisted the cradles up to the Nursery (3.12): the
+    // brackets the cradles sat in, two racks of six like the cradles themselves, the air hoses cut, and the scrapes
+    // on the floor plates, all going east to the hoist.
+    racksEmpty(g, s) {
+      for (let i = 0; i < 12; i++) {
+        const x = s.x * 8 + (i % 6) * 34;
+        const y = s.y * 8 + Math.floor(i / 6) * 24;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, y + 8, 30, 4);
+        g.fillStyle = '#3a4258';
+        g.fillRect(x, y + 9, 28, 2);
+        g.fillStyle = '#6c7894';
+        g.fillRect(x, y + 10, 28, 1);
+        g.fillRect(x + 4, y + 11, 2, 6);
+        g.fillRect(x + 22, y + 11, 2, 6);
+        // the hose, cut, and the Bloom dried pink on its end
+        g.fillStyle = '#2a3046';
+        g.fillRect(x + 13, y - 6, 2, 8 + (i % 3) * 2);
+        g.fillStyle = '#b04ad0';
+        g.fillRect(x + 13, y + 2 + (i % 3) * 2, 2, 1);
+      }
+      g.fillStyle = '#4a4440';
+      const fy = s.floor * 8 - 1;
+      for (let i = 0; i < 5; i++) g.fillRect(s.x * 8 + i * 11, fy - (i % 2), (s.to - s.x) * 8 - i * 11, 1);
     },
     // ---- The Cargo Labyrinth ----
     // Stacks of containers far back in the dark, for depth. y is the floor row they stand on.
@@ -768,6 +793,30 @@
           g.fillStyle = '#9fd8e8';
           g.fillRect(tx * 8 + Math.floor(rnd() * 6), ty * 8, 1, len);
         }
+      }
+    },
+    // The Muster's dosing chairs (3.12): steel chairs in a row with straps, each with a drip stand and its pink bag.
+    dosechairs(g, s) {
+      for (const cx of s.at) {
+        const x = cx * 8;
+        const y = s.y * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, y - 15, 12, 15);
+        g.fillStyle = '#4a4e5a';
+        g.fillRect(x, y - 14, 3, 13);
+        g.fillRect(x, y - 6, 10, 2);
+        g.fillRect(x + 8, y - 5, 2, 5);
+        g.fillRect(x + 1, y - 5, 2, 5);
+        g.fillStyle = '#7a3a3a';
+        g.fillRect(x, y - 11, 3, 1);
+        g.fillRect(x + 5, y - 6, 1, 2);
+        g.fillStyle = '#6c7894';
+        g.fillRect(x + 13, y - 20, 1, 20);
+        g.fillRect(x + 11, y - 1, 5, 1);
+        g.fillStyle = '#b04ad0';
+        g.fillRect(x + 12, y - 19, 3, 4);
+        g.fillStyle = '#f27ad8';
+        g.fillRect(x + 13, y - 15, 1, 1);
       }
     },
     // The Lifeboat Dock's empty cradles, and the hull doors under them.
@@ -1631,7 +1680,7 @@
       if (s.kind === 'lever') drawSwitch(g, world, { x: s.x * 8, y: s.y * 8 - 8, legend: { crane: s.flag } }, cam);
       if (s.kind === 'motor' && !world.state.flags.siltDown && HA.story.drawMotor) HA.story.drawMotor(g, Math.round(s.x * 8 - cam.x), Math.round(s.y * 8 + 1 - cam.y));
       if (s.kind === 'boots' && !world.state.abilities.boots) drawBoots(g, s, cam);
-      // Solder's tools at the Crew Camp: only if she came up with the crew (story/bench.js).
+      // Solder's tools at the Crew Camp: only if he came up with the crew (story/bench.js).
       if (s.kind === 'campBench' && world.state.people.solder === 'alive') {
         g.save();
         g.translate(-Math.round(cam.x), -Math.round(cam.y));
@@ -1780,7 +1829,7 @@
     }
   }
 
-  // The cradles where the taken sleep: two racks of six along the back wall of the Root Cellar.
+  // The cradles where the taken sleep: two racks of six along the back wall of the Nursery (the Root Cellar's, before 3.12).
   // Shut, they're frosted, with a sleeper inside and the Bloom pink at the seams. Once opened they lie empty,
   // except the ones whose sleepers didn't wake (if the Pruner was finished). The last is Sorrel's, empty all along.
   const DARK = [2, 4, 7, 9];
@@ -2000,7 +2049,7 @@
     }
   }
 
-  // Solder's toolbag, where she left it by the grate, a wrench sticking out.
+  // Solder's toolbag, where he left it by the grate, a wrench sticking out.
   function drawToolbag(g, s, cam) {
     const x = Math.round(s.x * 8 - cam.x);
     const y = Math.round(s.y * 8 - cam.y);
