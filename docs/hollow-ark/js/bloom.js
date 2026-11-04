@@ -1,6 +1,7 @@
 'use strict';
-// The Bloom in the hero. It only rises: a carried bulb eaten for a rush (+1 each), the Lancets traded for the
-// Thorn (+2), kills with the Thorn in hand (+1 for every 30), and later Flux's pack and Solder's rescue.
+// The Bloom in the hero. It rises: a carried bulb eaten for a rush (+1 each), the Lancets traded for the Thorn
+// (+2), kills with the Thorn in hand (+1 for every 30), and later Flux's pack and Solder's rescue. Only one thing ever
+// takes it down: Wick's remedy, taken by the hero (story/remedy.js, -2), and never once Overgrown is locked in.
 // It's never shown as a number. The world shows it instead, at four stages, each announced once wherever the
 // hero is, with a line in the journal:
 //   3  the visor tints pink and veins show through the suit (the true ending's seal now reads it)
@@ -34,6 +35,17 @@
       HA.audio.play('bloom');
     }
     syncMusic(world);
+  }
+
+  // Wick's remedy: down by n, never below 0, and not at all once it has the hero. The stages already passed are
+  // forgotten, so the world shows the hero as they are now, and says so again if the Bloom comes back up.
+  function ease(world, n) {
+    const s = world.state;
+    if (s.bloom >= LOST) return false;
+    s.bloom = Math.max(0, s.bloom - n);
+    s.bloomWarned = STAGES.reduce((at, st) => (st.at <= s.bloom ? st.at : at), 0);
+    syncMusic(world);
+    return true;
   }
 
   function syncMusic(world) {
@@ -120,5 +132,5 @@
     }
   }
 
-  HA.bloom = { STAGES, RUSH, MAX_BULBS, stage, add, closes, eat, pickUp, onKill, syncMusic };
+  HA.bloom = { STAGES, RUSH, MAX_BULBS, LOST, stage, add, ease, closes, eat, pickUp, onKill, syncMusic };
 })(window.HA);

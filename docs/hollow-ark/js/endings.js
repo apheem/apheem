@@ -70,7 +70,7 @@
 
   // The people whose fates only matter where the story reached them. Sorrel's card is the ending's own.
   function others(s, id) {
-    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id)).map((lines) => card(...lines));
+    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id), HA.story.remedyCards(s, id)).map((lines) => card(...lines));
     const p = s.people;
     if (p.flux === 'home') out.push(card('FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'));
     if (p.flux === 'stripped') out.push(card('NO ONE SAW FLUX AGAIN.'));

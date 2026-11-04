@@ -875,7 +875,7 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [x] Length: Wick's longer escort (8; design and as built below, "Wick's longer escort")
 - [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms (below, "New rooms on the main path")
 - [x] Length: Sorrel (9, with lock 3b; design and as built below, "Sorrel")
-- [ ] Length: the other side quests (design below, "The other side quests"). Hasp's boy built (0.3.17); the other four wait on Cody's pick
+- [ ] Length: the other side quests (design below, "The other side quests"). Hasp's boy built (0.3.17), Wick's remedy (0.3.18); next, Pod 1130, the new stoker and the last watchman
 
 ### 3.11 Cody's notes from playing 0.3.10
 Cody's notes (Oct 31) are listed in full in `HANDOFF.md`. They come before the rest of 3.10's length work. Bugs first, then what's unclear, then the bigger builds. Each bigger build gets its design written here before it's built.
@@ -1125,7 +1125,27 @@ The brief asks for six side quests, each with a moral choice that feeds Mercy or
 - **The climb.** Dosed (and not late), he's one more of the crew past what the trust allows, listed right after Gasket, and the Key can count TWELVE ("DOES AS HE'S TOLD."). He's never the one who speaks for the crew, nor the one who fights what the hero became. At the Lift Down he stays with the lift: "THE SEAL WON'T TAKE ME. I'LL HOLD THE LIFT." "NOBODY'S TOLD ME TO STOP."
 - **Tests.** `browser-check.js` plays Hasp's ask, the tally, the chair, a fall in the fight, the whole fit, both choices, both homecomings, the count (32 with Sorrel not home) and the cards. In `playthrough.js` the Homecoming route walks him home dry and the Dominion route gives him his dose.
 
-**2. Wick's remedy (Bloom; Wick's home, the Seed Vault, the Ballast, the Spine).** Wick was the healer, and in her home, after she dies, is her notebook: she was working on a way to draw the dose out of the taken, so they'd stop dreaming pink. Its pages send the hero for three things the main path passes near (frost lichen from the Seed Vault, settled silt from the Ballast's pools, ash from the Spine's furnace mouth), and Solder's bench, or Tamp if Solder is gone, makes them into one dose. The choice: **give it to the woken** (the taken stop dreaming pink, and the village sleeps; Mercy +1), or **take it yourself** (Bloom −2, the only way the Bloom ever goes down; the woken keep their dreams). This changes the rule that Bloom only rises, so it's Cody's call.
+**2. Wick's remedy (Bloom; the Warrens, the Cold Store, the Settling Pools, the Reactor Throat).** Wick was the healer, and on her doorstep, after she dies, is her notebook: she was working on a way to draw the dose out of the taken, so they'd stop dreaming pink. Cody, Nov 4, on this sketch and the others: "Looks good." Built in 0.3.18 (`js/story/remedy.js`):
+- **The notebook** (log `wickNotebook`, on Wick's platform in the Warrens, col 57, from the hero's return from the Gardens): "THE DOSE ISN'T POISON. IT'S A SEED. IT WANTS WARM AND WET AND DARK, AND IT HATES THREE THINGS." "LICHEN OFF ICE THAT NEVER THAWS. SILT FROM THE BOTTOM OF STANDING WATER. ASH FROM A FURNACE MOUTH." "BOUND TOGETHER, ONE DOSE: ENOUGH TO DRAW IT OUT OF ONE OF US. OR CUT INTO THE WATER, ENOUGH THAT THE TAKEN STOP DREAMING PINK." "MY LEGS WON'T TAKE ME THAT FAR ANY MORE. SOMEONE'S WILL." The hero: "WICK WAS MAKING A CURE. SHE NEVER GOT TO FINISH IT." It doesn't take the lead; the toast and the journal say what to look for, in Wick's words, not the places'.
+- **The three things**, only once the notebook's been read, each drawn where it is and picked up with Up:
+  - **Lichen** up the wall under the Cold Store's ice, by Odell (col 3). This is the one change from the sketch, which had the Seed Vault: the Vault's hatch needs the grapple, so it isn't on the main path, and the Cold Store's ice is.
+  - **Silt** at the bottom of the Settling Pools' deep sump, beside Sorrel's hatch (col 32): the Pressure Boots take the hero down to it.
+  - **Ash** by the Reactor Throat's furnace mouth (col 23), once Abel is down; it appears in the same room as soon as he is.
+  - Each says how many of three the hero has; the third says "NOW A BENCH TO BIND THEM ON."
+- **The bench.** At either bench (the Warrens', or Solder's at the Crew Camp) with all three in hand, the bench makes the remedy first. Solder binds it if he's there ("THAT'S WICK'S HAND. I'D KNOW IT ANYWHERE."); otherwise the hero does, from her notes. Pods carry the hero home from the Spine until the Tower Lift, so the Warrens' bench is always in reach. The sketch's Tamp isn't needed: the hero can manage alone.
+- **The choice (Wick's remedy).** Prompt: "WICK'S REMEDY. ONE DOSE."
+  - **CUT IT INTO THE WATER.** Confirm: gain "ELEVEN WHO STOP DREAMING PINK" (SEVEN if the Pruner's core was taken), lose "THE ONLY CURE THERE IS". Mercy +1. Solder sends it down the lifts to Tamp for the barrel by the gate. The woken at home stop dreaming of the field: "I SLEPT LAST NIGHT, AND THERE WAS NO FIELD. JUST DARK. IT WAS WONDERFUL." "THE WATER TASTES OF ASH. I DON'T CARE." "WICK DID THIS? EVEN NOW?"
+  - **TAKE IT YOURSELF.** Confirm: gain "THE BLOOM IN YOU, PUSHED BACK" (or "NOTHING. THERE'S NO BLOOM IN YOU" at 0, or "NOTHING. THE BLOOM HAS YOU" at 8), lose "THE WOKEN KEEP DREAMING". Bloom −2, never below 0, and nothing once Overgrown is locked in (`HA.bloom.ease`). The stages it falls back below are forgotten, so the hero looks as they are now, and the world says so again if the Bloom comes back. Below 3, the seal at Lift B reads the hero clean again: the remedy is the one way back to the true ending, and the confirm screen doesn't say so.
+- **Epilogue cards:**
+
+| | Into the water | Taken by the hero |
+|---|---|---|
+| Homecoming | "THE WOKEN SLEPT ON THE NEW GROUND, AND DREAMED OF IT." | "I NEVER TOLD ANYONE WHERE WICK'S REMEDY WENT." |
+| Crash | "THE WOKEN SLEPT IN THE SLEDS ON THE WAY DOWN. NONE OF THEM DREAMED PINK." | "THE WOKEN STILL DREAM OF THE FIELD. I KEPT WICK'S CURE FOR MYSELF." |
+| Dominion | "THE WARRENS' WATER STILL TASTES OF ASH. NOBODY DOWN THERE DREAMS PINK." | "WICK'S REMEDY WENT INTO ME. IT WASN'T ENOUGH TO STOP ME." |
+| Overgrown | "WICK'S REMEDY KEPT THE WOKEN CLEAR FOR A YEAR. THEN THE PINK CAME BACK FOR THEM TOO." | "WICK'S REMEDY WASN'T ENOUGH." |
+
+- **Tests.** `browser-check.js` reads the notebook, picks up all three, takes the remedy at the Warrens' bench alone (Bloom 4 to 2, stage 0), cuts it into the water at the camp with Solder (Mercy +1, the woken's new lines), checks Bloom 8, and every card. In `playthrough.js` the Homecoming route cuts it into the water and the Dominion route takes it.
 
 **3. Pod 1130 (Mercy; the Cryo Deck, from the tram home on).** Once the reactor's been stoked for the climb, the power in the Pod Stacks shifts, and one pod's alarm starts: 1130, a colonist the Navigator never woke, failing. The hero knows what waking late is. The choice: **thaw him** (he wakes 232 years late, frightened, to a ship of strangers; he walks to the Warrens, and the Hullfolk take in a second sleeper; Mercy +1), or **let it fail and take the pod's cell** (a Suit Cell, more health; Mercy −1). His fate gets a line in each epilogue.
 

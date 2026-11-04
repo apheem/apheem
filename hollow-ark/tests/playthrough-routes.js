@@ -50,6 +50,8 @@ const home = {
       await r.do('PT.near(HA.ui.world.npcs.find((n) => n.id === "hasp"))');
       await r.do('PT.settle()');
     }
+    // Wick's notebook on her doorstep (story/remedy.js), on the routes that make her remedy.
+    if (r.route.remedy) await r.do('PT.read("wickNotebook")');
     await r.do('PT.rest()'); // the night Solder leaves
     await r.to('sump');
   },
@@ -75,9 +77,12 @@ const cargo = {
     await r.do('PT.talk("purser")');
     // With Flux's Bloomfire the Yard is in reach at once, and the Cold Store's ice waits for a Breach Charge.
     const bloomfire = (await r.get('HA.ui.world.state.abilities.thruster')) === 'bloomfire';
+    // The first of Wick's three things grows under the Cold Store's ice, by Odell.
+    const lichen = async () => r.route.remedy && (await r.do('PT.read("remedyLichen")'));
     if (!bloomfire) {
       await r.to('cold-store');
       await r.do('PT.read()'); // Odell, and his pack
+      await lichen();
     }
     await r.to('tally-yard');
     await r.boss('tally-yard');
@@ -88,6 +93,7 @@ const cargo = {
       await r.do('PT.blast("ice")');
       await r.to('cold-store');
       await r.do('PT.read()');
+      await lichen();
     }
     await r.to('sorting-floor');
     await r.do('PT.blast("aisle")');
@@ -108,6 +114,11 @@ const ballast = {
     await r.do('PT.read("boots")');
     await r.to('silt-tank');
     await r.boss('silt-tank', undefined, { enter: 'PT.trigger(0)' }); // out over her water, and the shutters come down
+    // The second of Wick's three things, at the bottom of the Settling Pools' deep sump.
+    if (r.route.remedy) {
+      await r.to('settling-pools');
+      await r.do('PT.read("remedySilt")');
+    }
     // The glass said down the drain: the hatch at the bottom of the Settling Pools, and Sorrel at the Dry Pumps.
     if (await r.get('!!HA.ui.world.state.logs.sorrelGlass')) {
       await r.to('dry-pumps');
@@ -133,7 +144,9 @@ const spine = {
     await r.to('stokers-bunks'); // the Piston Run's shaft is plated over: round through the bunks, out above the plate
     await r.to('reactor-throat');
     await r.boss('reactor-throat');
+    if (r.route.remedy) await r.do('PT.read("remedyAsh")'); // the last of Wick's three things, by the furnace mouth
     await r.to('crew-camp'); // the night, and the Purser's last call
+    if (r.route.remedy) await r.do('PT.read("bench")'); // Solder binds Wick's remedy; then the choice
     await r.to('tower-lift'); // the crew's verdict
   },
 };
@@ -214,6 +227,7 @@ const TRUE = {
   'SPARE HIM': 'SPARE HIM',
   'BRING HER HOME': 'BRING HER HOME',
   'WALK HIM HOME DRY': 'DRY',
+  'CUT IT INTO THE WATER': 'WATER',
   'LAUNCH THE PODS': 'LAUNCH',
   'TAKE ITS CORE TO THE NEW WORLD': 'LET IT REST',
 };
@@ -225,6 +239,7 @@ module.exports = {
     ending: 'homecoming',
     policy: TRUE,
     cotter: true,
+    remedy: true,
     segments: [...THROUGH_TOWER, deck],
     check: {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
@@ -233,6 +248,7 @@ module.exports = {
       'the freed Wardens remember their names': (e) => e.lines.includes('MY NAME WAS USHER.'),
       'Sorrel brought home': (e) => e.people.sorrel === 'home' && e.lines.includes('SORREL COUNTED THEM IN.'),
       'Cotter walked home dry': (e) => e.people.cotter === 'dry' && e.lines.includes('HASP WALKED BEHIND HIM, IN CASE.'),
+      "Wick's remedy cut into the water": (e) => e.lines.includes('AND DREAMED OF IT.'),
       'Shim carries the lantern': (e) => e.lines.includes("HE CARRIED HIS MOTHER'S LANTERN."),
     },
   },
@@ -277,13 +293,16 @@ module.exports = {
       'SPARE HIM': 'END HIM',
       'CLAIM THE KEY': 'CLAIM',
       'WALK HIM HOME DRY': 'DOSE',
+      'CUT IT INTO THE WATER': 'YOURSELF',
     },
     cotter: true,
+    remedy: true,
     segments: THROUGH_TOWER,
     check: {
       'Mercy -3 or less': (e) => e.mercy <= -3,
       'every Warden counted for a new master': (e) => Object.values(e.wardens).every((x) => x === 'salvage') && e.lines.includes('COUNT THEM.'),
       'Cotter given his dose, and climbing': (e) => e.people.cotter === 'dosed' && e.lines.includes('I HAD THE RACKS NOW.'),
+      "Wick's remedy taken by the hero": (e) => e.lines.includes("WICK'S REMEDY WENT INTO ME."),
     },
   },
   // Bloom 8 and more: the Thorn, Bloomfire, the Bloom on the hatch, and every bulb eaten. Mercy stays kind.

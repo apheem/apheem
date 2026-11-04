@@ -1993,6 +1993,113 @@ async function play(browserType, url, label) {
     expect(rd.home === 'cotterHome' && /HE CALLS ME MA'AM/.test(rd.homeSaid) && rd.door === 'out' && rd.climbing, `Cotter home dosed went wrong (${JSON.stringify(rd)})`);
     expect(/I HAD THE RACKS NOW/.test(rd.dominion) && /COTTER DIDN'T NOTICE ANY DIFFERENCE/.test(rd.overgrown) && /WALKED OUT OF THE HELM ALIVE/.test(rd.overgrown) && !/COTTER WALKED OUT OF THE HELM/.test(rd.overgrown), `the endings with Cotter dosed went wrong (${rd.dominion} / ${rd.overgrown})`);
 
+    // ---- Wick's remedy (3.15), from a save in the Warrens after the climb: her notebook on her doorstep, the three
+    // things (under the Cold Store's ice, at the bottom of the Settling Pools' sump, by the furnace once Abel is down),
+    // the Warrens' bench with no Solder there, and the remedy taken by the hero (Bloom 4 to 2); then from the camp,
+    // Solder binds it and it goes into the water; then at Bloom 8, when taking it does nothing. ----
+    const settled = { namedLate: true, fluxHome: true, fluxMorning: true };
+    const allThree = { remedyRead: true, remedyLichen: true, remedySilt: true, remedyAsh: true };
+    await towerSave({ room: 'warrens', x: 40 * 8, y: 19 * 8 - 14, bloom: 4, bloomWarned: 3, flags: settled });
+    await startSaved();
+    const rh = await get(() => {
+      const { w, listen, talkThrough, choose, press, options } = window.tw;
+      const out = {};
+      const s = w().state;
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      talkThrough();
+      HA.debug.goto('warrens', 57, 10);
+      HA.debug.step(3);
+      press('up');
+      out.notebook = w().scene && w().scene.name;
+      out.read = listen().join(' | ');
+      talkThrough();
+      out.flag = !!s.flags.remedyRead && !!s.logs.wickNotebook;
+      const grab = (room, tx, ty, id) => {
+        HA.debug.goto(room, tx, ty);
+        HA.debug.step(5);
+        const near = w().near && w().near.o.id;
+        press('up');
+        const said = listen().join(' | ');
+        talkThrough();
+        HA.debug.step(5);
+        return near === id && !!s.flags[id] && !w().logs.some((l) => l.id === id) ? said : 'missed ' + id + ' (' + near + ')';
+      };
+      out.lichen = grab('cold-store', 3, 11, 'remedyLichen');
+      out.silt = grab('settling-pools', 32, 43, 'remedySilt');
+      out.ash = grab('reactor-throat', 23, 18, 'remedyAsh');
+      HA.debug.goto('warrens', 84, 18);
+      HA.debug.step(5);
+      press('up');
+      out.made = listen().join(' | ');
+      out.choice = options();
+      out.gain = w().scene.step.choice.options[1].confirm.gain;
+      choose(1);
+      out.took = listen().join(' | ');
+      talkThrough();
+      out.after = { remedy: s.flags.remedy, bloom: s.bloom, warned: s.bloomWarned, stage: HA.bloom.stage(s) };
+      // The bench is only a bench after that.
+      press('up');
+      listen(); // the first time at his bench, the hero says so first
+      out.again = w().scene && w().scene.name + ':' + (options() || '').split('/')[0];
+      talkThrough();
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(rh.notebook === 'wickNotebook' && /IT HATES THREE THINGS/.test(rh.read) && /SHE NEVER GOT TO FINISH IT/.test(rh.read) && rh.flag, `Wick's notebook went wrong (${rh.notebook}: ${rh.read})`);
+    expect(/UNDER THE ICE/.test(rh.lichen) && /DEEPEST POOL/.test(rh.silt) && /FURNACE MOUTH/.test(rh.ash) && /ALL THREE/.test(rh.ash), `the three things for Wick's remedy went wrong (${rh.lichen} / ${rh.silt} / ${rh.ash})`);
+    expect(/WICK'S NOTES SAY HOW/.test(rh.made) && rh.choice === 'CUT IT INTO THE WATER/TAKE IT YOURSELF' && rh.gain === 'THE BLOOM IN YOU, PUSHED BACK' && /LETS GO, A LITTLE/.test(rh.took), `Wick's remedy at the Warrens' bench went wrong (${JSON.stringify(rh)})`);
+    expect(rh.after.remedy === 'hero' && rh.after.bloom === 2 && rh.after.warned === 0 && rh.after.stage === 0 && /^bench:PLATING/.test(rh.again), `the remedy taken did not take the Bloom down (${JSON.stringify(rh.after)}, ${rh.again})`);
+    expect(/I NEVER TOLD ANYONE WHERE WICK'S REMEDY WENT/.test(rh.cards) && /I KEPT WICK'S CURE FOR MYSELF/.test(rh.cards) && /WICK'S REMEDY WENT INTO ME/.test(rh.cards) && /WICK'S REMEDY WASN'T ENOUGH/.test(rh.cards), `the endings with Wick's remedy taken went wrong (${rh.cards})`);
+    // At the camp, with Solder: into the water, and the woken stop dreaming of the field.
+    await towerSave({ room: 'crew-camp', x: 18 * 8, y: 19 * 8 - 14, flags: Object.assign({ camp: true, campDone: false, verdict: false }, settled, allThree) });
+    await startSaved();
+    const rw = await get(() => {
+      const { w, listen, talkThrough, choose } = window.tw;
+      const out = {};
+      const s = w().state;
+      HA.debug.step(5);
+      talkThrough();
+      HA.debug.goto('crew-camp', 21, 18);
+      HA.debug.step(5);
+      window.tw.press('up');
+      out.made = listen().join(' | ');
+      const m = s.mercy;
+      choose(0);
+      out.water = listen().join(' | ');
+      talkThrough();
+      out.after = { remedy: s.flags.remedy, mercy: s.mercy - m, bloom: s.bloom };
+      HA.debug.goto('warrens', 30, 18);
+      HA.debug.step(10);
+      talkThrough();
+      out.woken = w().npcs.filter((n) => n.id === 'woken').map((n) => n.lines[0]).join(' | ');
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      return out;
+    });
+    expect(/THAT'S WICK'S HAND/.test(rw.made) && /SEND IT DOWN THE LIFTS TO TAMP/.test(rw.water) && rw.after.remedy === 'woken' && rw.after.mercy === 1 && rw.after.bloom === 0, `Wick's remedy at the camp went wrong (${JSON.stringify(rw)})`);
+    expect(/NO FIELD/.test(rw.woken) && /TASTES OF ASH/.test(rw.woken), `the woken did not stop dreaming (${rw.woken})`);
+    expect(/AND DREAMED OF IT/.test(rw.cards) && /NONE OF THEM DREAMED PINK/.test(rw.cards) && /NOBODY DOWN THERE DREAMS PINK/.test(rw.cards) && /CLEAR FOR A YEAR/.test(rw.cards), `the endings with Wick's remedy in the water went wrong (${rw.cards})`);
+    // At Bloom 8 it's too late, and the screen says so.
+    await towerSave({ room: 'warrens', x: 84 * 8, y: 19 * 8 - 14, bloom: 8, bloomWarned: 8, flags: Object.assign({}, settled, allThree) });
+    await startSaved();
+    const r8 = await get(() => {
+      const { w, listen, talkThrough, choose } = window.tw;
+      const s = w().state;
+      HA.debug.step(5);
+      talkThrough();
+      HA.debug.goto('warrens', 84, 18);
+      HA.debug.step(5);
+      window.tw.press('up');
+      listen();
+      const gain = w().scene.step.choice.options[1].confirm.gain;
+      choose(1);
+      const said = listen().join(' | ');
+      talkThrough();
+      return { gain, said, bloom: s.bloom, remedy: s.flags.remedy };
+    });
+    expect(r8.gain === 'NOTHING. THE BLOOM HAS YOU' && /DRINKS IT DOWN LIKE WATER/.test(r8.said) && r8.bloom === 8 && r8.remedy === 'hero', `Wick's remedy at Bloom 8 went wrong (${JSON.stringify(r8)})`);
+
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };
     const branch = async (extra, fn) => {
