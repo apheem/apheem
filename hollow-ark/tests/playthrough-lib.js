@@ -241,6 +241,27 @@
     }
     fail('resting did not take');
   };
+  // A trip between rest pods, as the map does it: from this room's pod to one the hero has rested at before.
+  PT.travel = (room) => {
+    PT.settle();
+    const W = w();
+    const from = W.def.id;
+    const pod = W.pods[0];
+    if (!pod) fail(`no rest pod in ${from} to travel from`);
+    PT.near(pod);
+    while (pod.cool > 0) tick(1);
+    tick(1);
+    const f = W.state.flags;
+    if (!(W.near && W.near.kind === 'pod' && f.cargo && !f.tower)) fail(`can't travel from ${from}'s pod now`);
+    if (!W.state.rested[room]) fail(`never rested at a pod in ${room}`);
+    const def = HA.rooms.byId[room];
+    const ty = def.map.findIndex((row) => row.includes('S'));
+    W.travelTo = { room, rx: def.map[ty].indexOf('S') * 8, ry: ty * 8 + 8 - 14 };
+    for (let n = 0; n < 600 && w() && w().def.id !== room; n++) tick(1);
+    if (w().def.id !== room) fail(`travelling to ${room} went nowhere`);
+    say(`travelled ${from} -> ${room}`);
+    return PT.settle();
+  };
   PT.take = (what) => {
     const k = w().pickups.find((x) => x.kind === what || x.id === what);
     if (!k) fail(`no ${what} to pick up here (${w().pickups.map((x) => x.id || x.kind)})`);

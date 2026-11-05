@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.17-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.19-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.17-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.19-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,18 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.19: Pod 1130
+
+- **Pod 1130, a side quest.** When Abel's fires change, either way, the ship's power goes elsewhere, and the ship pages an attendant to the Cryo Deck: Pod 1130 is on its reserve cell, and the cell is failing. It's the pod on the ledge just inside the Pod Stacks, by the door from the Thaw Corridor, and its light is blinking red. The rest pods can take you back down.
+- **The choice.** Thaw him with the last of the cell (Mercy +1): Hugo Marsh, an agronomist who was meant to plant the first fields, wakes 232 years late, like you, and goes down to the Warrens, where he sits by the fire. Or take the cell for your suit (a Suit Cell, max health +4; Mercy −1), and he never wakes.
+- **If you never go,** the cell runs out on its own while you climb the Tower. Whatever happened, it's in every ending's epilogue, and the sleepers who reach the new world count him.
+
+## 0.3.18: Wick's remedy
+
+- **Wick's remedy, a side quest.** Home from the Gardens without Wick, look on her doorstep, up on the platform where she used to stand. Her notebook says the dose is a seed, and that it hates three things: lichen off ice that never thaws, silt from the bottom of standing water, and ash from a furnace mouth. Bound together, they make one dose.
+- **The three things.** Once you've read it, they're there to find: lichen up the wall under the Cold Store's ice, silt at the bottom of the Settling Pools' deep sump, and ash by the Reactor Throat's furnace once Abel is down. Bring all three to a bench, the Warrens' or Solder's at the Crew Camp.
+- **The choice.** Cut it into the Warrens' water, and the woken stop dreaming of the field (Mercy +1). Or take it yourself (Bloom −2): the only thing in the game that ever takes the Bloom down, and nothing at all once it has you. Either way it's in every ending's epilogue.
 
 ## 0.3.17: Hasp's boy
 
