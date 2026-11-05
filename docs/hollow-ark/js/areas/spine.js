@@ -5,8 +5,9 @@
 // Rooms here join top to bottom by ladders and floor hatches; the crew's lift runs between the landings it reaches.
 // Map legend beyond the shared one: ^ hot grilles   m Bloomsworn climber   8 steam drone   0 heat slug
 // a the ladder up   e the hatch down   L the crew's lift   T a terminal   M Abel, in his furnace
-// Z the Tower Lift   D the Piston Run's plate, bolted from above   l the last stoker's bunk. A room's vents (see
-// abilities.js) carry the hero up, its belts carry them along, and its pistons (see hazards.js) strike.
+// Z the Tower Lift   D the Piston Run's plate, bolted from above (in the Boiler Stair, the burst main's steam)
+// l the last stoker's bunk   V and W the Condenser's valves. A room's vents (see abilities.js) carry the hero
+// up, its belts carry them along, and its pistons (see hazards.js) strike.
 (function (HA) {
   HA.rooms.area('spine', { name: 'ENGINE SPINE', theme: 'spine', music: 'spine', mapColor: '#ff8f4a' });
 
@@ -106,6 +107,9 @@
       e: down('spine-foot'),
       a: up('piston-run'),
       L: stop(1, 'crew-camp'),
+      // Main 3, burst across the shaft over the midway shelf: live steam, until both its valves in the Condenser are
+      // shut (story/spine.js). A game saved past it before the Condenser was built (the crew have come) finds it gone.
+      D: { type: 'door', id: 'steamMain', steam: true, open: (s) => !!s.flags.condenser || !!s.flags.crewCame },
     },
     vents: [
       { x0: 3, x1: 5, y0: 62, y1: 85 },
@@ -114,14 +118,20 @@
     scenery: [
       { kind: 'reactor', x: 20 },
       { kind: 'boilers', at: [[12, 82], [30, 52], [9, 40], [24, 26]] },
-      { kind: 'pipes', y: 36 },
+      { kind: 'pipes', y: 44 }, // Main 3
       { kind: 'pipes', y: 70 },
       { kind: 'shaft', x: 33, y0: 4, y1: 8 },
       { kind: 'stencil', x: 15, y: 5, text: 'BOILER LANDING' },
       { kind: 'scrawl', x: 8, y: 60, text: 'HOT' },
+      { kind: 'stencil', x: 24, y: 42, text: 'MAIN 3' },
+      { kind: 'stencil', x: 27, y: 51, text: 'CONDENSER →' },
     ],
     // The tram comes in below while the hero stands on the landing, and the crew build the first lift up to it.
-    triggers: [{ x0: 14, x1: 37, y1: 8, when: (s) => !s.flags.crewCame, run: 'crewArrives' }],
+    triggers: [
+      { x0: 14, x1: 37, y1: 8, when: (s) => !s.flags.crewCame, run: 'crewArrives' },
+      // On the midway shelf, under the burst main (the fourth batch of new rooms)
+      { x0: 22, x1: 37, y0: 50, y1: 55, when: (s) => !s.flags.condenser && !s.flags.crewCame, run: 'steamShut' },
+    ],
     map: [
       '########################################',
       '########################################',
@@ -167,18 +177,18 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
+      '##DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD##',
+      '##DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD##',
       '##....................................##',
       '##........8...........................##',
       '##....................................##',
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##.......................^^^..........##',
+      '##......................................',
+      '##......................................',
+      '##......................................',
+      '##.......................^^^............',
       '##.................o..##################',
       '##....................##################',
       '##....................................##',
@@ -213,6 +223,60 @@
       '########################################',
       '########################################',
       '########################################',
+    ],
+  });
+
+  // The Condenser (the fourth batch of new rooms): where the Spine's steam is turned back into water, off the
+  // Boiler Stair's midway shelf. Main 3 has burst across the stair above the shelf, and it shuts off at two valves:
+  // A past the sump, B on the coil tops, up the steam at the east end. The way out is the way in.
+  HA.rooms.add({
+    id: 'condenser',
+    area: 'spine',
+    name: 'THE CONDENSER',
+    gx: 520,
+    gy: 138,
+    abilities: { thruster: true, grapple: true, foam: true, boots: true },
+    musicLayers: layers,
+    legend: {
+      T: { type: 'log', id: 'condenser', name: "the condenser's notice" },
+      V: { type: 'log', scene: 'valveA', label: '{up} SHUT THE VALVE', name: 'valve A' },
+      W: { type: 'log', scene: 'valveB', label: '{up} SHUT THE VALVE', name: 'valve B' },
+    },
+    vents: [{ x0: 64, x1: 66, y0: 3, y1: 12 }],
+    scenery: [
+      { kind: 'pipes', y: 3 },
+      { kind: 'coils', y: 8, to: 12, at: [[14, 21], [25, 33], [37, 45], [49, 63]] },
+      { kind: 'valve', x: 74, y: 12, flag: 'condenserA' },
+      { kind: 'valve', x: 29, y: 7, flag: 'condenserB' },
+      { kind: 'stencil', x: 3, y: 5, text: 'CONDENSER HALL · MAIN 3' },
+      { kind: 'stencil', x: 73, y: 9, text: 'A' },
+      { kind: 'stencil', x: 28, y: 4, text: 'B' },
+    ],
+    triggers: [{ x0: 2, x1: 12, when: (s) => !s.flags.condenserIn, run: 'condenserIn' }],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##..................8..................................8......................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##...........................W...........0....................................##',
+      '##............########...#########...#########...###############..............##',
+      '..............########...#########...#########...###############..............##',
+      '..............................................................................##',
+      '..............................................................................##',
+      '........T.............................8..............................0....V...##',
+      '##############.................................................#################',
+      '##############.................................................#################',
+      '##############.................................................#################',
+      '#################...........................................####################',
+      '#################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####################',
+      '#################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####################',
+      '#################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####################',
+      '#################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####################',
+      '################################################################################',
+      '################################################################################',
     ],
   });
 

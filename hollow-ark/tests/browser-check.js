@@ -1388,7 +1388,7 @@ async function play(browserType, url, label) {
     const towerSave = (extra) =>
       get((extra) => {
         const s = HA.save.newState();
-        Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'shim', cargo: true, chalkStops: true, deserterMet: true, deserterOffered: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true, ballast: true, solderFound: true, toolbagBack: true, siltSeen: true, siltDown: true, floodSeen: true, flooded: true, hatchOpen: true, tram: true, raidSeen: true, intercom: true, spine: true, crewCame: true, lifts: 2, liftTwoSeen: true, abelSeen: true, abelDown: true, camp: true, lightsOut: true, shimRanOff: true, purserGone: true, campDone: true, verdict: true });
+        Object.assign(s.flags, { woke: true, metHullfolk: true, night: true, raid: true, raidDone: true, bossDefeated: true, reunion: true, homeDone: true, goodbye: true, gardens: true, cradlesSeen: true, prunerDown: true, cradles: true, wickFought: true, wickDead: true, thornOffered: true, gardenerGone: true, homeAgain: true, broadcastHeard: true, pistolDone: true, pistolGiven: true, newGate: true, hatch: true, solderLeft: true, climbPlanned: true, lanternWith: 'shim', cargo: true, chalkStops: true, deserterMet: true, deserterOffered: true, coldOpen: true, odell: true, odellPack: true, tallySeen: true, tallyDown: true, aisleWall: true, toolbag: true, ballast: true, solderFound: true, toolbagBack: true, siltSeen: true, siltDown: true, floodSeen: true, flooded: true, hatchOpen: true, tram: true, raidSeen: true, intercom: true, spine: true, crewCame: true, lifts: 2, liftTwoSeen: true, abelSeen: true, abelDown: true, camp: true, lightsOut: true, shimRanOff: true, purserGone: true, campDone: true, verdict: true, condenser: true, guardBolt: true });
         Object.assign(s.wardens, { bailiff: 'salvage', pruner: 'release', tallyman: 'release' });
         Object.assign(s.people, { wick: 'dead', flux: 'home', solder: 'alive', abel: 'spared' });
         Object.assign(s.abilities, { thruster: 'odell', grapple: true, boots: true });
@@ -2505,6 +2505,141 @@ async function play(browserType, url, label) {
     expect(/ASKED WHO WAS RELIEVING HER/.test(wh.cards) && /HELD THE DRAIN SHUT/.test(wh.cards) && /RECEIVED, WATCH 4\. HOLD/.test(wh.cards) && /HELD THE GATE ANYWAY/.test(wh.cards) && wh.counted === 0, `the endings with Watch 4 left at her gate went wrong (${wh.counted}: ${wh.cards})`);
     expect(/THE BALLAST IS COMING UP THE DRAIN/.test(wh.run) && /THAT'S TIME/.test(wh.run) && wh.left === 175 && wh.flash && wh.retry === 175 && /SHE HAD ORDERS/.test(wh.sleds), `Watch 4 on the run for the sleds went wrong (clock ${wh.left}, again ${wh.retry}, flash ${wh.flash}, ${wh.sleds}: ${wh.run})`);
     expect(/^never /.test(wh.never) && /STILL ASKING FOR WATCH 4'S RELIEF/.test(wh.never) && /I'VE NEVER ANSWERED/.test(wh.never) && /ASKED FOR RELIEF/.test(wh.never) && /REQUEST RELIEF/.test(wh.neverRun) && /STILL ASKING/.test(wh.neverRun) && wh.unheard, `Watch 4 never gone back to went wrong (${wh.unheard}, ${wh.neverRun}: ${wh.never})`);
+
+    // The fourth batch of new rooms. The Condenser: Main 3 has burst across the Boiler Stair over its midway shelf,
+    // and shuts off at its two valves, A past the sump and B on the coil tops; then the crew's leader on the dry stair.
+    await towerSave({ room: 'boiler-stair', x: 30 * 8, y: 56 * 8 - 14, flags: { crewCame: false, lifts: 0, liftTwoSeen: false, abelSeen: false, abelDown: false, camp: false, lightsOut: false, shimRanOff: false, purserGone: false, campDone: false, verdict: false, condenser: false }, people: { abel: null } });
+    await startSaved();
+    const cn = await get(() => {
+      const { w, listen, press } = window.tw;
+      const s = w().state;
+      const f = s.flags;
+      w().assist.invincible = true;
+      const out = {};
+      HA.debug.step(5);
+      out.shut = !w().doors.find((d) => d.id === 'steamMain').open;
+      out.thought = listen().join(' ');
+      // up the shelf's vent: it stops under the steam
+      HA.debug.goto('boiler-stair', 35, 55);
+      HA.debug.step(3);
+      listen(); // the thought again: it's a new visit
+      let top = 99;
+      for (let i = 0; i < 150; i++) {
+        HA.debug.step(1);
+        top = Math.min(top, w().player.y / 8);
+      }
+      out.under = Math.floor(top) >= 46 && top < 54; // carried up, and stopped under the steam
+      // east off the shelf, into the Condenser
+      HA.debug.goto('boiler-stair', 38, 55); // past the vent, in the doorway
+      HA.debug.step(3);
+      listen();
+      for (let i = 0; i < 120 && w().def.id === 'boiler-stair'; i++) HA.debug.step(1, { right: true });
+      out.room = w().def.id;
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.inside = listen().join(' ');
+      HA.debug.goto('condenser', 8, 12);
+      HA.debug.step(5);
+      press('up');
+      out.notice = listen().join(' ');
+      out.prompts = [];
+      const valve = (tx, ty) => {
+        HA.debug.goto('condenser', tx, ty);
+        HA.debug.step(5);
+        out.prompts.push(w().near && w().near.label);
+        press('up');
+        return listen().join(' ');
+      };
+      out.a = valve(74, 12);
+      out.half = [f.condenserA, !!f.condenserB, !!f.condenser].join(',');
+      out.b = valve(29, 7);
+      out.done = !!f.condenser && s.journal.story.some((t) => /SHUT IT OFF AT BOTH ITS VALVES/.test(t));
+      out.again = valve(29, 7);
+      HA.debug.goto('boiler-stair', 30, 55);
+      HA.debug.step(5);
+      out.open = w().doors.find((d) => d.id === 'steamMain').open && !w().scene;
+      // the Boiler Landing: the crew build the first lift, and the stair is dry
+      HA.debug.goto('boiler-stair', 18, 8);
+      HA.debug.step(30);
+      out.arrive = w().scene && w().scene.name;
+      out.crew = listen().join(' | ');
+      // a game saved past the shelf before 0.3.22: the crew have come, so the steam is gone
+      f.condenser = false;
+      HA.debug.goto('boiler-stair', 30, 55);
+      HA.debug.step(5);
+      out.old = w().doors.find((d) => d.id === 'steamMain').open && !w().scene;
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(cn.shut && /LIVE STEAM, WALL TO WALL/.test(cn.thought) && /CONDENSER/.test(cn.thought) && cn.under && cn.room === 'condenser' && /SUMP OF HOT WATER/.test(cn.inside), `the burst main over the Boiler Stair's shelf went wrong (${JSON.stringify(cn)})`);
+    expect(/A IS PAST THE SUMP, B IS ON THE COIL TOPS/.test(cn.notice) && cn.prompts.every((l) => l === '{up} SHUT THE VALVE') && /THINNED\. NOT ENOUGH/.test(cn.a) && cn.half === 'true,false,false' && /DIED TO A HISS/.test(cn.b) && cn.done && /IT'S SHUT\. SO IS THE OTHER ONE/.test(cn.again), `the Condenser's valves went wrong (${JSON.stringify(cn)})`);
+    expect(cn.open && cn.arrive === 'crewArrives' && /SOMEBODY SHUT MAIN 3/.test(cn.crew) && cn.old, `the Boiler Stair after Main 3 went wrong (${JSON.stringify(cn)})`);
+
+    // The Guard Room: the Barracks' bulkhead to the Dome is bolted for the night from the Guard Room, west of the lift;
+    // the racked guard, the one who's awake (and, with the Muster's dose book read, why), and the bell.
+    await towerSave({ room: 'barracks', x: 30 * 8, y: 19 * 8 - 14, flags: { towerUp: true, guardWoke: true, gasketBarracks: 'held', guardBolt: false }, logs: { muster: true } });
+    await startSaved();
+    const gr = await get(() => {
+      const { w, listen, press } = window.tw;
+      const s = w().state;
+      const f = s.flags;
+      w().assist.invincible = true;
+      const out = {};
+      HA.debug.goto('barracks', 62, 18);
+      HA.debug.step(5);
+      for (let i = 0; i < 300 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.scene = w().scene && w().scene.name;
+      out.thought = listen().join(' ');
+      for (let i = 0; i < 120; i++) HA.debug.step(1, { right: true });
+      out.shut = !w().doors.find((d) => d.id === 'guardBolt').open && w().def.id === 'barracks' && w().player.x < 76 * 8;
+      // west, past the lift, into the Guard Room
+      HA.debug.goto('barracks', 4, 18);
+      HA.debug.step(5);
+      for (let i = 0; i < 200 && w().def.id === 'barracks'; i++) HA.debug.step(1, { left: true });
+      out.room = w().def.id;
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.inside = listen().join(' ');
+      out.still = w().enemies.filter((e) => e.type === 'guard').length;
+      HA.debug.goto('guard-room', 24, 9);
+      HA.debug.step(5);
+      for (let i = 0; i < 100 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.awake = listen().join(' ');
+      HA.debug.goto('guard-room', 45, 18);
+      HA.debug.step(5);
+      press('up');
+      out.orders = listen().join(' ');
+      HA.debug.goto('guard-room', 5, 9);
+      HA.debug.step(5);
+      out.prompt = w().near && w().near.label;
+      press('up');
+      out.bell = listen().join(' ');
+      const racked = () => w().enemies.filter((e) => e.racked && !e.dead).map((e) => Math.round((e.y + e.h) / 8)).sort((a, b) => a - b).join(',');
+      out.out = racked();
+      out.empty = (w().guardOut || []).join(',');
+      out.bolt = !!f.guardBolt && s.journal.story.some((t) => /RANG A BELL DOWN THE RACKS/.test(t));
+      press('up');
+      out.again = listen().join(' ');
+      // back east and through the open bulkhead to the Dome; and the racks still empty on the way back in
+      HA.debug.goto('barracks', 70, 18);
+      HA.debug.step(5);
+      out.open = w().doors.find((d) => d.id === 'guardBolt').open && !w().scene;
+      for (let i = 0; i < 200 && w().def.id === 'barracks'; i++) HA.debug.step(1, { right: true });
+      out.dome = w().def.id;
+      HA.debug.goto('guard-room', 70, 18);
+      HA.debug.step(5);
+      out.back = racked();
+      // a game saved past the Barracks before 0.3.22: the Dome has been seen, so the bulkhead is open
+      f.guardBolt = false;
+      f.domeSeen = true;
+      HA.debug.goto('barracks', 70, 18);
+      HA.debug.step(5);
+      out.old = w().doors.find((d) => d.id === 'guardBolt').open && !w().scene;
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(gr.scene === 'bulkheadShut' && /BOLTED FOR THE NIGHT/.test(gr.thought) && /GUARD ROOM/.test(gr.thought) && gr.shut, `the Barracks' bulkhead was not bolted (${JSON.stringify(gr)})`);
+    expect(gr.room === 'guard-room' && /EYES SHUT/.test(gr.inside) && /NOBODY MOVED/.test(gr.inside) && gr.still === 0 && /HIS EYES FOLLOWED ME/.test(gr.awake) && /MISSED A DOSE/.test(gr.awake) && /NOTHING COMES UP FROM THE SPINE AFTER DARK/.test(gr.orders), `the Guard Room's racks went wrong (${JSON.stringify(gr)})`);
+    expect(gr.prompt === '{up} DRAW THE BOLT' && /A BELL OVER THE BOARD RANG/.test(gr.bell) && /STEPPING OUT/.test(gr.bell) && /STAYED WHERE HE WAS/.test(gr.bell) && gr.out === '10,19,19' && gr.empty === '40,27,59' && gr.bolt && /THE BOLT'S DRAWN/.test(gr.again), `drawing the bulkhead's bolt went wrong (${JSON.stringify(gr)})`);
+    expect(gr.open && gr.dome === 'observation-dome' && gr.back === gr.out && gr.old, `the bulkhead after the bolt went wrong (${JSON.stringify(gr)})`);
 
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };

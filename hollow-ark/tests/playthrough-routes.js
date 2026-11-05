@@ -151,6 +151,13 @@ const spine = {
     await r.to('spine-foot'); // east on the tram with the climbers (or to the Ballast stop, and through the pipes)
     await r.bulbs();
     await r.to('boiler-stair');
+    // Main 3 has burst across the Boiler Stair over its midway shelf: into the Condenser off the shelf, shut it at
+    // both its valves, and back out the way in (the fourth batch of new rooms).
+    await r.to('condenser');
+    await r.do('PT.read("condenser")');
+    await r.do('PT.read("valveA")');
+    await r.do('PT.read("valveB")');
+    await r.to('boiler-stair');
     await r.to('stokers-bunks'); // the Piston Run's shaft is plated over: round through the bunks, out above the plate
     await r.to('reactor-throat');
     await r.boss('reactor-throat');
@@ -190,6 +197,12 @@ const tower = {
       await r.do('PT.walk("left", () => !HA.ui.world.gasketHold || HA.ui.world.gasketHold.state !== "holding")');
       await r.do('PT.clear("nightWatch")');
     }
+    // The bulkhead to the Dome is bolted for the night from the Guard Room, west of the lift. Drawing the bolt rings
+    // the bell, and three of the racked guard step out (the fourth batch of new rooms).
+    await r.to('guard-room');
+    await r.do('PT.read("standing")');
+    await r.do('PT.read("guardBolt")');
+    await r.do('PT.clear("racked")');
     await r.to('observation-dome');
     await r.to('garden-gallery'); // the Gardener
     await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter
