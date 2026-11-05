@@ -132,6 +132,16 @@ const ballast = {
     await r.do('PT.settle()');
     await r.do('PT.read("winch")'); // and the tram home, to the sump
     await r.to('warrens'); // the raid's news, Solder's, Flux's; then the tram waits
+    // Once home is quiet, Watch 4's call on the old speakers (story/watch.js). Answered: back west through the
+    // Labyrinth to the Watch Gallery, into the watch room for her choice, and home again for the tram.
+    await r.do('PT.tick(120)');
+    await r.do('PT.settle()');
+    if (r.route.watch) {
+      await r.to('watch-gallery');
+      await r.do('PT.goCol(20)');
+      await r.do('PT.settle()');
+      await r.to('warrens');
+    }
   },
 };
 
@@ -247,6 +257,7 @@ const TRUE = {
   'CUT IT INTO THE WATER': 'WATER',
   'THAW HIM': 'THAW',
   'UNCHAIN HIM': 'UNCHAIN',
+  'RELIEVE HER': 'RELIEVE',
   'LAUNCH THE PODS': 'LAUNCH',
   'TAKE ITS CORE TO THE NEW WORLD': 'LET IT REST',
 };
@@ -261,6 +272,7 @@ module.exports = {
     remedy: true,
     pod: true,
     stoker: true,
+    watch: true,
     segments: [...THROUGH_TOWER, deck],
     check: {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
@@ -272,6 +284,7 @@ module.exports = {
       "Wick's remedy cut into the water": (e) => e.lines.includes('AND DREAMED OF IT.'),
       'Pod 1130 thawed': (e) => e.people.pod1130 === 'thawed' && e.lines.includes('232 YEARS LATE, HE SAID, AND RIGHT ON TIME.'),
       'Rivet unchained, and home': (e) => e.people.rivet === 'freed' && e.lines.includes('HE SAID THE WIND WAS THE COOLEST THING HE EVER FELT.'),
+      'Watch 4 relieved, and home': (e) => e.people.watch === 'relieved' && e.lines.includes('SHE COUNTED EVERY ONE OF US OUT. THEN SHE STOPPED.'),
       'Shim carries the lantern': (e) => e.lines.includes("HE CARRIED HIS MOTHER'S LANTERN."),
     },
   },
@@ -288,8 +301,10 @@ module.exports = {
       'LEAVE HIM HIS FIRES': 'PUT THE FIRES OUT',
       'SPARE HER': 'WALK PAST',
       'SPARE HIM': "WARDENS' COUNT",
+      'RELIEVE HER': 'THE GATE',
     },
     leaveGasket: true,
+    watch: true,
     segments: [...THROUGH_TOWER, scuttle],
     check: {
       'Solder left behind, the gate fallen': (e) => e.people.solder === 'dead' && e.warrensRaid === 'fell',
@@ -299,6 +314,7 @@ module.exports = {
       'two cores taken': (e) => e.wardens.pruner === 'salvage' && e.wardens.tallyman === 'salvage' && e.lines.includes('COUNT: WARDENS, 1.'),
       "Pod 1130's alarm never answered": (e) => !e.people.pod1130 && e.lines.includes("POD 1130'S ALARM STOPPED WHILE I WAS CLIMBING."),
       'the new stoker never gone to see': (e) => !e.people.rivet && e.lines.includes('I NEVER WENT DOWN TO SEE WHO WAS FEEDING IT.'),
+      'Watch 4 left her gate, and held the Drain': (e) => e.people.watch === 'held' && e.lines.includes('SHE NEVER ASKED FOR RELIEF AGAIN.'),
     },
   },
   // Mercy far below -3: every Warden's core, the lie, Flux's pack, the Gardener dosed, the Steward ended, the Key kept.
@@ -334,6 +350,7 @@ module.exports = {
       "Wick's remedy taken by the hero": (e) => e.lines.includes("WICK'S REMEDY WENT INTO ME."),
       "Pod 1130's cell taken": (e) => e.people.pod1130 === 'cell' && e.lines.includes("POD 1130'S CELL KEPT ME ON MY FEET."),
       "Rivet left at the fires for the Steward's sack": (e) => e.people.rivet === 'left' && e.lines.includes('RIVET STILL FEEDS THE FIRES. I SEND HIM HIS DOSE.'),
+      "Watch 4's call heard, never answered": (e) => !e.people.watch && e.lines.includes("I'VE NEVER ANSWERED."),
     },
   },
   // Bloom 8 and more: the Thorn, Bloomfire, the Bloom on the hatch, and every bulb eaten. Mercy stays kind.
@@ -354,6 +371,7 @@ module.exports = {
       'the pod glass': (e) => e.lines.includes('ON 0418 FIRST.'),
       'Sorrel left counting': (e) => e.people.sorrel === 'stayed' && e.lines.includes('THEN THE COUNTING DID.'),
       'the new stoker never gone to see': (e) => !e.people.rivet && e.lines.includes('THE FURNACE WENT OUT WHEN THE PINK CAME UP THE SPINE.'),
+      "Watch 4's call heard, never answered": (e) => !e.people.watch && e.lines.includes("THE LAST VOICE ON THE SHIP'S SPEAKERS ASKED FOR RELIEF."),
     },
   },
   // The Purser's boat, taken in the Labyrinth, from the save the Homecoming run left as it went down the hatch.

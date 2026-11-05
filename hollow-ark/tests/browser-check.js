@@ -732,6 +732,10 @@ async function play(browserType, url, label) {
       HA.debug.step(80, { left: true });
       out.gate = { shut: w().def.id === 'long-aisle', ladder: w().links.some((l) => l.legend.to === 'watch-gallery') };
       at('watch-gallery', 4, 18);
+      // Coming into the watch room, someone up in the pipes counts the hero through (story/watch.js).
+      for (let i = 0; i < 30 && !w().scene; i++) HA.debug.step(1);
+      out.gate.counted = w().scene && w().scene.name;
+      talkThrough();
       HA.debug.step(1, { up: true });
       talkThrough();
       out.gate.flag = !!s.flags.aisleGate;
@@ -798,7 +802,7 @@ async function play(browserType, url, label) {
     expect(cl.tallyIntro === 'tallyIntro' && cl.fight.fighting && cl.fight.music === 'tallyman' && cl.fight.opened && cl.fight.struck === 40 && cl.fight.after === 'tallymanDefeated', `the Tallyman's fight went wrong (${JSON.stringify(cl.fight)})`);
     expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
     expect(cl.charges === 3 && cl.wall && cl.aisle === 'long-aisle', `the Breach Charges did not open the cracked wall (${cl.charges}, ${cl.wall}, ${cl.aisle})`);
-    expect(cl.gate.shut && cl.gate.ladder && cl.gate.flag && cl.gate.through === 'drain', `the aisle gate and its lever in the Watch Gallery went wrong (${JSON.stringify(cl.gate)})`);
+    expect(cl.gate.shut && cl.gate.ladder && cl.gate.counted === 'watchCount' && cl.gate.flag && cl.gate.through === 'drain', `the aisle gate and its lever in the Watch Gallery went wrong (${JSON.stringify(cl.gate)})`);
     expect(/BALLAST/.test(cl.toolbag) && cl.grate === 'ballast-intake', `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
     expect(/TRAVEL/.test(cl.podPrompt) && /warrens/.test(cl.travel) && cl.travelled === 'warrens' && cl.flux, `travel between pods, or Flux at home, went wrong (${JSON.stringify(cl)})`);
     expect(cl.boatLose.lose === 'EVERYONE ELSE, AND MARA' && /ENDS HERE/.test(cl.boatLose.note) && cl.ending.mode === 'title' && cl.ending.seen.includes('deserter'), `taking the boat did not play the Deserter ending to the title (${JSON.stringify(cl.ending)})`);
@@ -2373,6 +2377,134 @@ async function play(browserType, url, label) {
     expect(/SENSIBLE/.test(sk.took) && /GO ON, THEN/.test(sk.took) && !/TWO SHOVELS/.test(sk.took) && sk.after.rivet === 'left' && sk.after.mercy === -1 && sk.after.levelled && !sk.after.hostile && /LEFT RIVET CHAINED/.test(sk.after.choice) && /DON'T STOP ME/.test(sk.rivet), `taking the Steward's sack went wrong (${JSON.stringify(sk.after)}, ${sk.rivet}: ${sk.took})`);
     expect(/SOMEBODY ELSE WENT BACK TO UNCHAIN HIM/.test(sk.cards) && /SO WAS RIVET/.test(sk.cards) && /I SEND HIM HIS DOSE/.test(sk.cards) && /UNTIL THE PINK CAME UP THE SPINE/.test(sk.cards) && sk.count === 0, `the endings with Rivet left at the fires went wrong (${sk.count}: ${sk.cards})`);
     expect(/^never /.test(sk.never) && /WHO WAS FEEDING IT/.test(sk.never) && /NEVER ASKED WHO FEEDS THE FIRES/.test(sk.never) && sk.unheard, `the new stoker never gone to see went wrong (${sk.unheard}: ${sk.never})`);
+
+    // ---- The last watchman (3.15): counted through on the way to the Drain; her call on the Warrens' speakers once
+    // home's news is told; back in the Watch Gallery, relieving her (she opens her own gate and goes home, and is
+    // counted); then, from another save, leaving her the gate, and her time on the run for the sleds; and the cards. ----
+    await towerSave({ room: 'watch-gallery', x: 27 * 8, y: 19 * 8 - 14, flags: settled });
+    await startSaved();
+    const wt = await get(() => {
+      const { w, listen, talkThrough, choose, options } = window.tw;
+      const out = {};
+      const s = w().state;
+      w().assist.invincible = true;
+      for (let i = 0; i < 60 && !w().scene; i++) HA.debug.step(1);
+      out.count = { scene: w().scene && w().scene.name, said: listen().join(' | '), flag: !!s.flags.watchCount, seen: w().npcs.some((n) => n.id === 'watch') };
+      talkThrough();
+      // Home: once it's quiet, the old speakers.
+      HA.debug.goto('warrens', 60, 18);
+      for (let i = 0; i < 400 && !(w().scene && w().scene.name === 'watchCall'); i++) {
+        if (w().scene) talkThrough();
+        HA.debug.step(1);
+      }
+      out.call = { scene: w().scene && w().scene.name, said: listen().join(' | ') };
+      HA.debug.step(3);
+      Object.assign(out.call, { flag: !!s.flags.watchCall, toast: w().toastText, lead: s.lead });
+      talkThrough();
+      // The Watch Gallery again: she's down out of the pipes, in the watch room.
+      HA.debug.goto('watch-gallery', 27, 18);
+      HA.debug.step(10);
+      const n = w().npcs.find((x) => x.id === 'watch');
+      out.post = n && { x: Math.round(n.x / 8), feet: n.y + n.h, rifle: n.rifle, scene: w().scene && w().scene.name };
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { left: true });
+      out.scene = w().scene && w().scene.name;
+      out.offer = listen().join(' | ');
+      out.choice = options();
+      out.confirms = w().scene.step.choice.options.map((o) => o.confirm.title + ' ' + o.confirm.gain + ' / ' + o.confirm.lose).join(' || ');
+      out.prompt = HA.font.measure(w().scene.step.choice.prompt) + 16 <= HA.VIEW_W - 8;
+      const m = s.mercy;
+      choose(0);
+      out.relieved = listen().join(' | ');
+      talkThrough();
+      HA.debug.step(10);
+      out.after = { fate: s.people.watch, mercy: s.mercy - m, gate: !!s.flags.aisleGate, rifle: !!w().watchRifle, gone: w().npcs.filter((x) => x.id === 'watch').every((x) => x.state === 'gone'), choice: s.journal.choices[s.journal.choices.length - 1] };
+      HA.debug.goto('watch-gallery', 27, 18);
+      HA.debug.step(10);
+      out.empty = !w().npcs.some((x) => x.id === 'watch') && !!w().watchRifle && !w().scene;
+      // Home: up on the platform over the gate.
+      HA.debug.goto('warrens', 92, 18);
+      HA.debug.step(10);
+      const e = w().npcs.find((x) => x.id === 'watch');
+      out.home = e && { name: e.name, x: Math.round(e.x / 8), feet: e.y + e.h, talk: e.talkable(w(), e), lines: e.lines.join(' ') };
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.most = HA.endings.resultCard(s, 'homecoming').map((r) => (r && r.a === 'HULLFOLK' ? r.b : '')).join('');
+      out.counted = HA.endings.landed(s, 'homecoming').hullfolk;
+      s.people.watch = null;
+      out.counted -= HA.endings.landed(s, 'homecoming').hullfolk;
+      s.people.watch = 'relieved';
+      // At the sleds, she's counted the village on.
+      HA.story.SCENES.watchSledsCheck = function* (wd) {
+        yield* HA.story.watchSleds(wd);
+      };
+      HA.story.run(w(), 'watchSledsCheck');
+      out.sleds = listen().join(' | ');
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(wt.count.scene === 'watchCount' && /FOUR HUNDRED AND TWELVE/.test(wt.count.said) && /UP IN THE PIPES/.test(wt.count.said) && wt.count.flag && !wt.count.seen, `Watch 4 counting the hero through went wrong (${JSON.stringify(wt.count)})`);
+    expect(wt.call.scene === 'watchCall' && /WATCH 4 TO THE TALLY YARD/.test(wt.call.said) && /REQUEST RELIEF/.test(wt.call.said) && /SHE COUNTED ME THROUGH/.test(wt.call.said) && /NOBODY LEFT TO ANSWER HER/.test(wt.call.said) && wt.call.flag && wt.call.toast === 'THE WATCH GALLERY · WEST, IN THE LABYRINTH' && !/WATCH/.test(wt.call.lead), `Watch 4's call on the Warrens' speakers went wrong (${JSON.stringify(wt.call)})`);
+    expect(wt.post && wt.post.x === 14 && wt.post.feet === 152 && wt.post.rifle === 'down' && !wt.post.scene && wt.scene === 'watchFound', `Watch 4 was not at her post in the watch room (${JSON.stringify(wt.post)}, ${wt.scene})`);
+    expect(/STEWARD'S MARK/.test(wt.offer) && /FOUR HUNDRED AND ELEVEN/.test(wt.offer) && /SOLDER\./.test(wt.offer) && /RECEIVED, WATCH 4\. HOLD/.test(wt.offer) && /NOBODY WAS EVER COMING/.test(wt.offer) && wt.choice === 'RELIEVE HER/LEAVE HER THE GATE' && /TELL HER NOBODY IS COMING\?/.test(wt.confirms) && /ON YOUR ORDERS/.test(wt.confirms) && wt.prompt, `Watch 4's story or choice went wrong (${wt.choice}, ${wt.confirms}, fits ${wt.prompt}: ${wt.offer})`);
+    expect(/STAND DOWN/.test(wt.relieved) && /EDDA VOSS/.test(wt.relieved) && /GRINDS OPEN/.test(wt.relieved) && /THROUGH HER OWN GATE/.test(wt.relieved) && wt.after.fate === 'relieved' && wt.after.mercy === 1 && wt.after.gate && wt.after.rifle && wt.after.gone && /RELIEVED HER MYSELF/.test(wt.after.choice) && wt.empty, `relieving Watch 4 went wrong (${JSON.stringify(wt.after)}, ${wt.empty}: ${wt.relieved})`);
+    expect(wt.home && wt.home.name === 'EDDA' && wt.home.x === 96 && wt.home.feet === 128 && wt.home.talk && /I WATCH THE GATE/.test(wt.home.lines), `Edda at home went wrong (${JSON.stringify(wt.home)})`);
+    expect(/COUNTED EVERY ONE OF US OUT/.test(wt.cards) && /NEVER STOOD A WATCH AGAIN/.test(wt.cards) && /I'VE ASKED/.test(wt.cards) && /A FEW WARM DAYS/.test(wt.cards) && wt.counted === 1 && / OF 35$/.test(wt.most), `the endings with Watch 4 relieved went wrong (${wt.counted}, ${wt.most}: ${wt.cards})`);
+    expect(/EDDA COUNTED THE VILLAGE ON/.test(wt.sleds) && /AND ONE MORE/.test(wt.sleds), `Edda at the sleds went wrong (${wt.sleds})`);
+    // Another save: her call heard, and the gate left to her, with orders. Then the run for the sleds.
+    await towerSave({ room: 'watch-gallery', x: 27 * 8, y: 19 * 8 - 14, flags: Object.assign({ watchCount: true, watchCall: true, aisleGate: true }, settled) });
+    await startSaved();
+    const wh = await get(() => {
+      const { w, listen, talkThrough, choose } = window.tw;
+      const out = {};
+      const s = w().state;
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { left: true });
+      listen();
+      const m = s.mercy;
+      choose(1);
+      out.held = listen().join(' | ');
+      talkThrough();
+      HA.debug.step(10);
+      const n = w().npcs.find((x) => x.id === 'watch');
+      out.after = { fate: s.people.watch, mercy: s.mercy - m, out: n && n.state, talk: n && n.talkable(w(), n), lines: n && n.lines.join(' '), gate: !!s.flags.aisleGate, rifle: !!w().watchRifle, choice: s.journal.choices[s.journal.choices.length - 1] };
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.counted = HA.endings.landed(s, 'homecoming').hullfolk;
+      // The run for the sleds: she shuts the gate on the Ballast, and the keel holds longer.
+      Object.assign(s.flags, { towerUp: true, stewardDown: true, key: 'broken' });
+      HA.story.SCENES.watchRunCheck = function* (wd) {
+        yield* HA.story.scuttleRun(wd);
+      };
+      HA.story.run(w(), 'watchRunCheck');
+      out.run = listen().join(' | ');
+      out.left = Math.round(w().runLeft / 60);
+      out.flash = w().watchFlash > 0;
+      w().runLeft = 2;
+      HA.debug.step(4);
+      talkThrough();
+      out.retry = Math.round(w().runLeft / 60);
+      HA.story.SCENES.watchSledsCheck = function* (wd) {
+        yield* HA.story.watchSleds(wd);
+      };
+      HA.story.run(w(), 'watchSledsCheck');
+      out.sleds = listen().join(' | ');
+      // Never gone back: her call heard, never settled. Never heard at all: nothing.
+      s.people.watch = null;
+      out.counted -= HA.endings.landed(s, 'homecoming').hullfolk;
+      out.never = HA.story.watchFate(s) + ' ' + ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      HA.story.SCENES.watchNeverCheck = function* (wd) {
+        yield* HA.story.watchRun(wd, 'OLD GASKET');
+      };
+      HA.story.run(w(), 'watchNeverCheck');
+      out.neverRun = listen().join(' | ');
+      s.flags.watchCall = false;
+      out.unheard = HA.story.watchFate(s) === null && !/WATCH 4|EDDA/.test(['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' '));
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(/THIRTY YEARS, AND AN ORDER/.test(wh.held) && /COUNTED BACK/.test(wh.held) && wh.after.fate === 'held' && wh.after.mercy === 0 && wh.after.out === 'out' && wh.after.talk && /WATCH 4 HOLDS/.test(wh.after.lines) && wh.after.gate && !wh.after.rifle && /WITH AN ORDER/.test(wh.after.choice), `leaving Watch 4 the gate went wrong (${JSON.stringify(wh.after)}: ${wh.held})`);
+    expect(/ASKED WHO WAS RELIEVING HER/.test(wh.cards) && /HELD THE DRAIN SHUT/.test(wh.cards) && /RECEIVED, WATCH 4\. HOLD/.test(wh.cards) && /HELD THE GATE ANYWAY/.test(wh.cards) && wh.counted === 0, `the endings with Watch 4 left at her gate went wrong (${wh.counted}: ${wh.cards})`);
+    expect(/THE BALLAST IS COMING UP THE DRAIN/.test(wh.run) && /THAT'S TIME/.test(wh.run) && wh.left === 175 && wh.flash && wh.retry === 175 && /SHE HAD ORDERS/.test(wh.sleds), `Watch 4 on the run for the sleds went wrong (clock ${wh.left}, again ${wh.retry}, flash ${wh.flash}, ${wh.sleds}: ${wh.run})`);
+    expect(/^never /.test(wh.never) && /STILL ASKING FOR WATCH 4'S RELIEF/.test(wh.never) && /I'VE NEVER ANSWERED/.test(wh.never) && /ASKED FOR RELIEF/.test(wh.never) && /REQUEST RELIEF/.test(wh.neverRun) && /STILL ASKING/.test(wh.neverRun) && wh.unheard, `Watch 4 never gone back to went wrong (${wh.unheard}, ${wh.neverRun}: ${wh.never})`);
 
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };

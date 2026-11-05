@@ -753,9 +753,13 @@
       L: { type: 'log', scene: 'aisleGate', name: 'the gate lever' },
       T: { type: 'log', id: 'watch' },
     },
+    // Someone up in the pipes counts the hero through, on the way down to the Drain (story/watch.js).
+    triggers: [{ x0: 2, x1: 27, when: (s) => !s.flags.watchCount && !s.flags.watchCall, run: 'watchCount' }],
     scenery: [
       { kind: 'pipes', y: 4 },
       { kind: 'stencil', x: 4, y: 13, text: 'WATCH 4' },
+      // Watch 4's count, in fives, across the back of the watch room
+      { kind: 'tallymarks', x: 11, y: 12, n: 30, per: 8 },
       { kind: 'stencil', x: 62, y: 9, text: 'AISLE ↓' },
       { kind: 'scrawl', x: 6, y: 16, text: 'COUNT THE REST' },
       { kind: 'lever', x: 4, y: 18, flag: 'aisleGate' },
