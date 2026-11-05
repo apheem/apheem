@@ -918,7 +918,8 @@ function runPar(ids) {
   return { tiles: Math.round(tiles), seconds: Math.round((tiles / speed) * 1.25) };
 }
 function checkRun() {
-  const { clock, launch } = HA.RUN;
+  // The tightest clock is the plain one; the loosest has Watch 4's time in it (story/watch.js).
+  const { clock, launch, watch = 0 } = HA.RUN;
   const par = {};
   for (const [name, ids] of Object.entries(RUN_ROUTES)) {
     par[name] = runPar(ids);
@@ -929,8 +930,9 @@ function checkRun() {
   const usual = par.usual.seconds;
   const left = clock - launch;
   if (left < 1.5 * longest) fail({ id: 'the run for the sleds' }, `the clock (${clock}s, ${left}s after the pods) leaves less than half again the par of its longest way (${longest}s)`);
-  if (left > 2.5 * usual) fail({ id: 'the run for the sleds' }, `the clock (${clock}s, ${left}s after the pods) is more than two and a half times the par of the usual way (${usual}s), so it never bites`);
-  notes.push(`the run for the sleds: clock ${clock}s (${left}s after the pods); par ${Object.entries(par).map(([n, p]) => `${n} ${p.seconds}s (${p.tiles} tiles)`).join(', ')}`);
+  const loosest = left + watch;
+  if (loosest > 2.5 * usual) fail({ id: 'the run for the sleds' }, `the clock (${clock}s, ${loosest}s after the pods with Watch 4's ${watch}s) is more than two and a half times the par of the usual way (${usual}s), so it never bites`);
+  notes.push(`the run for the sleds: clock ${clock}s (${left}s after the pods, ${loosest}s with Watch 4 holding the Drain); par ${Object.entries(par).map(([n, p]) => `${n} ${p.seconds}s (${p.tiles} tiles)`).join(', ')}`);
 }
 
 // Other scripts (and debugging) can use the checker's parts without running it.

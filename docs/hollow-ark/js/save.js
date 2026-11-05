@@ -53,7 +53,9 @@
       //   gardener 'spared' | 'dosed' | 'passed' · steward 'spared' | 'ended' | 'counted'
       //   navigator (choice 14) 'core' | 'rest' | 'stay' · gasket 'dead' once lost in the Tower (story/gasket.js)
       //   cotter 'dry' | 'dosed' (Hasp's boy, story/cotter.js) · pod1130 'thawed' | 'cell' (story/pod1130.js)
-      people: { wick: null, solder: null, flux: null, abel: null, gardener: null, steward: null, navigator: null, gasket: null, cotter: null, pod1130: null },
+      //   · rivet 'unchain' | 'freed' | 'left' (the new stoker, story/stoker.js)
+      //   · watch 'relieved' | 'held' (the last watchman, Watch 4, story/watch.js)
+      people: { wick: null, solder: null, flux: null, abel: null, gardener: null, steward: null, navigator: null, gasket: null, cotter: null, pod1130: null, rivet: null, watch: null },
       takenHome: 0, // how many of the taken came home from the Gardens (11 or 7)
       crew: 0, // how many Hullfolk climb with the hero (set at the Crew Camp)
       toldShim: null, // choice 4: 'truth' (everything), 'notScared' (only that she wasn't scared) or 'lie'

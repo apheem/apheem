@@ -257,7 +257,7 @@
     const fx = Math.round(MOUTH - cam.x);
     const top = Math.round(16 - cam.y);
     const fl = Math.round(FLOOR - cam.y);
-    const lit = b.fate !== 'ended';
+    const lit = b.fate !== 'ended' || !!b.relit; // put out, and lit again for the new stoker (story/stoker.js)
     const t = world.time;
     // the pits under the grates: fire below the floor, seen through the bars, and open to it when they swing wide
     for (const gr of b.grates) {
@@ -378,6 +378,7 @@
   // come through the mouth with the Bloom's pink in his eyes; beaten, he slumps against the grate.
   function drawAbel(g, world, b, cam, fx, my, fl, lit) {
     if (b.fate === 'ended') {
+      if (b.moved) return; // the Fireman's people laid him on his bunk (story/stoker.js)
       // sat down in the dark at the back of the furnace
       g.fillStyle = '#0a0808';
       g.fillRect(fx + 14, fl - 22, 18, 22);

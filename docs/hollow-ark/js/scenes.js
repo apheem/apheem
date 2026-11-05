@@ -365,7 +365,7 @@
 
   function drawChoice(world, g, step) {
     const c = step.choice;
-    const pw = 236;
+    const pw = Math.min(W - 8, Math.max(236, HA.font.measure(c.prompt) + 16)); // wide enough for its prompt
     const ph = 22 + c.options.length * 12;
     const px = W / 2 - pw / 2;
     const py = 124 - (c.options.length - 2) * 6;

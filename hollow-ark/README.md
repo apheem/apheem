@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.19-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.21-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.19-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.21-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,19 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.21: the last watchman
+
+- **The last watchman, a side quest.** On the way down to the Drain, someone up in the pipes over the Watch Gallery's watch room counts you through: "FOUR HUNDRED AND TWELVE." Home from the Ballast, the Warrens' old speakers carry a voice nobody has heard on them: Watch 4, calling a Tally Yard that no longer answers, asking for relief. Go back west through the Labyrinth to the Watch Gallery.
+- **The choice.** She's a colonist the Steward's people thawed for the watch thirty years ago, and never came back for: no dose, no relief. Relieve her (Mercy +1): she gives you her name, opens the gate she kept shut, and goes home to the Warrens, where she watches the gate from the platform over it, and she's counted with the Hullfolk who reach the new world, who can now be 35. Or leave her the gate, with an order to shut it if the Ballast ever comes up the Drain (Mercy 0): on the run for the sleds it does, she holds it, and the clock gets 15 more seconds. Either way, or if you never go back, it's in every ending's epilogue.
+- **The run's clock says what changed.** What it gains or loses (the pods' -0:30, Watch 4's +0:15) now shows under the way to the sleds, not beside the clock, where it ran into the weapons.
+
+## 0.3.20: the new stoker
+
+- **The new stoker, a side quest.** The Tower likes to be warm. While the crew sleep at the Crew Camp, the Steward's Fireman chains a man from the walls at Abel's furnace: beside Abel, if you spared him, or in his place. In the morning you hear it below: a second shovel, and a chain on the grating. Go down the camp's hatch to the Reactor Throat.
+- **The choice.** The Fireman offers the Steward's compliments, a sack of shards, to walk on by. Take the sack (Mercy −1): the shards are yours, and Rivet keeps shovelling. Or tell him to let Rivet go, and fight him for it (Mercy +1 once he's unchained): Rivet goes home to the Warrens and sits by the gate, and he's counted with the Hullfolk who reach the new world, who can now be 34. Either way, or if you never go down, it's in every ending's epilogue.
+- **The Fireman, the second optional fight.** A big Bloomsworn foreman with an iron rake, too heavy for the catwalks. He rakes the floor in front of him, flings burning coals from the furnace, and hauls the draught chain so fire roars up out of the grates. At half health he gets hotter: five coals, and every grate at once. A fall puts you back on the ledge by the ladder, and him back at his post.
+- **Choice prompts fit their box.** A long prompt (Cotter's, the Pod Stacks') no longer runs past the edges of the choice panel.
 
 ## 0.3.19: Pod 1130
 

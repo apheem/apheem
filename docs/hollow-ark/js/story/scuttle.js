@@ -15,6 +15,9 @@
 
   const CLOCK = 60 * HA.RUN.clock; // the run, from the sump to the sleds (core.js)
   const LAUNCH = 60 * HA.RUN.launch; // what the pod launch costs on the clock
+  // Watch 4, left at her gate with orders (story/watch.js), holds the Drain shut on the Ballast: the keel stays dry
+  // for longer. She says so as the clock starts; a run started again has her time in it from the start.
+  const clockOf = (s) => CLOCK + (S.watchHolds && S.watchHolds(s) ? 60 * HA.RUN.watch : 0);
   // (The deep walls are on it if the gate fell: the cave-in shuts the Warrens' way west, lock 2 in STORYBOARD.md.)
   const ROUTE = ['sump', 'warrens', 'deep-walls', 'warrens-gate', 'coolant-hall', 'pod-stacks', 'thaw-corridor', 'cryo-bay'];
   // Which way the sleds are from each room of the run, shown under the clock.
@@ -38,7 +41,7 @@
     s.flags.scuttle = true;
     world.runLeft = CLOCK;
     world.alarm = 1;
-    world.checkpoint = { room: START.room, x: START.x, y: START.ty * 8 - world.player.h, reset: (w) => (w.runLeft = CLOCK) };
+    world.checkpoint = { room: START.room, x: START.x, y: START.ty * 8 - world.player.h, reset: (w) => (w.runLeft = clockOf(w.state)) };
     world.refreshMusic();
   }
 
@@ -121,6 +124,7 @@
       world.checkpoint = null;
       if (S.gasketAlive(s)) yield say('TAMP', "THERE YOU ARE! THE VILLAGE IS IN. GASKET'S CREW CAME UP THE COLD LIFT. ALL OF THEM.");
       else yield say('TAMP', 'THERE YOU ARE! THE VILLAGE IS IN. THE CREW CAME UP THE COLD LIFT. THEY TOLD ME ABOUT GASKET.');
+      if (S.watchSleds) yield* S.watchSleds(world);
       yield say('TAMP', 'ALL BUT YOU. IN! GET IN!');
       yield { walk: p, x: 1 * 8, speed: 1.4 };
       p.hidden = true;
@@ -134,7 +138,7 @@
   function restart(world) {
     S.setLead(world, LEAD);
     world.enterRoom(START.room, START.x, START.ty * 8 - world.player.h, { noSave: true, facing: -1 });
-    world.runLeft = CLOCK;
+    world.runLeft = clockOf(world.state);
     world.player.hp = world.player.maxHp;
   }
 
@@ -168,6 +172,7 @@
     yield say(who, "TAMP'S TAKEN THE VILLAGE UP TO THE SLEDS. THE CREW'S GOING ROUND BY THE COLD LIFT.");
     yield say(who, "YOU'RE FASTER THROUGH THE WARRENS ALONE. BACK UP TO WHERE YOU WOKE. GO! WE'LL SEE YOU AT THE SLEDS!");
     if (s.warrensRaid === 'fell') yield say(who, "THE HALL'S STILL DOWN AT THE WEST END. GO ROUND THROUGH THE WALLS: THE HOLE BY THE HOMES!");
+    if (S.watchRun) yield* S.watchRun(world, who); // Watch 4, on the sump's speakers (story/watch.js)
     yield { walk: g, x: 70 * 8, speed: 1.2 };
     g.state = 'gone';
     S.addStory(world, "THE SHIP IS COMING APART, AND NOBODY CAN TAKE IT DOWN TO THE NEW WORLD NOW. THE WAY OFF IS THE OLD CREW'S LANDING SLEDS IN CRYO BAY 4, WHERE I WOKE, AT THE BOTTOM OF THE SHIP. I HAVE TO GET THERE BEFORE IT COMES APART.");
@@ -319,9 +324,20 @@
     g.fillStyle = 'rgba(5,6,13,0.75)';
     g.fillRect(Math.round((HA.VIEW_W - ww) / 2), 16, ww, 11);
     HA.font.draw(g, where, Math.round((HA.VIEW_W - ww) / 2) + 4, 18, '#9fb6c8');
+    // What the clock just lost or gained, under the way to the sleds (beside the clock it ran into the weapons).
+    const flash = (text, color) => {
+      const fw = HA.font.measure(text) + 8;
+      const fx = Math.round((HA.VIEW_W - fw) / 2);
+      g.fillStyle = 'rgba(5,6,13,0.75)';
+      g.fillRect(fx, 27, fw, 11);
+      HA.font.draw(g, text, fx + 4, 29, color);
+    };
     if (world.launchFlash > 0) {
       world.launchFlash--;
-      HA.font.draw(g, '-0:' + LAUNCH / 60, x + w + 4, 6, '#ff8a8a');
+      flash('-0:' + LAUNCH / 60, '#ff8a8a');
+    } else if (world.watchFlash > 0) {
+      world.watchFlash--;
+      flash('+0:' + HA.RUN.watch + ' · WATCH 4 HOLDS THE DRAIN', '#7ad1a0');
     }
   }
   S.overlays.push(drawClock);
