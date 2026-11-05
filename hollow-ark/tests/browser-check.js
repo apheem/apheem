@@ -1283,6 +1283,8 @@ async function play(browserType, url, label) {
       choose(0);
       HA.debug.step(60);
       out.abel = { fate: s.people.abel, mercy: s.mercy - mercy, open: w().doors.find((d) => d.id === 'throatShutter').open, floor: w().room.tile(b.grates[0].x0, 19) === HA.room.SOLID };
+      // The ship's page for Pod 1130 follows choice 10 (story/pod1130.js).
+      out.paged = !!s.flags.pod1130Alarm && s.journal.story.some((l) => /POD 1130/.test(l));
       // Up behind the shutter to the camp: the climbers come up the third lift.
       p.x = 3 * 8 - 4;
       p.y = 7 * 8 + 8 - p.h;
@@ -1367,7 +1369,7 @@ async function play(browserType, url, label) {
     expect(sp.throat.room === 'reactor-throat' && sp.throat.fighting && sp.throat.music === 'abel' && !sp.throat.shut, `Abel's fight did not start with the shutter shut (${JSON.stringify(sp.throat)})`);
     expect(/throw/.test(sp.states) && /blow/.test(sp.states) && sp.fire && sp.barred && sp.phase === 2 && sp.grates && sp.burnt, `Abel's moves went wrong (${JSON.stringify(sp)})`);
     expect(/CUT INTO THE LAST BUNK/.test(sp.abelSaid), `Abel's name did not bring back his count on the last bunk (${sp.abelSaid})`);
-    expect(sp.defeated === 'abelDefeated' && sp.ten === 'LEAVE HIM HIS FIRES/PUT THE FIRES OUT OF HIM' && sp.abel.fate === 'spared' && sp.abel.mercy === 1 && sp.abel.open && sp.abel.floor, `choice 10 went wrong (${sp.defeated}, ${sp.ten}, ${JSON.stringify(sp.abel)})`);
+    expect(sp.defeated === 'abelDefeated' && sp.ten === 'LEAVE HIM HIS FIRES/PUT THE FIRES OUT OF HIM' && sp.abel.fate === 'spared' && sp.abel.mercy === 1 && sp.abel.open && sp.abel.floor && sp.paged, `choice 10, or the page for Pod 1130 after it, went wrong (${sp.defeated}, ${sp.ten}, ${JSON.stringify(sp.abel)}, ${sp.paged})`);
     expect(sp.camp.room === 'crew-camp' && sp.camp.crew === 8 && sp.camp.lifts === 3 && sp.camp.people === 8 && sp.camp.music === 'camp', `the climbers did not reach the camp (${JSON.stringify(sp.camp)})`);
     expect(sp.sky.said === sp.sky.trust >= 3 && sp.sky.trust >= 3, `Gasket's sky at the camp went wrong (${JSON.stringify(sp.sky)})`);
     expect(sp.stitch === 'stitch' && /REST FIRST/.test(sp.notYet) && sp.night === 'lightsOut' && sp.call === 'STAY/TAKE THE BOAT' && sp.shim, `the camp's night went wrong (${JSON.stringify(sp)})`);
@@ -2114,6 +2116,99 @@ async function play(browserType, url, label) {
       return { gain, said, bloom: s.bloom, remedy: s.flags.remedy };
     });
     expect(r8.gain === 'NOTHING. THE BLOOM HAS YOU' && /DRINKS IT DOWN LIKE WATER/.test(r8.said) && r8.bloom === 8 && r8.remedy === 'hero', `Wick's remedy at Bloom 8 went wrong (${JSON.stringify(r8)})`);
+
+    // ---- Pod 1130 (3.15): the ship's page, here on the way up to the camp after a game quit before it was heard;
+    // the pod on the Pod Stacks' ledge, thawed (Hugo Marsh goes down to the Warrens, Mercy +1); then, from another
+    // save, its cell taken (max health +4, Mercy -1); and never answered before the Tower. ----
+    await towerSave({ room: 'piston-run', x: 8 * 8, y: 9 * 8 - 14, flags: Object.assign({}, settled, { camp: false, lightsOut: false, campDone: false, verdict: false }) });
+    await startSaved();
+    const pt = await get(() => {
+      const { w, listen, talkThrough, choose, press, options } = window.tw;
+      const out = {};
+      const s = w().state;
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      // (The Piston Run has its own scene first, if the plate's bolt hasn't been drawn.)
+      for (let i = 0; i < 4000 && !(w().scene && w().scene.name === 'pod1130Alarm'); i++) {
+        if (w().scene) HA.debug.skipScene();
+        HA.debug.step(1);
+      }
+      out.page = w().scene && w().scene.name;
+      out.paged = listen().join(' | ');
+      talkThrough();
+      out.heard = !!s.flags.pod1130Alarm && s.journal.story.some((l) => /POD 1130 WENT ONTO ITS RESERVE CELL/.test(l));
+      HA.debug.goto('pod-stacks', 3, 18);
+      HA.debug.step(30);
+      out.noted = w().barks.some((b) => /BLINKING RED: POD 1130/.test(b.text));
+      HA.debug.goto('pod-stacks', 8, 18);
+      HA.debug.step(5);
+      out.near = w().near && w().near.o.id + ':' + w().near.label;
+      press('up');
+      out.read = listen().join(' | ');
+      out.choice = options();
+      out.gain = w().scene.step.choice.options[0].confirm.gain;
+      const m = s.mercy;
+      choose(0);
+      out.thaw = listen().join(' | ');
+      talkThrough();
+      const hugo = HA.story.npcOf(w(), 'hugo');
+      out.after = { fate: s.people.pod1130, mercy: s.mercy - m, hugo: hugo && hugo.state, log: w().logs.some((l) => l.id === 'pod1130'), story: s.journal.story.some((l) => /THE OTHER SLEEPER/.test(l)) };
+      HA.debug.goto('warrens', 50, 18);
+      HA.debug.step(10);
+      talkThrough();
+      const h = HA.story.npcOf(w(), 'hugo');
+      out.home = h && { state: h.state, kneel: !!h.kneel, x: Math.round(h.x / 8), said: h.lines.join(' | ') };
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.landed = { home: HA.endings.landed(s, 'homecoming').sleepers, crash: HA.endings.landed(s, 'crash').sleepers, survivors: HA.endings.lines('crash', s).find((l) => /^COUNT: SURVIVORS/.test(l)) };
+      out.crashHullfolk = HA.endings.landed(s, 'crash').hullfolk;
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(pt.page === 'pod1130Alarm' && /ATTENDANT TO THE STACKS/.test(pt.paged) && /CREW'S LIFTS/.test(pt.paged) && /THE WAY I WAS/.test(pt.paged) && pt.heard, `the ship's page for Pod 1130 went wrong (${pt.page}: ${pt.paged})`);
+    expect(pt.noted && pt.near === 'pod1130:{up} POD 1130' && /AUTHORITY: ANY/.test(pt.read) && /IN 0417/.test(pt.read) && pt.choice === 'THAW HIM/TAKE THE CELL' && pt.gain === 'HUGO MARSH, AWAKE · 232 YEARS LATE', `Pod 1130 on the ledge went wrong (${JSON.stringify(pt)})`);
+    expect(/IS THIS THE NEW WORLD/.test(pt.thaw) && /THEY TOOK ME IN/.test(pt.thaw) && /AT THE BOTTOM, HE WAVED/.test(pt.thaw) && pt.after.fate === 'thawed' && pt.after.mercy === 1 && pt.after.hugo === 'gone' && !pt.after.log && pt.after.story, `thawing Pod 1130 went wrong (${JSON.stringify(pt.after)}: ${pt.thaw})`);
+    expect(pt.home && pt.home.state === 'out' && pt.home.kneel && pt.home.x === 45 && /THE OTHER SLEEPER/.test(pt.home.said), `Hugo Marsh in the Warrens went wrong (${JSON.stringify(pt.home)})`);
+    expect(/RIGHT ON TIME/.test(pt.cards) && /RODE THE SLEDS DOWN WITH THE HULLFOLK/.test(pt.cards) && /GROWS BEANS UNDER THE WARRENS' LAMPS/.test(pt.cards) && /IN TIME FOR THE PINK/.test(pt.cards), `the endings with Hugo Marsh thawed went wrong (${pt.cards})`);
+    expect(pt.landed.home === 3986 && pt.landed.crash === 1 && pt.landed.survivors === 'COUNT: SURVIVORS, ' + (pt.crashHullfolk + 2) + '.', `Hugo Marsh is not counted where he landed (${JSON.stringify(pt.landed)})`);
+    // From the ledge, the other way: the cell, for the suit.
+    await towerSave({ room: 'pod-stacks', x: 8 * 8, y: 19 * 8 - 14, flags: Object.assign({ pod1130Alarm: true }, settled) });
+    await startSaved();
+    const pc = await get(() => {
+      const { w, listen, talkThrough, choose, press } = window.tw;
+      const out = {};
+      const s = w().state;
+      const p = w().player;
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      talkThrough();
+      HA.debug.goto('pod-stacks', 8, 18);
+      HA.debug.step(5);
+      press('up');
+      listen();
+      const max = p.maxHp;
+      const m = s.mercy;
+      choose(1);
+      out.took = listen().join(' | ');
+      talkThrough();
+      HA.debug.step(2);
+      out.after = { fate: s.people.pod1130, mercy: s.mercy - m, max: p.maxHp - max, full: p.hp === p.maxHp, toast: w().toastText, log: w().logs.some((l) => l.id === 'pod1130') };
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.sleepers = HA.endings.landed(s, 'homecoming').sleepers;
+      // Never answered: heard, and the hero rode the Tower Lift first.
+      s.people.pod1130 = null;
+      s.flags.tower = true;
+      out.failed = HA.story.pod1130Fate(s);
+      out.failedCards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.failedSleepers = HA.endings.landed(s, 'homecoming').sleepers;
+      // Never heard at all (a save from before it): nothing in the endings.
+      s.flags.pod1130Alarm = false;
+      out.unheard = HA.story.pod1130Fate(s) === null && !/POD 1130/.test(['homecoming', 'crash'].map((id) => HA.endings.lines(id, s).join(' ')).join(' '));
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(/FROM RED TO NOTHING/.test(pc.took) && pc.after.fate === 'cell' && pc.after.mercy === -1 && pc.after.max === 4 && pc.after.full && pc.after.toast === 'SUIT CELL · MAX HEALTH +4' && !pc.after.log, `taking Pod 1130's cell went wrong (${JSON.stringify(pc.after)}: ${pc.took})`);
+    expect(/STAYED DARK WHEN THE OTHERS OPENED/.test(pc.cards) && /ITS CELL CAME DOWN WITH ME/.test(pc.cards) && /IT WAS NEVER MINE TO TAKE/.test(pc.cards) && /A LITTLE LONGER/.test(pc.cards) && pc.sleepers === 3985, `the endings with Pod 1130's cell taken went wrong (${pc.sleepers}: ${pc.cards})`);
+    expect(pc.failed === 'failed' && /STOPPED WHILE I WAS CLIMBING/.test(pc.failedCards) && /I WAS BUSY WITH THE KEY/.test(pc.failedCards) && pc.failedSleepers === 3985 && pc.unheard, `Pod 1130 never answered went wrong (${pc.failed}, ${pc.failedSleepers}, ${pc.unheard}: ${pc.failedCards})`);
 
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };

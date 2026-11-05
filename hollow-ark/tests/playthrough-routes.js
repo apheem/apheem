@@ -147,6 +147,14 @@ const spine = {
     if (r.route.remedy) await r.do('PT.read("remedyAsh")'); // the last of Wick's three things, by the furnace mouth
     await r.to('crew-camp'); // the night, and the Purser's last call
     if (r.route.remedy) await r.do('PT.read("bench")'); // Solder binds Wick's remedy; then the choice
+    // Pod 1130's alarm started after choice 10: back down by the pods to the Pod Stacks, and up again.
+    if (r.route.pod) {
+      await r.do('PT.travel("thaw-corridor")');
+      await r.to('pod-stacks');
+      await r.do('PT.read("pod1130")');
+      await r.to('thaw-corridor');
+      await r.do('PT.travel("crew-camp")');
+    }
     await r.to('tower-lift'); // the crew's verdict
   },
 };
@@ -228,6 +236,7 @@ const TRUE = {
   'BRING HER HOME': 'BRING HER HOME',
   'WALK HIM HOME DRY': 'DRY',
   'CUT IT INTO THE WATER': 'WATER',
+  'THAW HIM': 'THAW',
   'LAUNCH THE PODS': 'LAUNCH',
   'TAKE ITS CORE TO THE NEW WORLD': 'LET IT REST',
 };
@@ -240,6 +249,7 @@ module.exports = {
     policy: TRUE,
     cotter: true,
     remedy: true,
+    pod: true,
     segments: [...THROUGH_TOWER, deck],
     check: {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
@@ -249,6 +259,7 @@ module.exports = {
       'Sorrel brought home': (e) => e.people.sorrel === 'home' && e.lines.includes('SORREL COUNTED THEM IN.'),
       'Cotter walked home dry': (e) => e.people.cotter === 'dry' && e.lines.includes('HASP WALKED BEHIND HIM, IN CASE.'),
       "Wick's remedy cut into the water": (e) => e.lines.includes('AND DREAMED OF IT.'),
+      'Pod 1130 thawed': (e) => e.people.pod1130 === 'thawed' && e.lines.includes('232 YEARS LATE, HE SAID, AND RIGHT ON TIME.'),
       'Shim carries the lantern': (e) => e.lines.includes("HE CARRIED HIS MOTHER'S LANTERN."),
     },
   },
@@ -274,6 +285,7 @@ module.exports = {
       'the pods launched': (e) => e.podsLaunched > 0 && e.lines.includes('THE PODS CAME DOWN LIKE SEEDS.'),
       'the Old Greenhouse stayed welded': (e) => !e.people.sorrel,
       'two cores taken': (e) => e.wardens.pruner === 'salvage' && e.wardens.tallyman === 'salvage' && e.lines.includes('COUNT: WARDENS, 1.'),
+      "Pod 1130's alarm never answered": (e) => !e.people.pod1130 && e.lines.includes("POD 1130'S ALARM STOPPED WHILE I WAS CLIMBING."),
     },
   },
   // Mercy far below -3: every Warden's core, the lie, Flux's pack, the Gardener dosed, the Steward ended, the Key kept.
@@ -294,15 +306,18 @@ module.exports = {
       'CLAIM THE KEY': 'CLAIM',
       'WALK HIM HOME DRY': 'DOSE',
       'CUT IT INTO THE WATER': 'YOURSELF',
+      'THAW HIM': 'TAKE THE CELL',
     },
     cotter: true,
     remedy: true,
+    pod: true,
     segments: THROUGH_TOWER,
     check: {
       'Mercy -3 or less': (e) => e.mercy <= -3,
       'every Warden counted for a new master': (e) => Object.values(e.wardens).every((x) => x === 'salvage') && e.lines.includes('COUNT THEM.'),
       'Cotter given his dose, and climbing': (e) => e.people.cotter === 'dosed' && e.lines.includes('I HAD THE RACKS NOW.'),
       "Wick's remedy taken by the hero": (e) => e.lines.includes("WICK'S REMEDY WENT INTO ME."),
+      "Pod 1130's cell taken": (e) => e.people.pod1130 === 'cell' && e.lines.includes("POD 1130'S CELL KEPT ME ON MY FEET."),
     },
   },
   // Bloom 8 and more: the Thorn, Bloomfire, the Bloom on the hatch, and every bulb eaten. Mercy stays kind.

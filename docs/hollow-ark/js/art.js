@@ -469,6 +469,8 @@
     hasp: person({ H: '#6a5040', C: '#5a6a7a', c: '#3e4a58', D: '#4a3a2e' }),
     cotter: person({ H: '#5a4028', C: '#4a4060', c: '#2e2a3e', D: '#2e2a3e', e: '#ecccd8', E: '#d49ab8' }, false, (r) => r.map((row, i) => (i === 7 ? '0CcPCCCC0' : row))),
     cotterDry: person({ H: '#5a4028', C: '#8a6a4a', c: '#6a4e34', D: '#3e3328', e: '#dcd8cc', E: '#b4ac9c' }),
+    // Hugo Marsh (3.15), out of Pod 1130: sandy-haired, frost-pale, in the same pale shift the pods dress Mara in.
+    hugo: person({ H: '#b8a878', C: '#9fd8e8', c: '#5fa8c0', D: '#6c7894', e: '#e8eef0', E: '#c0ccd4' }),
   };
 
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----

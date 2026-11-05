@@ -70,7 +70,7 @@
 
   // The people whose fates only matter where the story reached them. Sorrel's card is the ending's own.
   function others(s, id) {
-    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id), HA.story.remedyCards(s, id)).map((lines) => card(...lines));
+    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id), HA.story.remedyCards(s, id), HA.story.pod1130Cards(s, id)).map((lines) => card(...lines));
     const p = s.people;
     if (p.flux === 'home') out.push(card('FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'));
     if (p.flux === 'stripped') out.push(card('NO ONE SAW FLUX AGAIN.'));
@@ -92,18 +92,21 @@
 
   // ---- Who reached the new world, out of everyone who could have: the results after the credits ----
   // The Warrens are twenty, plus all twelve of the taken (the eleven in the cradles, and Sorrel), and Cotter, who went
-  // after them. The sleepers are every pod still in the stacks. Every number follows a line the epilogue says.
+  // after them. The sleepers are every pod still in the stacks, and Pod 1130's (story/pod1130.js): settled either way
+  // it's out of them, and Hugo Marsh, thawed, came down with the Hullfolk. Every number follows a line the epilogue
+  // says.
   const HULLFOLK_MOST = 20 + 12 + 1;
   const SLEEPERS = 3986;
   function landed(s, id) {
     const pods = id === 'homecoming' || (id === 'crash' && s.podsLaunched > 0);
+    const out1130 = HA.story.pod1130Fate(s) ? 1 : 0;
     let hullfolk = 0;
     if (id === 'homecoming') hullfolk = hullfolkCount(s, id); // "THE WARRENS CAME DOWN WHOLE", or those who hid came too
     // On the sleds the whole village made it if the gate held; if it fell, only the few left (the crew and Tamp).
     if (id === 'crash') hullfolk = s.warrensRaid === 'fell' ? Math.min(hullfolkCount(s, id), hands(s) + 1) : hullfolkCount(s, id);
     return {
       hullfolk,
-      sleepers: pods ? SLEEPERS : 0,
+      sleepers: (pods ? SLEEPERS - out1130 : 0) + HA.story.pod1130Landed(s, id),
       mara: pods,
       hero: id === 'crash' || id === 'deserter' || (id === 'homecoming' && s.people.navigator !== 'stay'),
     };
@@ -191,7 +194,7 @@
     crash(s) {
       const pods = s.podsLaunched > 0;
       return [
-        pic(count('COUNT: SURVIVORS, ' + (landed(s, 'crash').hullfolk + 1) + '.'), 'warrens', { sleds: true, few: s.warrensRaid === 'fell' }),
+        pic(count('COUNT: SURVIVORS, ' + (landed(s, 'crash').hullfolk + 1 + HA.story.pod1130Landed(s, 'crash')) + '.'), 'warrens', { sleds: true, few: s.warrensRaid === 'fell' }),
         pods ? pic(card('THE PODS CAME DOWN LIKE SEEDS.', 'MOST OF THEM OPENED.'), 'sleepers', { falling: true }) : pic(card('THE POD STACKS WENT DOWN WITH THE ARK.'), 'sleepers', { dark: true }),
         pods ? pic(voice('0418 OPENED IN THE TALL GRASS.', 'I GOT THERE BEFORE SHE WOKE.'), 'mara', { grass: true, hero: true }) : voice("I PROMISED I'D BE THERE WHEN MARA WOKE.", 'SHE NEVER DID.'),
         shimCard(s, 'SHIM STOOD ON THE GROUND. IT WAS STILL BURNING.', { burning: true }),
