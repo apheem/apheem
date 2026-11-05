@@ -33,8 +33,13 @@ const gardens = {
       await r.to('greenhouse');
       await r.do('PT.read("sorrelGlass")');
     }
+    // The Vat House's door is barred from inside: down the mash hatch, along the Mash Floor, up the vat drain.
+    await r.to('mash-floor');
     await r.to('vat-house');
     await r.boss('vat-house');
+    // The quick way back: the bar, lifted from the Vat House's side.
+    await r.to('vat-walk');
+    await r.do('PT.read("vatBar")');
     await r.to('warrens');
   },
 };

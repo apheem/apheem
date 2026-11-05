@@ -620,6 +620,43 @@
         g.fillRect(x + 6, y + h - 6, 28, 2);
       }
     },
+    // Wick's bag, spilled by the Vat House's barred door where the Gardener's pickers took her in (3.24): the
+    // satchel on its side with the flap torn open, a bandage roll, and a vial.
+    wickbag(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8 + 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, y - 7, 12, 7);
+      g.fillStyle = '#6a4a2e';
+      g.fillRect(x, y - 6, 10, 6);
+      g.fillStyle = '#8a6440';
+      g.fillRect(x, y - 6, 10, 1);
+      g.fillRect(x + 7, y - 9, 4, 3);
+      g.fillStyle = '#e8e0cc';
+      g.fillRect(x + 12, y - 3, 4, 3);
+      g.fillStyle = '#b8ac94';
+      g.fillRect(x + 13, y - 3, 1, 3);
+      g.fillStyle = '#5fd4e8';
+      g.fillRect(x + 17, y - 2, 3, 2);
+      g.fillStyle = '#b8f4ff';
+      g.fillRect(x + 17, y - 2, 1, 1);
+    },
+    // The Mash Floor's rake rack (3.24): long-handled rakes hung over the catwalk the hero steps up on, their teeth
+    // stained pink.
+    mashrakes(g, s) {
+      const y = s.y * 8;
+      for (let x = s.x0 * 8 + 3; x < (s.x1 + 1) * 8 - 2; x += 7) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, y - 30, 3, 30);
+        g.fillStyle = '#7a6a52';
+        g.fillRect(x, y - 30, 1, 29);
+        g.fillStyle = '#5c2479';
+        g.fillRect(x - 2, y - 33, 5, 3);
+        g.fillStyle = '#b04ad0';
+        g.fillRect(x - 2, y - 31, 1, 1);
+        g.fillRect(x + 2, y - 31, 1, 1);
+      }
+    },
     // The Root Cellar's cradle racks, empty since the Wardens hoisted the cradles up to the Nursery (3.12): the
     // brackets the cradles sat in, two racks of six like the cradles themselves, the air hoses cut, and the scrapes
     // on the floor plates, all going east to the hoist.
@@ -1527,7 +1564,7 @@
         g.fillRect(x - 3, FLOOR - 6, 2, 6);
         g.fillRect(x + 1, FLOOR - 6, 2, 6);
       };
-      const year = { cryo: 'YEAR 0', gardens: 'YEAR 151', helm: 'YEAR 290' }[s.of];
+      const year = { cryo: 'YEAR 0', dock: 'YEAR 133', gardens: 'YEAR 151', helm: 'YEAR 290' }[s.of];
       if (s.of === 'cryo') {
         // the pod racks, every pod still shut, and the first crew among them, singing
         for (let x = 20; x < W - 30; x += 24) {
@@ -1578,6 +1615,46 @@
           }
         }
         figure(330, 0.16);
+      } else if (s.of === 'dock') {
+        // the Lifeboat Dock (3.24): the launch doors standing open on the stars behind the gallery, the boats hung in
+        // their cradles down the east end, one cradle empty by the dock floor, and someone at the gallery rail
+        g.fillStyle = pale(0.12);
+        g.fillRect(36, 22, 172, 112);
+        g.fillStyle = 'rgba(14,20,36,0.7)';
+        g.fillRect(40, 26, 164, 104);
+        for (let i = 0; i < 40; i++) {
+          g.fillStyle = pale(0.2 + rnd() * 0.4);
+          g.fillRect(42 + Math.floor(rnd() * 160), 28 + Math.floor(rnd() * 100), 1, 1);
+        }
+        g.fillStyle = pale(0.16);
+        g.fillRect(120, 26, 2, 104); // the seam where the two doors parted
+        HA.font.draw(g, 'LAUNCH DOORS · OPEN', 46, 30, 'rgba(226,240,248,0.3)', { shadow: null });
+        // a boat in each cradle down the east end, on its davit
+        for (const [y, x] of [[22, 28], [26, 32], [30, 28], [34, 32]]) {
+          // drawn in outline, so a boat never reads as something to stand on
+          const bx = x * 8 + 3;
+          const by = y * 8 - 15;
+          g.fillStyle = pale(0.05);
+          g.fillRect(bx + 1, by + 1, 37, 10);
+          g.fillStyle = pale(0.22);
+          g.fillRect(bx, by, 38, 1);
+          g.fillRect(bx + 3, by + 11, 33, 1);
+          g.fillRect(bx, by, 1, 8);
+          g.fillRect(bx + 1, by + 8, 2, 3);
+          for (let i = 0; i < 5; i++) g.fillRect(bx + 38 + Math.floor(i / 2), by + i * 2, 1, 2);
+          g.fillStyle = pale(0.3);
+          for (let i = 0; i < 3; i++) g.fillRect(bx + 9 + i * 9, by + 4, 2, 2);
+          g.fillStyle = pale(0.16);
+          g.fillRect(bx + 19, by - 26, 1, 26);
+        }
+        // the empty cradle at the foot of them, where 0112's boat hung
+        g.fillStyle = pale(0.2);
+        g.fillRect(24, 41 * 8 - 2, 2, 10);
+        g.fillRect(64, 41 * 8 - 2, 2, 10);
+        g.fillRect(24, 41 * 8 - 2, 42, 1);
+        g.fillRect(44, 41 * 8 - 30, 1, 28);
+        HA.font.draw(g, 'LB-1', 34, 41 * 8 - 12, 'rgba(226,240,248,0.25)', { shadow: null });
+        figure(196, 0.18);
       } else {
         // the Helm: tall windows full of night, his banners, and a man at the top of the dais
         for (let x = 30; x < W - 40; x += 90) {

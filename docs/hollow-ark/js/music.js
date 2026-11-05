@@ -850,6 +850,6 @@
   }
   setInterval(pump, 30);
 
-  const music = { TRACKS, play, setLayers, bloomVoice: false, get playing() { return wanted; } };
+  const music = { TRACKS, play, setLayers, bloomVoice: false, get playing() { return wanted; }, get layers() { return layerCount; } };
   HA.music = music;
 })(window.HA);

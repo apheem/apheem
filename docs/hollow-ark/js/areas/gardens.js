@@ -5,6 +5,7 @@
 // b Bloomsworn   L the Garden Lift   X the Pruner   W Wick, in the Bloom   Z the Gardener   g glass
 // V the Seed Vault's hatch (the grapple pulls it open)   E, K, D doors (each room's legend says when they open)
 // Y the cradle hoist (the Root Cellar to the Nursery)   a, h, e ladders and hatches (each room's legend says where to)
+// s Bloom silt (the Mash Floor's troughs)
 (function (HA) {
   HA.rooms.area('gardens', { name: 'HYDROPONIC GARDENS', theme: 'gardens', music: 'gardens', mapColor: '#7ad1a0' });
 
@@ -623,6 +624,8 @@
     ],
   });
 
+  // The Vat Walk: the last of the way to the vats. The Gardener barred the Vat House's door behind her (3.24), so
+  // the way in is down the mash hatch and round through the Mash Floor; the bar lifts from the far side after.
   HA.rooms.add({
     id: 'vat-walk',
     area: 'gardens',
@@ -630,41 +633,111 @@
     gx: 400,
     gy: 69,
     musicLayers: 2, // the sour layer comes in near the vats
-    legend: { T: { type: 'log', id: 'clean' } },
+    legend: {
+      T: { type: 'log', id: 'clean' },
+      e: { type: 'hatch', to: 'mash-floor', open: () => true, name: 'the mash hatch' },
+      // A game that went home past Wick before 0.3.24 finds the bar up.
+      D: { type: 'door', id: 'vatBar', open: (s) => !!s.flags.vatBar || !!s.flags.homeAgain },
+      K: { type: 'log', scene: 'vatBar', label: '{up} LIFT THE BAR', name: 'the bar', when: (s) => !!s.flags.wickFought && !s.flags.vatBar },
+    },
     scenery: [
-      { kind: 'vats', at: [6, 18, 30], y: 6 },
+      { kind: 'vats', at: [4, 15, 26], y: 6 },
       { kind: 'bloom', x: 18, y: 16, n: 40 },
-      { kind: 'scrawl', x: 22, y: 4, text: 'MEASURED DOSES ONLY' },
+      { kind: 'scrawl', x: 10, y: 4, text: 'MEASURED DOSES ONLY' },
+      { kind: 'scrawl', x: 25, y: 12, text: 'MASH ↓' },
+      { kind: 'wickbag', x: 32, y: 18 },
+      { kind: 'lever', x: 38, y: 18, flag: 'vatBar' },
     ],
+    triggers: [{ x0: 28, x1: 34, when: (s) => !s.flags.vatBar && !s.flags.homeAgain && !s.flags.wickFought, run: 'vatBarred' }],
     map: [
       '########################################',
       '########################################',
       '########################################',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##...........===.........===..........##',
-      '........................................',
-      '........................................',
-      '........................................',
-      '......T..q..........b.............S.....',
-      '############^^^^########^^^^############',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##.................................#####',
+      '##...........===......===..........#####',
+      '...................................DD...',
+      '...................................DD...',
+      '...................................DD...',
+      '......T..q.........b.......e..S....DD.K.',
+      '############^^^^######^^^^##############',
       '########################################',
       '########################################',
       '########################################',
     ],
   });
 
+  // The Mash Floor (3.24): under the vats, where everything they drain off is left to rot pink. The mash hatch comes
+  // down onto a gantry, the drain stack blocks it to the east, so the way is down at the west end and back along the
+  // troughs of Bloom silt to the vat drain, which climbs up into the Vat House under the Gardener's gallery.
+  HA.rooms.add({
+    id: 'mash-floor',
+    area: 'gardens',
+    name: 'THE MASH FLOOR',
+    gx: 400,
+    gy: 92,
+    // Wick's humming goes sour along the troughs, and so does the waltz.
+    musicLayers: (s) => (s.flags.mashSour || s.flags.wickFought ? 2 : 1),
+    legend: {
+      T: { type: 'log', id: 'mash' },
+      a: { type: 'hatch', up: true, to: 'vat-walk', name: 'the ladder up the mash hatch' },
+      h: { type: 'hatch', up: true, to: 'vat-house', name: 'the ladder up the vat drain' },
+    },
+    scenery: [
+      { kind: 'pipes', y: 4 },
+      { kind: 'vines', x0: 2, x1: 77, y: 3, n: 8 },
+      { kind: 'mashrakes', x0: 3, x1: 7, y: 15 },
+      { kind: 'bloom', x: 17, y: 17, n: 30 },
+      { kind: 'bloom', x: 28, y: 17, n: 24 },
+      { kind: 'bloom', x: 51, y: 17, n: 30 },
+      { kind: 'bloom', x: 63, y: 17, n: 30 },
+      { kind: 'scrawl', x: 3, y: 12, text: 'RAKE DAILY' },
+      { kind: 'scrawl', x: 64, y: 13, text: 'VAT DRAIN ↑' },
+    ],
+    triggers: [
+      { x0: 20, x1: 36, y1: 10, when: (s) => !s.flags.mashIn, run: 'mashIn' },
+      { x0: 34, x1: 41, y0: 12, when: (s) => !s.flags.mashHum && !s.flags.wickFought, run: 'mashHum' },
+      { x0: 55, x1: 60, y0: 12, when: (s) => s.flags.mashHum && !s.flags.mashSour && !s.flags.wickFought, run: 'mashSour' },
+    ],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
+      '##........................................####................................##',
+      '##........................................####................................##',
+      '##........................................####................................##',
+      '##........................................####............f...................##',
+      '##........................................####................................##',
+      '##........................................####................................##',
+      '##........................................####................................##',
+      '##...................T.....a..............####................................##',
+      '##........####################################................................##',
+      '##........................................####................................##',
+      '##........................................####................................##',
+      '##............................................................................##',
+      '##.=====......................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##....c...............q.............j.......c............j............S...h...##',
+      '###############sssss######sssss##################sssss#######sssss##############',
+      '###############sssss######sssss##################sssss#######sssss##############',
+      '################################################################################',
+      '################################################################################',
+    ],
+  });
+
   // The Vat House: the Gardener watches from a gallery behind thick glass. No way on: the east bulkhead is
-  // choked with Bloom, and the Gardener's own door is on her side of the glass.
+  // choked with Bloom, and the Gardener's own door is on her side of the glass. The way in is the vat drain, up from
+  // the Mash Floor under her gallery (3.24); it's shut while Wick fights, and the west door opens onto the bar.
   HA.rooms.add({
     id: 'vat-house',
     area: 'gardens',
@@ -675,6 +748,7 @@
     noRespawn: true,
     legend: {
       D: { type: 'door', id: 'vat', open: (s, world) => !(world && world.boss && world.boss.active) },
+      h: { type: 'hatch', to: 'mash-floor', open: (s) => !(s.flags.wickSeen && !s.flags.wickFought), name: 'the vat drain' },
       W: { type: 'boss', reach: false },
       Z: { type: 'npc', id: 'gardener', reach: false, when: (s) => !s.flags.gardenerGone },
       g: { type: 'glass' },
@@ -685,7 +759,7 @@
       { kind: 'bloom', x: 18, y: 17, n: 70 },
       { kind: 'bloom', x: 30, y: 14, n: 30 },
     ],
-    triggers: [{ x0: 6, x1: 12, when: (s) => !s.flags.wickFought, run: 'vatHouse' }],
+    triggers: [{ x0: 6, x1: 37, when: (s) => !s.flags.wickFought, run: 'vatHouse' }],
     map: [
       '########################################',
       '########################################',
@@ -705,7 +779,7 @@
       '..DD..................................##',
       '..DD..................................##',
       '..DD..................................##',
-      '..DD............W.....................##',
+      '..DD............W.................h...##',
       '########################################',
       '########################################',
       '########################################',

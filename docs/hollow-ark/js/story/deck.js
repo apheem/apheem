@@ -63,9 +63,10 @@
   const LIFT_AT = [4, 10, 12, 14, 9, 16, 3, 11, 13, 15, 5, 17];
   const SPHERE_AT = [26, 30, 22, 28, 24, 32, 20, 27, 23, 29, 21, 31];
 
-  // ---- Checkpoints: the Lift Down, the third hall, and the Sphere. Reaching one restores the suit. ----
-  const CHECKS = { 'lift-down': 14, 'hall-helm': 9, sphere: 30 };
-  const ORDER = ['lift-down', 'hall-helm', 'sphere'];
+  // ---- Checkpoints: the Lift Down, the third and fourth halls, and the Sphere. Reaching one restores the suit. ----
+  // With the Dock's hall (3.24) there are four halls, so the Gardens hall is one too: never more than two halls between.
+  const CHECKS = { 'lift-down': 14, 'hall-gardens': 75, 'hall-helm': 9, sphere: 30 };
+  const ORDER = ['lift-down', 'hall-gardens', 'hall-helm', 'sphere'];
   function checkpoint(world) {
     const s = world.state;
     const f = s.flags;
@@ -166,6 +167,23 @@
       yield me('MARA.');
       S.addStory(world, 'PAST THE SEAL, THE NAVIGATOR SHOWED ME WHAT IT REMEMBERS. FIRST THE CRYO DECK ON THE FIRST NIGHT, WHEN THE CREW SANG OVER THE SLEEPERS, AND I HELD MARA\'S GLASS UNTIL THE FROST CAME. I REMEMBER ALL OF IT NOW.');
       world.save();
+    },
+    // The Lifeboat Dock, the night the first sleeper it woke took a boat (3.24).
+    *hallDock(world) {
+      world.state.flags.hallDock = true;
+      yield { wait: 30 };
+      yield nav('YEAR 133. THE FIRST ONE I WOKE. POD 0112.');
+      yield nav('THEY ASKED WHERE WE WERE. I SAID: NOT THERE YET.');
+      yield nav('THEY TOOK A BOAT THAT NIGHT. I OPENED THE DOOR FOR THEM.');
+      yield nav('I WATCHED IT UNTIL IT WAS TOO SMALL TO SEE. NOTHING CAME BACK.');
+      S.addStory(world, 'THEN THE LIFEBOAT DOCK, YEAR 133. THE FIRST SLEEPER THE NAVIGATOR WOKE, 0112, ASKED WHERE WE WERE AND TOOK A BOAT THE SAME NIGHT. IT OPENED THE DOOR FOR THEM, AND WATCHED UNTIL THE BOAT WAS GONE.');
+      world.save();
+    },
+    *dockCradle(world) {
+      world.state.flags.dockCradle = true;
+      yield { wait: 20 };
+      yield me('THE PURSER OFFERED ME A BOAT FROM THIS DOCK.');
+      yield nav('YOU SAID NO. I WATCHED THAT TOO.');
     },
     *hallGardens(world) {
       world.state.flags.hallGardens = true;
