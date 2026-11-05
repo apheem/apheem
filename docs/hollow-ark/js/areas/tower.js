@@ -1,17 +1,20 @@
 'use strict';
 // The Command Tower: the old bridge at the bow, high over the Spine, where the Steward keeps the Helm Key. The
-// Tower Lift brings the hero and the crew up into the honour guard's Barracks; east is the Observation Dome, glass
-// over everything; above it the Gardener's Garden Gallery; then the Bridge Stair, and the Helm at the top. The
-// stair's top is shut from above, so the way up is round through the Steward's Rooms beside it.
+// Tower Lift brings the hero and the crew up into the honour guard's Barracks, whose bulkhead to the east is
+// bolted for the night from the Guard Room to the west; east is the Observation Dome, glass over everything; above
+// it the Gardener's Garden Gallery; then the Bridge Stair, and the Helm at the top. The stair's top is shut from
+// above, so the way up is round through the Steward's Rooms beside it.
 // Map legend beyond the shared one: 7 a Warden turret   9 the honour guard   Z the Tower Lift   a the ladder up
 // e the hatch down   T a terminal   M the Steward   Y Lift B, down from the Helm (once it's mended)
-// D the Bridge Stair's shutter, bolted from above
+// D the Bridge Stair's shutter, bolted from above (in the Barracks, the bulkhead)   K the Guard Room's bolt board
 (function (HA) {
   HA.rooms.area('tower', { name: 'COMMAND TOWER', theme: 'tower', music: 'tower', mapColor: '#e8dcc0' });
 
   const up = (to) => ({ type: 'hatch', up: true, to, name: 'the ladder up' });
   const down = (to) => ({ type: 'hatch', to, open: () => true, name: 'the hatch down' });
   const ALL = { thruster: true, grapple: true, foam: true, boots: true };
+  // The Steward wakes his night watch at the Barracks' far end, the first time, with the crew by the lift (story/gasket.js).
+  const wakeDue = (s) => !!s.flags.towerUp && !s.flags.guardWoke && !s.flags.stewardSeen && s.people.gasket !== 'dead';
 
   // The Barracks: where the honour guard sleeps, under the Steward's colours.
   HA.rooms.add({
@@ -23,6 +26,9 @@
     abilities: ALL,
     legend: {
       Z: { type: 'lift', to: 'tower-lift', name: 'the Tower Lift', big: true, scene: 'towerLift', lit: () => true },
+      // The bulkhead to the Dome, bolted for the night from the Guard Room (the fourth batch of new rooms). A game
+      // saved past it before the Guard Room was built (the Dome has been seen) finds it open.
+      D: { type: 'door', id: 'guardBolt', open: (s) => !!s.flags.guardBolt || !!s.flags.domeSeen },
     },
     scenery: [
       { kind: 'tallwindows', y: 3, every: 160, from: 196 },
@@ -31,9 +37,16 @@
       { kind: 'bunks', x: 30, y: 13 },
       { kind: 'racks', x0: 49, x1: 61, y: 9 },
       { kind: 'stencil', x: 3, y: 5, text: 'HONOUR GUARD · BARRACKS' },
+      { kind: 'stencil', x: 3, y: 13, text: '← GUARD ROOM' },
+      { kind: 'stencil', x: 62, y: 11, text: 'BULKHEAD 1 · NIGHT:' },
+      { kind: 'stencil', x: 62, y: 12, text: 'BOLTED FROM THE GUARD ROOM' },
     ],
     // The far end, the first time, with the crew by the lift: the Steward wakes his night watch (story/gasket.js).
-    triggers: [{ x0: 64, x1: 77, y0: 11, y1: 18, when: (s) => !!s.flags.towerUp && !s.flags.guardWoke && !s.flags.stewardSeen && s.people.gasket !== 'dead', run: 'guardWake' }],
+    triggers: [
+      { x0: 64, x1: 77, y0: 11, y1: 18, when: (s) => wakeDue(s), run: 'guardWake' },
+      // The bulkhead, shut: once the night watch has been woken (or never will be), and not while Gasket holds them.
+      { x0: 68, x1: 75, y0: 11, y1: 18, when: (s, w) => !s.flags.guardBolt && !s.flags.domeSeen && !wakeDue(s) && !w.gasketHold, run: 'bulkheadShut' },
+    ],
     map: [
       '################################################################################',
       '################################################################################',
@@ -50,10 +63,63 @@
       '##............................................................................##',
       '##..............................................=============.................##',
       '##..................n.........................................................##',
-      '##..............===========.....................................................',
-      '##..........................................####................................',
-      '##..........................................####................................',
-      '##.....Z........................9...........####................9...............',
+      '................===========.................................................DD..',
+      '............................................####............................DD..',
+      '............................................####............................DD..',
+      '.......Z........................9...........####................9...........DD..',
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
+      '################################################################################',
+    ],
+  });
+
+  // The Guard Room (the fourth batch of new rooms): west of the Barracks, over the Tower Lift. The honour guard who
+  // aren't on watch stand in their racks here on a full dose, two tiers of them, until the Steward sends for them.
+  // The bulkhead to the Dome is bolted from the board at the far end of the top tier, and drawing the bolt rings
+  // the bell down the racks: three of them step out (story/tower.js), and are out whenever the hero comes back in.
+  HA.rooms.add({
+    id: 'guard-room',
+    area: 'tower',
+    name: 'THE GUARD ROOM',
+    gx: 440,
+    gy: -87,
+    abilities: ALL,
+    legend: {
+      K: { type: 'log', scene: 'guardBolt', label: '{up} DRAW THE BOLT', name: 'the bolt board' },
+      T: { type: 'log', id: 'standing', name: 'the standing orders' },
+    },
+    scenery: [
+      { kind: 'banners', at: [30, 50, 70] },
+      { kind: 'guardracks', y: 9, x0: 8, x1: 54, every: 4, awake: 16 },
+      { kind: 'guardracks', y: 18, x0: 7, x1: 59, every: 4 },
+      { kind: 'boltboard', x: 4, y: 9 },
+      { kind: 'stencil', x: 8, y: 4, text: 'HONOUR GUARD · GUARD ROOM' },
+    ],
+    triggers: [
+      { x0: 66, x1: 77, when: (s) => !s.flags.guardRoomIn, run: 'guardRoomIn' },
+      { x0: 12, x1: 20, y0: 2, y1: 9, when: (s) => !s.flags.guardAwake, run: 'guardAwake' },
+    ],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '##........................7.....................7.............................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##..K.........................................................................##',
+      '################################....#####################.....................##',
+      '################################....#####################.....................##',
+      '##............................................................................##',
+      '##........................................................======..............##',
+      '##............................................................................##',
+      '##..............................................................................',
+      '##..............................................................======..........',
+      '##..............................................................................',
+      '##...........................................T..................................',
       '################################################################################',
       '################################################################################',
       '################################################################################',

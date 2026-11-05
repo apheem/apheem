@@ -31,6 +31,11 @@
       title: "REACTOR · STOKERS' ROSTER",
       text: 'A STOKER LASTS A YEAR AT THE FIRES. TWO, ON A FULL DOSE, WHEN THEY STOP FEELING THE HEAT. KEEP THEM ON A FULL DOSE. WHEN ONE IS USED UP, TAKE ANOTHER FROM THE WALLS. LAST IN: ABEL, YEAR 307. ABEL HAS NOT NEEDED REPLACING.',
     },
+    // The Condenser, off the Boiler Stair (the fourth batch of new rooms)
+    condenser: {
+      title: 'CONDENSER HALL · MAIN 3',
+      text: "IF MAIN 3 BURSTS ACROSS THE STAIR, SHUT IT OFF AT BOTH VALVES: A IS PAST THE SUMP, B IS ON THE COIL TOPS. SINCE THE STEWARD'S PEOPLE DROVE THE FIRES HOT, IT BURSTS EVERY YEAR. NOBODY COMES DOWN TO SHUT IT.",
+    },
     abelCount: {
       title: 'THE LAST BUNK',
       text: 'SCRATCHED INTO THE FRAME: A COUNT IN FIVES, THE WAY THE HULLFOLK COUNT DAYS. IT RUNS FOR A YEAR. THEN THE FIVES COME APART, AND IT IS ONLY SCRATCHES, ALL OVER THE FRAME, UNTIL THERE IS NO ROOM LEFT. CUT DEEP AT THE TOP, IN THE FIRST HAND: ABEL.',
@@ -177,6 +182,34 @@
     }[id];
   }
 
+  // Turning one of the Condenser's valves (the fourth batch of new rooms).
+  function* valve(world, flag) {
+    const f = world.state.flags;
+    if (f[flag]) {
+      yield me(f.condenser ? "IT'S SHUT. SO IS THE OTHER ONE. THE STAIR'S CLEAR." : "IT'S SHUT. THE OTHER ONE ISN'T.");
+      return;
+    }
+    f[flag] = true;
+    HA.audio.play('switch');
+    for (let i = 0; i < 3; i++) {
+      HA.audio.play('clamp');
+      yield { wait: 14 };
+    }
+    HA.audio.play('steam');
+    world.shake(1);
+    yield { wait: 20 };
+    if (!(f.condenserA && f.condenserB)) {
+      yield me('THROUGH THE WALL, THE STEAM IN THE SHAFT THINNED. NOT ENOUGH.');
+      world.save();
+      return;
+    }
+    f.condenser = true;
+    yield { wait: 20 };
+    yield me('THROUGH THE WALL, THE STEAM IN THE SHAFT DIED TO A HISS. THE WAY UP THE STAIR IS CLEAR.');
+    S.addStory(world, "MAIN 3 HAD BURST ACROSS THE BOILER STAIR. I SHUT IT OFF AT BOTH ITS VALVES, IN THE CONDENSER, AND WENT ON UP.");
+    world.save();
+  }
+
   // ---- The scenes ----
   const SCENES = {
     // The Boiler Landing: far below, the keel tram comes in with the climbers, and they build the first lift.
@@ -225,6 +258,11 @@
         yield say('OLD GASKET', 'SOLDER WOULD HAVE HAD THIS UP IN HALF THE TIME. AND TOLD ME SO, ALL THE WAY UP.');
         yield say('OLD GASKET', "IT'LL HOLD. PROBABLY. IT GOES DOWN TO THE FOOT AND BACK.");
       }
+      // Main 3, shut by the hero on the way up (the Condenser): the old crew never got round to it.
+      if (f.condenser) {
+        if (who === 'SOLDER') yield say('SOLDER', "AND SOMEBODY SHUT MAIN 3. THAT STAIR'S NOT BEEN DRY IN YEARS. NICE WORK.");
+        else yield say('OLD GASKET', "AND THE STAIR'S DRY. SOLDER ALWAYS SAID SOMEBODY OUGHT TO SHUT MAIN 3.");
+      }
       lead.state = 'gone';
       HA.audio.play('lift');
       if (f.tramEast) S.addStory(world, pipes ? 'THE CREW CAME THROUGH THE OVERFLOW PIPES BEHIND ME, AND BUILT THE FIRST LIFT UP THE SPINE.' : 'THE CREW BUILT THE FIRST LIFT UP THE SPINE BEHIND ME.');
@@ -233,6 +271,22 @@
       world.save();
     },
 
+    // The Boiler Stair's midway shelf: Main 3 has burst across the shaft above it (the fourth batch of new rooms).
+    *steamShut(world) {
+      yield me("A MAIN'S BURST ACROSS THE SHAFT ABOVE ME. LIVE STEAM, WALL TO WALL. THE DOOR ON THE SHELF SAYS CONDENSER.");
+    },
+    *condenserIn(world) {
+      world.state.flags.condenserIn = true;
+      yield { wait: 20 };
+      yield me('COILS, UP TO THE ROOF, AND A SUMP OF HOT WATER UNDER THEM. THE NOTICE BY THE DOOR SHOULD SAY WHERE MAIN 3 SHUTS OFF.');
+    },
+    // Main 3's two valves: A past the sump, B on the coil tops. Both shut, the steam in the stair dies.
+    *valveA(world) {
+      yield* valve(world, 'condenserA');
+    },
+    *valveB(world) {
+      yield* valve(world, 'condenserB');
+    },
     // The Piston Run's way up is plated over, bolted on the landing's side; the stokers' door is beside it.
     *plateShut(world) {
       yield me("THE SHAFT'S PLATED OVER ABOVE ME, BOLTED FROM THE TOP. THE DOOR BESIDE IT SAYS STOKERS.");

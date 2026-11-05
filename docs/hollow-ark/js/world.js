@@ -357,6 +357,12 @@
       for (const c of d.cells) world.room.set(c.tx, c.ty, open ? HA.room.EMPTY : HA.room.SOLID);
       if (instant || d.legend.crane) continue; // a crane's stack shows its own move (see throwSwitch)
       const c = d.cells[Math.floor(d.cells.length / 2)];
+      if (d.legend.steam) {
+        // A burst main shut off: the steam blows itself out.
+        for (const cell of d.cells) if ((cell.tx + cell.ty) % 3 === 0) world.burst(cell.tx * 8 + 4, cell.ty * 8 + 4, ['#ffffff', '#d6e0e8'], 2, 1.2);
+        HA.audio.play('steam');
+        continue;
+      }
       if (d.legend.cracked) {
         // A cracked wall comes down in rubble, for good.
         for (const cell of d.cells) world.burst(cell.tx * 8 + 4, cell.ty * 8 + 4, d.legend.ice ? ['#d8f4ff', '#9fd8e8', '#ffffff'] : ['#6c7894', '#3a4258', '#a9b6cc'], 4, 1.6);

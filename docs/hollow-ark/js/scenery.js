@@ -1109,6 +1109,32 @@
       HA.font.draw(g, 'SEALED', x + 34, y + 27, '#e8434f', { shadow: null });
       g.globalAlpha = 1;
     },
+    // The Condenser's coils (the fourth batch of new rooms): the coil tops are hull, and under each one the copper
+    // tubes hang in loops down into the sump's steam, where the Spine's steam turns back into water.
+    coils(g, s) {
+      const top = (s.y + 2) * 8;
+      const bottom = (s.to + 1) * 8;
+      for (const [a, b] of s.at) {
+        const x0 = a * 8 + 2;
+        const x1 = (b + 1) * 8 - 3;
+        g.fillStyle = '#10121c';
+        g.fillRect(x0 - 1, top, x1 - x0 + 3, 3);
+        g.fillStyle = '#6a4a2a';
+        g.fillRect(x0, top, x1 - x0 + 1, 2);
+        for (let x = x0; x + 3 <= x1; x += 6) {
+          g.fillStyle = '#10121c';
+          g.fillRect(x - 1, top + 2, 6, bottom - top - 2);
+          g.fillStyle = '#a8743a';
+          g.fillRect(x, top + 2, 1, bottom - top - 6);
+          g.fillRect(x + 3, top + 2, 1, bottom - top - 6);
+          g.fillRect(x, bottom - 5, 4, 1);
+          g.fillStyle = '#d89a5a';
+          g.fillRect(x, top + 2, 1, 2);
+          g.fillStyle = '#5a3a20';
+          g.fillRect(x + 1, bottom - 4, 2, 1);
+        }
+      }
+    },
     // The old crew's bunks, three high, at the top of the Spine.
     bunks(g, s) {
       const x = s.x * 8;
@@ -1777,6 +1803,9 @@
       const tram = s.at === 'spine' ? (fl.crewCame && !(fl.tramEast && flooded)) || (fl.tramEast && !flooded) : !fl.tram || (world.tramGo || 0) > 0 || (fl.tramEast && flooded);
       if (s.kind === 'tramcar' && tram) drawTramCar(g, world, s, cam);
       if (s.kind === 'sorrel') drawSorrel(g, world, s, cam);
+      if (s.kind === 'valve') drawValve(g, world, s, cam);
+      if (s.kind === 'guardracks') drawGuardRacks(g, world, s, cam);
+      if (s.kind === 'boltboard') drawBoltBoard(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -2134,6 +2163,147 @@
   }
 
   // Solder's toolbag, where he left it by the grate, a wrench sticking out.
+  // A valve wheel on its stub of pipe (the Condenser's A and B): a red tag while it's open and the main is
+  // blowing, turned through and tagged green once it's shut.
+  function drawValve(g, world, s, cam) {
+    const shut = !!world.state.flags[s.flag];
+    const x = Math.round(s.x * 8 + 4 - cam.x);
+    const y = Math.round(s.y * 8 + 8 - cam.y); // the floor it stands on
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 2, y - 10, 5, 10);
+    g.fillStyle = '#6c7894';
+    g.fillRect(x - 1, y - 10, 3, 10);
+    const cy = y - 13;
+    const shake = shut ? 0 : Math.floor(world.time / 3) % 2;
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 6, cy - 6 + shake, 13, 13);
+    g.fillStyle = '#a9b6cc';
+    g.fillRect(x - 5, cy - 5 + shake, 11, 1);
+    g.fillRect(x - 5, cy + 5 + shake, 11, 1);
+    g.fillRect(x - 5, cy - 5 + shake, 1, 11);
+    g.fillRect(x + 5, cy - 5 + shake, 1, 11);
+    g.fillStyle = '#6c7894';
+    if (shut) {
+      g.fillRect(x - 4, cy - 4, 1, 1);
+      g.fillRect(x - 3, cy - 3, 1, 1);
+      g.fillRect(x - 2, cy - 2, 5, 5);
+      g.fillRect(x + 3, cy + 3, 1, 1);
+      g.fillRect(x + 4, cy + 4, 1, 1);
+      g.fillRect(x + 3, cy - 3, 1, 1);
+      g.fillRect(x + 4, cy - 4, 1, 1);
+      g.fillRect(x - 3, cy + 3, 1, 1);
+      g.fillRect(x - 4, cy + 4, 1, 1);
+    } else {
+      g.fillRect(x - 4, cy + shake, 9, 1);
+      g.fillRect(x, cy - 4 + shake, 1, 9);
+    }
+    g.fillStyle = shut ? '#7ad1a0' : '#e8434f';
+    g.fillRect(x + 6, cy + 1 + shake, 3, 4);
+    // still blowing: a thread of steam off the gland
+    if (!shut) {
+      g.fillStyle = 'rgba(232,240,246,0.5)';
+      const t = world.time % 24;
+      g.fillRect(x - 1, cy - 9 - Math.floor(t / 4), 2, 2);
+      g.fillRect(x + 1, cy - 12 - Math.floor(t / 6), 1, 1);
+    }
+  }
+
+  // The Guard Room's racks: alcoves along a floor, every few columns, each with one of the honour guard standing
+  // in it on a full dose, eyes shut (the guard's own sprite, dimmed). One (s.awake) has his eyes open, and they
+  // follow the hero. Racks the bell has emptied (world.guardOut, story/tower.js) hang open, straps and all.
+  function drawGuardRacks(g, world, s, cam) {
+    const spr = HA.art.enemies.guard[0];
+    const p = world.player;
+    for (let tx = s.x0; tx <= s.x1; tx += s.every) {
+      if (world.room.tile(tx, s.y + 1) !== HA.room.SOLID || world.room.tile(tx, s.y) !== HA.room.EMPTY) continue;
+      const x = Math.round(tx * 8 + 4 - cam.x);
+      const y = Math.round((s.y + 1) * 8 - cam.y);
+      if (x < -16 || x > HA.VIEW_W + 16) continue;
+      g.fillStyle = '#07080d';
+      g.fillRect(x - 7, y - 21, 14, 21);
+      g.fillStyle = '#6a5630';
+      g.fillRect(x - 8, y - 22, 1, 22);
+      g.fillRect(x + 7, y - 22, 1, 22);
+      g.fillRect(x - 8, y - 22, 16, 1);
+      g.fillStyle = '#c9a050';
+      g.fillRect(x - 8, y - 22, 16, 1);
+      const out = world.guardOut && world.guardOut.includes(tx);
+      if (out) {
+        g.fillStyle = '#3a3222';
+        g.fillRect(x - 5, y - 18, 1, 9);
+        g.fillRect(x + 4, y - 18, 1, 7);
+        g.fillStyle = '#6a5630';
+        g.fillRect(x - 6, y - 10, 3, 1);
+        g.fillRect(x + 3, y - 12, 3, 1);
+        continue;
+      }
+      const awake = tx === s.awake;
+      const face = awake && p.x + p.w / 2 < tx * 8 + 4 ? -1 : 1;
+      g.save();
+      g.translate(x, y - spr.h);
+      g.scale(face, 1);
+      g.globalAlpha = 0.7;
+      g.drawImage(spr.img, -Math.floor(spr.w / 2), 0);
+      g.globalAlpha = 1;
+      g.fillStyle = 'rgba(7,8,13,0.35)';
+      g.fillRect(-Math.floor(spr.w / 2), 0, spr.w, spr.h);
+      // the eyes, shut: a dark line across the face; or open, and looking
+      g.fillStyle = awake ? '#eef4f6' : '#2a2a30';
+      if (awake) {
+        g.fillRect(-1, 3, 1, 1);
+        g.fillRect(2, 3, 1, 1);
+      } else g.fillRect(-2, 3, 5, 1);
+      g.restore();
+      // the straps across the chest
+      g.fillStyle = '#3a3222';
+      g.fillRect(x - 6, y - 9, 12, 1);
+    }
+  }
+
+  // The Guard Room's bolt board: the bulkhead's bolt, and the bell that wakes the racks over it.
+  function drawBoltBoard(g, world, s, cam) {
+    const drawn = !!world.state.flags.guardBolt;
+    const x = Math.round(s.x * 8 - cam.x);
+    const y = Math.round(s.y * 8 + 8 - cam.y); // the floor
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 6, y - 26, 20, 18);
+    g.fillStyle = '#3a3222';
+    g.fillRect(x - 5, y - 25, 18, 16);
+    g.fillStyle = '#6a5630';
+    g.fillRect(x - 3, y - 19, 14, 4);
+    g.fillStyle = '#c9a050';
+    g.fillRect(drawn ? x - 4 : x + 1, y - 18, 10, 2);
+    g.fillRect(drawn ? x - 5 : x, y - 20, 2, 6);
+    // the bell, over it, swinging a while after it's been rung
+    const swing = world.guardBell > 0 ? Math.round(Math.sin(world.guardBell * 0.5) * 2) : 0;
+    g.fillStyle = '#10121c';
+    g.fillRect(x + 1 + swing, y - 33, 7, 6);
+    g.fillStyle = '#c9a050';
+    g.fillRect(x + 2 + swing, y - 32, 5, 4);
+    g.fillStyle = '#ffd88a';
+    g.fillRect(x + 3 + swing, y - 32, 1, 2);
+    g.fillStyle = '#6a5630';
+    g.fillRect(x + 4, y - 35, 1, 3);
+  }
+
+  // A burst main's steam, wall to wall, where a door would be (the Boiler Stair's Main 3): white billows, rolling.
+  function drawSteam(g, world, d, cam) {
+    const ys = d.cells.map((c) => c.ty);
+    const top = Math.min(...ys);
+    const t = world.time;
+    for (const c of d.cells) {
+      const x = c.tx * 8 - Math.round(cam.x);
+      const y = c.ty * 8 - Math.round(cam.y);
+      g.fillStyle = c.ty === top ? 'rgba(214,224,232,0.55)' : 'rgba(232,240,246,0.7)';
+      g.fillRect(x, y, 8, 8);
+      for (let i = 0; i < 3; i++) {
+        const k = Math.sin(t * 0.07 + c.tx * 1.7 + c.ty * 2.3 + i * 2.1);
+        g.fillStyle = i === 0 ? 'rgba(255,255,255,0.6)' : 'rgba(180,192,204,0.45)';
+        g.fillRect(x + ((c.tx * 5 + i * 3 + Math.floor(t / 5)) % 8), y + Math.floor(3 + k * 3), 3, 2);
+      }
+    }
+  }
+
   function drawToolbag(g, s, cam) {
     const x = Math.round(s.x * 8 - cam.x);
     const y = Math.round(s.y * 8 - cam.y);
@@ -2404,6 +2574,7 @@
   }
 
   function drawDoor(g, world, d, cam) {
+    if (d.legend.steam) return drawSteam(g, world, d, cam);
     if (d.legend.wreck) return drawWreck(g, world, d, cam);
     if (d.legend.crane) return drawStack(g, world, d, cam);
     if (d.legend.cracked) return drawCracked(g, world, d, cam);

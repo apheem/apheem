@@ -23,6 +23,11 @@
 
   Object.assign(S.LOGS, {
     // The Steward's Rooms, beside the Bridge Stair (the third batch of new rooms)
+    // The Guard Room, west of the Barracks (the fourth batch of new rooms)
+    standing: {
+      title: 'HONOUR GUARD · STANDING ORDERS',
+      text: "BETWEEN WATCHES THE GUARD STANDS IN ITS RACKS ON A FULL DOSE. IT WAKES ON THE STEWARD'S WORD, OR ON THE BELL. AT NIGHT THE BULKHEAD IS BOLTED FROM HERE: NOTHING COMES UP FROM THE SPINE AFTER DARK.",
+    },
     daybook: {
       title: "THE STEWARD'S DAYBOOK · YEAR 312",
       text: 'ASKED THE NAVIGATOR FOR ARRIVAL. NOT YET. IT HAS SAID NOT YET FOR TWENTY YEARS. IT IS GIVING ME TIME, AND I WILL NOT WASTE IT. THE GUARD: TWO HUNDRED HANDS. THE GARDENS WILL GIVE ME FOUR HUNDRED MORE. WHOEVER IS DOWN THERE, WE WILL NOT ARRIVE AS BEGGARS.',
@@ -69,6 +74,25 @@
   }
 
   // ---- The scenes ----
+  // The Guard Room's racks, once the bell has rung: three of the guard out of them, one on the top tier and two on
+  // the floor (where drawGuardRacks in scenery.js shows their racks empty), whenever the hero is in the room.
+  const RACKS_OUT = [
+    [40, 9],
+    [27, 18],
+    [59, 18],
+  ];
+  function wakeRacks(world, now) {
+    world.guardOut = RACKS_OUT.map(([tx]) => tx);
+    for (const [tx, ty] of RACKS_OUT) {
+      const e = HA.actors.makeEnemy({ type: '9', x: tx * 8, y: ty * 8, tx, ty, respawn: 0 });
+      e.facing = world.player.x < e.x ? -1 : 1;
+      e.cool = 30 + tx;
+      e.racked = true;
+      world.enemies.push(e);
+      if (now) world.burst(e.x + e.w / 2, e.y + 4, ['#c9a050', '#6c7894', '#e8e8ec'], 8, 1.2);
+    }
+  }
+
   const SCENES = {
     // The Tower Lift: the first time up, the whole crew rides it with the hero.
     *towerLift(world) {
@@ -293,6 +317,53 @@
       world.save();
     },
 
+    // The Barracks' bulkhead to the Dome, bolted for the night from the Guard Room (the fourth batch of new rooms).
+    *bulkheadShut(world) {
+      yield me('THE BULKHEAD TO THE DOME IS SHUT. BOLTED FOR THE NIGHT, IT SAYS, FROM THE GUARD ROOM.');
+    },
+    // The Guard Room: the honour guard who aren't on watch, standing in their racks.
+    *guardRoomIn(world) {
+      world.state.flags.guardRoomIn = true;
+      yield { wait: 20 };
+      yield me('RACKS, TWO TIERS OF THEM. IN EVERY ONE, ONE OF THE HONOUR GUARD, STANDING UP, EYES SHUT.');
+      yield { wait: 30 };
+      yield me('NOBODY MOVED.');
+      S.addStory(world, "WEST OF THE BARRACKS IS THE GUARD ROOM. THE HONOUR GUARD WHO AREN'T ON WATCH STAND THERE IN RACKS, ON A FULL DOSE, EYES SHUT.");
+    },
+    // One of them, near the bolt board, is awake.
+    *guardAwake(world) {
+      const s = world.state;
+      s.flags.guardAwake = true;
+      yield { wait: 10 };
+      yield me('ONE OF THEM WAS AWAKE. HIS EYES FOLLOWED ME. NOTHING ELSE OF HIM COULD.');
+      // the Muster's dose book (story/cargo.js): a hand that misses a dose starts to remember
+      if (s.logs.muster) yield me("HE'D MISSED A DOSE. HE REMEMBERED. THAT WAS ALL.");
+      S.addStory(world, "ONE OF THE RACKED GUARD WAS AWAKE. HE COULDN'T MOVE. HIS EYES FOLLOWED ME DOWN THE ROW.");
+    },
+    // The bolt board: the bulkhead opens, and the bell wakes the racks.
+    *guardBolt(world) {
+      const f = world.state.flags;
+      if (f.guardBolt) {
+        yield me("THE BOLT'S DRAWN. THE BULKHEAD TO THE DOME IS OPEN.");
+        return;
+      }
+      f.guardBolt = true;
+      HA.audio.play('switch');
+      yield { wait: 20 };
+      world.guardBell = 90;
+      for (let i = 0; i < 4; i++) {
+        HA.audio.play('tink');
+        yield { wait: 10 };
+      }
+      yield me('THE BOLT CAME BACK, AND A BELL OVER THE BOARD RANG, ALL DOWN THE RACKS.');
+      wakeRacks(world, true);
+      HA.audio.play('telegraph');
+      yield { wait: 30 };
+      yield me('SOME OF THEM WERE STEPPING OUT.');
+      if (f.guardAwake) yield me('THE ONE WHO WAS AWAKE STAYED WHERE HE WAS.');
+      S.addStory(world, 'I DREW THE BULKHEAD\'S BOLT IN THE GUARD ROOM. IT RANG A BELL DOWN THE RACKS, AND SOME OF THE GUARD STEPPED OUT.');
+      world.save();
+    },
     // The Bridge Stair's way up is shut by a shutter, bolted on the landing's side; his door is beside it.
     *shutterShut(world) {
       yield me('THE STAIR IS SHUT ABOVE ME: A SHUTTER, BOLTED FROM THE TOP. THE DOOR IN THE EAST WALL SAYS PRIVATE.');
@@ -702,11 +773,14 @@
         }
       }
       if (id === 'helm') enterHelm(world);
+      // The Guard Room: the guard the bell woke are out of their racks.
+      if (id === 'guard-room' && f.guardBolt) wakeRacks(world, false);
     },
 
     update(world) {
       const s = world.state;
       const f = s.flags;
+      if (world.guardBell > 0) world.guardBell--; // the Guard Room's bell, swinging
       if (world.scene || world.player.dead || world.transition || world.fade > 0.5) return;
       if (world.def.id !== 'helm') return;
       if (f.stewardDown && !s.people.steward && !f.overgrown) run(world, 'stewardChoice');
