@@ -20,7 +20,7 @@
   Object.assign(S.LOGS, {
     trials: {
       title: 'ODELL · BOOT TRIALS',
-      text: "TRIAL 41: HELD AT NINE FATHOMS. TRIAL 42: THE SUIT HELD. I DIDN'T. TRIAL 43: WITH THE NEW SEALS, BOTH OF US HELD.",
+      text: "TRIAL 41: HELD AT NINE FATHOMS. TRIAL 42: THE SUIT HELD. I DIDN'T. TRIAL 43: WITH THE NEW SEALS, BOTH OF US HELD. CLIMBED DOWN THE DRAIN TO THE BENCH AFTER, STILL DRY.",
     },
     valves: {
       title: 'BALLAST CONTROL · YEAR 312',
@@ -258,6 +258,8 @@
       S.addStory(world, "ODELL'S PRESSURE BOOTS WERE AT THE END OF HIS TEST TANK, OVER HIS WORKSHOP, IN A BOX MARKED 'IF FOUND, RETURN TO ODELL'. NOW I SINK.");
       S.setLead(world, 'GO DOWN THROUGH THE EAST TANK TO THE SILT TANK');
       world.save();
+      // the shortcut back (0.3.23): his drain, beside the stand
+      yield me('AND A DRAIN IN THE FLOOR BESIDE THE STAND, WITH A LADDER DOWN IT. HIS WAY BACK TO THE BENCH.');
     },
 
     // The Silt Mother.

@@ -361,8 +361,36 @@
       yield { wait: 30 };
       yield me('SOME OF THEM WERE STEPPING OUT.');
       if (f.guardAwake) yield me('THE ONE WHO WAS AWAKE STAYED WHERE HE WAS.');
+      // The bell is their turnout: the car beside the board loses its brake, and its lamp goes green.
+      HA.audio.play('clamp');
+      world.shake(1);
+      yield { wait: 16 };
+      yield me('BESIDE THE BOARD, THE CAR ON THE RAIL DROPPED ITS BRAKE WITH A BANG. THE BELL WAS THEIR TURNOUT: THAT CAR IS HOW THEY GET TO THE BULKHEAD.');
       S.addStory(world, 'I DREW THE BULKHEAD\'S BOLT IN THE GUARD ROOM. IT RANG A BELL DOWN THE RACKS, AND SOME OF THE GUARD STEPPED OUT.');
       world.save();
+    },
+    // The honour guard's turnout car, between its stations by the bolt board and by the bulkhead: braked until the
+    // bell has rung, then the hero's shortcut back (the Guard Room is a dead end; Cody: not the same way back).
+    *turnout(world) {
+      const f = world.state.flags;
+      if (!f.guardBolt && !f.domeSeen) {
+        HA.audio.play('terminal');
+        yield me(world.def.id === 'barracks' ? "A CAR ON A RAIL UNDER THE ROOF. IT'S BRAKED. THE PLATE ON IT SAYS IT RUNS WHEN THE GUARD ROOM'S BELL RINGS." : "IT'S BRAKED. THE PLATE ON IT SAYS IT RUNS WHEN THE BELL RINGS.");
+        return;
+      }
+      HA.audio.play('lift');
+      yield { fade: 'out', frames: 24 };
+      for (let i = 0; i < 3; i++) {
+        HA.audio.play('tink');
+        yield { wait: 16 };
+      }
+      world.travel(world.link);
+      yield { wait: 10 };
+      yield { fade: 'in', frames: 24 };
+      if (!f.turnoutRode) {
+        f.turnoutRode = true;
+        yield me(world.def.id === 'barracks' ? 'THE WHOLE LENGTH OF THE BARRACKS, OVER EVERYONE\'S HEADS, IN A FEW SECONDS.' : 'BACK TO THE BOLT BOARD, IN A FEW SECONDS.');
+      }
     },
     // The Bridge Stair's way up is shut by a shutter, bolted on the landing's side; his door is beside it.
     *shutterShut(world) {

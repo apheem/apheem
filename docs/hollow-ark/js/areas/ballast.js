@@ -333,6 +333,9 @@
     abilities: { thruster: true, grapple: true, foam: true },
     legend: {
       h: { type: 'hatch', to: 'odell-workshop', open: () => true, name: 'the ladder down' },
+      // Odell's drain, by the boots' stand: his way back down to the bench after a trial, and the shortcut back
+      // (0.3.23). It comes out at the ladder, since the workshop's ladder up arrives at h, the first link here.
+      e: { type: 'hatch', to: 'odell-workshop', open: () => true, name: "Odell's drain" },
       T: { type: 'log', id: 'trials' },
       K: { type: 'log', scene: 'boots', name: "Odell's pressure boots" },
     },
@@ -363,7 +366,7 @@
       '##............................................................................##',
       '##............................................................................##',
       '##..................................................................#~~~i~#...##',
-      '##..................T...............h...............................#~u~~~#..K##',
+      '##..................T...............h...............................#~u~~~#e.K##',
       '##########################################ssssss####ssssss####sssss#############',
       '##########################################ssssss####ssssss####sssss#############',
       '################################################################################',

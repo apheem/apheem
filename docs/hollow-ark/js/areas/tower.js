@@ -7,6 +7,8 @@
 // Map legend beyond the shared one: 7 a Warden turret   9 the honour guard   Z the Tower Lift   a the ladder up
 // e the hatch down   T a terminal   M the Steward   Y Lift B, down from the Helm (once it's mended)
 // D the Bridge Stair's shutter, bolted from above (in the Barracks, the bulkhead)   K the Guard Room's bolt board
+// R the honour guard's turnout car, on its rail under the roof between the Guard Room and the bulkhead: braked
+// until the Guard Room's bell rings, then the shortcut back
 (function (HA) {
   HA.rooms.area('tower', { name: 'COMMAND TOWER', theme: 'tower', music: 'tower', mapColor: '#e8dcc0' });
 
@@ -15,6 +17,18 @@
   const ALL = { thruster: true, grapple: true, foam: true, boots: true };
   // The Steward wakes his night watch at the Barracks' far end, the first time, with the crew by the lift (story/gasket.js).
   const wakeDue = (s) => !!s.flags.towerUp && !s.flags.guardWoke && !s.flags.stewardSeen && s.people.gasket !== 'dead';
+  // The turnout car: the honour guard ride it from their racks to Bulkhead 1 when the bell rings. Its brake comes
+  // off with the bolt (story/tower.js), and it runs between its two stations from then on: the way back from the
+  // bolt board. A game saved past the bulkhead before the car was built (the Dome seen) finds it running.
+  const turnout = (to) => ({
+    type: 'lift',
+    to,
+    rail: 2,
+    scene: 'turnout',
+    label: '{up} RIDE THE TURNOUT CAR',
+    name: 'the turnout car',
+    lit: (s) => !!s.flags.guardBolt || !!s.flags.domeSeen,
+  });
 
   // The Barracks: where the honour guard sleeps, under the Steward's colours.
   HA.rooms.add({
@@ -29,17 +43,19 @@
       // The bulkhead to the Dome, bolted for the night from the Guard Room (the fourth batch of new rooms). A game
       // saved past it before the Guard Room was built (the Dome has been seen) finds it open.
       D: { type: 'door', id: 'guardBolt', open: (s) => !!s.flags.guardBolt || !!s.flags.domeSeen },
+      R: turnout('guard-room'),
     },
     scenery: [
       { kind: 'tallwindows', y: 3, every: 160, from: 196 },
+      { kind: 'rail', y: 2, x0: 0, x1: 70 },
       { kind: 'banners', at: [21, 41, 61] },
       { kind: 'bunks', x: 15, y: 13 },
       { kind: 'bunks', x: 30, y: 13 },
       { kind: 'racks', x0: 49, x1: 61, y: 9 },
       { kind: 'stencil', x: 3, y: 5, text: 'HONOUR GUARD · BARRACKS' },
       { kind: 'stencil', x: 3, y: 13, text: '← GUARD ROOM' },
-      { kind: 'stencil', x: 62, y: 11, text: 'BULKHEAD 1 · NIGHT:' },
-      { kind: 'stencil', x: 62, y: 12, text: 'BOLTED FROM THE GUARD ROOM' },
+      { kind: 'stencil', x: 56, y: 14, text: 'BULKHEAD 1 · NIGHT:' },
+      { kind: 'stencil', x: 56, y: 15, text: 'BOLTED FROM THE GUARD ROOM' },
     ],
     // The far end, the first time, with the crew by the lift: the Steward wakes his night watch (story/gasket.js).
     triggers: [
@@ -66,7 +82,7 @@
       '................===========.................................................DD..',
       '............................................####............................DD..',
       '............................................####............................DD..',
-      '.......Z........................9...........####................9...........DD..',
+      '.......Z........................9...........####................9....R......DD..',
       '################################################################################',
       '################################################################################',
       '################################################################################',
@@ -78,6 +94,8 @@
   // aren't on watch stand in their racks here on a full dose, two tiers of them, until the Steward sends for them.
   // The bulkhead to the Dome is bolted from the board at the far end of the top tier, and drawing the bolt rings
   // the bell down the racks: three of them step out (story/tower.js), and are out whenever the hero comes back in.
+  // The bell is their turnout: it takes the brake off the car beside the board, which runs on a rail under the roof
+  // to the bulkhead's end of the Barracks. That's the hero's way back (Cody: not the same way they came).
   HA.rooms.add({
     id: 'guard-room',
     area: 'tower',
@@ -88,13 +106,15 @@
     legend: {
       K: { type: 'log', scene: 'guardBolt', label: '{up} DRAW THE BOLT', name: 'the bolt board' },
       T: { type: 'log', id: 'standing', name: 'the standing orders' },
+      R: turnout('barracks'),
     },
     scenery: [
+      { kind: 'rail', y: 2, x0: 8, x1: 79 },
       { kind: 'banners', at: [30, 50, 70] },
-      { kind: 'guardracks', y: 9, x0: 8, x1: 54, every: 4, awake: 16 },
+      { kind: 'guardracks', y: 9, x0: 12, x1: 54, every: 4, awake: 16 },
       { kind: 'guardracks', y: 18, x0: 7, x1: 59, every: 4 },
       { kind: 'boltboard', x: 4, y: 9 },
-      { kind: 'stencil', x: 8, y: 4, text: 'HONOUR GUARD · GUARD ROOM' },
+      { kind: 'stencil', x: 11, y: 4, text: 'HONOUR GUARD · GUARD ROOM' },
     ],
     triggers: [
       { x0: 66, x1: 77, when: (s) => !s.flags.guardRoomIn, run: 'guardRoomIn' },
@@ -110,7 +130,7 @@
       '##............................................................................##',
       '##............................................................................##',
       '##............................................................................##',
-      '##..K.........................................................................##',
+      '##..K...R.....................................................................##',
       '################################....#####################.....................##',
       '################################....#####################.....................##',
       '##............................................................................##',

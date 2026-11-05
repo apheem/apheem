@@ -6,8 +6,9 @@
 // Map legend beyond the shared one: ^ hot grilles   m Bloomsworn climber   8 steam drone   0 heat slug
 // a the ladder up   e the hatch down   L the crew's lift   T a terminal   M Abel, in his furnace
 // Z the Tower Lift   D the Piston Run's plate, bolted from above (in the Boiler Stair, the burst main's steam)
-// l the last stoker's bunk   V and W the Condenser's valves. A room's vents (see abilities.js) carry the hero
-// up, its belts carry them along, and its pistons (see hazards.js) strike.
+// l the last stoker's bunk   V and W the Condenser's valves   h the hatch down to the Condenser's ladder (the
+// Condenser's own a is that ladder, up to the stair above the burst, steamed shut until both valves are). A room's
+// vents (see abilities.js) carry the hero up, its belts carry them along, and its pistons (see hazards.js) strike.
 (function (HA) {
   HA.rooms.area('spine', { name: 'ENGINE SPINE', theme: 'spine', music: 'spine', mapColor: '#ff8f4a' });
 
@@ -110,6 +111,8 @@
       // Main 3, burst across the shaft over the midway shelf: live steam, until both its valves in the Condenser are
       // shut (story/spine.js). A game saved past it before the Condenser was built (the crew have come) finds it gone.
       D: { type: 'door', id: 'steamMain', steam: true, open: (s) => !!s.flags.condenser || !!s.flags.crewCame },
+      // The top of the Condenser's ladder, on the block above the burst: the shortcut back from valve A.
+      h: { type: 'hatch', to: 'condenser', open: (s) => !!s.flags.condenser || !!s.flags.crewCame, name: "the Condenser's ladder" },
     },
     vents: [
       { x0: 3, x1: 5, y0: 62, y1: 85 },
@@ -164,7 +167,7 @@
       '##............======..................##',
       '##....................................##',
       '##....................................##',
-      '##............................0.......##',
+      '##......................h.....0.......##',
       '##....................##########......##',
       '##....................##########......##',
       '##....................................##',
@@ -241,6 +244,9 @@
       T: { type: 'log', id: 'condenser', name: "the condenser's notice" },
       V: { type: 'log', scene: 'valveA', label: '{up} SHUT THE VALVE', name: 'valve A' },
       W: { type: 'log', scene: 'valveB', label: '{up} SHUT THE VALVE', name: 'valve B' },
+      // The shortcut back: a ladder up the well beside Main 3, from valve A's end to the stair above the burst. It's
+      // full of the main's steam until both valves are shut (story/spine.js).
+      a: { type: 'hatch', up: true, to: 'boiler-stair', scene: 'chaseLadder', name: 'the ladder up the well' },
     },
     vents: [{ x0: 64, x1: 66, y0: 3, y1: 12 }],
     scenery: [
@@ -248,9 +254,11 @@
       { kind: 'coils', y: 8, to: 12, at: [[14, 21], [25, 33], [37, 45], [49, 63]] },
       { kind: 'valve', x: 74, y: 12, flag: 'condenserA' },
       { kind: 'valve', x: 29, y: 7, flag: 'condenserB' },
+      { kind: 'wellsteam', x: 71, y0: 2, y1: 12 },
       { kind: 'stencil', x: 3, y: 5, text: 'CONDENSER HALL · MAIN 3' },
       { kind: 'stencil', x: 73, y: 9, text: 'A' },
       { kind: 'stencil', x: 28, y: 4, text: 'B' },
+      { kind: 'stencil', x: 68, y: 6, text: '↑ STAIR' },
     ],
     triggers: [{ x0: 2, x1: 12, when: (s) => !s.flags.condenserIn, run: 'condenserIn' }],
     map: [
@@ -266,7 +274,7 @@
       '..............########...#########...#########...###############..............##',
       '..............................................................................##',
       '..............................................................................##',
-      '........T.............................8..............................0....V...##',
+      '........T.............................8..............................0.a..V...##',
       '##############.................................................#################',
       '##############.................................................#################',
       '##############.................................................#################',

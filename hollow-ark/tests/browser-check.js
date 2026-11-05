@@ -907,6 +907,14 @@ async function play(browserType, url, label) {
       HA.debug.step(1, { up: true });
       talkThrough();
       out.boots = s.abilities.boots;
+      // Odell's drain beside the stand (0.3.23): the shortcut back, down to the workshop's ladder
+      HA.debug.goto('test-tank', 75, 18);
+      HA.debug.step(5);
+      out.drain = w().near && w().near.label;
+      HA.debug.step(1, { down: true });
+      HA.debug.step(1);
+      for (let i = 0; i < 200 && (w().scene || w().transition); i++) HA.debug.step(1);
+      out.drainTo = [w().def.id, Math.round((p.x + p.w / 2) / 8)].join(',');
       // In the boots the hero sinks to the bottom of the Tank Farm's east tank.
       HA.debug.goto('tank-farm', 52, 41);
       HA.debug.step(5);
@@ -1088,6 +1096,7 @@ async function play(browserType, url, label) {
     expect(bl.wedge.shut && bl.wedge.ladder && bl.wedge.open, `the Pump Gallery's wedged door, or the way round over the Pump Heads, went wrong (${JSON.stringify(bl.wedge)})`);
     expect(bl.found.foam && bl.found.back && bl.found.walk && bl.walk.barks >= 6 && bl.walk.door === 'workshopDoor', `finding Solder, or the walk, went wrong (${JSON.stringify(bl.found)}, ${JSON.stringify(bl.walk)})`);
     expect(bl.foam && bl.thrown && bl.tank === 'test-tank' && bl.boots && bl.sank, `the Foam Sprayer, the silt, the Test Tank or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.tank}, ${bl.boots}, ${bl.sank})`);
+    expect(bl.drain === '{down} CLIMB DOWN' && /^odell-workshop,3[67]$/.test(bl.drainTo), `Odell's drain, the shortcut back from the boots, went wrong (${bl.drain}, ${bl.drainTo})`);
     expect(!bl.atDoor.fighting && !bl.atDoor.shut, `the Silt Mother's fight started from the door, or her shutters were already down (${JSON.stringify(bl.atDoor)})`);
     expect(bl.fell.room === 'valve-hall' && !bl.fell.flooding && bl.fell.solder && bl.fell.level, `a fall in the flood did not come back to the Valve Hall with Solder (${JSON.stringify(bl.fell)})`);
     expect(bl.fighting && /bite/.test(bl.states) && /lash/.test(bl.states) && /spit/.test(bl.states) && bl.underwater && bl.drained && bl.defeated === 'siltMotherDefeated', `the Silt Mother's fight went wrong (${JSON.stringify(bl)})`);
@@ -2549,11 +2558,29 @@ async function play(browserType, url, label) {
         press('up');
         return listen().join(' ');
       };
+      // the shortcut back (0.3.23): the ladder by A, up the well beside Main 3, steamed shut while the main is open
+      HA.debug.goto('condenser', 71, 12);
+      HA.debug.step(5);
+      out.ladder = w().near && w().near.label;
+      press('up');
+      out.ladderShut = listen().join(' ');
+      out.ladderStay = w().def.id;
       out.a = valve(74, 12);
       out.half = [f.condenserA, !!f.condenserB, !!f.condenser].join(',');
       out.b = valve(29, 7);
       out.done = !!f.condenser && s.journal.story.some((t) => /SHUT IT OFF AT BOTH ITS VALVES/.test(t));
       out.again = valve(29, 7);
+      // both shut, the ladder runs: out on the stair above the burst, and the hatch there goes back down
+      const at = () => [w().def.id, Math.round((w().player.x + w().player.w / 2) / 8), Math.round((w().player.y + w().player.h) / 8)].join(',');
+      HA.debug.goto('condenser', 71, 12);
+      HA.debug.step(5);
+      press('up');
+      out.climb = listen().join(' ');
+      out.top = at();
+      out.hatch = w().near && w().near.label;
+      press('down');
+      listen();
+      out.bottom = at();
       HA.debug.goto('boiler-stair', 30, 55);
       HA.debug.step(5);
       out.open = w().doors.find((d) => d.id === 'steamMain').open && !w().scene;
@@ -2573,6 +2600,8 @@ async function play(browserType, url, label) {
     expect(cn.shut && /LIVE STEAM, WALL TO WALL/.test(cn.thought) && /CONDENSER/.test(cn.thought) && cn.under && cn.room === 'condenser' && /SUMP OF HOT WATER/.test(cn.inside), `the burst main over the Boiler Stair's shelf went wrong (${JSON.stringify(cn)})`);
     expect(/A IS PAST THE SUMP, B IS ON THE COIL TOPS/.test(cn.notice) && cn.prompts.every((l) => l === '{up} SHUT THE VALVE') && /THINNED\. NOT ENOUGH/.test(cn.a) && cn.half === 'true,false,false' && /DIED TO A HISS/.test(cn.b) && cn.done && /IT'S SHUT\. SO IS THE OTHER ONE/.test(cn.again), `the Condenser's valves went wrong (${JSON.stringify(cn)})`);
     expect(cn.open && cn.arrive === 'crewArrives' && /SOMEBODY SHUT MAIN 3/.test(cn.crew) && cn.old, `the Boiler Stair after Main 3 went wrong (${JSON.stringify(cn)})`);
+    expect(/TAKE THE LADDER BY A/.test(cn.notice) && cn.ladder === '{up} CLIMB UP' && /LIVE STEAM, ROLLING DOWN THE LADDER WELL/.test(cn.ladderShut) && cn.ladderStay === 'condenser' && /LADDER WELL BY A WENT QUIET/.test(cn.b), `the Condenser's ladder, before the valves, went wrong (${JSON.stringify(cn)})`);
+    expect(/ABOVE WHERE MAIN 3 BURST/.test(cn.climb) && /^boiler-stair,2[45],32$/.test(cn.top) && cn.hatch === '{down} CLIMB DOWN' && /^condenser,7[12],13$/.test(cn.bottom), `the Condenser's ladder back to the stair went wrong (${JSON.stringify(cn)})`);
 
     // The Guard Room: the Barracks' bulkhead to the Dome is bolted for the night from the Guard Room, west of the lift;
     // the racked guard, the one who's awake (and, with the Muster's dose book read, why), and the bell.
@@ -2591,6 +2620,17 @@ async function play(browserType, url, label) {
       out.thought = listen().join(' ');
       for (let i = 0; i < 120; i++) HA.debug.step(1, { right: true });
       out.shut = !w().doors.find((d) => d.id === 'guardBolt').open && w().def.id === 'barracks' && w().player.x < 76 * 8;
+      // the turnout car by the bulkhead (0.3.23): braked, its lamp red, until the Guard Room's bell rings
+      const car = () => w().links.find((l) => l.legend.scene === 'turnout');
+      const at = () => [w().def.id, Math.round((w().player.x + w().player.w / 2) / 8), Math.round((w().player.y + w().player.h) / 8)].join(',');
+      HA.debug.goto('barracks', 70, 18);
+      HA.debug.step(5);
+      listen();
+      out.car = w().near && w().near.label;
+      out.lampBefore = car().legend.lit(s);
+      press('up');
+      out.braked = listen().join(' ');
+      out.carStay = at();
       // west, past the lift, into the Guard Room
       HA.debug.goto('barracks', 4, 18);
       HA.debug.step(5);
@@ -2618,6 +2658,17 @@ async function play(browserType, url, label) {
       out.bolt = !!f.guardBolt && s.journal.story.some((t) => /RANG A BELL DOWN THE RACKS/.test(t));
       press('up');
       out.again = listen().join(' ');
+      // the bell took the car's brake off: it runs from beside the board to the bulkhead's end, and back
+      HA.debug.goto('guard-room', 8, 9);
+      HA.debug.step(5);
+      out.lampAfter = car().legend.lit(s);
+      out.ride = w().near && w().near.label;
+      press('up');
+      out.rode = listen().join(' ');
+      out.arrived = at();
+      press('up');
+      listen();
+      out.rodeBack = at();
       // back east and through the open bulkhead to the Dome; and the racks still empty on the way back in
       HA.debug.goto('barracks', 70, 18);
       HA.debug.step(5);
@@ -2632,10 +2683,12 @@ async function play(browserType, url, label) {
       f.domeSeen = true;
       HA.debug.goto('barracks', 70, 18);
       HA.debug.step(5);
-      out.old = w().doors.find((d) => d.id === 'guardBolt').open && !w().scene;
+      out.old = w().doors.find((d) => d.id === 'guardBolt').open && !w().scene && car().legend.lit(s);
       w().assist.invincible = false;
       return out;
     });
+    expect(gr.car === '{up} RIDE THE TURNOUT CAR' && !gr.lampBefore && /BRAKED/.test(gr.braked) && /GUARD ROOM'S BELL RINGS/.test(gr.braked) && /^barracks,/.test(gr.carStay), `the turnout car before the bell went wrong (${JSON.stringify(gr)})`);
+    expect(/DROPPED ITS BRAKE/.test(gr.bell) && gr.lampAfter && gr.ride === '{up} RIDE THE TURNOUT CAR' && /OVER EVERYONE'S HEADS/.test(gr.rode) && /^barracks,(69|70|71),19$/.test(gr.arrived) && /^guard-room,(7|8|9),10$/.test(gr.rodeBack), `riding the turnout car went wrong (${JSON.stringify(gr)})`);
     expect(gr.scene === 'bulkheadShut' && /BOLTED FOR THE NIGHT/.test(gr.thought) && /GUARD ROOM/.test(gr.thought) && gr.shut, `the Barracks' bulkhead was not bolted (${JSON.stringify(gr)})`);
     expect(gr.room === 'guard-room' && /EYES SHUT/.test(gr.inside) && /NOBODY MOVED/.test(gr.inside) && gr.still === 0 && /HIS EYES FOLLOWED ME/.test(gr.awake) && /MISSED A DOSE/.test(gr.awake) && /NOTHING COMES UP FROM THE SPINE AFTER DARK/.test(gr.orders), `the Guard Room's racks went wrong (${JSON.stringify(gr)})`);
     expect(gr.prompt === '{up} DRAW THE BOLT' && /A BELL OVER THE BOARD RANG/.test(gr.bell) && /STEPPING OUT/.test(gr.bell) && /STAYED WHERE HE WAS/.test(gr.bell) && gr.out === '10,19,19' && gr.empty === '40,27,59' && gr.bolt && /THE BOLT'S DRAWN/.test(gr.again), `drawing the bulkhead's bolt went wrong (${JSON.stringify(gr)})`);

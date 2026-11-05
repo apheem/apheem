@@ -1109,6 +1109,19 @@
       HA.font.draw(g, 'SEALED', x + 34, y + 27, '#e8434f', { shadow: null });
       g.globalAlpha = 1;
     },
+    // The honour guard's turnout rail: brass, on hangers just under the roof, from the Guard Room to Bulkhead 1.
+    rail(g, s) {
+      const y = s.y * 8;
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, y, x1 - x0, 4);
+      for (let x = x0 + 6; x < x1; x += 48) g.fillRect(x, y - 4, 2, 5);
+      g.fillStyle = '#6a5630';
+      g.fillRect(x0, y + 1, x1 - x0, 2);
+      g.fillStyle = '#c9a050';
+      g.fillRect(x0, y + 1, x1 - x0, 1);
+    },
     // The Condenser's coils (the fourth batch of new rooms): the coil tops are hull, and under each one the copper
     // tubes hang in loops down into the sump's steam, where the Spine's steam turns back into water.
     coils(g, s) {
@@ -1806,6 +1819,7 @@
       if (s.kind === 'valve') drawValve(g, world, s, cam);
       if (s.kind === 'guardracks') drawGuardRacks(g, world, s, cam);
       if (s.kind === 'boltboard') drawBoltBoard(g, world, s, cam);
+      if (s.kind === 'wellsteam') drawWellSteam(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -2062,7 +2076,8 @@
   }
 
   // A lift car: the old crew's grey cage, the Hullfolk's own (the crew's lift up the Spine, patched in brown, which
-  // rises into place as they finish it), or the great Tower Lift.
+  // rises into place as they finish it), the great Tower Lift, or the honour guard's brass turnout car, hung from
+  // its rail under the roof (legend.rail, the rail's row).
   function drawLift(g, world, l, cam) {
     const big = l.legend.big;
     const w = big ? 40 : 24;
@@ -2070,14 +2085,28 @@
     const x = Math.round(l.x - (big ? 8 : 0) - cam.x);
     const y = Math.round(l.y - (big ? 8 : 0) + (l.rise || 0) - cam.y);
     const crew = l.legend.crew;
+    const rail = l.legend.rail;
+    const tone = crew ? ['#5a4028', '#a8743a', '#c98a4a'] : rail !== undefined ? ['#6a5630', '#a8843a', '#e0c070'] : ['#3a4258', '#6c7894', '#a9b6cc'];
+    if (rail !== undefined) {
+      // its cable, up to the trolley on the rail
+      const ry = Math.round(rail * 8 + 2 - cam.y);
+      g.fillStyle = '#6a5630';
+      g.fillRect(x + w / 2 - 1, ry, 2, y - ry);
+      g.fillStyle = '#a8843a';
+      g.fillRect(x + w / 2 - 1, ry, 1, y - ry);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + w / 2 - 5, ry - 2, 10, 5);
+      g.fillStyle = '#c9a050';
+      g.fillRect(x + w / 2 - 4, ry - 1, 8, 1);
+    }
     g.fillStyle = '#10121c';
     g.fillRect(x, y, w, h);
-    g.fillStyle = crew ? '#5a4028' : '#3a4258';
+    g.fillStyle = tone[0];
     g.fillRect(x + 1, y + 1, w - 2, 2);
     g.fillRect(x + 1, y + h - 3, w - 2, 3);
-    g.fillStyle = crew ? '#a8743a' : '#6c7894';
+    g.fillStyle = tone[1];
     for (let b = 2; b < w - 1; b += 4) g.fillRect(x + b, y + 3, 1, h - 6);
-    g.fillStyle = crew ? '#c98a4a' : '#a9b6cc';
+    g.fillStyle = tone[2];
     g.fillRect(x + 1, y + 1, w - 2, 1);
     if (crew) {
       // patched: a plate bolted across, and the cable it hangs from
@@ -2287,6 +2316,33 @@
   }
 
   // A burst main's steam, wall to wall, where a door would be (the Boiler Stair's Main 3): white billows, rolling.
+  // The Condenser's ladder well, while Main 3 is open: its steam rolls down the ladder out of the roof, thinning as
+  // it falls. Both valves shut (or the crew come up, in a game saved before the Condenser), it's gone.
+  function drawWellSteam(g, world, s, cam) {
+    const f = world.state.flags;
+    if (f.condenser || f.crewCame) return;
+    const t = world.time;
+    const cx = s.x * 8 + 4 - Math.round(cam.x);
+    const top = s.y0 * 8 - Math.round(cam.y);
+    const rows = s.y1 - s.y0 + 1;
+    // a column of it down the ladder, thick at the roof
+    for (let r = 0; r < rows; r++) {
+      const a = 0.62 - (r / rows) * 0.4;
+      const wob = Math.round(Math.sin(t * 0.05 + r * 0.9) * 2);
+      g.fillStyle = `rgba(232,240,246,${a.toFixed(2)})`;
+      g.fillRect(cx - 9 + wob, top + r * 8, 18, 8);
+    }
+    // and billows rolling down it
+    const span = rows * 8;
+    for (let n = 0; n < 18; n++) {
+      const d = (t * 0.8 + n * 29) % span;
+      const k = Math.sin(t * 0.06 + n * 1.7);
+      const a = (0.75 * (1 - d / span) + 0.15).toFixed(2);
+      g.fillStyle = n % 3 ? `rgba(255,255,255,${a})` : `rgba(180,192,204,${a})`;
+      g.fillRect(Math.round(cx - 3 + k * 8), Math.round(top + d), 5, 3);
+    }
+  }
+
   function drawSteam(g, world, d, cam) {
     const ys = d.cells.map((c) => c.ty);
     const top = Math.min(...ys);
