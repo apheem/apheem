@@ -2210,6 +2210,170 @@ async function play(browserType, url, label) {
     expect(/STAYED DARK WHEN THE OTHERS OPENED/.test(pc.cards) && /ITS CELL CAME DOWN WITH ME/.test(pc.cards) && /IT WAS NEVER MINE TO TAKE/.test(pc.cards) && /A LITTLE LONGER/.test(pc.cards) && pc.sleepers === 3985, `the endings with Pod 1130's cell taken went wrong (${pc.sleepers}: ${pc.cards})`);
     expect(pc.failed === 'failed' && /STOPPED WHILE I WAS CLIMBING/.test(pc.failedCards) && /I WAS BUSY WITH THE KEY/.test(pc.failedCards) && pc.failedSleepers === 3985 && pc.unheard, `Pod 1130 never answered went wrong (${pc.failed}, ${pc.failedSleepers}, ${pc.unheard}: ${pc.failedCards})`);
 
+    // ---- The new stoker (3.15): the morning's sounds after the night at the camp (Abel spared); the Fireman's
+    // offer in the Reactor Throat; unchaining Rivet, so his fight (each move forced in turn, a fall, the win); Rivet
+    // home by the Warrens' gate, and counted; then, from another save (Abel ended), the sack taken; and the cards. ----
+    await towerSave({ room: 'crew-camp', x: 18 * 8, y: 19 * 8 - 14, logs: { stokers: true }, flags: Object.assign({}, settled, { lightsOut: false, campDone: false, verdict: false }) });
+    await startSaved();
+    const st = await get(() => {
+      const { w, listen, talkThrough, choose, options } = window.tw;
+      const out = {};
+      const s = w().state;
+      const p = w().player;
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      talkThrough();
+      HA.story.run(w(), 'lightsOut');
+      out.night = listen().slice(-3).join(' | ');
+      HA.debug.step(3);
+      out.heard = { flag: !!s.flags.rivetHeard, toast: w().toastText, lead: s.lead };
+      // Down the camp's hatch: the ladder lands on the ledge by the shutter. Through it, the Fireman sees the hero.
+      HA.debug.goto('reactor-throat', 3, 7);
+      HA.debug.step(10);
+      out.room = { boss: w().boss && w().boss.type, enemies: w().enemies.map((e) => e.type).join(' '), rivet: (w().npcs.find((n) => n.id === 'rivet') || {}).chained };
+      for (let i = 0; i < 600 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.scene = w().scene && w().scene.name;
+      out.offer = listen().join(' | ');
+      out.choice = options();
+      out.lose = w().scene.step.choice.options.map((o) => o.confirm.lose).join(' / ');
+      const m = s.mercy;
+      choose(0);
+      out.unchain = listen().join(' | ');
+      HA.debug.step(5);
+      const b = w().boss;
+      out.fight = { type: b && b.type, fighting: b && b.fighting, music: HA.music.playing, rivet: s.people.rivet, mercy: s.mercy - m, cp: w().checkpoint && w().checkpoint.room };
+      // Each move, forced in turn: the rake along the floor in front of him, the coals at the hero, the draught
+      // through the grate nearest them. (Mortal for these, with the hero's hits counted, not his.)
+      w().assist.invincible = false;
+      const hurt = (place, state, frames) => {
+        place();
+        p.invuln = 0;
+        p.hp = p.maxHp;
+        Object.assign(b, { state, timer: 1, vx: 0 });
+        b.facing = Math.sign(p.x - b.x) || 1;
+        const x0 = b.x;
+        for (let i = 0; i < frames && p.hp === p.maxHp; i++) {
+          HA.debug.step(1);
+          // nothing else of his while this one plays out, and no walking into the hero
+          if (b.state === 'think') Object.assign(b, { timer: 99, x: x0, vx: 0 });
+        }
+        return p.maxHp - p.hp;
+      };
+      const stand = (tx) => () => {
+        Object.assign(p, { x: tx * 8, y: 19 * 8 - p.h, vx: 0, vy: 0 });
+        Object.assign(b, { x: 15 * 8 - 3, y: 19 * 8 - b.h });
+      };
+      out.rake = hurt(stand(10), 'rakeTele', 30);
+      out.coals = { n: 0, fires: 0 };
+      out.coalsHit = hurt(() => {
+        stand(8)();
+        b.coals = [];
+        b.fires = [];
+      }, 'coalsTele', 120);
+      out.coals = { n: b.coals.length + b.fires.length, fires: b.fires.length };
+      out.draught = hurt(() => {
+        stand(19)();
+        b.columns = [];
+        Object.assign(b, { x: 26 * 8 });
+      }, 'draughtTele', 90);
+      out.columns = b.columns.map((c) => c.x / 8).join(',');
+      // The second half: hotter. Five coals, and every grate.
+      for (let i = 0; i < 40 && b.phase === 1; i++) w().hurtEnemy(b, 4, 1);
+      // (past the hit-stop from the hero's last hit)
+      Object.assign(b, { state: 'coalsTele', timer: 1, coals: [], columns: [] });
+      HA.debug.step(8);
+      out.half = { phase: b.phase, coals: b.coals.length };
+      Object.assign(b, { state: 'draughtTele', timer: 1 });
+      HA.debug.step(8);
+      out.half.columns = b.columns.length;
+      // A fall: back on the ledge, him back at his post; through the shutter, it starts again.
+      p.invuln = 0;
+      w().hurtPlayer(p.hp, p.x + 20);
+      for (let i = 0; i < 400 && (w().player.dead || w().transition); i++) HA.debug.step(1);
+      HA.debug.step(20);
+      w().assist.invincible = true;
+      const back = w().enemies.find((e) => e.type === 'fireman');
+      out.fall = { room: w().def.id, x: Math.round(w().player.x / 8), y: Math.round((w().player.y + w().player.h) / 8), fighting: back.fighting, hp: back.hp === back.maxHp, at: Math.round(back.x / 8) };
+      for (let i = 0; i < 600 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.again = w().scene && w().scene.name;
+      talkThrough();
+      HA.debug.step(5);
+      out.again += ' ' + !!(w().boss && w().boss.type === 'fireman' && w().boss.fighting);
+      // The win: the key, the chain, and Abel's word.
+      for (let i = 0; i < 4000 && w().boss.fighting; i++) {
+        if (i % 6 === 0) w().hurtEnemy(w().boss, 4, 1);
+        HA.debug.step(1);
+      }
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1);
+      out.won = listen().join(' | ');
+      talkThrough();
+      HA.debug.step(30);
+      out.after = { rivet: s.people.rivet, mercy: s.mercy - m, boss: w().boss && w().boss.type, gone: w().npcs.filter((n) => n.id === 'rivet').every((n) => n.state === 'gone'), choice: s.journal.choices[s.journal.choices.length - 1], cp: w().checkpoint };
+      HA.debug.goto('reactor-throat', 3, 7);
+      HA.debug.step(10);
+      out.empty = !w().enemies.some((e) => e.type === 'fireman') && !w().npcs.some((n) => n.id === 'rivet');
+      // Home, by the gate.
+      HA.debug.goto('warrens', 100, 18);
+      HA.debug.step(10);
+      const rv = w().npcs.find((n) => n.id === 'rivet');
+      out.home = rv && { x: Math.round(rv.x / 8), state: rv.state, kneel: rv.kneel, lines: rv.lines.join(' ') };
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.count = HA.endings.landed(s, 'homecoming').hullfolk;
+      s.people.rivet = null;
+      out.count -= HA.endings.landed(s, 'homecoming').hullfolk;
+      s.people.rivet = 'freed';
+      return out;
+    });
+    expect(/TWO SHOVELS/.test(st.night) && /A CHAIN, DRAGGING ON THE GRATING/.test(st.night) && st.heard.flag && st.heard.toast === 'THE REACTOR THROAT · DOWN THE HATCH FROM THE CAMP', `the morning's sounds from the Throat went wrong (${JSON.stringify(st.heard)}: ${st.night})`);
+    expect(st.room.boss === 'abel' && st.room.enemies === 'abel fireman' && st.room.rivet && st.scene === 'rivetFound', `the Fireman and his stoker were not in the Throat (${JSON.stringify(st.room)}, ${st.scene})`);
+    expect(/A SECOND SHOVEL/.test(st.offer) && /WHEN ONE IS USED UP/.test(st.offer) && /RIVET\. I KEPT TO THE WALLS/.test(st.offer) && st.choice === 'UNCHAIN HIM/TAKE THE SACK' && st.lose === 'THE SACK · ABEL STOKES ALONE / RIVET', `the Fireman's offer went wrong (${st.choice}, ${st.lose}: ${st.offer})`);
+    expect(/MIGHT BE STUPID/.test(st.unchain) && st.fight.type === 'fireman' && st.fight.fighting && st.fight.music === 'boss' && st.fight.rivet === 'unchain' && st.fight.mercy === 0 && st.fight.cp === 'reactor-throat', `the Fireman's fight did not start (${JSON.stringify(st.fight)})`);
+    expect(st.rake === 3 && st.coalsHit >= 1 && st.coals.n >= 1 && st.draught === 2 && st.columns === '17' && st.half.phase === 2 && st.half.coals === 5 && st.half.columns === 3, `the Fireman's moves went wrong (rake ${st.rake}, coals ${st.coalsHit} ${JSON.stringify(st.coals)}, draught ${st.draught} at ${st.columns}, ${JSON.stringify(st.half)})`);
+    expect(st.fall.room === 'reactor-throat' && st.fall.x === 3 && st.fall.y === 8 && !st.fall.fighting && st.fall.hp && st.fall.at === 15 && st.again === 'firemanAgain true', `a fall in the Fireman's fight went wrong (${JSON.stringify(st.fall)}, ${st.again})`);
+    expect(/SEND FOR ANOTHER/.test(st.won) && /I CAN STOP/.test(st.won) && /GO\. GO HOME/.test(st.won) && /THEY'LL TAKE YOU/.test(st.won) && st.after.rivet === 'freed' && st.after.mercy === 1 && st.after.boss === 'abel' && st.after.gone && /UNCHAINED HIM/.test(st.after.choice) && !st.after.cp && st.empty, `unchaining Rivet went wrong (${JSON.stringify(st.after)}, ${st.empty}: ${st.won})`);
+    expect(st.home && st.home.x === 105 && st.home.state === 'out' && st.home.kneel && /COOL BY THE GATE/.test(st.home.lines), `Rivet at home went wrong (${JSON.stringify(st.home)})`);
+    expect(/COOLEST THING HE EVER FELT/.test(st.cards) && /NEVER SAT NEAR A FIRE AGAIN/.test(st.cards) && /HE HIDES/.test(st.cards) && /BEFORE THE PINK CAME/.test(st.cards) && st.count === 1, `the endings with Rivet freed went wrong (${st.count}: ${st.cards})`);
+    // Abel ended, and the sack taken.
+    await towerSave({ room: 'reactor-throat', x: 3 * 8, y: 8 * 8 - 14, people: { abel: 'ended' }, flags: Object.assign({ rivetHeard: true }, settled) });
+    await startSaved();
+    const sk = await get(() => {
+      const { w, listen, talkThrough, choose } = window.tw;
+      const out = {};
+      const s = w().state;
+      const p = w().player;
+      w().assist.invincible = true;
+      HA.debug.step(5);
+      const abel = w().enemies.find((e) => e.type === 'abel');
+      out.relit = !!abel.relit && !!abel.moved;
+      for (let i = 0; i < 600 && !w().scene; i++) HA.debug.step(1, { right: true });
+      out.offer = listen().join(' | ');
+      out.lose = w().scene.step.choice.options[0].confirm.lose;
+      const m = s.mercy;
+      const level = p.weapons[0].level;
+      choose(1);
+      out.took = listen().join(' | ');
+      talkThrough();
+      for (let i = 0; i < 240; i++) HA.debug.step(1, { left: i % 60 < 30, right: i % 60 >= 30 });
+      const fm = w().enemies.find((e) => e.type === 'fireman');
+      out.after = { rivet: s.people.rivet, mercy: s.mercy - m, levelled: p.weapons[0].level > level || s.scrap > 0, hostile: fm.fighting, choice: s.journal.choices[s.journal.choices.length - 1] };
+      const rv = w().npcs.find((n) => n.id === 'rivet');
+      out.rivet = rv && rv.chained && rv.talkable(w(), rv) && rv.lines.join(' ');
+      out.cards = ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.count = HA.endings.landed(s, 'homecoming').hullfolk;
+      // Never gone down to see: heard, never settled. Never heard at all: nothing.
+      s.people.rivet = null;
+      out.never = HA.story.rivetFate(s) + ' ' + ['homecoming', 'crash', 'dominion', 'overgrown'].map((id) => HA.endings.lines(id, s).join(' ')).join(' || ');
+      out.count -= HA.endings.landed(s, 'homecoming').hullfolk;
+      s.flags.rivetHeard = false;
+      out.unheard = HA.story.rivetFate(s) === null && !/RIVET|WHO WAS FEEDING IT|FEEDS THE FIRES/.test(['homecoming', 'crash', 'dominion'].map((id) => HA.endings.lines(id, s).join(' ')).join(' '));
+      w().assist.invincible = false;
+      return out;
+    });
+    expect(sk.relit && /WE LAID HIM ON HIS BUNK/.test(sk.offer) && sk.lose === "THE SACK · THE FURNACE'S FIRE", `the Throat with Abel ended went wrong (${sk.relit}, ${sk.lose}: ${sk.offer})`);
+    expect(/SENSIBLE/.test(sk.took) && /GO ON, THEN/.test(sk.took) && !/TWO SHOVELS/.test(sk.took) && sk.after.rivet === 'left' && sk.after.mercy === -1 && sk.after.levelled && !sk.after.hostile && /LEFT RIVET CHAINED/.test(sk.after.choice) && /DON'T STOP ME/.test(sk.rivet), `taking the Steward's sack went wrong (${JSON.stringify(sk.after)}, ${sk.rivet}: ${sk.took})`);
+    expect(/SOMEBODY ELSE WENT BACK TO UNCHAIN HIM/.test(sk.cards) && /SO WAS RIVET/.test(sk.cards) && /I SEND HIM HIS DOSE/.test(sk.cards) && /UNTIL THE PINK CAME UP THE SPINE/.test(sk.cards) && sk.count === 0, `the endings with Rivet left at the fires went wrong (${sk.count}: ${sk.cards})`);
+    expect(/^never /.test(sk.never) && /WHO WAS FEEDING IT/.test(sk.never) && /NEVER ASKED WHO FEEDS THE FIRES/.test(sk.never) && sk.unheard, `the new stoker never gone to see went wrong (${sk.unheard}: ${sk.never})`);
+
     // The other branches after the Steward, each from a save at the Helm with him beaten and choice 12 to make.
     const helm = { room: 'helm', x: 16 * 8, y: 19 * 8 - 14, flags: { tower: true, towerUp: true, domeSeen: true, navSpoke: true, helmSeen: true, stewardSeen: true, stewardDown: true }, people: { gardener: 'passed' }, shimKnows: true };
     const branch = async (extra, fn) => {

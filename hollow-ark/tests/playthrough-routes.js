@@ -155,6 +155,15 @@ const spine = {
       await r.to('thaw-corridor');
       await r.do('PT.travel("crew-camp")');
     }
+    // In the morning, someone new at Abel's furnace (story/stoker.js): down the camp's hatch to the Throat, through
+    // the shutter to the Fireman's offer, and, told to let his stoker go, his fight.
+    if (r.route.stoker) {
+      await r.to('reactor-throat');
+      await r.do('PT.goCol(12)');
+      await r.do('PT.settle()');
+      if (await r.get('HA.ui.world.state.people.rivet === "unchain"')) await r.boss('reactor-throat', 'HA.ui.world.state.people.rivet === "freed"', { enter: 'PT.goCol(12)' });
+      await r.to('crew-camp');
+    }
     await r.to('tower-lift'); // the crew's verdict
   },
 };
@@ -237,6 +246,7 @@ const TRUE = {
   'WALK HIM HOME DRY': 'DRY',
   'CUT IT INTO THE WATER': 'WATER',
   'THAW HIM': 'THAW',
+  'UNCHAIN HIM': 'UNCHAIN',
   'LAUNCH THE PODS': 'LAUNCH',
   'TAKE ITS CORE TO THE NEW WORLD': 'LET IT REST',
 };
@@ -250,6 +260,7 @@ module.exports = {
     cotter: true,
     remedy: true,
     pod: true,
+    stoker: true,
     segments: [...THROUGH_TOWER, deck],
     check: {
       'every requirement met': (e) => e.crew >= 8 && e.bloom <= 2 && e.people.solder === 'alive' && Object.values(e.wardens).every((x) => x === 'release'),
@@ -260,6 +271,7 @@ module.exports = {
       'Cotter walked home dry': (e) => e.people.cotter === 'dry' && e.lines.includes('HASP WALKED BEHIND HIM, IN CASE.'),
       "Wick's remedy cut into the water": (e) => e.lines.includes('AND DREAMED OF IT.'),
       'Pod 1130 thawed': (e) => e.people.pod1130 === 'thawed' && e.lines.includes('232 YEARS LATE, HE SAID, AND RIGHT ON TIME.'),
+      'Rivet unchained, and home': (e) => e.people.rivet === 'freed' && e.lines.includes('HE SAID THE WIND WAS THE COOLEST THING HE EVER FELT.'),
       'Shim carries the lantern': (e) => e.lines.includes("HE CARRIED HIS MOTHER'S LANTERN."),
     },
   },
@@ -286,6 +298,7 @@ module.exports = {
       'the Old Greenhouse stayed welded': (e) => !e.people.sorrel,
       'two cores taken': (e) => e.wardens.pruner === 'salvage' && e.wardens.tallyman === 'salvage' && e.lines.includes('COUNT: WARDENS, 1.'),
       "Pod 1130's alarm never answered": (e) => !e.people.pod1130 && e.lines.includes("POD 1130'S ALARM STOPPED WHILE I WAS CLIMBING."),
+      'the new stoker never gone to see': (e) => !e.people.rivet && e.lines.includes('I NEVER WENT DOWN TO SEE WHO WAS FEEDING IT.'),
     },
   },
   // Mercy far below -3: every Warden's core, the lie, Flux's pack, the Gardener dosed, the Steward ended, the Key kept.
@@ -307,10 +320,12 @@ module.exports = {
       'WALK HIM HOME DRY': 'DOSE',
       'CUT IT INTO THE WATER': 'YOURSELF',
       'THAW HIM': 'TAKE THE CELL',
+      'UNCHAIN HIM': 'TAKE THE SACK',
     },
     cotter: true,
     remedy: true,
     pod: true,
+    stoker: true,
     segments: THROUGH_TOWER,
     check: {
       'Mercy -3 or less': (e) => e.mercy <= -3,
@@ -318,6 +333,7 @@ module.exports = {
       'Cotter given his dose, and climbing': (e) => e.people.cotter === 'dosed' && e.lines.includes('I HAD THE RACKS NOW.'),
       "Wick's remedy taken by the hero": (e) => e.lines.includes("WICK'S REMEDY WENT INTO ME."),
       "Pod 1130's cell taken": (e) => e.people.pod1130 === 'cell' && e.lines.includes("POD 1130'S CELL KEPT ME ON MY FEET."),
+      "Rivet left at the fires for the Steward's sack": (e) => e.people.rivet === 'left' && e.lines.includes('RIVET STILL FEEDS THE FIRES. I SEND HIM HIS DOSE.'),
     },
   },
   // Bloom 8 and more: the Thorn, Bloomfire, the Bloom on the hatch, and every bulb eaten. Mercy stays kind.
@@ -337,6 +353,7 @@ module.exports = {
       'Bloom 8 or more': (e) => e.bloom >= 8,
       'the pod glass': (e) => e.lines.includes('ON 0418 FIRST.'),
       'Sorrel left counting': (e) => e.people.sorrel === 'stayed' && e.lines.includes('THEN THE COUNTING DID.'),
+      'the new stoker never gone to see': (e) => !e.people.rivet && e.lines.includes('THE FURNACE WENT OUT WHEN THE PINK CAME UP THE SPINE.'),
     },
   },
   // The Purser's boat, taken in the Labyrinth, from the save the Homecoming run left as it went down the hatch.

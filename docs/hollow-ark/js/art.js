@@ -471,6 +471,8 @@
     cotterDry: person({ H: '#5a4028', C: '#8a6a4a', c: '#6a4e34', D: '#3e3328', e: '#dcd8cc', E: '#b4ac9c' }),
     // Hugo Marsh (3.15), out of Pod 1130: sandy-haired, frost-pale, in the same pale shift the pods dress Mara in.
     hugo: person({ H: '#b8a878', C: '#9fd8e8', c: '#5fa8c0', D: '#6c7894', e: '#e8eef0', E: '#c0ccd4' }),
+    // Rivet, the new stoker (story/stoker.js): a man from the walls, black with the furnace's soot.
+    rivet: person({ H: '#2b2420', C: '#6a5a4a', c: '#4a3e32', D: '#2b2420', e: '#c4b8a6', E: '#8a8072' }, false, (r) => r.map((row, i) => (i === 4 ? '0HexexeE0' : i === 8 ? '0CcCCkCC0' : row))),
   };
 
   // ---- The Ark seen from outside, for the title and the opening. Rectangles, so it draws at any whole-number scale. ----

@@ -70,7 +70,7 @@
 
   // The people whose fates only matter where the story reached them. Sorrel's card is the ending's own.
   function others(s, id) {
-    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id), HA.story.remedyCards(s, id), HA.story.pod1130Cards(s, id)).map((lines) => card(...lines));
+    const out = HA.story.sorrelCards(s, id).concat(HA.story.cotterCards(s, id), HA.story.remedyCards(s, id), HA.story.pod1130Cards(s, id), HA.story.rivetCards(s, id)).map((lines) => card(...lines));
     const p = s.people;
     if (p.flux === 'home') out.push(card('FLUX FLEW HOME TO THE WARRENS, AND STAYED THERE.'));
     if (p.flux === 'stripped') out.push(card('NO ONE SAW FLUX AGAIN.'));
@@ -85,17 +85,18 @@
   }
 
   // The Hullfolk: the Warrens' twenty, the taken who came home from the Gardens, Sorrel, if she came home (or,
-  // left counting, if the ship came down whole: story/sorrel.js), and Cotter, if he came home (story/cotter.js).
+  // left counting, if the ship came down whole: story/sorrel.js), Cotter, if he came home (story/cotter.js), and
+  // Rivet, if he was unchained from the furnace (story/stoker.js).
   function hullfolkCount(s, id) {
-    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0) + (HA.story.cotterCounted(s) ? 1 : 0) - (gasketAlive(s) ? 0 : 1);
+    return 20 + (s.takenHome || 0) + (HA.story.sorrelCounted(s, id) ? 1 : 0) + (HA.story.cotterCounted(s) ? 1 : 0) + (HA.story.rivetCounted(s) ? 1 : 0) - (gasketAlive(s) ? 0 : 1);
   }
 
   // ---- Who reached the new world, out of everyone who could have: the results after the credits ----
-  // The Warrens are twenty, plus all twelve of the taken (the eleven in the cradles, and Sorrel), and Cotter, who went
-  // after them. The sleepers are every pod still in the stacks, and Pod 1130's (story/pod1130.js): settled either way
-  // it's out of them, and Hugo Marsh, thawed, came down with the Hullfolk. Every number follows a line the epilogue
-  // says.
-  const HULLFOLK_MOST = 20 + 12 + 1;
+  // The Warrens are twenty, plus all twelve of the taken (the eleven in the cradles, and Sorrel), Cotter, who went
+  // after them, and Rivet, the Fireman's new stoker. The sleepers are every pod still in the stacks, and Pod 1130's
+  // (story/pod1130.js): settled either way it's out of them, and Hugo Marsh, thawed, came down with the Hullfolk.
+  // Every number follows a line the epilogue says.
+  const HULLFOLK_MOST = 20 + 12 + 1 + 1;
   const SLEEPERS = 3986;
   function landed(s, id) {
     const pods = id === 'homecoming' || (id === 'crash' && s.podsLaunched > 0);
