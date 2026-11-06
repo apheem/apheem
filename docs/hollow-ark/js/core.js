@@ -3,7 +3,7 @@
 window.HA = window.HA || {};
 
 (function (HA) {
-  HA.VERSION = '0.3.22';
+  HA.VERSION = '0.3.24';
   HA.VIEW_W = 320;
   HA.VIEW_H = 180;
   HA.TILE = 8;

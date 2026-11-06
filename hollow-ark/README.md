@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.22-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.24-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.22-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.24-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,21 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.24: the Mash Floor and the Dock
+
+- **Two new rooms: one in the Gardens on every path, one on the Dreaming Deck on the true path.** Each adds a few minutes, and neither leaves you walking back the way you came.
+- **The Mash Floor.** The Vat House's door is barred from the inside now, with Wick's bag dropped by it. The way in is down the mash hatch, into the room under the vats where everything they drain off rots pink: troughs of Bloom silt, pickers, spore pods, and the Gardener's notice. Halfway along you hear Wick humming down the pipes, and then the tune goes. A rest pod waits at the foot of the vat drain, which climbs up into the Vat House under the Gardener's gallery. Afterwards, lift the bar from the Vat House's side, and the Garden Lift is two short rooms away.
+- **Memory: the Dock.** The Navigator's memory halls now include the night in year 133 when the first sleeper it ever woke, 0112, took a boat and left. It sits between the first night and the Gardens. The Gardens hall is now a checkpoint too, so there are never more than two halls between checkpoints.
+- **Prompts stay on screen.** A "press up" prompt by a wall at the edge of a room no longer runs off the side of the screen.
+
+## 0.3.23: shortcuts back
+
+- **No more walking back the way you came.** Cody found the two new rooms' way back repetitive, so each now has a shortcut that opens once you've done what you went in for, and so does the one older dead end on the main path, Odell's Test Tank.
+- **The Condenser's ladder.** A ladder by valve A, at the far end, climbs the well beside Main 3 and comes out on the Boiler Stair, just above where the main burst. While the main is open its steam rolls down the ladder and it can't be climbed; shut both valves and it goes quiet. The old crew's notice says so. The hatch at the top goes back down.
+- **The turnout car.** The honour guard ride a brass car on a rail under the roof, from beside the Guard Room's bolt board to Bulkhead 1, when the bell rings. Before then it's braked: its lamp is red, and the plate on it says so (you'll see it by the bulkhead first). Draw the bolt and the brake comes off: ride it the length of the Barracks in a few seconds, over everyone's heads. It runs both ways from then on.
+- **Odell's drain.** Beside the stand where his pressure boots wait, at the far end of the Test Tank's trial channel, a drain with a ladder goes straight back down to his workshop. His trial notes mention it.
+- **The Barracks' bulkhead stencil** no longer runs over a window and into the wall.
 
 ## 0.3.22: the Condenser and the Guard Room
 

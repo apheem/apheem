@@ -723,7 +723,10 @@
     }
     if (world.near && !world.scene && !quiet) {
       const o = world.near.o;
-      HA.font.draw(g, world.near.label, Math.round(o.x + o.w / 2 - cam.x), Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
+      // Centred over what it's for, but kept on the screen when that's by a wall at the room's edge.
+      const half = HA.font.measure(world.near.label) / 2;
+      const x = HA.clamp(Math.round(o.x + o.w / 2 - cam.x), Math.ceil(half) + 2, W - Math.ceil(half) - 2);
+      HA.font.draw(g, world.near.label, x, Math.round(o.y - cam.y) - 12, '#eef4f6', { align: 'center' });
     }
     if (!world.scene || world.scene.showHud) drawHud(g, world, quiet);
     if (!quiet) for (const o of HA.story.overlays) o(g, world); // the flood's clock, the scuttle's

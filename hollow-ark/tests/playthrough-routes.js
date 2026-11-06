@@ -33,8 +33,13 @@ const gardens = {
       await r.to('greenhouse');
       await r.do('PT.read("sorrelGlass")');
     }
+    // The Vat House's door is barred from inside: down the mash hatch, along the Mash Floor, up the vat drain.
+    await r.to('mash-floor');
     await r.to('vat-house');
     await r.boss('vat-house');
+    // The quick way back: the bar, lifted from the Vat House's side.
+    await r.to('vat-walk');
+    await r.do('PT.read("vatBar")');
     await r.to('warrens');
   },
 };
@@ -112,6 +117,7 @@ const ballast = {
     await r.to('tank-farm');
     await r.to('test-tank'); // up from Odell's Workshop
     await r.do('PT.read("boots")');
+    await r.do('PT.link("odell-workshop")'); // Odell's drain beside the stand, the shortcut back (0.3.23)
     await r.to('silt-tank');
     await r.boss('silt-tank', undefined, { enter: 'PT.trigger(0)' }); // out over her water, and the shutters come down
     // The second of Wick's three things, at the bottom of the Settling Pools' deep sump.
@@ -152,12 +158,13 @@ const spine = {
     await r.bulbs();
     await r.to('boiler-stair');
     // Main 3 has burst across the Boiler Stair over its midway shelf: into the Condenser off the shelf, shut it at
-    // both its valves, and back out the way in (the fourth batch of new rooms).
+    // both its valves (B on the coil tops, then A at the far end), and up the ladder by A to the stair above the
+    // burst, the shortcut back (the fourth batch of new rooms, and its shortcuts in 0.3.23).
     await r.to('condenser');
     await r.do('PT.read("condenser")');
-    await r.do('PT.read("valveA")');
     await r.do('PT.read("valveB")');
-    await r.to('boiler-stair');
+    await r.do('PT.read("valveA")');
+    await r.do('PT.link("boiler-stair")');
     await r.to('stokers-bunks'); // the Piston Run's shaft is plated over: round through the bunks, out above the plate
     await r.to('reactor-throat');
     await r.boss('reactor-throat');
@@ -198,11 +205,12 @@ const tower = {
       await r.do('PT.clear("nightWatch")');
     }
     // The bulkhead to the Dome is bolted for the night from the Guard Room, west of the lift. Drawing the bolt rings
-    // the bell, and three of the racked guard step out (the fourth batch of new rooms).
+    // the bell, three of the racked guard step out, and the turnout car's brake comes off: ride it back to the
+    // bulkhead (the fourth batch of new rooms, and its shortcuts in 0.3.23).
     await r.to('guard-room');
     await r.do('PT.read("standing")');
     await r.do('PT.read("guardBolt")');
-    await r.do('PT.clear("racked")');
+    await r.do('PT.link("barracks")');
     await r.to('observation-dome');
     await r.to('garden-gallery'); // the Gardener
     await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter

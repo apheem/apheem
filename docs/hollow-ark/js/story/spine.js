@@ -34,7 +34,7 @@
     // The Condenser, off the Boiler Stair (the fourth batch of new rooms)
     condenser: {
       title: 'CONDENSER HALL · MAIN 3',
-      text: "IF MAIN 3 BURSTS ACROSS THE STAIR, SHUT IT OFF AT BOTH VALVES: A IS PAST THE SUMP, B IS ON THE COIL TOPS. SINCE THE STEWARD'S PEOPLE DROVE THE FIRES HOT, IT BURSTS EVERY YEAR. NOBODY COMES DOWN TO SHUT IT.",
+      text: "IF MAIN 3 BURSTS ACROSS THE STAIR, SHUT IT OFF AT BOTH VALVES: A IS PAST THE SUMP, B IS ON THE COIL TOPS. THEN TAKE THE LADDER BY A, UP THE WELL BESIDE THE MAIN, BACK TO THE STAIR ABOVE IT. SINCE THE STEWARD'S PEOPLE DROVE THE FIRES HOT, IT BURSTS EVERY YEAR. NOBODY COMES DOWN TO SHUT IT.",
     },
     abelCount: {
       title: 'THE LAST BUNK',
@@ -206,6 +206,7 @@
     f.condenser = true;
     yield { wait: 20 };
     yield me('THROUGH THE WALL, THE STEAM IN THE SHAFT DIED TO A HISS. THE WAY UP THE STAIR IS CLEAR.');
+    yield me(world.def.id === 'condenser' && world.player.x > 50 * 8 ? 'AND THE LADDER WELL BESIDE ME WENT QUIET.' : 'AND THE LADDER WELL BY A WENT QUIET.');
     S.addStory(world, "MAIN 3 HAD BURST ACROSS THE BOILER STAIR. I SHUT IT OFF AT BOTH ITS VALVES, IN THE CONDENSER, AND WENT ON UP.");
     world.save();
   }
@@ -286,6 +287,25 @@
     },
     *valveB(world) {
       yield* valve(world, 'condenserB');
+    },
+    // The shortcut back: the ladder by valve A, up the well beside Main 3 to the stair above the burst. While the
+    // main is open, its steam fills the well.
+    *chaseLadder(world) {
+      const f = world.state.flags;
+      if (!f.condenser && !f.crewCame) {
+        HA.audio.play('steam');
+        yield me("LIVE STEAM, ROLLING DOWN THE LADDER WELL. IT RUNS UP BESIDE MAIN 3, SO IT'S FULL OF WHAT THE MAIN'S LOSING.");
+        return;
+      }
+      HA.audio.play('clamp');
+      yield { fade: 'out', frames: 20 };
+      world.travel(world.link);
+      yield { wait: 10 };
+      yield { fade: 'in', frames: 20 };
+      if (!f.wellClimbed) {
+        f.wellClimbed = true;
+        yield me('OUT ON THE STAIR, ABOVE WHERE MAIN 3 BURST. QUICKER THAN THE WAY I WENT DOWN.');
+      }
     },
     // The Piston Run's way up is plated over, bolted on the landing's side; the stokers' door is beside it.
     *plateShut(world) {

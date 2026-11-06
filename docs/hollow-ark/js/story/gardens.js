@@ -32,6 +32,10 @@
       title: 'NURSERY · DOSE BOOK',
       text: 'NEW STOCK FROM THE WALLS: ELEVEN. HOISTED UP FROM THE CELLAR, SINCE THE SLEEPER IS LOOSE. DOSE THEM DEEPER THAN THE LAST LOT. THE DEEPER THE DOSE, THE QUIETER THE WAKING.',
     },
+    mash: {
+      title: 'MASH FLOOR · NOTICE',
+      text: "WHAT THE VATS DON'T KEEP COMES DOWN HERE. RAKE IT DAILY. WHAT GROWS IN IT GOES BACK UP TO THE VATS. NOTHING IS WASTED. H. VALE",
+    },
     seeds: {
       title: 'SEED VAULT · YEAR 0',
       text: 'SEALED FOR ARRIVAL: TWELVE THOUSAND KINDS OF SEED, AND THE SOIL TO START THEM. TO BE OPENED UNDER A REAL SKY.',
@@ -445,6 +449,55 @@
         yield { wait: 60 };
         world.actors = world.actors.filter((a) => a !== pruner);
       }
+      world.save();
+    },
+
+    // The way to the vats (3.24): the Vat House's door barred from inside, Wick's bag spilled at it, and the mash
+    // hatch; the Mash Floor under the vats, and Wick humming down the drain pipes until the tune goes; then, after
+    // her, the bar lifted from the far side, the quick way back to the lift.
+    *vatBarred(world) {
+      const f = world.state.flags;
+      if (f.vatBarSeen) {
+        S.think(world, 'BARRED FROM THE OTHER SIDE. THE MASH HATCH, THEN.');
+        return;
+      }
+      f.vatBarSeen = true;
+      yield { wait: 10 };
+      yield me("WICK'S BAG. THE ONE SHE PATCHED ME UP FROM.");
+      yield me('THE DOOR TO THE VATS IS BARRED. FROM THE OTHER SIDE.');
+      yield me('THE VATS DRAIN THROUGH THAT HATCH BACK THERE. THE DRAIN WILL COME UP UNDER THEM.');
+    },
+    *mashIn(world) {
+      world.state.flags.mashIn = true;
+      S.think(world, 'UNDER THE VATS. WHATEVER THEY DRAIN OFF ROTS DOWN HERE.', 150); // after the room's name has gone
+    },
+    *mashHum(world) {
+      world.state.flags.mashHum = true;
+      yield { wait: 20 };
+      yield me('HUMMING. COMING DOWN THE DRAIN PIPES.');
+      yield { wait: 30 };
+      yield me("THE SONG THEY HUM IN THE WARRENS. IT'S WICK.");
+    },
+    *mashSour(world) {
+      world.state.flags.mashSour = true;
+      HA.music.setLayers(2);
+      yield { wait: 20 };
+      yield me('THE HUMMING SLID OFF THE TUNE.');
+      yield { wait: 40 };
+      yield me("IT DIDN'T COME BACK TO IT.");
+    },
+    *vatBar(world) {
+      const f = world.state.flags;
+      if (f.vatBar) {
+        yield me("THE BAR'S UP. THE LIFT'S THAT WAY.");
+        return;
+      }
+      f.vatBar = true;
+      HA.audio.play('clamp');
+      world.shake(1);
+      yield { wait: 20 };
+      yield me('THE BAR CAME UP EASY FROM THIS SIDE.');
+      yield me("THE LIFT'S THAT WAY. AND SHIM, AT THE BOTTOM OF IT.");
       world.save();
     },
 

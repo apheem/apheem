@@ -461,7 +461,9 @@
   PT.link = (to) => {
     const W = w();
     const from = W.def.id;
-    const l = W.links.find((x) => !to || x.legend.to === to);
+    // The nearest way there, as a player would take (the Test Tank has two ways down to the workshop).
+    const px = W.player.x + W.player.w / 2;
+    const l = W.links.filter((x) => !to || x.legend.to === to).sort((a, b) => Math.abs(a.x + a.w / 2 - px) - Math.abs(b.x + b.w / 2 - px))[0];
     if (!l) fail(`no lift or hatch to ${to} here (${W.links.map((x) => x.legend.to)})`);
     PT.near(l);
     const key = l.legend.type === 'lift' || l.legend.up ? 'up' : 'down';
