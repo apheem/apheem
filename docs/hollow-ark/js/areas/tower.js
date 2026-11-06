@@ -8,7 +8,8 @@
 // e the hatch down   T a terminal   M the Steward   Y Lift B, down from the Helm (once it's mended)
 // D the Bridge Stair's shutter, bolted from above (in the Barracks, the bulkhead)   K the Guard Room's bolt board
 // R the honour guard's turnout car, on its rail under the roof between the Guard Room and the bulkhead: braked
-// until the Guard Room's bell rings, then the shortcut back
+// until the Guard Room's bell rings, then the shortcut back. The Bridge Stair's landing opens west into the
+// Listening Room, and the Listening Room's top east into the Helm's back door: the Steward's way in.
 (function (HA) {
   HA.rooms.area('tower', { name: 'COMMAND TOWER', theme: 'tower', music: 'tower', mapColor: '#e8dcc0' });
 
@@ -248,6 +249,7 @@
     gy: -133,
     abilities: ALL,
     legend: {
+      // the Helm's hatch: dogged down from above until the Steward has had his say (story/tower.js)
       a: Object.assign(up('helm'), { scene: 'helmLadder' }),
       // the stair's way up to its landing, shut by a shutter bolted from above, until the hero comes round
       D: { type: 'door', id: 'stewardShutter', open: (s) => !!s.flags.stewardShutter },
@@ -258,6 +260,7 @@
       { kind: 'scrawl', x: 15, y: 5, text: 'BELOW THE HELM, IT DREAMS' },
       { kind: 'stencil', x: 3, y: 6, text: 'THE HELM ↑' },
       { kind: 'stencil', x: 29, y: 16, text: 'PRIVATE →' },
+      { kind: 'stencil', x: 14, y: 3, text: '← LISTENING WATCH' },
     ],
     triggers: [
       // under the shutter, by his door; and, come round onto the landing, its bolt (off the shutter first)
@@ -270,10 +273,10 @@
       '##............................7.......##',
       '##....................................##',
       '##....................................##',
-      '##......................................',
-      '##......................................',
-      '##......................................',
-      '##...a......S...........................',
+      '........................................',
+      '........................................',
+      '........................................',
+      '.....a......S...........................',
       '#######################DDDDDDDDDDDDDDD##',
       '#######################DDDDDDDDDDDDDDD##',
       '##....................................##',
@@ -365,6 +368,63 @@
     ],
   });
 
+  // The Listening Room (the sixth batch of new rooms): where the Tower's dish listens to the world below, west of
+  // the Bridge Stair's landing and the Helm. The Steward sends the hero round through it (the Helm's hatch dogged
+  // down, story/tower.js): in low at its east end, west along the receivers, up the dish's feed tower, and back east
+  // under the roof to the Helm's back door. No music, as in the Dome: only the receivers' hiss.
+  HA.rooms.add({
+    id: 'listening-room',
+    area: 'tower',
+    name: 'THE LISTENING ROOM',
+    gx: 440,
+    gy: -146,
+    music: null,
+    abilities: ALL,
+    legend: {
+      T: { type: 'log', id: 'listening', name: 'the standing order' },
+      l: { type: 'log', scene: 'listenTape', label: '{up} READ THE TAPE', name: 'the tape' },
+    },
+    scenery: [
+      { kind: 'dish', x0: 2, x1: 9, y0: 2, y1: 11 },
+      { kind: 'tallwindows', y: 3, every: 168, from: 136, h: 5 },
+      { kind: 'banners', at: [24, 52] },
+      { kind: 'receivers', x0: 12, x1: 76, y: 22, skip: [[27, 30], [53, 56], [36, 52], [62, 66]] },
+      { kind: 'listener', x: 39, y: 22 },
+      { kind: 'tape', x0: 43, x1: 50, y: 22 },
+      { kind: 'stencil', x: 49, y: 11.5, text: 'LISTENING WATCH · DAY AND NIGHT' },
+      { kind: 'stencil', x: 66, y: 3, text: 'THE HELM →' },
+    ],
+    triggers: [
+      { x0: 64, x1: 79, y0: 17, when: (s) => !s.flags.listenSeen, run: 'listenIn' },
+      { x0: 33, x1: 45, y0: 17, when: (s) => !s.flags.listenerSeen, run: 'listener' },
+    ],
+    map: [
+      '################################################################################',
+      '################################################################################',
+      '##............................................7...............................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##..............................................................................',
+      '##..............................................................................',
+      '##..............................................................................',
+      '##..........................................................9...................',
+      '##........######################################################################',
+      '##..................7.............................7...........................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##.======.....................................................................##',
+      '##............................................................................##',
+      '##............................................................................##',
+      '##........======..............................................................##',
+      '##............................................................................##',
+      '##..............................................................................',
+      '##.======...................##........................##........................',
+      '##..........................##........................##........................',
+      '##....................9.....##.................l......##........T...............',
+      '################################################################################',
+    ],
+  });
+
   // The Helm: the Steward's bridge, the Helm Key at its heart, and the old crew's Lift B beside it.
   HA.rooms.add({
     id: 'helm',
@@ -375,7 +435,7 @@
     noRespawn: true,
     abilities: ALL,
     legend: {
-      e: Object.assign(down('bridge-stair'), { scene: 'helmDown' }),
+      e: Object.assign(down('bridge-stair'), { scene: 'helmDown', open: (s) => !!s.flags.stewardSeen }),
       M: { type: 'boss', reach: false },
       Y: { type: 'lift', to: 'lift-down', name: 'Lift B', big: true, scene: 'liftBDown', when: (s) => !!s.flags.liftB, lit: () => true },
     },
@@ -402,10 +462,10 @@
       '##............................................................................##',
       '##............=========.........................=========.....................##',
       '##............................................................................##',
-      '##............................................................................##',
-      '##................................................................M......Y....##',
-      '##......................###.................###...............##################',
-      '##...e..................###.................###...............##################',
+      '..............................................................................##',
+      '..................................................................M......Y....##',
+      '........................###.................###...............##################',
+      '.....e..................###.................###...............##################',
       '################################################################################',
       '################################################################################',
       '################################################################################',
