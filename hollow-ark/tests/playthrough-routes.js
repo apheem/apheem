@@ -33,8 +33,13 @@ const gardens = {
       await r.to('greenhouse');
       await r.do('PT.read("sorrelGlass")');
     }
-    // The Vat House's door is barred from inside: down the mash hatch, along the Mash Floor, up the vat drain.
+    // The Vat House's door is barred from inside: down the mash hatch onto the Mash Floor's gantry, round through
+    // the Dark Bay (the grower's notes, 0391's cradle) to the troughs, and up the vat drain.
     await r.to('mash-floor');
+    await r.to('dark-bay');
+    await r.do('PT.read("grower")');
+    await r.do('PT.goCol(18)');
+    await r.do('PT.exit("right", "mash-floor", 16)'); // the lower way out, onto the troughs
     await r.to('vat-house');
     await r.boss('vat-house');
     // The quick way back: the bar, lifted from the Vat House's side.
@@ -102,6 +107,10 @@ const cargo = {
     }
     await r.to('sorting-floor');
     await r.do('PT.blast("aisle")');
+    // The aisle gate is shut: up into the Watch Gallery, out of the watch room into the City Hold (the manifest),
+    // and down past the First City's crates into the Drain.
+    await r.to('city-hold');
+    await r.do('PT.read("city")');
     await r.to('drain');
     await r.do('PT.read()'); // Solder's toolbag
     await r.to('ballast-intake');

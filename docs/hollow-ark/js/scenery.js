@@ -149,10 +149,41 @@
   };
 
   const cache = new Map();
+  // Props painted on the tiles themselves, after them: the City Hold's stencils, on its crates.
+  const ON_TILES = {
+    citycrates(g, s) {
+      for (const [x0, y0, x1, y1, ...lines] of s.at) {
+        const cx = ((x0 + x1 + 1) * 8) / 2;
+        const cy = ((y0 + y1 + 1) * 8) / 2;
+        g.globalAlpha = 0.55;
+        lines.forEach((l, i) => HA.font.draw(g, l, cx, cy - 4 - (lines.length - 1) * 5 + i * 10, '#e8e0c8', { align: 'center', shadow: null }));
+        g.globalAlpha = 1;
+      }
+    },
+    // The town hall's crates: the stencil painted over in a rough black, and his own name on top in fresh white.
+    townhall(g, s) {
+      const cx = ((s.x0 + s.x1 + 1) * 8) / 2;
+      const y = s.y0 * 8 + 14;
+      g.globalAlpha = 0.5;
+      HA.font.draw(g, 'FIRST CITY', cx, y, '#e8e0c8', { align: 'center', shadow: null });
+      HA.font.draw(g, 'TOWN HALL', cx, y + 12, '#e8e0c8', { align: 'center', shadow: null });
+      g.globalAlpha = 1;
+      // rough strokes, not quite covering it: the old words still show through
+      const w = HA.font.measure('TOWN HALL') + 10;
+      g.fillStyle = '#0b0807';
+      g.globalAlpha = 0.72;
+      for (let i = 0; i < 4; i++) g.fillRect(Math.round(cx - w / 2) + (i % 2) * 3, y + 10 + i * 3, w - (i % 2) * 5, 2);
+      g.globalAlpha = 1;
+      for (const dx of [4, 17, 30]) g.fillRect(Math.round(cx - w / 2) + dx, y + 21, 1, 3 + (dx % 3));
+      HA.font.draw(g, "STEWARD'S HOUSE", cx, y + 30, '#f4f1e8', { align: 'center', shadow: null });
+    },
+  };
+
   function layers(def, room) {
     if (cache.has(def.id)) return cache.get(def.id);
     const theme = THEMES[def.theme || HA.rooms.AREAS[def.area].theme]; // a room can dress as another deck
     const out = { bg: buildBackground(def, room, theme), tiles: buildTiles(room, theme), theme, vignette: buildVignette(theme) };
+    for (const s of def.scenery || []) if (ON_TILES[s.kind]) ON_TILES[s.kind](out.tiles.getContext('2d'), s);
     cache.set(def.id, out);
     return out;
   }
@@ -1546,6 +1577,98 @@
           g.fillRect(x + 5, y - 2, 1, 2);
         }
       }
+    },
+    // ---- The eighth batch of new rooms ----
+    // The City Hold: the cable down from the crane's rail to the crate on its hook, and the short chain with the hoist
+    // ring the harpoon bites.
+    cityhook(g, s) {
+      const x = s.x * 8 + 4;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, s.y0 * 8, 3, (s.y1 - s.y0) * 8);
+      g.fillStyle = '#6a6a72';
+      g.fillRect(x, s.y0 * 8, 1, (s.y1 - s.y0) * 8);
+      // the hook's block, just over the crate
+      g.fillStyle = '#3a2a20';
+      g.fillRect(x - 4, s.y1 * 8 - 7, 9, 6);
+      g.fillStyle = HAZARD[0];
+      g.fillRect(x - 4, s.y1 * 8 - 7, 9, 1);
+      if (s.ring) {
+        const [rx, ry] = s.ring;
+        g.fillStyle = '#6a6a72';
+        for (let y = s.y0 * 8; y < ry * 8; y += 3) g.fillRect(rx * 8 + 4, y, 1, 2);
+      }
+    },
+    // The Dark Bay: Growing Bay 4's lamps failed in year 150, so its walls are almost black.
+    darkbay(g, s, rnd, T, room) {
+      g.fillStyle = 'rgba(3,2,6,0.82)';
+      g.fillRect(0, 0, room.pw, room.ph);
+    },
+    // A row of grow-lamps under the roof, dead: cold tubes, one hanging off its bracket.
+    deadlamps(g, s, rnd) {
+      const y = s.y * 8 + 2;
+      for (let x = s.x0 * 8; x < s.x1 * 8; x += 40) {
+        const off = rnd() < 0.25;
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 6, y, 1, off ? 10 : 4);
+        g.fillStyle = '#2a2e3a';
+        if (off) g.fillRect(x + 4, y + 10, 3, 14);
+        else g.fillRect(x, y + 4, 24, 2);
+        g.fillStyle = '#3a4050';
+        if (!off) g.fillRect(x, y + 4, 24, 1);
+      }
+    },
+    // The old grow racks down the west end of the Dark Bay: the uprights and cross-braces the catwalks hang on.
+    growracks(g, s) {
+      for (const x of [s.x0 * 8 + 2, (s.x1 + 1) * 8 - 4]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, s.y0 * 8, 4, (s.y1 - s.y0 + 1) * 8);
+        g.fillStyle = '#2a2a36';
+        g.fillRect(x, s.y0 * 8, 2, (s.y1 - s.y0 + 1) * 8);
+      }
+      g.fillStyle = '#1c1c28';
+      for (let y = s.y0 * 8 + 12; y < (s.y1 + 1) * 8; y += 32) {
+        for (let i = 0; i < (s.x1 - s.x0 + 1) * 8 - 8; i++) g.fillRect(s.x0 * 8 + 4 + i, y + Math.floor(i / 6) % 2, 1, 1);
+      }
+    },
+    // 0391's cradle, the Gardener's mother bed: a cryo cradle under the oldest of the Bloom, grown over into a
+    // mound, the shape of someone still lying in it, and her sign on a post at its head.
+    motherbed(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      // the cradle
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, y - 12, 50, 12);
+      g.fillStyle = '#3a4258';
+      g.fillRect(x, y - 11, 48, 10);
+      g.fillStyle = '#6c7894';
+      g.fillRect(x, y - 11, 48, 1);
+      // the Bloom over it, and the shape under the Bloom
+      g.fillStyle = '#2a1238';
+      g.fillRect(x + 2, y - 17, 44, 7);
+      g.fillStyle = '#5c2479';
+      g.fillRect(x + 5, y - 20, 12, 4);
+      g.fillRect(x + 16, y - 19, 24, 3);
+      g.fillStyle = '#b04ad0';
+      g.fillRect(x + 7, y - 21, 7, 2);
+      g.fillRect(x + 20, y - 20, 14, 1);
+      g.fillStyle = '#f27ad8';
+      for (const [dx, dy] of [[9, -22], [24, -21], [31, -21], [40, -18], [3, -16]]) g.fillRect(x + dx, y + dy, 1, 1);
+      // tendrils down the cradle's side, into the floor
+      g.fillStyle = '#3d1850';
+      for (const dx of [4, 13, 27, 38, 45]) g.fillRect(x + dx, y - 10, 1, 10);
+      // the pod's number, on the cradle's end
+      g.globalAlpha = 0.6;
+      HA.font.draw(g, '0391', x + 30, y - 9, '#9fb6c8', { shadow: null });
+      g.globalAlpha = 1;
+      // her sign, on a short post at the cradle's head
+      const sw = HA.font.measure('KEEP DARK') + 4;
+      g.fillStyle = '#3a2818';
+      g.fillRect(x - 8, y - 14, 2, 14);
+      g.fillStyle = '#e8e0cc';
+      g.fillRect(x - 6 - sw, y - 22, sw, 10);
+      g.fillStyle = '#8a7a62';
+      g.fillRect(x - 6 - sw, y - 13, sw, 1);
+      HA.font.draw(g, 'KEEP DARK', x - 4 - sw, y - 21, '#3a2818', { shadow: null });
     },
     domeglass(g, s, rnd, T, room) {
       const W = room.pw;

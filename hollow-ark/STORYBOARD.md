@@ -873,7 +873,7 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [x] The rest of the audit's story fixes: Shim on every path (4: on the camp's line phone on the truth path, and the morning with his father, lock 3a), the villains set up early (6: "THIS IS IVO MARRANT, STEWARD OF THE ARK" in his broadcast; Hester Vale names herself and makes the Bloom's case in the Vat House; Abel at the end of the Steward's lists, and the hero knows the name in his furnace if they read them), the small payoffs (7: Gasket's brother is Cleat, named at lights-out and in the Homecoming epilogue; the Homecoming epilogue opens the seed vault, gives Dunn's girl her star if Dunn climbed, and returns Odell's boots, with three new pictures: `seeds`, `star`, `odell`)
 - [x] Length: the tram home after the Ballast (5; design and as built below, "The tram home")
 - [x] Length: Wick's longer escort (8; design and as built below, "Wick's longer escort")
-- [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms; fourth batch built: the Condenser and the Guard Room, each with a shortcut back since 0.3.23; fifth batch built: the Mash Floor and the Dock's memory hall; sixth batch built: the Winding House and the Listening Room, each in place of a ladder; seventh batch built: the Arrival Hall and the Thaw's memory hall, each in place of a ladder too (below, "New rooms on the main path")
+- [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms; fourth batch built: the Condenser and the Guard Room, each with a shortcut back since 0.3.23; fifth batch built: the Mash Floor and the Dock's memory hall; sixth batch built: the Winding House and the Listening Room, each in place of a ladder; seventh batch built: the Arrival Hall and the Thaw's memory hall, each in place of a ladder too; eighth batch built: the City Hold, in place of a hatch, and the Dark Bay, a loop off the Mash Floor (below, "New rooms on the main path")
 - [x] Length: Sorrel (9, with lock 3b; design and as built below, "Sorrel")
 - [x] Length: the other side quests (design below, "The other side quests"). Hasp's boy built (0.3.17), Wick's remedy (0.3.18), Pod 1130 (0.3.19), the new stoker (0.3.20), the last watchman (0.3.21): all six of the brief's side quests, with Sorrel's (0.3.14)
 
@@ -1121,6 +1121,50 @@ Each adds two or three minutes: the Arrival Hall on every path but the Deserter'
 - **Tests:**
   - The playthroughs go through the Arrival Hall (reading the terms) and the Thaw.
   - The browser check goes through both rooms. It plays the address with Shim following, the terms, the way out into the Gallery and the missing ladder and hatch; Dominion's card with and without the terms; and the Thaw's two scenes, its journal line, the way out into the Helm hall, and the missing hatch and ladder.
+
+**Eighth batch (design, 3.27).** Counted by screens for each minute of the time budget, after the seventh batch the Labyrinth (26 screens for 50 minutes) and the Gardens (26 for 50) are the thinnest: the Labyrinth has had nothing since the second batch, the Gardens nothing since the fifth. In the Labyrinth a ladder can go, as in the last two batches: the watch room's hatch down into the Drain. In the Gardens there's no room beside any ladder on the main path (the Counting House, the Spine and the other Gardens rooms are in the way), so the new room is a loop instead: the way from the Mash Floor's gantry down to its troughs. Neither leaves anything to walk back through.
+
+15. **The City Hold** (Labyrinth, −40, 114; 40x45, two screens tall, west of the Watch Gallery and the Drain). The colony's First City, packed for landing in year 0 and never opened.
+   - **The way through:** the watch room's floor hatch and the Drain's ladder up go. The watch room's west end opens into the top of the hold, onto the crane's rail. Down the stacked crates (a crate hangs off the crane's hook in the middle of the hold, with a ring for the harpoon), past stack-crawlers that drop off the crates, Bloom rats and a drone, and out at the bottom into the Drain's west end. Watch 4's lever still opens the aisle gate, so the way back is still the aisle.
+   - **The crates,** stencilled: "FIRST CITY · HOUSES 150", "· SCHOOL", "· CLINIC", "· STREET LAMPS 400". The town hall's stencil has been painted over: "STEWARD'S HOUSE".
+   - **Coming in** (the hero): "A WHOLE CITY, IN CRATES." "NOBODY'S OPENED ONE IN THREE HUNDRED YEARS."
+   - **The town hall's crate** (a thought, passing it): "HE'S PUT HIS NAME ON THE TOWN HALL."
+   - **The manifest** (a log, `city`): "FIRST CITY, PACKED YEAR 0. HOUSES 150. SCHOOL 1. CLINIC 1. STREET LAMPS 400. POWER: THE SHIP, ON ARRIVAL (CHARTER, ARTICLE 9)." On the true path, the Navigator's "I WOULD HAVE BEEN A LAMP" then has four hundred lamps to mean.
+   - **Watch 4,** relieved, goes out by the hold, where her hatch used to be.
+   - **Old saves:** a game saved in the Drain or past it has nothing to come back for.
+16. **The Dark Bay** (Gardens, 360, 92; 40x45, two screens tall, west of the Mash Floor, under the Garden Lift). Growing Bay 4, where the Bloom began: the blight log's "THE NEW STRAIN GROWS IN THE DARK. IT GREW ON 0391 FIRST", and the Irrigation Works' scrawl, "BAY 4 · NOT YET".
+   - **The way through:** the Mash Floor's gantry runs on west into the bay, and no longer drops to the floor, so the rake rack goes. From the mash hatch, west along the gantry into the dark, down the old grow racks at the west end, east along the bottom past 0391's cradle, up the east side, and out into the Mash Floor's west end, by the troughs. Then on as before: the humming, the troughs, the pod, the vat drain.
+   - **The room:** no grow-lights (they failed in year 150), only the Bloom's own glow. It's thickest here, roots hanging down the racks. Crawlers, a drifter, spore pods, and Bloom thorns at the bottom.
+   - **The grower's notes** (a log, `grower`, on a bench at the top): "POD 0391. WOKEN YEAR 150, TO GROW FOOD WITHOUT LIGHT. THE LAMPS ARE FAILING." "YEAR 151. THE NEW STRAIN GROWS IN THE DARK. IT GROWS ON ANYTHING." "IT GROWS ON ME NOW. IT DOESN'T HURT. IT'S QUIET."
+   - **0391:** at the bottom, a cradle under the oldest of the Bloom, with a shape in it. The Gardener's sign on it: "THE MOTHER BED. KEEP IT DARK. H. VALE". The hero: "SOMEBODY'S STILL IN THERE." And, with the notes read: "WOKEN, LIKE ME." The journal says so. On the true path, the wake log's "0391. GREW." pays it off.
+   - **Old saves:** a game saved on the Mash Floor or past it is past the bay.
+
+Each adds two or three minutes: the City Hold on every path but the Deserter's, the Dark Bay on every path. Neither is on the run for the sleds. The playthroughs go through both and read both logs. The browser check plays the City Hold's way in, the manifest and the town hall, finds the watch room's hatch and the Drain's ladder gone, goes out into the Drain, and sees Watch 4 go out by the hold; it plays the Dark Bay's way in from the gantry, the notes, the cradle and the hero's lines, finds the gantry closed to the floor, and goes out by the troughs.
+
+**As built (eighth batch, 0.3.27).**
+- **The Watch Gallery** (`areas/cargo.js`): the hatch `g` down to the Drain is gone, and the watch room's west end is open at rows 15–18 into the City Hold. Watch 4, relieved, walks out that way (`WAY_DOWN` in `story/watch.js`).
+- **The Drain:** the ladder `a` up to the Watch Gallery is gone, and the west end is open at rows 15–18, in from the City Hold.
+- **`city-hold`** (−40, 114, 40x45, with the thruster and the harpoon):
+  - In at rows 15–18 from the watch room, onto the landing under the crane's rail (rows 19–20, columns 27–39), with the manifest, a log `l` at (31, 18).
+  - The crates are solid `%`, stencilled on the tiles layer (the `citycrates` and `townhall` props, drawn by a new `ON_TILES` pass in `layers()`): the town hall (columns 22–37, rows 25–33, "TOWN HALL" struck through in black and "STEWARD'S HOUSE" painted over it), the crate on the crane's hook (columns 11–17, rows 30–31, "LAMPS 400"), the houses (columns 2–8, rows 34–41, "HOUSES 150"), the school and the clinic (columns 22–31, rows 38–41).
+  - The crane's hook: a hook `o` at (20, 16), with the `cityhook` prop (its cable down from the rail to the crate, and the ring).
+  - A catwalk at row 38 (columns 9–18) over the live grating (thorns at row 41, columns 9–21).
+  - Droppers under the landing and the hook crate, a crawler on the town hall, a drone, and rats along the bottom.
+  - Out at rows 38–41 into the Drain's west end.
+  - The triggers `cityIn` (the landing) and `townHall` (over its roof).
+- **`dark-bay`** (`areas/gardens.js`, 360, 92, 40x45):
+  - In at rows 7–10 from the Mash Floor's gantry, along the top passage (floor at rows 11–12), past the grower's notes, a log `l` at (31, 10).
+  - West down the grow racks (catwalks six wide at rows 14 to 38, side to side, with the `growracks` prop), past spore pods and a drifter, to the floor.
+  - East along the floor past 0391's cradle (the `motherbed` prop at (15, 42): the cradle, the mound of Bloom, "0391", the sign "KEEP DARK"), over the thorns (row 41, columns 24–29), up the catwalks on the east side (rows 38 to 22), and out at rows 15–18 off a ledge (rows 19–20, columns 30–39) into the Mash Floor's west end, by the troughs.
+  - Dark: the `darkbay` prop washes the room, the grow-lights are dead (`deadlamps`), and the Bloom glows (`bloom`, `vines`).
+  - The triggers `bayIn` (the top passage) and `motherBed` (by the cradle).
+- **The Mash Floor:** the west end is open at rows 7–10 (the gantry) and 15–18 (the troughs); the gantry's floor runs solid to the wall, and the catwalk under it (the rake rack) is gone. `through: [{ side: 'left', rows: [7, 15] }]` tells the room checker the two are joined through the Dark Bay.
+- **The story:** `story/cargo.js` has the log `city` and the scenes `cityIn` and `townHall` (thoughts); `story/gardens.js` has the log `grower` and the scenes `bayIn` (a thought) and `motherBed` (the sign, the hero's lines, a journal line, `flags.motherBed`).
+- **Tests:**
+  - `rooms-check.js` has `through`: two exits on one side that open into the same next room count as joined, and the check fails if they don't both open into one room.
+  - `PT.exit` in `playthrough-lib.js` takes a row, for a side with two ways into the same room.
+  - The playthroughs go through both rooms and read both logs.
+  - The browser check plays the City Hold (the missing hatch, the way in, the thought, the manifest, the town hall, out into the Drain and its missing ladder) and the Dark Bay (in off the gantry, the thought, the notes, the cradle and its lines and journal line, out by the lower way onto the troughs).
 
 How to build lock 1:
 - Put the two pipe rooms on the grid in free space next to the station (440, 207) and the Spine Foot (480, 185). Rooms join only at their sides, so use a floor hatch or ladder where the shapes don't line up, as the Spine does.

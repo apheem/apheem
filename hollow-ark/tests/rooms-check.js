@@ -6,7 +6,8 @@
 //   - every opening at a room's edge lines up with an opening in the next room, with a floor to land on;
 //   - from any entrance (an edge, or a lift or hatch from another room), every other entrance and every item,
 //     person, terminal, switch and rest pod can be reached with the abilities the hero always has by then (the
-//     room's `abilities`; `thruster: true` means either pack, and both are tried);
+//     room's `abilities`; `thruster: true` means either pack, and both are tried); two exits a room lists in
+//     `through` (the Mash Floor's gantry and its troughs) join through the room they both open into;
 //   - secrets that need something (`secret: n` for a level n Purge Cannon, or `needs: { thruster, grapple,
 //     boots, charges }`) can't be reached without it, and can with it; a door with `needs` (a hatch the grapple
 //     pulls, a cracked wall a Breach Charge opens) keeps the exit behind it shut without it, and open with it,
@@ -565,7 +566,21 @@ const abKey = (ab) => JSON.stringify(ab);
 // Everything that can be reached from some entrances, starting in one crane state. Throwing a crane's switch
 // moves on to the other state of that crane, with the hero standing at the switch. With a thruster of either
 // pack, only what both packs reach counts.
-function makeSolver(def, targets) {
+// An exit hit, as the solver records it ('left:12'), on exit e.
+function hitsExit(h, e) {
+  const [side, row] = h.split(':');
+  return side === e.side && +row >= e.a && +row <= e.b;
+}
+
+// The room an exit opens into.
+function nextRoom(def, e) {
+  const gx = e.side === 'left' ? def.gx - 1 : def.gx + def.w;
+  return HA.rooms.at(gx * 8 + 4, (def.gy + e.a) * 8 + 4);
+}
+
+// joins: pairs of ways in by exits that open into the same next room, which joins them (its own check proves it
+// can be crossed from either to the other). Reaching one of the pair is a way in by the other.
+function makeSolver(def, targets, joins = []) {
   // Each crane (and each story flag a door or the room's water follows, like the Silt Tank's sluices) doubles the
   // states the room is checked in. Only a crane has switches to move between them.
   const flagOf = (l) => l.crane || l.state;
@@ -597,6 +612,11 @@ function makeSolver(def, targets) {
       const [si, seg] = queue.shift();
       const G = graph(si, gatesOpen, ab);
       for (const x of G.exits[seg.id]) exitsHit.add(x);
+      for (const pair of joins) {
+        for (const [from, to] of [pair, [pair[1], pair[0]]]) {
+          if ([...G.exits[seg.id]].some((h) => hitsExit(h, from.exit))) push(si, G.segOf(to.x, to.y));
+        }
+      }
       for (const t of G.touch[seg.id]) {
         reached.add(t);
         const sw = switches.get(t);
@@ -716,17 +736,22 @@ function checkRoom(def) {
     fail(def, 'has no way in');
     return;
   }
-  const solver = makeSolver(def, targets);
+  // A room can say two of its exits on one side are joined through the room they both open into (`through`: the
+  // Mash Floor's gantry and its troughs, joined through the Dark Bay, 0.3.27).
+  const joins = [];
+  for (const j of def.through || []) {
+    const ends = j.rows.map((row) => entries.find((en) => en.exit && en.exit.side === j.side && row >= en.exit.a && row <= en.exit.b));
+    const next = ends.map((en) => en && nextRoom(def, en.exit));
+    if (ends.some((en) => !en) || !next[0] || next.some((n) => n !== next[0])) fail(def, `the ${j.side} exits at rows ${j.rows.join(' and ')} don't both open into one room`);
+    else joins.push(ends);
+  }
+  const solver = makeSolver(def, targets, joins);
   const stateName = (si) => (solver.states > 1 ? ` with the ${solver.switches ? 'cranes' : 'story flags'} in state ${si}` : '');
 
   // From each way in on its own, in every crane state: every exit must be reachable, so the hero can never be
   // stuck. A gated exit must stay out of reach without its ability, and come into reach with it.
   const base = def.abilities || {};
-  const reaches = (hits, e) =>
-    [...hits].some((h) => {
-      const [side, row] = h.split(':');
-      return side === e.side && +row >= e.a && +row <= e.b;
-    });
+  const reaches = (hits, e) => [...hits].some((h) => hitsExit(h, e));
   for (const entry of entries) {
     const from = entry.start ? 'start' : entry.link ? entry.link.name.replace(/^the /, '') : entry.exit.id;
     const gate = entry.exit && entry.exit.needs;
