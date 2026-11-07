@@ -16,6 +16,7 @@
   const COUNT = '#ff8a8a'; // a Warden, counting
   const FREED = '#b8f4ff'; // a Warden, freed
   const STEWARD = '#c9d6e8';
+  const LOG = '#b8f4ff'; // something read off a wall
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
 
@@ -35,6 +36,10 @@
     mash: {
       title: 'MASH FLOOR · NOTICE',
       text: "WHAT THE VATS DON'T KEEP COMES DOWN HERE. RAKE IT DAILY. WHAT GROWS IN IT GOES BACK UP TO THE VATS. NOTHING IS WASTED. H. VALE",
+    },
+    grower: {
+      title: 'GROWING BAY 4 · NOTES',
+      text: "POD 0391. WOKEN YEAR 150, TO GROW FOOD WITHOUT LIGHT. THE LAMPS ARE FAILING. YEAR 151: THE NEW STRAIN GROWS IN THE DARK. IT GROWS ON ANYTHING. IT GROWS ON ME NOW. IT DOESN'T HURT. IT'S QUIET.",
     },
     seeds: {
       title: 'SEED VAULT · YEAR 0',
@@ -470,6 +475,24 @@
     *mashIn(world) {
       world.state.flags.mashIn = true;
       S.think(world, 'UNDER THE VATS. WHATEVER THEY DRAIN OFF ROTS DOWN HERE.', 150); // after the room's name has gone
+    },
+    // The Dark Bay (the eighth batch of new rooms): Growing Bay 4, where the Bloom began, on the way to the troughs.
+    *bayIn(world) {
+      world.state.flags.bayIn = true;
+      S.think(world, 'NO LIGHTS DOWN HERE. JUST THE BLOOM.', 150); // after the room's name has gone
+    },
+    // 0391's cradle, under the oldest of the Bloom: the Gardener's mother bed.
+    *motherBed(world) {
+      const s = world.state;
+      s.flags.motherBed = true;
+      yield { wait: 20 };
+      yield say('A SIGN', 'THE MOTHER BED. KEEP IT DARK. H. VALE', LOG);
+      yield me("SOMEBODY'S STILL IN THERE.");
+      if (s.logs.grower) yield me('WOKEN, LIKE ME.');
+      S.addStory(world, s.logs.grower
+        ? 'UNDER THE GARDEN LIFT IS THE DARK BAY, WHERE THE BLOOM BEGAN. IT GREW ON POD 0391, A SLEEPER WOKEN TO GROW FOOD IN THE DARK. THEY ARE STILL THERE, UNDER IT. THE GARDENER CALLS IT THE MOTHER BED.'
+        : 'UNDER THE GARDEN LIFT IS THE DARK BAY, WHERE THE BLOOM BEGAN. IN A CRADLE UNDER THE OLDEST OF IT, POD 0391, SOMEONE IS STILL LYING. THE GARDENER CALLS IT THE MOTHER BED.');
+      world.save();
     },
     *mashHum(world) {
       world.state.flags.mashHum = true;

@@ -29,6 +29,10 @@
       title: 'ARMORY · YEAR 300',
       text: "HARPOON ISSUED FOR HULL REPAIR. RETURNED. STEWARD ORDERS IT KEPT FOR 'COLLECTION WORK'.",
     },
+    city: {
+      title: 'FIRST CITY · MANIFEST',
+      text: 'PACKED YEAR 0, FOR ARRIVAL. HOUSES 150. SCHOOL 1. CLINIC 1. TOWN HALL 1. STREET LAMPS 400. POWER: THE SHIP, ON ARRIVAL (CHARTER, ARTICLE 9).',
+    },
     liftB: {
       title: 'MAINTENANCE · YEAR 97',
       text: 'BRIDGE LIFT B SEALED BY ORDER OF THE NAVIGATOR.',
@@ -279,6 +283,17 @@
       yield me('BELOW ME, THE AISLE GATE GRINDS OPEN.');
       S.addStory(world, "THE STEWARD'S MEN WATCHED THE LONG AISLE FROM A GALLERY OVER IT, AND KEPT ITS GATE SHUT. I OPENED IT FROM THEIR WATCH ROOM.");
       world.save();
+    },
+
+    // The City Hold (the eighth batch of new rooms): the First City, still in its crates, on the way down to the Drain.
+    *cityIn(world) {
+      world.state.flags.cityIn = true;
+      S.think(world, 'A WHOLE CITY, IN CRATES.');
+      S.think(world, "NOBODY'S OPENED ONE IN THREE HUNDRED YEARS.");
+    },
+    *townHall(world) {
+      world.state.flags.townHall = true;
+      S.think(world, "HE'S PUT HIS NAME ON THE TOWN HALL.");
     },
 
     *toolbag(world) {

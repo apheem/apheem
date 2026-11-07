@@ -25,7 +25,7 @@
   const ROOM = 'watch-gallery';
   const POST = 14; // where she stands in the watch room, between the orders' terminal and the way out
   const LEVER = 4; // the aisle gate's lever, at the back of the watch room
-  const HATCH = 25; // the hatch down to the Drain, just outside the watch room
+  const WAY_DOWN = 1; // the watch room's west end, out into the City Hold and down to the Drain (it was a hatch)
   const ROOM_EDGE = 23; // walking in this far, she sees the hero
   const HOME = 96; // where she stands in the Warrens: up on the platform over the gate, watching it
   const STEEL = '#8a93a6'; // her rifle: an old crew piece, a long steel barrel on a wooden stock
@@ -171,7 +171,7 @@
           yield say('EDDA', 'THIRTY YEARS I KEPT THAT SHUT.', WATCH);
         } else yield say('EDDA', 'YOU LEFT THE GATE OPEN, THE DAY YOU WENT THROUGH. I NEVER SHUT IT AGAIN. NOBODY SAID I HAD TO.', WATCH);
         w.walking = true;
-        yield { walk: w, x: HATCH * 8, speed: 0.8 };
+        yield { walk: w, x: WAY_DOWN * 8, speed: 0.8 };
         w.walking = false;
         w.state = 'gone';
         HA.audio.play('clamp');

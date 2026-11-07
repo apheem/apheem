@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.26-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.27-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.26-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.27-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,12 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.27: the City Hold and the Dark Bay
+
+- **Two new rooms on the main path, one in the Cargo Labyrinth and one in the Gardens.** Each adds a few minutes, and neither leaves you walking back the way you came.
+- **The City Hold.** The watch room's hatch down to the Drain is gone. The watch room's west end now opens high up in the hold where the colony's First City is kept: houses, a school, a clinic, a town hall and four hundred street lamps, packed in crates for landing day in year 0 and never opened. The manifest is on the landing. Get down by the crate hanging off the crane's hook (harpoon its ring) and the stacked houses, then along a catwalk over the live grating and east under the crates into the Drain. On the town hall's crate, someone has painted over TOWN HALL: it says STEWARD'S HOUSE now. The Drain's ladder up is gone too, so the way back is still the aisle gate.
+- **The Dark Bay.** The Mash Floor's gantry no longer drops to the troughs. Its west end goes on into Growing Bay 4, where the grow-lights failed and the Bloom began. There's no light but the Bloom's. Past the grower's notes, climb down the old grow racks, cross the bottom past a cradle under the oldest of the Bloom, with someone still in it, and climb the far side out onto the Mash Floor by the troughs, then on to the humming, the rest pod and the vat drain as before.
 
 ## 0.3.26: the Arrival Hall and the Thaw
 

@@ -449,6 +449,45 @@ async function play(browserType, url, label) {
       talkThrough();
       HA.debug.step(5);
       mash.down = [w().def.id, Math.round((p.x + p.w / 2) / 8)].join(',');
+      // The Dark Bay (the eighth batch of new rooms, 0.3.27): the gantry doesn't reach the troughs now. West off it
+      // into the Dark Bay, the grower's notes, 0391's cradle under the oldest of the Bloom (the mother bed), and out
+      // by the lower way east onto the troughs.
+      const listenAll = () => {
+        const said = [];
+        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          const st = w().scene.step;
+          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return said.join(' | ');
+      };
+      const bay = (out.bay = {});
+      for (let i = 0; i < 600 && w().def.id === 'mash-floor'; i++) {
+        if (w().scene) listenAll(); // (Wick's empty bag on the gantry, coming down the hatch)
+        HA.debug.step(1, { left: true });
+      }
+      HA.debug.step(3);
+      bay.room = w().def.id;
+      bay.gantry = Math.round((w().player.y + w().player.h) / 8);
+      HA.debug.step(20, { left: true });
+      HA.debug.step(160);
+      bay.thought = w().barks.map((b) => b.text).join(' ');
+      HA.debug.goto('dark-bay', 31, 10);
+      HA.debug.step(5);
+      bay.label = w().near && w().near.label;
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      bay.notes = listenAll();
+      HA.debug.goto('dark-bay', 10, 41);
+      HA.debug.step(5);
+      for (let i = 0; i < 200 && !w().scene; i++) HA.debug.step(1, { right: true });
+      bay.scene = w().scene && w().scene.name;
+      bay.said = listenAll();
+      bay.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('dark-bay', 34, 18);
+      for (let i = 0; i < 200 && w().def.id === 'dark-bay'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(10);
+      bay.out = [w().def.id, Math.round((w().player.y + w().player.h) / 8)].join(',');
       HA.debug.goto('mash-floor', 38, 18);
       HA.debug.step(30);
       mash.hum = w().scene && w().scene.name;
@@ -515,6 +554,8 @@ async function play(browserType, url, label) {
     expect(gd.vale, `the Gardener did not name herself and make her case in the Vat House (${gd.vale})`);
     const mash = gd.mash;
     expect(mash.barred === 'vatBarred' && /WICK'S BAG/.test(mash.bag) && mash.shut && /CLIMB DOWN/.test(mash.hatch) && /^mash-floor,2[78]$/.test(mash.down), `the barred Vat House door, Wick's bag or the mash hatch went wrong (${JSON.stringify(mash)})`);
+    const bay = gd.bay;
+    expect(bay.gantry === 11 && bay.room === 'dark-bay' && /NO LIGHTS/.test(bay.thought) && /READ/.test(bay.label) && /GROWS ON ME/.test(bay.notes) && bay.scene === 'motherBed' && /MOTHER BED/.test(bay.said) && /STILL IN THERE/.test(bay.said) && /WOKEN, LIKE ME/.test(bay.said) && /0391/.test(bay.story) && bay.out === 'mash-floor,19', `the Dark Bay went wrong (${JSON.stringify(bay)})`);
     expect(mash.hum === 'mashHum' && mash.sour === 'mashSour' && mash.layers === 2 && /^vat-house,3[45]$/.test(mash.up) && mash.scene === 'vatHouse' && mash.drainShut, `the Mash Floor, or the vat drain up into Wick's fight, went wrong (${JSON.stringify(mash)})`);
     expect(mash.drainAfter && /LIFT THE BAR/.test(mash.barLabel) && /CAME UP EASY/.test(mash.barSaid) && mash.lifted, `the bar was not lifted from the Vat House's side after Wick (${JSON.stringify(mash)})`);
     expect(gd.scatter && gd.grenade, 'the Scatter Launcher was not picked up, or threw no grenade');
@@ -792,6 +833,41 @@ async function play(browserType, url, label) {
       at('long-aisle', 8, 18);
       HA.debug.step(80, { left: true });
       out.gate.through = w().def.id;
+      // The City Hold (the eighth batch of new rooms, 0.3.27): no hatch in the watch room now; out of its west end
+      // onto the City Hold's landing (a whole city, in crates), the manifest, the town hall with the Steward's name
+      // painted over it, and east along the bottom into the Drain, which has no ladder up now.
+      const hear = () => {
+        const said = [];
+        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          const st = w().scene.step;
+          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return said.join(' | ');
+      };
+      const feet = () => [w().def.id, Math.round((w().player.y + w().player.h) / 8)].join(',');
+      const city = (out.city = {});
+      at('watch-gallery', 4, 18);
+      city.noHatch = !w().links.some((l) => l.legend.to === 'drain');
+      for (let i = 0; i < 200 && w().def.id === 'watch-gallery'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(20);
+      city.room = w().def.id;
+      HA.debug.goto('city-hold', 33, 18);
+      HA.debug.step(20);
+      city.thought = w().barks.map((b) => b.text).join(' ');
+      city.label = at('city-hold', 31, 18);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      city.manifest = hear();
+      city.read = !!s.logs.city;
+      at('city-hold', 30, 24);
+      HA.debug.step(40);
+      city.townHall = w().barks.map((b) => b.text).join(' ');
+      HA.debug.goto('city-hold', 34, 41);
+      for (let i = 0; i < 200 && w().def.id === 'city-hold'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(20);
+      city.out = feet();
+      city.noLadder = !w().links.some((l) => l.legend.to === 'watch-gallery');
       // The Drain: Solder's toolbag by the grate, and the grate down to the Ballast (Phase 3.4).
       at('drain', 19, 18);
       HA.debug.step(1, { up: true });
@@ -853,6 +929,7 @@ async function play(browserType, url, label) {
     expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
     expect(cl.charges === 3 && cl.wall && cl.aisle === 'long-aisle', `the Breach Charges did not open the cracked wall (${cl.charges}, ${cl.wall}, ${cl.aisle})`);
     expect(cl.gate.shut && cl.gate.ladder && cl.gate.counted === 'watchCount' && cl.gate.flag && cl.gate.through === 'drain', `the aisle gate and its lever in the Watch Gallery went wrong (${JSON.stringify(cl.gate)})`);
+    expect(cl.city.noHatch && cl.city.room === 'city-hold' && /WHOLE CITY/.test(cl.city.thought) && /READ/.test(cl.city.label) && /STREET LAMPS 400/.test(cl.city.manifest) && cl.city.read && /TOWN HALL/.test(cl.city.townHall) && /^drain,/.test(cl.city.out) && cl.city.noLadder, `the City Hold went wrong (${JSON.stringify(cl.city)})`);
     expect(/BALLAST/.test(cl.toolbag) && cl.grate === 'ballast-intake', `the Drain went wrong (${cl.toolbag}, ${cl.grate})`);
     expect(/TRAVEL/.test(cl.podPrompt) && /warrens/.test(cl.travel) && cl.travelled === 'warrens' && cl.flux, `travel between pods, or Flux at home, went wrong (${JSON.stringify(cl)})`);
     expect(cl.boatLose.lose === 'EVERYONE ELSE, AND MARA' && /ENDS HERE/.test(cl.boatLose.note) && cl.ending.mode === 'title' && cl.ending.seen.includes('deserter'), `taking the boat did not play the Deserter ending to the title (${JSON.stringify(cl.ending)})`);

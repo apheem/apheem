@@ -429,7 +429,9 @@
     if (PT.restAtPods && W.pods.length && !W.state.rested[W.def.id] && !W.scene && !(W.boss && W.boss.fighting) && !W.state.flags.scuttle && spotNear(W.pods[0]).x !== undefined) PT.rest();
   };
 
-  PT.exit = (side, to) => {
+  // Two ways out on one side into the same room (the Dark Bay's top and bottom into the Mash Floor): the top one is
+  // taken unless a row says which (the way out nearest that row).
+  PT.exit = (side, to, row) => {
     const W = w();
     const def = W.def;
     const from = def.id;
@@ -437,6 +439,8 @@
     const col = side === 'left' ? 0 : room.w - 1;
     const reg = PT.region();
     const runs = edgeRuns(def, side).filter((r) => !to || r.to === to);
+    const off = (r) => (row < r.y0 ? r.y0 - row : row > r.y1 ? row - r.y1 : 0);
+    if (row !== undefined) runs.sort((a, b) => off(a) - off(b));
     if (!runs.length) fail(`no way ${side} to ${to || 'anywhere'}`);
     let spot = null;
     for (const r of runs) {
@@ -451,7 +455,7 @@
     for (let n = 0; n < 90 && w() && w().def.id === from && !w().transition && !w().scene; n++) tick(1, { [side]: true });
     if (w().scene && w().def.id === from && !w().transition) {
       PT.settle();
-      if (w().def.id === from && !w().transition) return PT.exit(side, to);
+      if (w().def.id === from && !w().transition) return PT.exit(side, to, row);
     }
     if (w().def.id === from && !w().transition) fail(`walking off the ${side} edge did not leave ${from}${W.toastTime > 0 ? ' ("' + W.toastText + '")' : ''}`);
     arrived(from);
