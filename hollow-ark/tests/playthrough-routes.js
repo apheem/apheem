@@ -183,6 +183,11 @@ const spine = {
   async play(r) {
     await r.to('spine-foot'); // east on the tram with the climbers (or to the Ballast stop, and through the pipes)
     await r.bulbs();
+    // East off the platform into Lift 1's pit (the twelfth batch of new rooms; the steam used to rise at the
+    // platform's end): up its steam, the scratching on the landing gate, and out west onto the Foot's top ledge.
+    await r.to('lift-pit');
+    await r.do('PT.read("lift1")');
+    await r.do('PT.exit("left", "spine-foot", 8)');
     // Off the Foot's top ledge into the Crew Mess (the ninth batch of new rooms; it was a ladder): the old crew's
     // notice and the door frame, and out into the foot of the Boiler Stair.
     await r.to('crew-mess');
@@ -273,8 +278,11 @@ const tower = {
 const deck = {
   name: 'deck',
   async play(r) {
-    // the memory halls, down through the Thaw (the seventh batch of new rooms) to the Helm hall, and out of its east
-    // end down through the Burn (the ninth) to the Sphere
+    // the memory halls: off the Dock's gallery through the year-110 Crew Mess and back out onto the Dock's floor (the
+    // twelfth batch of new rooms), down through the Thaw (the seventh) to the Helm hall, and out of its east end down
+    // through the Burn (the ninth) to the Sphere
+    await r.to('hall-mess');
+    await r.do('PT.exit("left", "hall-dock", 40)');
     await r.to('hall-thaw');
     await r.to('hall-burn');
     await r.to('sphere');

@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.30-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.31-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.30-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.31-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,12 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.31: the Lift Pit and the Crew Mess's memory
+
+- **Two new rooms: one in the Engine Spine on every path that climbs it, and a memory hall on the Dreaming Deck on the true path.** Each adds a few minutes. Each is a loop, like the last few: you go out of a room one way and come back into it another, so neither leaves you walking back the way you came.
+- **The Lift Pit.** The steam no longer rises at the end of the Spine Foot's platform. Go east off the platform into the pit of Spine Lift 1, stripped down to its rails in year 110: cut cables, the car in pieces on the floor, the counterweight jammed in the shaft. A cracked main sends steam up it. Ride the first jet up to the counterweight, step west along a bracket into the second, and ride it up to the old landing. Someone scratched something into the landing gate. Out west, you're on the Foot's top ledge, and on into the Crew Mess as before. Read the gate before the crew bring the first lift up, and they'll have an answer.
+- **Memory: the Crew Mess.** The Dock hall's gallery no longer drops down the cradles. Its east end opens into the Crew Mess as the Navigator remembers it in year 110: lit, full, the plates still warm, the crew arguing. Go down the stair at the far end to the floor below, where the families line up for the service ways with their bundles, under the notice. The Navigator will tell you why it told them to count their children. Out the far end, you're on the Dock's floor, and on to the Gardens hall as before.
 
 ## 0.3.30: the Relay Hall and the Heat Exchanger
 

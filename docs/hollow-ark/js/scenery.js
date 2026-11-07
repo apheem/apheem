@@ -1149,6 +1149,83 @@
       g.fillStyle = '#2a1e14';
       for (let y = y0 + 6; y < y1; y += 12) g.fillRect(x - 12, y, 23, 1);
     },
+    // Spine Lift 1's pit (the twelfth batch of new rooms), stripped for parts in year 110: the guide rails up both sides
+    // of the shaft with most of their brackets unbolted, the hoist cables cut at the top and hanging, the counterweight's
+    // chains up from where it jammed, the car cut up on the floor, and at the top the landing gate, folded back, with
+    // the scratching on it.
+    liftpit(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const top = s.top * 8;
+      const floor = s.floor * 8;
+      for (const x of [x0 + 2, x1 - 5]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, top, 3, floor - top);
+        g.fillStyle = '#4a4a56';
+        g.fillRect(x + 1, top, 1, floor - top);
+        for (let y = top + 10; y < floor; y += 24) {
+          if (rnd() < 0.3) {
+            g.fillStyle = '#2a2a32';
+            g.fillRect(x - 2, y, 7, 3);
+          } else {
+            // only the bolt holes left
+            g.fillStyle = '#05060a';
+            g.fillRect(x - 1, y + 1, 1, 1);
+            g.fillRect(x + 3, y + 1, 1, 1);
+          }
+        }
+      }
+      // the hoist cables, cut at the top, frayed at the ends
+      for (const [dx, len] of [[60, 70], [66, 44], [72, 90]]) {
+        g.fillStyle = '#2a2a32';
+        g.fillRect(x0 + dx, top, 1, len);
+        g.fillStyle = '#5e5e6a';
+        g.fillRect(x0 + dx - 1, top + len, 1, 3);
+        g.fillRect(x0 + dx + 1, top + len + 1, 1, 2);
+      }
+      // the counterweight's chains, up from where it jammed
+      const [wx0, wy0, wx1] = s.weight;
+      g.fillStyle = '#2a2a32';
+      for (const cx of [wx0 * 8 + 6, (wx1 + 1) * 8 - 10]) for (let y = top; y < wy0 * 8; y += 3) g.fillRect(cx, y, 2, 2);
+      // the car, cut up where it came down: its floor plate with the number on it, a side of its cage leaning on the
+      // rail, and the offcuts
+      const cx = x0 + 40;
+      g.fillStyle = '#10121c';
+      g.fillRect(cx, floor - 5, 54, 5);
+      g.fillStyle = '#3a3a44';
+      g.fillRect(cx + 1, floor - 4, 52, 3);
+      g.fillStyle = '#10121c';
+      g.fillRect(cx + 8, floor - 15, 11, 10);
+      g.fillStyle = '#5e5e6a';
+      g.fillRect(cx + 9, floor - 14, 9, 8);
+      HA.font.draw(g, '1', cx + 11, floor - 13, '#10121c', { shadow: null });
+      const lx = x1 - 52;
+      g.fillStyle = '#2a2a32';
+      for (let i = 0; i < 7; i++) for (let y = 0; y < 34; y++) g.fillRect(lx + i * 6 + Math.floor(y / 3), floor - 1 - y, 1, 1);
+      for (const y of [2, 17, 32]) g.fillRect(lx + Math.floor(y / 3), floor - 1 - y, 37, 1);
+      g.fillStyle = '#4a4a56';
+      for (let i = 0; i < 9; i++) g.fillRect(x0 + 6 + Math.floor(rnd() * (x1 - x0 - 12)), floor - 2, 2 + Math.floor(rnd() * 4), 2);
+      // the landing gate, folded back, and the scratching on it
+      const gx = s.gate[0] * 8 - 18;
+      const gy = s.gate[1] * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(gx - 1, gy - 32, 38, 2);
+      for (let x = 0; x <= 36; x += 6) g.fillRect(gx + x, gy - 31, 1, 31);
+      g.fillStyle = '#3a3a44';
+      for (let x = 0; x < 36; x += 6) {
+        for (let cy = gy - 30; cy < gy - 5; cy += 6) {
+          for (let k = 1; k < 6; k++) {
+            g.fillRect(gx + x + k, cy + k, 1, 1);
+            g.fillRect(gx + x + 6 - k, cy + k, 1, 1);
+          }
+        }
+      }
+      g.fillStyle = 'rgba(232,226,214,0.75)';
+      for (const y of [gy - 24, gy - 18]) {
+        for (let x = gx + 3; x < gx + 34; x += 3 + Math.floor(rnd() * 2)) if (rnd() < 0.8) g.fillRect(x, y + Math.floor(rnd() * 2), 2, 1);
+      }
+      HA.font.draw(g, 'LIFT 1', gx + 1, gy - 41, '#ffb070', { shadow: null });
+    },
     // A bulkhead into the Gardens, sealed, with the Bloom grown thick through its seams.
     bulkhead(g, s) {
       const x = s.x * 8;
@@ -2357,7 +2434,7 @@
         g.fillRect(x - 3, FLOOR - 6, 2, 6);
         g.fillRect(x + 1, FLOOR - 6, 2, 6);
       };
-      const year = { cryo: 'YEAR 0', burn: 'YEAR 38', dock: 'YEAR 133', gardens: 'YEAR 151', thaw: 'YEAR 270', helm: 'YEAR 290' }[s.of];
+      const year = { cryo: 'YEAR 0', burn: 'YEAR 38', mess: 'YEAR 110', dock: 'YEAR 133', gardens: 'YEAR 151', thaw: 'YEAR 270', helm: 'YEAR 290' }[s.of];
       if (s.of === 'cryo') {
         // the pod racks, every pod still shut, and the first crew among them, singing
         for (let x = 20; x < W - 30; x += 24) {
@@ -2448,6 +2525,77 @@
         g.fillRect(44, 41 * 8 - 30, 1, 28);
         HA.font.draw(g, 'LB-1', 34, 41 * 8 - 12, 'rgba(226,240,248,0.25)', { shadow: null });
         figure(196, 0.18);
+      } else if (s.of === 'mess') {
+        // the Crew Mess in year 110 (the twelfth batch of new rooms): lamps lit over the tables, the plates out, the
+        // crew on their feet arguing, one with an arm up; below, the notice on the wall and the maintenance families in
+        // a line along the floor to the service way, with their bundles, the children holding on
+        const stand = (x, floor, a, small, arm) => {
+          const k = small ? 0.6 : 1;
+          g.fillStyle = pale(a);
+          g.fillRect(x - 2, floor - Math.round(19 * k), 4, Math.round(4 * k));
+          g.fillRect(x - 3, floor - Math.round(14 * k), 6, Math.round(8 * k));
+          g.fillRect(x - 3, floor - Math.round(6 * k), 2, Math.round(6 * k));
+          g.fillRect(x + 1, floor - Math.round(6 * k), 2, Math.round(6 * k));
+          if (arm) g.fillRect(x + 3, floor - 22, 2, 10);
+        };
+        for (const lx of [64, 152, 240]) {
+          g.fillStyle = pale(0.16);
+          g.fillRect(lx, 16, 1, 30);
+          g.fillRect(lx - 6, 46, 13, 4);
+          const cone = g.createLinearGradient(0, 50, 0, FLOOR);
+          cone.addColorStop(0, 'rgba(255,248,220,0.12)');
+          cone.addColorStop(1, 'rgba(255,248,220,0)');
+          g.fillStyle = cone;
+          g.beginPath();
+          g.moveTo(lx - 6, 50);
+          g.lineTo(lx + 7, 50);
+          g.lineTo(lx + 34, FLOOR);
+          g.lineTo(lx - 33, FLOOR);
+          g.closePath();
+          g.fill();
+        }
+        // a second table, with its stools, and the plates out on both
+        g.fillStyle = pale(0.1);
+        g.fillRect(176, FLOOR - 10, 56, 3);
+        for (const x of [180, 226]) g.fillRect(x, FLOOR - 7, 2, 7);
+        for (const x of [170, 194, 214, 238]) g.fillRect(x, FLOOR - 5, 5, 5);
+        g.fillStyle = pale(0.24);
+        for (const x of [100, 112, 124, 136, 148, 184, 198, 212, 224]) g.fillRect(x, (x < 160 ? FLOOR - 9 : FLOOR - 11), 5, 1);
+        // the serving hatch, steam still coming off it
+        g.fillStyle = pale(0.1);
+        g.fillRect(262, 92, 40, 22);
+        g.fillStyle = 'rgba(30,35,44,0.4)';
+        g.fillRect(264, 94, 36, 18);
+        g.fillStyle = pale(0.08);
+        for (let i = 0; i < 8; i++) g.fillRect(270 + Math.floor(rnd() * 24), 76 + Math.floor(rnd() * 16), 2, 2);
+        for (const [x, a, arm] of [[44, 0.14], [56, 0.12], [92, 0.16], [166, 0.18, true], [204, 0.14], [246, 0.16], [258, 0.12]]) stand(x, FLOOR, a, false, arm);
+        // below: the notice, and the line to the service way
+        const F2 = 42 * 8;
+        g.fillStyle = pale(0.14);
+        g.fillRect(24, 226, 122, 44);
+        g.fillStyle = 'rgba(30,35,44,0.3)';
+        g.fillRect(26, 228, 118, 40);
+        HA.font.draw(g, 'CREW DECK · YEAR 110', 30, 232, 'rgba(226,240,248,0.34)', { shadow: null });
+        g.fillStyle = pale(0.16);
+        for (const y of [244, 249]) for (let x = 30; x < 138; x += 4 + Math.floor(rnd() * 4)) g.fillRect(x, y, 3, 1);
+        HA.font.draw(g, 'COUNT YOUR CHILDREN', 28, 256, 'rgba(226,240,248,0.4)', { shadow: null });
+        // the service way at the west end, a low door in the wall, and everyone going in
+        g.fillStyle = pale(0.12);
+        g.fillRect(16, F2 - 30, 2, 30);
+        g.fillRect(16, F2 - 30, 22, 2);
+        HA.font.draw(g, 'SERVICE WAY', 22, F2 - 40, 'rgba(226,240,248,0.25)', { shadow: null });
+        const line = [[48, false], [58, true], [74, false], [90, false], [99, true], [108, true], [126, false], [140, true], [160, false], [178, false], [188, true]];
+        for (const [x, small] of line) {
+          stand(x, F2, small ? 0.16 : 0.13, small);
+          // a bundle on every adult's back
+          if (!small) {
+            g.fillStyle = pale(0.1);
+            g.fillRect(x + 3, F2 - 16, 5, 7);
+          }
+        }
+        // the children hold on to whoever is in front
+        g.fillStyle = pale(0.12);
+        for (const [x] of line.filter(([, small]) => small)) g.fillRect(x - 8, F2 - 7, 6, 1);
       } else if (s.of === 'thaw') {
         // the Thaw Corridor in year 270 (the seventh batch of new rooms): frost down the walls, the pods along both
         // levels, one of them open at the foot; by it a man from the walls, kneeling with a blanket, and the one he

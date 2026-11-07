@@ -1,10 +1,11 @@
 'use strict';
 // The Dreaming Deck: the navigation deck under the Helm, sealed since year 40, where the Navigator keeps its
-// memories. Lift B comes down into the Lift Down; past the seal are six memory halls, each an earlier part of the
+// memories. Lift B comes down into the Lift Down; past the seal are seven memory halls, each an earlier part of the
 // ship as the Navigator remembers it (the Cryo Deck on the first night, the Lifeboat Dock the night the first sleeper
-// it woke took a boat, the Gardens the year the Bloom grew, the Thaw Corridor the night it woke the Steward, the Helm
-// the year the Steward took the Key, and last the stern's drive room in year 38, the braking burn it refused); then the
-// Navigation Sphere, where its course is drawn in light, and the Quiet, where its core is. The true path only.
+// it woke took a boat, the Crew Mess the year it ended the shifts and sent the families into the walls, the Gardens the
+// year the Bloom grew, the Thaw Corridor the night it woke the Steward, the Helm the year the Steward took the Key, and
+// last the stern's drive room in year 38, the braking burn it refused); then the Navigation Sphere, where its course is
+// drawn in light, and the Quiet, where its core is. The true path only.
 // Map legend beyond the shared one: Y Lift B   N the Navigator (the halls join at their sides)
 (function (HA) {
   HA.rooms.area('deck', { name: 'THE DREAMING DECK', theme: 'deck', music: 'deck', mapColor: '#5fd4e8' });
@@ -96,8 +97,9 @@
   });
 
   // Memory: the Lifeboat Dock, in year 133, the night the first sleeper the Navigator woke (0112) took a boat (3.24).
-  // In from the First Night along the gallery, down the cradles at the east end, and back west along the dock floor
-  // to the Gardens hall.
+  // In from the First Night along the gallery and out of its east end into the Crew Mess hall; back in at the east end
+  // of the dock floor, and west along it to the Gardens hall (the twelfth batch of new rooms; the gallery used to drop
+  // down the cradles at the east end).
   HA.rooms.add({
     id: 'hall-dock',
     area: 'deck',
@@ -109,6 +111,9 @@
     noRespawn: true,
     abilities: ALL,
     scenery: [{ kind: 'memory', of: 'dock' }],
+    // The gallery's east end and the dock floor's both go east into the year-110 Crew Mess hall, and are joined
+    // through it (the twelfth batch of new rooms; the gallery used to drop down the cradles at the east end).
+    through: [{ side: 'right', rows: [16, 40] }],
     triggers: [
       { x0: 2, x1: 12, y1: 18, when: (s) => !s.flags.hallDock, run: 'hallDock' },
       { x0: 2, x1: 9, y0: 30, when: (s) => s.flags.hallDock && !s.flags.dockCradle, run: 'dockCradle' },
@@ -129,12 +134,12 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '..............========................##',
-      '.........##...........................##',
-      '.........##...........................##',
-      '.........##..r...........r............##',
-      '###############^^^^^^#######..........##',
-      '############################..........##',
+      '..............========..................',
+      '.........##.............................',
+      '.........##.............................',
+      '.........##..r...........r..............',
+      '###############^^^^^^###################',
+      '########################################',
       '##......7.............................##',
       '##..........................======....##',
       '##....................................##',
@@ -152,11 +157,79 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '............========.........======...##',
-      '.......................##.............##',
-      '.......................##.............##',
-      '........r..............##.........k...##',
+      '............========.........======.....',
+      '.......................##...............',
+      '.......................##...............',
+      '........r..............##.........k.....',
       '#############^^^^^^#####################',
+      '########################################',
+      '########################################',
+    ],
+  });
+
+  // Memory: the Crew Mess, in year 110, the year the Navigator ended the shifts and sent the maintenance families into
+  // the walls (the twelfth batch of new rooms). In off the Dock's gallery, east along the mess past the long table, down
+  // the stair at the east end, and west along the floor below, where the families went into the service ways, back out
+  // onto the Dock's floor.
+  HA.rooms.add({
+    id: 'hall-mess',
+    area: 'deck',
+    name: 'MEMORY: THE CREW MESS',
+    gx: 680,
+    gy: 46,
+    theme: 'memory',
+    dream: true,
+    noRespawn: true,
+    abilities: ALL,
+    scenery: [{ kind: 'memory', of: 'mess' }],
+    triggers: [
+      { x0: 2, x1: 12, y1: 18, when: (s) => !s.flags.hallMess, run: 'hallMess' },
+      { x0: 2, x1: 14, y0: 36, when: (s) => s.flags.hallMess && !s.flags.messOrder, run: 'messOrder' },
+    ],
+    map: [
+      '########################################',
+      '########################################',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................8...............##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '......................................##',
+      '......................................##',
+      '........................c.............##',
+      '............########..................##',
+      '##############################........##',
+      '##############################........##',
+      '##....................................##',
+      '##....................................##',
+      '##........................========....##',
+      '##....................................##',
+      '##....................................##',
+      '##.......f............................##',
+      '##................======..............##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##........................======......##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##................======..............##',
+      '##....................................##',
+      '##....................................##',
+      '..........................======......##',
+      '......................................##',
+      '......................................##',
+      '................0.....................##',
+      '########################################',
       '########################################',
       '########################################',
     ],

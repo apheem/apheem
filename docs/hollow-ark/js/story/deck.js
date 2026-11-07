@@ -185,6 +185,34 @@
       yield me('THE PURSER OFFERED ME A BOAT FROM THIS DOCK.');
       yield nav('YOU SAID NO. I WATCHED THAT TOO.');
     },
+    // The Crew Mess in year 110, the year it ended the shifts and sent the maintenance families into the walls (the
+    // twelfth batch of new rooms): off the Dock's gallery, and back out onto its floor.
+    *hallMess(world) {
+      const s = world.state;
+      s.flags.hallMess = true;
+      yield { wait: 30 };
+      // The same mess, under the Boiler Stair, with the plates still out (story/spine.js)
+      yield me(s.flags.messIn ? "THE OLD CREW'S MESS, UNDER THE BOILER STAIR. FULL, AND THE PLATES STILL WARM." : 'A MESS HALL, FULL, AND THE PLATES STILL WARM.');
+      yield nav('YEAR 110. THE CREW WERE ARGUING. ABOUT WAKING THE SLEEPERS, AND ABOUT WHERE WE WERE.');
+      yield nav('SO I ENDED THE SHIFTS. I FLEW THE SHIP MYSELF.');
+      world.save();
+    },
+    *messOrder(world) {
+      const s = world.state;
+      s.flags.messOrder = true;
+      yield { wait: 20 };
+      yield nav('I WROTE THE NOTICE. MAINTENANCE FAMILIES TO THE SERVICE WAYS. STRIP THE LIFTS FOR PARTS.');
+      yield nav('COUNT YOUR CHILDREN, I TOLD THEM. A FAMILY THAT COUNTS ITS CHILDREN DOES NOT COUNT THE YEARS.');
+      // What the hero read of it on the way up: Lift 1's gate in its pit, or the notice in the mess (story/spine.js)
+      if (s.logs.lift1) {
+        yield me("THEY SCRATCHED ON LIFT 1'S GATE THAT THEY'D PUT IT BACK WHEN THEY CAME UP.");
+        yield nav('THEY HAVE COME UP. IT TOOK THEM TWO HUNDRED YEARS, AND YOU.');
+      } else if (s.logs.mess) yield me('I READ THAT NOTICE, UNDER THE BOILER STAIR.');
+      yield me('THEY STILL COUNT THEM. EVERY NIGHT, AT LIGHTS-OUT.');
+      yield nav('I KNOW. I LISTEN FOR IT.');
+      S.addStory(world, "THEN THE CREW MESS, YEAR 110. THE CREW WERE ARGUING ABOUT WAKING THE SLEEPERS, SO THE NAVIGATOR ENDED THE SHIFTS AND FLEW THE SHIP ITSELF. IT SENT THE MAINTENANCE FAMILIES INTO THE WALLS, AND TOLD THEM TO COUNT THEIR CHILDREN, SO THEY WOULDN'T COUNT THE YEARS.");
+      world.save();
+    },
     *hallGardens(world) {
       world.state.flags.hallGardens = true;
       yield { wait: 30 };
