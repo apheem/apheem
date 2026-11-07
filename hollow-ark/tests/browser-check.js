@@ -1061,6 +1061,44 @@ async function play(browserType, url, label) {
       talkThrough();
       HA.debug.step(10);
       out.into = { room: w().def.id, area: w().area.name, music: HA.music.playing, lead: s.lead };
+      // The Heat Exchanger (the eleventh batch of new rooms, 0.3.30): the Drain Shaft's top has fallen in, so the
+      // grate's ledge is walled in to the east. West off it into the Heat Exchanger (warm), its plate, down to the
+      // pool and Solder's drawings over his tub, and out east, low, onto the shaft's lower ledge.
+      const at = (room, tx, ty) => {
+        HA.debug.goto(room, tx, ty);
+        HA.debug.step(5);
+        return w().near && w().near.label;
+      };
+      // Every line said until the next choice (or the scene's end), confirming as a player would.
+      const hear = () => {
+        const said = [];
+        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          const st = w().scene.step;
+          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return said.join(' | ');
+      };
+      const ex = (out.exchanger = {});
+      ex.walled = [3, 6, 9, 11].every((y) => w().room.tile(13, y) !== 0);
+      for (let i = 0; i < 300 && w().def.id === 'ballast-intake'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(30, { left: true });
+      HA.debug.step(90);
+      ex.room = w().def.id;
+      ex.thought = w().barks.map((b) => b.text).join(' ');
+      ex.plateLabel = at('heat-exchanger', 30, 9);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      ex.plate = hear();
+      ex.drawingsLabel = at('heat-exchanger', 13, 41);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      ex.drawings = hear();
+      ex.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('heat-exchanger', 33, 25);
+      for (let i = 0; i < 200 && w().def.id === 'heat-exchanger'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(20);
+      ex.out = [w().def.id, Math.round((p.y + p.h) / 8)].join(',');
       // The Pump Gallery's door from the Intake is wedged until Solder is found (3.12): the way to him is over the
       // Pump Heads and down his ladder.
       HA.debug.goto('ballast-intake', 33, 41);
@@ -1069,11 +1107,13 @@ async function play(browserType, url, label) {
       HA.debug.goto('pump-heads', 36, 18);
       HA.debug.step(5);
       out.wedge.ladder = w().links.some((l) => l.legend.to === 'pump-gallery');
-      // 1. Solder, with the motor: the toolbag back, the Foam Sprayer, and the walk begins.
+      // 1. Solder, with the motor: the toolbag back, the Foam Sprayer, and the walk begins. The hero has seen his
+      // drawings over the tub, and says so.
       HA.debug.goto('pump-gallery', 4, 18);
       HA.debug.step(5);
+      const foundSaid = hear();
       talkThrough();
-      out.found = { foam: p.weapons.some((x) => x.id === 'foam'), back: !!s.flags.toolbagBack, walk: !!s.flags.solderWalk };
+      out.found = { foam: p.weapons.some((x) => x.id === 'foam'), back: !!s.flags.toolbagBack, walk: !!s.flags.solderWalk, said: foundSaid };
       out.wedge.open = !!HA.rooms.byId['ballast-intake'].legend.D.open(s);
       // 2. The walk along the Tank Farm, and Solder's goodbye at the workshop door.
       HA.debug.goto('tank-farm', 2, 41);
@@ -1293,6 +1333,8 @@ async function play(browserType, url, label) {
       return out;
     });
     expect(bl.into.room === 'ballast-intake' && bl.into.area === 'FLOODED BALLAST' && bl.into.music === 'ballast' && /SOLDER/.test(bl.into.lead), `the Drain's grate did not lead into the Ballast (${JSON.stringify(bl.into)})`);
+    expect(bl.exchanger.walled && bl.exchanger.room === 'heat-exchanger' && /FIRST WARM AIR/.test(bl.exchanger.thought) && /READ/.test(bl.exchanger.plateLabel) && /DO NOT BATHE/.test(bl.exchanger.plate) && /LOOK AT THE DRAWINGS/.test(bl.exchanger.drawingsLabel) && /TWENTY YEARS OF DATES/.test(bl.exchanger.drawings) && /TWENTY YEARS OF ONE DAY/.test(bl.exchanger.drawings) && /MAKE IT TODAY/.test(bl.exchanger.drawings) && /HEAT EXCHANGER/.test(bl.exchanger.story) && bl.exchanger.out === 'ballast-intake,26', `the Heat Exchanger went wrong (${JSON.stringify(bl.exchanger)})`);
+    expect(/SEEN THE BATH\. AND THE DRAWINGS/.test(bl.found.said) && /THAT WAS PRIVATE/.test(bl.found.said) && /ONE DAY IS TODAY/.test(bl.found.said), `Solder did not answer for his drawings (${bl.found.said})`);
     expect(bl.wedge.shut && bl.wedge.ladder && bl.wedge.open, `the Pump Gallery's wedged door, or the way round over the Pump Heads, went wrong (${JSON.stringify(bl.wedge)})`);
     expect(bl.found.foam && bl.found.back && bl.found.walk && bl.walk.barks >= 6 && bl.walk.door === 'workshopDoor', `finding Solder, or the walk, went wrong (${JSON.stringify(bl.found)}, ${JSON.stringify(bl.walk)})`);
     expect(bl.foam && bl.thrown && bl.tank === 'test-tank' && bl.boots && bl.sank, `the Foam Sprayer, the silt, the Test Tank or the boots went wrong (${bl.foam}, ${bl.thrown}, ${bl.tank}, ${bl.boots}, ${bl.sank})`);
@@ -1807,6 +1849,34 @@ async function play(browserType, url, label) {
       choose(0);
       talkThrough();
       out.gardener = { fate: s.people.gardener, mercy: s.mercy - m2, shimWith: s.flags.shimWith, lead: s.lead };
+      // The Relay Hall (the eleventh batch of new rooms, 0.3.30): the Bridge Stair's lower flight is gone, so from its
+      // foot the way is west along the bottom into the Relay Hall: the racks clicking, the Steward on the intercom,
+      // the plate, the thaw board on the gallery (one relay thrown, the hero's, by NAV), and out of the gallery's east
+      // end onto the stair's middle landing.
+      const rh = (out.relay = {});
+      HA.debug.goto('bridge-stair', 34, 41);
+      HA.debug.step(5);
+      rh.noFlight = [4, 12, 20, 30, 36].every((x) => w().room.tile(x, 33) !== 0 && w().room.tile(x, 34) !== 0);
+      for (let i = 0; i < 400 && w().def.id === 'bridge-stair'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(30, { left: true });
+      rh.room = w().def.id;
+      rh.scene = w().scene && w().scene.name;
+      rh.said = listen().join(' | ');
+      HA.debug.goto('relay-hall', 72, 18);
+      HA.debug.step(3);
+      rh.platePrompt = w().near && w().near.label;
+      press('up');
+      rh.plate = listen().join(' | ');
+      HA.debug.goto('relay-hall', 66, 9);
+      HA.debug.step(3);
+      rh.thawPrompt = w().near && w().near.label;
+      press('up');
+      rh.thaw = listen().join(' | ');
+      rh.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('relay-hall', 74, 9);
+      for (let i = 0; i < 200 && w().def.id === 'relay-hall'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(20);
+      rh.out = [w().def.id, Math.round((w().player.y + w().player.h) / 8)].join(',');
       // The Bridge Stair is shut above (the third batch of new rooms), so the way up is round through the Steward's
       // Rooms: the shutter, his voice, his daybook, the boots under glass, and the shutter's bolt from the landing.
       HA.debug.goto('bridge-stair', 28, 20);
@@ -2005,6 +2075,8 @@ async function play(browserType, url, label) {
     expect(/DOGGED DOWN FROM ABOVE/.test(tw.dogged.said) && tw.dogged.room === 'bridge-stair', `the Helm's hatch was not dogged down before the speech (${JSON.stringify(tw.dogged)})`);
     const ls = tw.listen;
     expect(ls.room === 'listening-room' && ls.music === null && ls.scene === 'listenIn' && /ALL HISSING/.test(ls.heard) && /HOW QUIET THEY ARE/.test(ls.heard) && ls.listener === 'listener' && /SAME TWO WORDS/.test(ls.writing) && ls.tapePrompt === '{up} READ THE TAPE' && /NOTHING HEARD/.test(ls.tape) && /NINETEEN YEARS/.test(ls.tape) && /NOBODY DOWN THERE/.test(ls.tape) && ls.tapeRead && /NINETEEN YEARS/.test(ls.order) && /MARRANT/.test(ls.order), `the Listening Room went wrong (${JSON.stringify(ls)})`);
+    const rl = tw.relay;
+    expect(rl.noFlight && rl.room === 'relay-hall' && rl.scene === 'relayIn' && /ALL CLICKING/.test(rl.said) && /THE SLEEPER IS COMING UP/.test(rl.said) && /READ/.test(rl.platePrompt) && /THE HELM ANSWERS TO NAV/.test(rl.plate) && rl.thawPrompt === '{up} LOOK AT THE THAW BOARD' && /A RELAY FOR EVERY POD/.test(rl.thaw) && /0417\. MINE/.test(rl.thaw) && /THROWN BY: NAV/.test(rl.thaw) && /THE VOICE IN THE DOME/.test(rl.thaw) && /0418\. MARA'S/.test(rl.thaw) && /RELAY HALL/.test(rl.story) && rl.out === 'bridge-stair,33', `the Relay Hall went wrong (${JSON.stringify(rl)})`);
     const sh = tw.shutter;
     expect(sh.shut && /SHUT ABOVE ME/.test(sh.thought) && /PRIVATE/.test(sh.thought) && /YOU'RE IN MY ROOMS/.test(sh.rooms) && /LOCKUP'S INTERCOM/.test(sh.rooms) && /NOT YET FOR TWENTY YEARS/.test(sh.daybook) && /OLD BOOTS ON A STAND/.test(sh.boots) && sh.under && sh.bolt === 'shutterBolt' && /DREW THE BOLT/.test(sh.drawn) && /FORTY-TWO YEARS/.test(sh.drawn) && /LISTENING ROOM/.test(sh.drawn) && sh.open, `the Bridge Stair's shutter, or the way round through the Steward's Rooms, went wrong (${JSON.stringify(sh)})`);
     expect(/DEAD MAN'S BOOTS/.test(tw.speech) && /THOSE WERE HIS BOOTS/.test(tw.speech) && /TELL ME AGAIN WHO THE MONSTER IS/.test(tw.speech) && /THE BOOTS UNDER GLASS/.test(tw.speech) && /HIS OWN WATCH/.test(tw.speech), `the Steward's speech went wrong (${tw.speech})`);

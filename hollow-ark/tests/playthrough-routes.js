@@ -132,6 +132,12 @@ const cargo = {
 const ballast = {
   name: 'ballast',
   async play(r) {
+    // The Drain Shaft's top has fallen in: west off its ledge into the Heat Exchanger, down past the coils to the
+    // warm pool, Solder's drawings over his tub, and back out low onto the shaft's lower ledge (the eleventh batch).
+    await r.to('heat-exchanger');
+    await r.do('PT.read("exchanger")');
+    await r.do('PT.read("drawings")');
+    await r.do('PT.exit("right", "ballast-intake", 24)');
     await r.to('pump-heads'); // the Pump Gallery's door from the Intake is wedged: round over the pump heads
     await r.to('pump-gallery'); // down Solder's ladder: Solder, and the Foam Sprayer
     await r.bulbs();
@@ -248,6 +254,12 @@ const tower = {
     await r.to('arrival-hall');
     await r.do('PT.read("arrivalTerms")');
     await r.to('garden-gallery'); // the Gardener
+    // The Bridge Stair's lower flight is gone: west from its foot through the Relay Hall, the plate and the thaw
+    // board, and out of its gallery onto the stair's middle landing (the eleventh batch of new rooms).
+    await r.to('relay-hall');
+    await r.do('PT.read("relays")');
+    await r.do('PT.read("thaw")');
+    await r.do('PT.exit("right", "bridge-stair", 7)');
     await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter
     // The Helm's hatch is dogged down: the Steward sends the hero round by his Listening Room (the sixth batch).
     await r.to('listening-room');
