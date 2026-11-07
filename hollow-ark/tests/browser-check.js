@@ -362,6 +362,47 @@ async function play(browserType, url, label) {
       talkThrough();
       out.lead1 = s.lead;
       out.found = { hoist: !!s.flags.hoist, seen: !!s.flags.cradlesSeen, wick: !!(wk() && wk().kneel), story: s.journal.story.some((t) => /OLD NURSERY/.test(t)) };
+      // The Intake (the tenth batch of new rooms, 0.3.29): the Nursery's planters go up to the ceiling now. Out of the
+      // potting floor's west end into the Intake's wash (hoses, drains in the floor), the standing order, up the stair
+      // to the bins (bin 12 empty), and east along the top, back into the Nursery along the duct over the planters.
+      const intake = (out.intake = {});
+      const near = (room, tx, ty) => {
+        HA.debug.goto(room, tx, ty);
+        HA.debug.step(5);
+        return w().near && w().near.label;
+      };
+      const lines = () => {
+        const said = [];
+        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          const st = w().scene.step;
+          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return said.join(' | ');
+      };
+      HA.debug.goto('nursery', 5, 18);
+      HA.debug.step(5);
+      intake.wall = [7, 8, 9, 10].every((y) => w().room.tile(26, y) !== 0);
+      for (let i = 0; i < 300 && w().def.id === 'nursery'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(30, { left: true });
+      HA.debug.step(90);
+      intake.room = w().def.id;
+      intake.thought = w().barks.map((b) => b.text).join(' ');
+      intake.boardLabel = near('intake', 30, 41);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      intake.board = lines();
+      intake.binsLabel = near('intake', 21, 21);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      intake.bins = lines();
+      intake.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('intake', 30, 21);
+      for (let i = 0; i < 400 && w().def.id === 'intake'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(5);
+      intake.out = [w().def.id, Math.round((p.y + p.h) / 8)].join(',');
+      HA.debug.step(60, { right: true });
+      intake.along = Math.round(p.x / 8) > 8 && Math.round((p.y + p.h) / 8) === 7;
       // The Scatter Launcher, on the Terraces.
       HA.debug.goto('terraces', 4, 32);
       HA.debug.step(20);
@@ -549,6 +590,8 @@ async function play(browserType, url, label) {
     expect(gd.bulbs === 1 && gd.bulbAsks && gd.ate.bloom === 1 && gd.ate.bulbs === 0 && gd.ate.healed && gd.ate.rush, `the Bloom bulb was not picked up, asked about, and eaten (${JSON.stringify(gd)})`);
     expect(gd.berthScene === 'berths' && gd.lead0 === 'FIND WHERE THE WARDENS TOOK THE TAKEN' && gd.hoistShut.room === 'root-cellar' && /HOIST/.test(gd.hoistShut.toast) && !gd.hoistShut.scene, `the empty racks, or the hoist shut from below, went wrong (${gd.berthScene}, ${gd.lead0}, ${JSON.stringify(gd.hoistShut)})`);
     expect(gd.lead0b === 'FIND THE NURSERY, OVER THE SPORE BEDS' && gd.cradleScene === 'nursery' && gd.lead1 === 'FIND THE WARDEN THAT HOLDS THE SEALS' && gd.found.hoist && gd.found.seen && gd.found.wick && gd.found.story, `the taken were not found in the Nursery, or Wick didn't come up the hoist (${gd.lead0b}, ${gd.cradleScene}, ${gd.lead1}, ${JSON.stringify(gd.found)})`);
+    const ik = gd.intake;
+    expect(ik.wall && ik.room === 'intake' && /WHERE THEY WASHED THEM/.test(ik.thought) && /READ/.test(ik.boardLabel) && /CRADLE NUMBERS/.test(ik.board) && /H\. VALE/.test(ik.board) && /LOOK IN THE BINS/.test(ik.binsLabel) && /BIN 12 IS EMPTY/.test(ik.bins) && /WHOEVER WAS IN TWELVE/.test(ik.bins) && /THE REST ARE CLOSE/.test(ik.bins) && /THE INTAKE/.test(ik.story) && ik.out === 'nursery,7' && ik.along, `the Intake went wrong (${JSON.stringify(ik)})`);
     expect(gd.up.wickUp && gd.up.following && gd.caught.before === 42 && gd.caught.after === gd.caught.hero && gd.caught.hero === 15, `Wick didn't go up with the hero, or didn't catch up (${JSON.stringify(gd.up)}, ${JSON.stringify(gd.caught)})`);
     expect(gd.patchScene === 'wickPatch' && gd.patched.flag && gd.patched.healed && gd.patched.gone && gd.patched.story && gd.patched.said && gd.backDown, `Wick's sit-down in the Irrigation Works went wrong (${gd.patchScene}, ${JSON.stringify(gd.patched)}, back down ${gd.backDown})`);
     expect(gd.vale, `the Gardener did not name herself and make her case in the Vat House (${gd.vale})`);
@@ -698,6 +741,17 @@ async function play(browserType, url, label) {
         HA.debug.step(5);
         return w().near && w().near.label;
       };
+      // Every line said until the next choice (or the scene's end), confirming as a player would.
+      const hear = () => {
+        const said = [];
+        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
+          const st = w().scene.step;
+          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
+          HA.debug.step(1, { confirm: i % 3 === 0 });
+        }
+        return said.join(' | ');
+      };
+      const feet = () => [w().def.id, Math.round((w().player.y + w().player.h) / 8)].join(',');
       w().assist.invincible = true;
       // West out of the sump, into the Labyrinth.
       HA.debug.goto('sump', 4, 18);
@@ -735,6 +789,30 @@ async function play(browserType, url, label) {
       HA.debug.step(30);
       out.hung = !!(p.grapple && p.grapple.phase === 'hang');
       HA.debug.step(10, { down: true });
+      // The Dose Line (the tenth batch of new rooms, 0.3.29): the Muster's girder no longer drops into the dosing hall.
+      // East along it onto the Dose Line's gantry (a pipe down from the Gardens), the standing order, the shift's rack
+      // in the counting room (two bottles still full), and out of the counting room west into the dosing hall.
+      const dose = (out.dose = {});
+      at('muster', 66, 10);
+      dose.noDrop = [70, 74, 77].every((x) => w().room.tile(x, 11) !== 0);
+      for (let i = 0; i < 300 && w().def.id === 'muster'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(30, { right: true });
+      HA.debug.step(90);
+      dose.room = w().def.id;
+      dose.thought = w().barks.map((b) => b.text).join(' ');
+      dose.orderLabel = at('dose-line', 7, 10);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      dose.order = hear();
+      dose.rackLabel = at('dose-line', 10, 18);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      dose.rack = hear();
+      dose.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('dose-line', 4, 18);
+      for (let i = 0; i < 200 && w().def.id === 'dose-line'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(20);
+      dose.out = feet();
       // The Purser's Office door to the dock is bolted on the dock's side (3.12): the way in is the Muster, east of
       // the Armory, and its hatch down into the dock.
       at('pursers-office', 33, 18);
@@ -745,7 +823,9 @@ async function play(browserType, url, label) {
       at('lifeboat-dock', 3, 18);
       HA.debug.step(80, { right: true });
       out.deserter = w().scene && w().scene.name;
-      talkThrough();
+      // With the Dose Line's rack seen, the hero knows whose the second full bottle is.
+      out.deserterSaid = hear();
+      HA.debug.step(1); // let go of confirm, so the choice takes the next press
       out.deserterLose = choose(0);
       out.fluxFate = { flux: s.people.flux, coldOpen: !!s.flags.coldOpen, thruster: s.abilities.thruster, lead: s.lead };
       // The Purser drew his bolt in the scene: the office is the way back.
@@ -836,16 +916,6 @@ async function play(browserType, url, label) {
       // The City Hold (the eighth batch of new rooms, 0.3.27): no hatch in the watch room now; out of its west end
       // onto the City Hold's landing (a whole city, in crates), the manifest, the town hall with the Steward's name
       // painted over it, and east along the bottom into the Drain, which has no ladder up now.
-      const hear = () => {
-        const said = [];
-        for (let i = 0; i < 4000 && w() && w().scene && !(w().scene.step && w().scene.step.choice); i++) {
-          const st = w().scene.step;
-          if (st && st.say !== undefined && said[said.length - 1] !== st.text) said.push(st.text);
-          HA.debug.step(1, { confirm: i % 3 === 0 });
-        }
-        return said.join(' | ');
-      };
-      const feet = () => [w().def.id, Math.round((w().player.y + w().player.h) / 8)].join(',');
       const city = (out.city = {});
       at('watch-gallery', 4, 18);
       city.noHatch = !w().links.some((l) => l.legend.to === 'drain');
@@ -921,6 +991,9 @@ async function play(browserType, url, label) {
     expect(/SWITCH/.test(cl.switchPrompt) && cl.craneMoving && cl.cranes.a && cl.cranes.corridor && cl.cranes.hole && cl.cranes.b && cl.cranes.wayOut, `the Stacks' cranes did not move their stacks (${JSON.stringify(cl.cranes)})`);
     expect(cl.chalk === 'chalkStops' && cl.belt > 10, `the Sorting Floor's chalk or belts went wrong (${cl.chalk}, ${cl.belt})`);
     expect(cl.harpoon && cl.hung, `the Grapple Harpoon did not pull the hero up to the Armory's ring (${cl.harpoon}, ${cl.hung})`);
+    const dl = cl.dose;
+    expect(dl.noDrop && dl.room === 'dose-line' && /PIPE DOWN FROM THE GARDENS/.test(dl.thought) && /READ/.test(dl.orderLabel) && /COUNT THE EMPTIES BACK/.test(dl.order) && /LOOK AT THE RACK/.test(dl.rackLabel) && /ALL BACK EMPTY, BUT TWO/.test(dl.rack) && /MISSED THEIR DOSE/.test(dl.rack) && /TWO HANDS TO BE COLLECTED/.test(dl.rack) && /DOSE LINE/.test(dl.story) && dl.out === 'muster,19', `the Dose Line went wrong (${JSON.stringify(dl)})`);
+    expect(/ONE OF THE TWO FULL BOTTLES/.test(cl.deserterSaid), `the deserter did not bring back the Dose Line's rack (${cl.deserterSaid})`);
     expect(cl.bolt.shut && cl.bolt.hatch && cl.bolt.purser && cl.bolt.open, `the dock's bolt from the Purser's Office, or the Muster's hatch, went wrong (${JSON.stringify(cl.bolt)})`);
     expect(cl.deserter === 'deserter' && /BLOOMFIRE/.test(cl.deserterLose) && cl.fluxFate.flux === 'home' && cl.fluxFate.coldOpen && !cl.fluxFate.thruster && /COLD STORE/.test(cl.fluxFate.lead), `choice 6 went wrong (${JSON.stringify(cl)})`);
     expect(cl.boat === 'STAY/TAKE THE BOAT', `the Purser did not offer the boat (${cl.boat})`);
