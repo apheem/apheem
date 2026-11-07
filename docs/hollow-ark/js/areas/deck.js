@@ -1,16 +1,14 @@
 'use strict';
 // The Dreaming Deck: the navigation deck under the Helm, sealed since year 40, where the Navigator keeps its
-// memories. Lift B comes down into the Lift Down; past the seal are five memory halls, each an earlier part of the
+// memories. Lift B comes down into the Lift Down; past the seal are six memory halls, each an earlier part of the
 // ship as the Navigator remembers it (the Cryo Deck on the first night, the Lifeboat Dock the night the first sleeper
 // it woke took a boat, the Gardens the year the Bloom grew, the Thaw Corridor the night it woke the Steward, the Helm
-// the year the Steward took the Key); then the
+// the year the Steward took the Key, and last the stern's drive room in year 38, the braking burn it refused); then the
 // Navigation Sphere, where its course is drawn in light, and the Quiet, where its core is. The true path only.
-// Map legend beyond the shared one: Y Lift B   a the ladder up   e the hatch down   N the Navigator
+// Map legend beyond the shared one: Y Lift B   N the Navigator (the halls join at their sides)
 (function (HA) {
   HA.rooms.area('deck', { name: 'THE DREAMING DECK', theme: 'deck', music: 'deck', mapColor: '#5fd4e8' });
 
-  const up = (to) => ({ type: 'hatch', up: true, to, name: 'the ladder up' });
-  const down = (to) => ({ type: 'hatch', to, open: () => true, name: 'the hatch down' });
   const ALL = { thruster: true, grapple: true, foam: true, boots: true };
 
   // The Lift Down: where Lift B comes to rest, and the seal that reads whoever comes through.
@@ -271,7 +269,8 @@
     ],
   });
 
-  // Memory: the Helm, in year 290, the year Ivo Marrant took the Key. The wake log is on its far wall.
+  // Memory: the Helm, in year 290, the year Ivo Marrant took the Key. The wake log is on its far wall, and its east end
+  // opens into the Burn's hall (the ninth batch of new rooms; it was a hatch down to the Sphere).
   HA.rooms.add({
     id: 'hall-helm',
     area: 'deck',
@@ -282,7 +281,6 @@
     dream: true,
     noRespawn: true,
     abilities: ALL,
-    legend: { e: down('sphere') },
     scenery: [{ kind: 'memory', of: 'helm' }],
     triggers: [
       { x0: 2, x1: 12, when: (s) => !s.flags.hallHelm, run: 'hallHelm' },
@@ -304,14 +302,82 @@
       '##............................................................................##',
       '##............................................................................##',
       '##............................................................................##',
-      '......................................====...====.............................##',
-      '..............................................................................##',
-      '..................###........###..............................................##',
-      '............9.....###........###....^^^^^^^^^^^^^^^.....9.................e...##',
+      '......................................====...====...............................',
+      '................................................................................',
+      '..................###........###................................................',
+      '............9.....###........###....^^^^^^^^^^^^^^^.....9.......................',
       '################################################################################',
       '################################################################################',
       '################################################################################',
       '################################################################################',
+    ],
+  });
+
+  // Memory: the Burn, in year 38, the braking burn the Navigator refused (the ninth batch of new rooms): the stern's drive
+  // room as it was, the crew at their stations and the world in the window. In at the top from the Helm hall's east
+  // end, east along the gallery, down the drive shaft and the catwalks under it, and west along the drive floor past
+  // the console to the Sphere's east end.
+  HA.rooms.add({
+    id: 'hall-burn',
+    area: 'deck',
+    name: 'MEMORY: THE BURN',
+    gx: 640,
+    gy: 92,
+    theme: 'memory',
+    dream: true,
+    noRespawn: true,
+    abilities: ALL,
+    scenery: [{ kind: 'memory', of: 'burn' }],
+    triggers: [
+      { x0: 2, x1: 14, y1: 18, when: (s) => !s.flags.hallBurn, run: 'hallBurn' },
+      { x0: 8, x1: 18, y0: 36, when: (s) => s.flags.hallBurn && !s.flags.burnLever, run: 'burnLever' },
+    ],
+    map: [
+      '########################################',
+      '########################################',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##........................d...........##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '......................................##',
+      '......................................##',
+      '......................................##',
+      '..........c.....^^^^^.........f.......##',
+      '##############################....====##',
+      '##############################........##',
+      '##....................................##',
+      '##....................................##',
+      '##..............................======##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##........................======......##',
+      '##..................f.................##',
+      '##....................................##',
+      '##....................................##',
+      '##.................======.............##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##..........======....................##',
+      '##....................................##',
+      '##....................................##',
+      '......................................##',
+      '.....======...........................##',
+      '......................................##',
+      '....................^^^^^.....w....c..##',
+      '########################################',
+      '########################################',
+      '########################################',
     ],
   });
 
@@ -325,10 +391,12 @@
     dream: true,
     noRespawn: true,
     abilities: ALL,
-    legend: { a: up('hall-helm'), N: { type: 'boss', reach: false } },
+    legend: { N: { type: 'boss', reach: false } },
     scenery: [{ kind: 'courselines', sphere: true }],
     triggers: [{ x0: 2, x1: 37, when: (s) => !s.flags.navDown, run: 'navIntro' }],
-    holdBack: { left: (s) => (s.flags.navTurned ? null : 'NOT YET.') },
+    // In from the Burn's hall at the east end (the ninth batch of new rooms; it was a ladder down from the Helm hall),
+    // and held there while the Navigator fights, as the way west to the Quiet is until it turns.
+    holdBack: { left: (s) => (s.flags.navTurned ? null : 'NOT YET.'), right: (s) => (s.flags.navSeen && !s.flags.navDown ? 'NOT YET.' : null) },
     map: [
       '########################################',
       '########################################',
@@ -345,10 +413,10 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '......======................======....##',
-      '......................................##',
-      '......................................##',
-      '..................................a...##',
+      '......======................======......',
+      '........................................',
+      '........................................',
+      '........................................',
       '########################################',
       '########################################',
       '########################################',

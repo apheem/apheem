@@ -1313,6 +1313,34 @@ async function play(browserType, url, label) {
         top = Math.min(top, (p.y + p.h) / 8);
       }
       out.vent = { top: Math.floor(top), row: Math.round((p.y + p.h) / 8), ground: p.onGround };
+      // The Crew Mess (the ninth batch of new rooms): no ladder up from the Foot now. West along the ledge, over its
+      // catwalk, onto the mess's balcony (the old crew's mess, the plates still out), the notice, the door frame in the
+      // quarters, and out into the foot of the Boiler Stair, which has no hatch down now.
+      const mess = (out.mess = {});
+      mess.noLadder = !w().links.some((l) => l.legend.to === 'boiler-stair');
+      HA.debug.goto('spine-foot', 5, 9);
+      HA.debug.step(3);
+      for (let i = 0; i < 200 && w().def.id === 'spine-foot'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(20, { left: true });
+      HA.debug.step(80);
+      mess.room = w().def.id;
+      mess.thought = w().barks.map((b) => b.text).join(' ');
+      HA.debug.goto('crew-mess', 31, 33);
+      HA.debug.step(5);
+      mess.label = w().near && w().near.label;
+      press('up');
+      mess.notice = listen().join(' | ');
+      HA.debug.goto('crew-mess', 32, 19);
+      HA.debug.step(5);
+      mess.frameLabel = w().near && w().near.label;
+      press('up');
+      mess.frame = listen().join(' | ');
+      mess.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('crew-mess', 35, 19);
+      for (let i = 0; i < 200 && w().def.id === 'crew-mess'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(5);
+      mess.out = [w().def.id, Math.round((p.y + p.h) / 8)].join(',');
+      mess.noHatch = !w().links.some((l) => l.legend.to === 'spine-foot');
       // The Boiler Landing: the tram comes in below and the crew build the first lift up to it.
       HA.debug.goto('boiler-stair', 18, 8);
       HA.debug.step(30);
@@ -1526,6 +1554,8 @@ async function play(browserType, url, label) {
     });
     expect(sp.foot.room === 'spine-foot' && sp.foot.area === 'ENGINE SPINE' && sp.foot.music === 'spine' && /CLIMB THE ENGINE SPINE/.test(sp.foot.lead), `the keel tunnel did not lead to the Spine Foot (${JSON.stringify(sp.foot)})`);
     expect(sp.vent.top <= 8 && sp.vent.row === 10 && sp.vent.ground, `the Foot's steam vent did not carry the hero up to the deck (${JSON.stringify(sp.vent)})`);
+    const ms = sp.mess;
+    expect(ms.noLadder && ms.room === 'crew-mess' && /PLATES ARE STILL ON THE TABLES/.test(ms.thought) && /READ/.test(ms.label) && /COUNT YOUR CHILDREN/.test(ms.notice) && /DOOR FRAME/.test(ms.frameLabel) && /ALL YEAR 110/.test(ms.frame) && /INTO THE WALLS/.test(ms.frame) && /EVERY NIGHT SINCE/.test(ms.frame) && /DOOR FRAME/.test(ms.story) && ms.out === 'boiler-stair,86' && ms.noHatch, `the Crew Mess went wrong (${JSON.stringify(ms)})`);
     expect(sp.arrive === 'crewArrives' && sp.lift1.lifts === 1 && sp.lift1.link && sp.lift1.layers === 2, `the crew's arrival and first lift went wrong (${sp.arrive}, ${JSON.stringify(sp.lift1)})`);
     expect(sp.liftTo === 'DOWN TO THE FOOT/STAY' && sp.down.room === 'spine-foot' && sp.down.minder, `the crew's lift did not run down to the Foot (${sp.liftTo}, ${JSON.stringify(sp.down)})`);
     expect(sp.embers && sp.gripping && sp.rammed, `the Spine's heat slugs, climbers or pistons went wrong (${sp.embers}, ${sp.gripping}, ${sp.rammed})`);
@@ -3043,6 +3073,30 @@ async function play(browserType, url, label) {
       HA.debug.step(5);
       out.wake = w().scene && w().scene.name;
       out.wakeSaid = listen().join(' | ');
+      // The Burn's hall (the ninth batch of new rooms): out of the Helm hall's east end (no hatch down now), year 38,
+      // and the first NOT YET at the drive console, and out at the bottom into the Sphere's east end (no ladder up now).
+      const burn = (out.burn = {});
+      burn.noHatch = !w().links.some((l) => l.legend.to === 'sphere');
+      HA.debug.goto('hall-helm', 75, 18);
+      HA.debug.step(3);
+      for (let i = 0; i < 200 && w().def.id === 'hall-helm'; i++) HA.debug.step(1, { right: true });
+      burn.room = w().def.id;
+      HA.debug.step(20, { right: true });
+      HA.debug.step(20);
+      burn.scene = w().scene && w().scene.name;
+      burn.said = listen().join(' | ');
+      burn.odell = !!w().state.flags.odell;
+      HA.debug.goto('hall-burn', 22, 41);
+      HA.debug.step(3);
+      walk('left', 200);
+      burn.lever = w().scene && w().scene.name;
+      burn.leverSaid = listen().join(' | ');
+      burn.story = w().state.journal.story.some((t) => /SAID NOT YET, FOR THE FIRST TIME/.test(t));
+      HA.debug.goto('hall-burn', 4, 41);
+      HA.debug.step(3);
+      for (let i = 0; i < 200 && w().def.id === 'hall-burn'; i++) HA.debug.step(1, { left: true });
+      burn.out = w().def.id;
+      burn.noLadder = !w().links.some((l) => l.legend.to === 'hall-helm');
       HA.debug.goto('sphere', 30, 18);
       HA.debug.step(5);
       out.intro = listen().join(' | ');
@@ -3062,6 +3116,9 @@ async function play(browserType, url, label) {
       b = w().boss;
       // each loop: its nodes cut, and it redrawn faster, with more of them; the second burns
       w().assist.invincible = true;
+      // the way back east into the Burn's hall is held while it fights (the ninth batch of new rooms)
+      for (let i = 0; i < 150 && w().def.id === 'sphere'; i++) HA.debug.step(1, { right: true });
+      out.held = { room: w().def.id, toast: w().toastText };
       const loops = [];
       let burned = false;
       for (let k = 0; k < 3; k++) {
@@ -3123,6 +3180,9 @@ async function play(browserType, url, label) {
     const th = deck.thaw;
     expect(th.noHatch && th.room === 'hall-thaw' && th.scene === 'hallThaw' && /WHERE I WOKE UP/.test(th.said) && /POD 2207/.test(th.said) && /A MAN WITH A BLANKET/.test(th.said) && th.pod === 'thawPod' && /HE TOOK THE BOOTS INSTEAD/.test(th.podSaid) && /CLEAT\. GASKET'S BROTHER/.test(th.podSaid) && /THEY STILL COME UP/.test(th.podSaid) && th.story && th.out === 'hall-helm' && th.noLadder, `the Thaw's memory hall went wrong (${JSON.stringify(th)})`);
     expect(deck.wake === 'wakeLog' && /0112\. LEFT/.test(deck.wakeSaid) && /2207\. RULED/.test(deck.wakeSaid) && /CHOOSE TO STAY/.test(deck.wakeSaid) && /THE WATER WAS A QUESTION/.test(deck.wakeSaid), `the wake log went wrong (${deck.wake}, ${deck.wakeSaid})`);
+    const bn = deck.burn;
+    expect(bn.noHatch && bn.room === 'hall-burn' && bn.scene === 'hallBurn' && /THE STERN/.test(bn.said) && /YEAR 38/.test(bn.said) && /AT THE BOTTOM/.test(bn.said) && bn.lever === 'burnLever' && /COUNTED DOWN FROM TEN/.test(bn.leverSaid) && /SAID NOT YET/.test(bn.leverSaid) && (bn.odell ? /ODELL/ : /THE CHIEF ENGINEER\./).test(bn.leverSaid) && /STERN DRIVE SINCE/.test(bn.leverSaid) && bn.story && bn.out === 'sphere' && bn.noLadder, `the Burn's hall went wrong (${JSON.stringify(bn)})`);
+    expect(deck.held.room === 'sphere' && deck.held.toast === 'NOT YET.', `the way back east out of the Sphere was not held in the fight (${JSON.stringify(deck.held)})`);
     expect(/YOU ARE STILL HERE/.test(deck.intro) && /NOT YET/.test(deck.intro) && deck.fight.fighting && deck.fight.music === 'navigator' && deck.fight.check === 'sphere' && deck.fight.nodes === 4, `the Navigator's fight did not start (${deck.intro}, ${JSON.stringify(deck.fight)})`);
     expect(deck.fall.room === 'sphere' && /CHECKPOINT/.test(deck.fall.toast) && deck.fall.scene === 'navIntro' && /NOT YET/.test(deck.again) && !/STILL HERE/.test(deck.again) && deck.refight, `a fall in the Navigator's fight did not come back to its checkpoint (${JSON.stringify(deck.fall)}, ${deck.again}, ${deck.refight})`);
     expect(deck.loops === '0:4:1,redraw:NOT YET.,1:5:2,redraw:NOT YET.,2:6:3,redraw:NOT YET.' && deck.burned, `the Navigator's loops went wrong (${deck.loops}, burned ${deck.burned})`);
