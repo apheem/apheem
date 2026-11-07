@@ -1670,6 +1670,124 @@
       g.fillRect(x - 6 - sw, y - 13, sw, 1);
       HA.font.draw(g, 'KEEP DARK', x - 4 - sw, y - 21, '#3a2818', { shadow: null });
     },
+    // ---- The ninth batch of new rooms ----
+    // The Crew Mess's hall: long tables still laid, benches either side, and the plates and cups where they were left.
+    messhall(g, s, rnd) {
+      const F = s.y * 8;
+      for (let x = s.x0 * 8; x + 40 <= (s.x1 + 1) * 8; x += 56) {
+        // the benches
+        for (const bx of [x - 6, x + 36]) {
+          g.fillStyle = '#10121c';
+          g.fillRect(bx, F - 6, 10, 2);
+          g.fillRect(bx + 1, F - 4, 1, 4);
+          g.fillRect(bx + 8, F - 4, 1, 4);
+          g.fillStyle = '#4a3a2e';
+          g.fillRect(bx, F - 6, 10, 1);
+        }
+        // the table, its legs, and what's on it
+        g.fillStyle = '#10121c';
+        g.fillRect(x, F - 11, 40, 3);
+        g.fillRect(x + 2, F - 8, 2, 8);
+        g.fillRect(x + 36, F - 8, 2, 8);
+        g.fillStyle = '#5a4634';
+        g.fillRect(x, F - 11, 40, 1);
+        for (let px = x + 3; px < x + 37; px += 9) {
+          g.fillStyle = '#8a8e9a';
+          g.fillRect(px, F - 12, 5, 1);
+          g.fillStyle = '#5e6270';
+          g.fillRect(px + 1, F - 13, 3, 1);
+          if (rnd() < 0.5) {
+            g.fillStyle = '#6c7080';
+            g.fillRect(px + 6, F - 14, 2, 3);
+          }
+        }
+      }
+      // dust on everything
+      g.fillStyle = 'rgba(200,190,170,0.08)';
+      for (let i = 0; i < 40; i++) g.fillRect(s.x0 * 8 + Math.floor(rnd() * (s.x1 - s.x0) * 8), F - 1 - Math.floor(rnd() * 14), 1, 1);
+    },
+    // The galley under the balcony: the stove with a pot left on it, a hood, and shelves of tins.
+    galley(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const top = s.y0 * 8;
+      const F = s.y * 8;
+      const w = (s.x1 - s.x0 + 1) * 8;
+      g.fillStyle = 'rgba(0,0,0,0.35)';
+      g.fillRect(x0, top, w, F - top);
+      // shelves of tins
+      for (const sy of [top + 10, top + 20]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x0 + 36, sy, w - 44, 2);
+        for (let tx = x0 + 38; tx < x0 + w - 10; tx += 5) {
+          if (rnd() < 0.3) continue;
+          g.fillStyle = rnd() < 0.5 ? '#6a5a44' : '#4a5260';
+          g.fillRect(tx, sy - 4, 3, 4);
+        }
+      }
+      // the stove, its hood and its pot
+      g.fillStyle = '#10121c';
+      g.fillRect(x0 + 6, F - 16, 26, 16);
+      g.fillStyle = '#3a3a44';
+      g.fillRect(x0 + 7, F - 15, 24, 14);
+      g.fillStyle = '#1c1c22';
+      g.fillRect(x0 + 10, F - 10, 8, 7);
+      g.fillRect(x0 + 21, F - 10, 8, 7);
+      g.fillStyle = '#2a2a32';
+      g.fillRect(x0 + 4, top + 2, 30, 6);
+      g.fillRect(x0 + 16, top, 6, 2);
+      g.fillStyle = '#5a5e6a';
+      g.fillRect(x0 + 11, F - 21, 10, 5);
+      g.fillRect(x0 + 10, F - 22, 12, 1);
+      HA.font.draw(g, 'GALLEY', x0 + w - 34, top + 30, 'rgba(232,224,200,0.35)', { shadow: null });
+    },
+    // The Crew Mess's quarters: bunks three high on posts, the two upper ones on the catwalks, and the lowest, on the
+    // floor, burnt through where the heating main runs under it.
+    quarters(g, s) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const top = s.y * 8 - 10;
+      const F = s.floor * 8;
+      for (let x = x0; x <= x1 - 2; x += 22) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, top, 2, F - top);
+      }
+      g.fillStyle = '#10121c';
+      g.fillRect(x1 - 2, top, 2, F - top);
+      for (const ly of [s.y * 8, s.y2 * 8]) {
+        for (let x = x0 + 2; x < x1 - 4; x += 22) {
+          g.fillStyle = '#4a3a2e';
+          g.fillRect(x + 1, ly - 2, 18, 2);
+          g.fillStyle = '#7a5a3a';
+          g.fillRect(x + 2, ly - 4, 6, 2);
+        }
+      }
+      // the bottom bunk, scorched
+      g.fillStyle = '#1a1210';
+      g.fillRect(x0 + 2, F - 9, x1 - x0 - 4, 3);
+      g.fillStyle = '#3a1a10';
+      for (let x = x0 + 6; x < x1 - 8; x += 7) g.fillRect(x, F - 10, 3, 1);
+    },
+    // The quarters' door frame, with the children's heights marked up it in pen, the last ones all year 110.
+    heights(g, s, rnd) {
+      const x = s.x * 8 - 4;
+      const F = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, F - 31, 22, 3);
+      g.fillRect(x - 1, F - 30, 4, 30);
+      g.fillRect(x + 17, F - 30, 4, 30);
+      g.fillStyle = '#6a5440';
+      g.fillRect(x, F - 30, 2, 30);
+      g.fillRect(x + 18, F - 30, 2, 30);
+      g.fillRect(x, F - 30, 20, 1);
+      // the marks, low to high, each with its little line of writing
+      for (let i = 0; i < 12; i++) {
+        const my = F - 6 - i * 2 - Math.floor(rnd() * 2);
+        g.fillStyle = '#1a2440';
+        g.fillRect(x, my, 3, 1);
+        g.fillStyle = 'rgba(40,52,90,0.8)';
+        g.fillRect(x + 4, my, 2 + Math.floor(rnd() * 4), 1);
+      }
+    },
     domeglass(g, s, rnd, T, room) {
       const W = room.pw;
       const top = 16;
@@ -1863,7 +1981,7 @@
         g.fillRect(x - 3, FLOOR - 6, 2, 6);
         g.fillRect(x + 1, FLOOR - 6, 2, 6);
       };
-      const year = { cryo: 'YEAR 0', dock: 'YEAR 133', gardens: 'YEAR 151', thaw: 'YEAR 270', helm: 'YEAR 290' }[s.of];
+      const year = { cryo: 'YEAR 0', burn: 'YEAR 38', dock: 'YEAR 133', gardens: 'YEAR 151', thaw: 'YEAR 270', helm: 'YEAR 290' }[s.of];
       if (s.of === 'cryo') {
         // the pod racks, every pod still shut, and the first crew among them, singing
         for (let x = 20; x < W - 30; x += 24) {
@@ -1996,6 +2114,78 @@
         g.fillRect(206, F - 7, 2, 7);
         g.fillRect(210, F - 7, 2, 7);
         HA.font.draw(g, 'POD 2207', 182, 296, 'rgba(226,240,248,0.25)', { shadow: null });
+      } else if (s.of === 'burn') {
+        // the stern's drive room in year 38 (the ninth batch of new rooms): the great window with the world in it and
+        // the countdown at 1, the crew at their stations along the gallery, the drive shaft lit, and at the foot the
+        // drive console, its lever, and the chief engineer with his hand on it
+        const wx = 56;
+        const wy = 24;
+        const ww = 200;
+        const wh = 80;
+        g.fillStyle = pale(0.12);
+        g.fillRect(wx - 3, wy - 3, ww + 6, wh + 6);
+        g.fillStyle = 'rgba(16,24,44,0.55)';
+        g.fillRect(wx, wy, ww, wh);
+        for (let i = 0; i < 34; i++) {
+          g.fillStyle = pale(0.15 + rnd() * 0.3);
+          g.fillRect(wx + Math.floor(rnd() * ww), wy + Math.floor(rnd() * wh), 1, 1);
+        }
+        // the world, close, low in the window
+        const cx = wx + ww - 60;
+        const cy = wy + wh - 6;
+        const r = 30;
+        for (let dy = -r; dy <= r; dy += 2) {
+          if (cy + dy < wy || cy + dy >= wy + wh) continue;
+          const half = Math.floor(Math.sqrt(r * r - dy * dy));
+          g.fillStyle = 'rgba(150,214,196,0.3)';
+          g.fillRect(cx - half, cy + dy, half * 2, 2);
+          g.fillStyle = pale(0.12);
+          g.fillRect(cx - half, cy + dy, Math.max(1, Math.floor(half / 3)), 2);
+        }
+        for (let x = wx + 50; x < wx + ww; x += 50) {
+          g.fillStyle = pale(0.14);
+          g.fillRect(x, wy, 2, wh);
+        }
+        // the countdown, at 1
+        g.fillStyle = pale(0.1);
+        g.fillRect(wx + 8, wy + wh + 8, 84, 11);
+        HA.font.draw(g, 'BRAKING BURN  1', wx + 12, wy + wh + 10, 'rgba(226,240,248,0.4)', { shadow: null });
+        // the crew at their stations along the gallery, each at a desk with a screen, turned to the window
+        for (const x of [24, 72, 176, 208]) {
+          g.fillStyle = pale(0.1);
+          g.fillRect(x, FLOOR - 10, 16, 10);
+          g.fillStyle = pale(0.2);
+          g.fillRect(x + 3, FLOOR - 15, 10, 5);
+          g.fillStyle = pale(0.16);
+          g.fillRect(x + 19, FLOOR - 15, 4, 4);
+          g.fillRect(x + 18, FLOOR - 11, 6, 6);
+          g.fillRect(x + 18, FLOOR - 5, 2, 5);
+        }
+        // the drive shaft, lit
+        g.fillStyle = pale(0.05);
+        g.fillRect(240, 152, 64, 184);
+        for (let x = 246; x < 300; x += 12) {
+          g.fillStyle = pale(0.08);
+          g.fillRect(x, 152, 1, 184);
+        }
+        HA.font.draw(g, 'STERN', 258, 176, 'rgba(226,240,248,0.22)', { shadow: null });
+        HA.font.draw(g, 'DRIVE', 258, 186, 'rgba(226,240,248,0.22)', { shadow: null });
+        // the drive console at the foot, its lever, and the chief engineer, his hand on it
+        const F = 42 * 8;
+        g.fillStyle = pale(0.12);
+        g.fillRect(96, F - 14, 44, 14);
+        g.fillStyle = pale(0.2);
+        g.fillRect(100, F - 12, 12, 5);
+        g.fillStyle = pale(0.22);
+        g.fillRect(126, F - 26, 3, 12);
+        g.fillRect(123, F - 28, 9, 3);
+        g.fillStyle = pale(0.2);
+        g.fillRect(115, F - 21, 4, 4);
+        g.fillRect(114, F - 16, 6, 9);
+        g.fillRect(114, F - 7, 2, 7);
+        g.fillRect(118, F - 7, 2, 7);
+        g.fillRect(119, F - 16, 6, 2);
+        g.fillRect(124, F - 18, 2, 3);
       } else {
         // the Helm: tall windows full of night, his banners, and a man at the top of the dais
         for (let x = 30; x < W - 40; x += 90) {

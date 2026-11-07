@@ -224,6 +224,29 @@
       world.save();
     },
 
+    // The stern's drive room in year 38, the braking burn it refused (the ninth batch of new rooms): the memory it keeps
+    // for last, on the way down to the Sphere.
+    *hallBurn(world) {
+      world.state.flags.hallBurn = true;
+      yield { wait: 30 };
+      yield me('THE STERN. THE DRIVE ROOM, LIT, AND THE WORLD IN THE WINDOW.');
+      yield nav('YEAR 38. THIS ONE I KEEP AT THE BOTTOM.');
+      world.save();
+    },
+    *burnLever(world) {
+      const s = world.state;
+      s.flags.burnLever = true;
+      yield { wait: 20 };
+      yield nav('THEY COUNTED DOWN FROM TEN. THE CHIEF ENGINEER HAD HIS HAND ON THE LEVER.');
+      yield nav('AT ONE, I TOOK THE DRIVE FROM HIM, AND SAID NOT YET.');
+      yield nav('IT WAS THE FIRST TIME. IT WAS EASY.');
+      // Odell, met in the Cold Store, still at the terminal where he came to ask it why (story/cargo.js)
+      yield me(s.flags.odell ? "ODELL. HE WENT DOWN TO ASK IT WHY. HE'S STILL WAITING." : 'THE CHIEF ENGINEER.');
+      yield nav('I HAVE NOT LIT THE STERN DRIVE SINCE.');
+      S.addStory(world, 'THEN THE STERN, YEAR 38, THE BRAKING BURN. AS THE CREW COUNTED DOWN, THE NAVIGATOR TOOK THE DRIVE FROM THE CHIEF ENGINEER AND SAID NOT YET, FOR THE FIRST TIME. IT HAS NOT LIT THE STERN DRIVE SINCE.');
+      world.save();
+    },
+
     // The wake log: four pod numbers, and what each sleeper chose.
     *wakeLog(world) {
       const s = world.state;

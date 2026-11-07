@@ -2,9 +2,11 @@
 // The Engine Spine: the ship's power spine, one tall shaft from the keel to the Command Tower, with the reactor
 // running up its middle. The hero climbs ahead through steam, pistons and heat; the Hullfolk come on the keel
 // tram behind and build the crew's lift up after them, a landing at a time, as many as they have hands for.
-// Rooms here join top to bottom by ladders and floor hatches; the crew's lift runs between the landings it reaches.
+// Rooms here join top to bottom by ladders and floor hatches (the Crew Mess joins the Foot to the Boiler Stair from the
+// side); the crew's lift runs between the landings it reaches.
 // Map legend beyond the shared one: ^ hot grilles   m Bloomsworn climber   8 steam drone   0 heat slug
-// a the ladder up   e the hatch down   L the crew's lift   T a terminal   M Abel, in his furnace
+// a the ladder up   e the hatch down   L the crew's lift   T a terminal   M Abel, in his furnace   g the Crew Mess's
+// door frame
 // Z the Tower Lift   K the Winding House's clutch   D the Piston Run's plate, bolted from above (in the Boiler
 // Stair, the burst main's steam; in the camp, the Winding House's chained door)   l the last stoker's bunk
 // V and W the Condenser's valves   h the hatch down to the Condenser's ladder (the Condenser's own a is that
@@ -21,7 +23,9 @@
   const up = (to) => ({ type: 'hatch', up: true, to, name: 'the ladder up' });
   const down = (to) => ({ type: 'hatch', to, open: () => true, name: 'the hatch down' });
 
-  // The Spine Foot: where the keel line ends. The tram stops by the platform; a vent at its far end goes up.
+  // The Spine Foot: where the keel line ends. The tram stops by the platform; a vent at its far end goes up to the top
+  // ledge, and the ledge runs west into the Crew Mess, the way on to the Boiler Stair (the ninth batch of new rooms; it
+  // was a ladder).
   HA.rooms.add({
     id: 'spine-foot',
     area: 'spine',
@@ -31,7 +35,6 @@
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
     musicLayers: layers,
     legend: {
-      a: up('boiler-stair'),
       e: down('overflow-pipes'), // the Overflow Pipes come up here (the way round when the keel floods)
       T: { type: 'log', id: 'brake', name: 'the lift notices' },
       L: stop(0, 'crew-camp'),
@@ -45,7 +48,7 @@
       { kind: 'shaft', x: 30, y0: 12, y1: 37 },
       { kind: 'tramcar', x: 4, y: 40, tunnel: 0, at: 'spine' },
       { kind: 'stencil', x: 21, y: 35, text: 'KEEL LINE · SPINE FOOT' },
-      { kind: 'stencil', x: 20, y: 8, text: 'BOILER STAIR ↑' },
+      { kind: 'stencil', x: 15, y: 8, text: '← CREW MESS · BOILER STAIR' },
     ],
     map: [
       '########################################',
@@ -54,12 +57,12 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##.....................a..............##',
-      '##.................###############....##',
-      '##.................###############....##',
+      '......................................##',
+      '......................................##',
+      '......................................##',
+      '......................................##',
+      '########====######################....##',
+      '########....######################....##',
       '##....................................##',
       '##....................................##',
       '##....................................##',
@@ -96,6 +99,81 @@
     ],
   });
 
+  // The Crew Mess (the ninth batch of new rooms): the waking crew's mess and quarters, shut in year 110, the year the
+  // maintenance families went into the walls. In off the Spine Foot's top ledge onto the galley balcony, down into the
+  // hall, up the stairwell at the west end to the quarters, over the bunks (the heating main under them runs hot), and
+  // out east into the foot of the Boiler Stair, by its first vent.
+  HA.rooms.add({
+    id: 'crew-mess',
+    area: 'spine',
+    name: 'THE CREW MESS',
+    gx: 440,
+    gy: 161,
+    abilities: { thruster: true, grapple: true, foam: true, boots: true },
+    musicLayers: layers,
+    legend: {
+      l: { type: 'log', id: 'mess' },
+      g: { type: 'log', id: 'heights', scene: 'messHeights', label: '{up} LOOK AT THE DOOR FRAME' },
+    },
+    triggers: [{ x0: 26, x1: 37, y0: 30, y1: 33, when: (s) => !s.flags.messIn, run: 'messIn' }],
+    scenery: [
+      { kind: 'pipes', y: 4 },
+      { kind: 'stencil', x: 25, y: 28, text: 'CREW DECK · MESS' },
+      { kind: 'stencil', x: 17, y: 11, text: 'CREW DECK · QUARTERS' },
+      { kind: 'messhall', x0: 3, x1: 16, y: 42 },
+      { kind: 'galley', x0: 24, x1: 37, y0: 36, y: 42 },
+      { kind: 'quarters', x0: 16, x1: 26, y: 14, y2: 17, floor: 20 },
+      { kind: 'heights', x: 32, y: 20 },
+    ],
+    map: [
+      '########################################',
+      '########################################',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##.....................8..............##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##..............===========...........##',
+      '##....................................##',
+      '##......................................',
+      '##..............===========.............',
+      '##......................................',
+      '##................^^^^^^^...0...g.......',
+      '##............##########################',
+      '##............##########################',
+      '##......======........................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##======..............................##',
+      '##....................................##',
+      '##..................8.................##',
+      '##....................................##',
+      '##......======..........................',
+      '##......................................',
+      '##......................................',
+      '##.............................l........',
+      '##======................################',
+      '##......................################',
+      '##....................................##',
+      '##....................................##',
+      '##......======....======..............##',
+      '##....................................##',
+      '##....................................##',
+      '##...............m.........0.....0....##',
+      '########################################',
+      '########################################',
+      '########################################',
+    ],
+  });
+
   // The Boiler Stair: four screens of boilers, two vents, a ring over the heat, and the Boiler Landing at the top.
   HA.rooms.add({
     id: 'boiler-stair',
@@ -106,7 +184,6 @@
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
     musicLayers: layers,
     legend: {
-      e: down('spine-foot'),
       a: up('piston-run'),
       L: stop(1, 'crew-camp'),
       // Main 3, burst across the shaft over the midway shelf: live steam, until both its valves in the Condenser are
@@ -219,10 +296,10 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##.......^^^^^.........e....0.........##',
+      '......................................##',
+      '......................................##',
+      '......................................##',
+      '.........^^^^^..............0.........##',
       '########################################',
       '########################################',
       '########################################',

@@ -165,6 +165,11 @@ const spine = {
   async play(r) {
     await r.to('spine-foot'); // east on the tram with the climbers (or to the Ballast stop, and through the pipes)
     await r.bulbs();
+    // Off the Foot's top ledge into the Crew Mess (the ninth batch of new rooms; it was a ladder): the old crew's
+    // notice and the door frame, and out into the foot of the Boiler Stair.
+    await r.to('crew-mess');
+    await r.do('PT.read("mess")');
+    await r.do('PT.read("heights")');
     await r.to('boiler-stair');
     // Main 3 has burst across the Boiler Stair over its midway shelf: into the Condenser off the shelf, shut it at
     // both its valves (B on the coil tops, then A at the far end), and up the ladder by A to the stair above the
@@ -244,8 +249,10 @@ const tower = {
 const deck = {
   name: 'deck',
   async play(r) {
-    // the memory halls, down through the Thaw (the seventh batch of new rooms) to the Helm hall's hatch
+    // the memory halls, down through the Thaw (the seventh batch of new rooms) to the Helm hall, and out of its east
+    // end down through the Burn (the ninth) to the Sphere
     await r.to('hall-thaw');
+    await r.to('hall-burn');
     await r.to('sphere');
     await r.boss('sphere', 'HA.ui.world.state.flags.navTurned');
     await r.to('quiet');
