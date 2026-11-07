@@ -26,6 +26,15 @@
       title: 'SECURITY · YEAR 40',
       text: 'NAVIGATION DECK SEALED. ACCESS: WARDENS ONLY, ON RELEASE FROM THE HELM KEY.',
     },
+    // The Crew Mess, between the Spine Foot and the Boiler Stair (the ninth batch of new rooms)
+    mess: {
+      title: 'CREW DECK · YEAR 110',
+      text: 'THE CREW DECK CLOSES TODAY. NO MORE SHIFTS: THE NAVIGATOR FLIES THE SHIP. MAINTENANCE FAMILIES TO THE SERVICE WAYS. TAKE WHAT YOU CAN CARRY, AND STRIP THE SPINE LIFTS FOR PARTS. COUNT YOUR CHILDREN.',
+    },
+    heights: {
+      title: 'THE DOOR FRAME',
+      text: "CHILDREN'S HEIGHTS, MARKED IN PEN UP THE FRAME, A NAME AND A YEAR BY EACH. THE LAST MARKS ARE ALL YEAR 110.",
+    },
     // The Stokers' Bunks, beside the Piston Run (the third batch of new rooms)
     stokers: {
       title: "REACTOR · STOKERS' ROSTER",
@@ -219,6 +228,31 @@
 
   // ---- The scenes ----
   const SCENES = {
+    // The Crew Mess (the ninth batch of new rooms): the old crew's mess and quarters under the Boiler Stair, shut the
+    // year the maintenance families went into the walls. The crew, coming on behind, go through it off screen.
+    *messIn(world) {
+      world.state.flags.messIn = true;
+      S.think(world, "THE OLD CREW'S MESS. THE PLATES ARE STILL ON THE TABLES.", 60);
+    },
+    *messHeights(world) {
+      const s = world.state;
+      const first = !s.logs.heights;
+      s.logs.heights = true;
+      HA.audio.play('tally');
+      const L = S.LOGS.heights;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      // With the notice read, the hero knows what year 110 was.
+      if (s.logs.mess) {
+        yield me('THE YEAR THEY WENT INTO THE WALLS.');
+        yield me("THEY'VE COUNTED THEIR CHILDREN EVERY NIGHT SINCE.");
+      } else yield me('YEAR 110. NOBODY MARKED THE FRAME AFTER THAT.');
+      S.addStory(world, s.logs.mess
+        ? "UNDER THE BOILER STAIR IS THE OLD CREW'S MESS, SHUT IN YEAR 110, WHEN THE MAINTENANCE FAMILIES WENT INTO THE WALLS. ON ITS DOOR FRAME ARE THEIR CHILDREN'S HEIGHTS, AND THE LAST MARKS ARE ALL THAT YEAR."
+        : "UNDER THE BOILER STAIR IS THE OLD CREW'S MESS. ON ITS DOOR FRAME ARE CHILDREN'S HEIGHTS, AND THE LAST MARKS ARE ALL YEAR 110.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
+    },
     // The Boiler Landing: far below, the keel tram comes in with the climbers, and they build the first lift.
     *crewArrives(world) {
       const s = world.state;

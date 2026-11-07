@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.27-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.28-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.27-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.28-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,12 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.28: the Crew Mess and the Burn
+
+- **Two new rooms: one in the Engine Spine on every path that climbs it, and a memory hall on the Dreaming Deck on the true path.** Each replaces a ladder or hatch, so each is the way on, and neither leaves you walking back the way you came.
+- **The Crew Mess.** The Spine Foot's ladder up to the Boiler Stair is gone. Ride the vent up as before, and the top ledge now runs on west, out of the Foot into the waking crew's old mess, closed in year 110. The plates are still on the tables. The notice by the door says why the Spine's lifts are gone, and where the Hullfolk came from. Drop into the hall past the stove and the benches, climb the stairwell at the far end to the crew's quarters, and cross over the bunk tops, above the heating main that still runs hot under them. By the quarters' door, someone marked the children's heights up the frame. Out the far side, you're at the foot of the Boiler Stair.
+- **Memory: the Burn.** Between the Helm hall and the Navigation Sphere, the Navigator remembers the one thing it keeps at the bottom: year 38, the braking burn, the first time it said NOT YET. The Helm hall's hatch and the Sphere's ladder are gone. The Helm hall's east end opens onto the drive room's gallery, with the crew at their stations and the world in the window. Go down the drive shaft to the console, then out at the bottom into the Sphere. If you met Odell in the cold store, you'll know the chief engineer's name. While the Navigator fights, the way back east is held too.
 
 ## 0.3.27: the City Hold and the Dark Bay
 
