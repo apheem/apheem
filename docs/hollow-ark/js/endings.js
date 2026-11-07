@@ -221,6 +221,8 @@
         voice('THEY ARE SAFER ASLEEP.'),
         pic(card('THE SLEEPERS STAYED ASLEEP.', ['MARA AMONG THEM.', DIM]), 'sleepers', { dark: true }),
         pic(voice('I HAD THE KEY. I COULD HAVE WOKEN HER.', 'I TOLD MYSELF SHE WAS SAFER ASLEEP.'), 'sleepers', { dark: true }),
+        // the Arrival Hall's terms (the seventh batch of new rooms), if the hero read them
+        ...(s.flags.termsRead ? [voice('I KEPT HIS TERMS ON THE LECTERN.', 'THERE WAS NOBODY TO READ THEM TO.')] : []),
         ...others(s, 'dominion'),
         { lines: ['THE SHIP KEPT CIRCLING.'], space: true, ark: { x: 124, y: 104, s: 1 } },
       ];

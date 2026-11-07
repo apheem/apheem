@@ -873,7 +873,7 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [x] The rest of the audit's story fixes: Shim on every path (4: on the camp's line phone on the truth path, and the morning with his father, lock 3a), the villains set up early (6: "THIS IS IVO MARRANT, STEWARD OF THE ARK" in his broadcast; Hester Vale names herself and makes the Bloom's case in the Vat House; Abel at the end of the Steward's lists, and the hero knows the name in his furnace if they read them), the small payoffs (7: Gasket's brother is Cleat, named at lights-out and in the Homecoming epilogue; the Homecoming epilogue opens the seed vault, gives Dunn's girl her star if Dunn climbed, and returns Odell's boots, with three new pictures: `seeds`, `star`, `odell`)
 - [x] Length: the tram home after the Ballast (5; design and as built below, "The tram home")
 - [x] Length: Wick's longer escort (8; design and as built below, "Wick's longer escort")
-- [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms; fourth batch built: the Condenser and the Guard Room, each with a shortcut back since 0.3.23; fifth batch built: the Mash Floor and the Dock's memory hall; sixth batch built: the Winding House and the Listening Room, each in place of a ladder (below, "New rooms on the main path")
+- [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms; fourth batch built: the Condenser and the Guard Room, each with a shortcut back since 0.3.23; fifth batch built: the Mash Floor and the Dock's memory hall; sixth batch built: the Winding House and the Listening Room, each in place of a ladder; seventh batch built: the Arrival Hall and the Thaw's memory hall, each in place of a ladder too (below, "New rooms on the main path")
 - [x] Length: Sorrel (9, with lock 3b; design and as built below, "Sorrel")
 - [x] Length: the other side quests (design below, "The other side quests"). Hasp's boy built (0.3.17), Wick's remedy (0.3.18), Pod 1130 (0.3.19), the new stoker (0.3.20), the last watchman (0.3.21): all six of the brief's side quests, with Sorrel's (0.3.14)
 
@@ -1075,6 +1075,52 @@ Each adds two or three minutes on every path but the Deserter's. Neither is on t
 - **Tests:**
   - The playthroughs climb the Winding House, throw the clutch, and go round by the Listening Room, reading the tape.
   - The browser check finds the camp's door chained before the night and open after, hears the morning's line, plays the notice, the clutch and the slowed rams, finds the Tower Lift dead with the clutch out, and finds the Helm's hatch dogged. It plays the Steward's new line, the room's voice with no music, the listener, the tape and the standing order, goes in by the Helm's back door into the speech and its payoff, and takes the two Gasket-lost games in by that door too.
+
+**Seventh batch (design, 3.26).** Counted by screens for each minute of the time budget, after the sixth batch the Dreaming Deck (11 screens for 25 minutes, true path only) and the Tower (15 for 30) are the thinnest. As in the sixth batch, each new room takes the place of a ladder, so each is the way on and leaves nothing to walk back through: the Tower's last ladder on the way up (the Dome's, up into the Garden Gallery), and the Deck's hatch between the Gardens hall and the Helm hall.
+
+13. **The Arrival Hall** (Tower, 640, −110; 40x45, two screens tall, east of the Observation Dome and the Garden Gallery). The hall the Steward has made ready for landing day.
+   - **The way through:** the Dome's ladder and the Gallery's hatch go. The Dome's east end opens into the bottom of the hall, the parade floor, where his honour guard drill. Climb the grandstand at the far end, then cross back high over the floor by the flagpoles: each has a brass ring at the top for the flag's hoist, and the harpoon bites it. The reviewing stand at the top opens west into the Garden Gallery's east end. Turrets on the stand.
+   - **His voice, coming in:** the arrival address, recorded, on a loop over the speakers: "PEOPLE OF THE NEW WORLD. DO NOT BE AFRAID. WE HAVE COME A LONG WAY TO KEEP YOU." "STAND WHERE YOU ARE. YOU WILL ALL BE COUNTED." The hero: "A HALL FOR LANDING DAY. HE'S HAD THEM DRILLING FOR IT."
+   - **On the floor:** crates of dress uniforms, stencilled "DRESS · 600": the two hundred he has, and the four hundred the Gardens will give him (his daybook).
+   - **The terms** (on the lectern, a log that plays a scene): "TERMS, TO BE READ ON ARRIVAL." "ONE: THE ARK HAS COME, AND ITS STEWARD GOVERNS." "TWO: EVERY PERSON IS TO BE COUNTED." "THREE: WHOEVER IS COUNTED IS KEPT." "FOUR: WHOEVER HIDES IS NOT." The hero: "IT'S HOW THE WARDENS KEEP THE WALLS. HE MEANS TO KEEP A WHOLE WORLD THAT WAY." The journal says so.
+   - **Dominion:** a hero who read the terms has one more card in that ending's epilogue: "I KEPT HIS TERMS ON THE LECTERN. THERE WAS NOBODY TO READ THEM TO."
+   - **Going back down** from the Gallery is a drop off the reviewing stand to the parade floor.
+   - **Old saves:** a game saved in the Gallery or past it has nothing to come back for.
+14. **Memory: the Thaw** (Deck, 520, 69; 40x45, west of the Gardens hall and the Helm hall). Year 270: the Thaw Corridor, the night the Navigator woke pod 2207, Ivo Marrant. It goes between the Gardens (151) and the Helm (290), so the Helm hall's "HE THOUGHT THE KEY WAS HIS" has someone to mean.
+   - **The way through:** the Gardens hall's hatch and the Helm hall's ladder go. The Gardens hall's west end opens into the top of the Thaw: west along the corridor's top passage, over frost (static thorns, as in every hall), down the shaft at the west end and the catwalks under it, and east along the pods to the bottom, out into the Helm hall's west end. Pale crawlers, drifters and a Warden.
+   - **The painting** (`memory`, `of: 'thaw'`): the Thaw Corridor, frosted, a row of pods, one of them open; someone from the walls kneeling by it with a blanket; a pair of boots.
+   - **The Navigator, coming in:** the hero: "THE THAW CORRIDOR. WHERE I WOKE UP." "YEAR 270. POD 2207. I WOKE HIM COLD, AS I WOKE YOU." "THE FAMILIES IN THE WALLS ALWAYS CAME UP FOR THE ONES I WOKE. THIS TIME IT WAS A MAN WITH A BLANKET."
+   - **By the open pod:** "HE TOOK THE BOOTS INSTEAD." "THEN HE ASKED ME THE WAY TO THE HELM. I TOLD HIM." The hero: "CLEAT. GASKET'S BROTHER." "THE BOY WHO WATCHED YOU WAKE WAS HIS BROTHER'S GRANDSON. THEY STILL COME UP." The journal: "…CLEAT CAME UP OUT OF THE WALLS WITH A BLANKET FOR HIM, AND MARRANT TOOK HIS BOOTS. THE NAVIGATOR TOLD HIM THE WAY TO THE HELM."
+   - **Checkpoints:** the Gardens hall and the Helm hall are checkpoints already, so there's still never more than two halls between them.
+
+Each adds two or three minutes: the Arrival Hall on every path but the Deserter's, the Thaw on the true path. Neither is on the run for the sleds. The playthroughs go through both. The browser check plays the address, the terms and the hero's line, finds the Dome's ladder and the Gallery's hatch gone and the way down open, and checks the Dominion card; on the Deck it plays the Thaw's two scenes, finds the Gardens hall's hatch and the Helm hall's ladder gone, and goes out into the Helm hall.
+
+**As built (seventh batch, 0.3.26).**
+- **The Observation Dome** (`areas/tower.js`): the ladder `a` up to the Gallery is gone, and the east wall is open at rows 15–18 into the Arrival Hall.
+- **`arrival-hall`** (640, −110, 40x45):
+  - In at rows 38–41 from the Dome; out at rows 15–18 into the Gallery's east end, off the reviewing stand (rows 19–20, columns 0–15).
+  - The parade floor: two of the honour guard, crates (`B`, stencilled "DRESS · 600"), and a turret under the stand.
+  - The grandstand at the east end: three tiers (tops at rows 39, 36 and 33), with the `seats` prop on each.
+  - The flagpoles' rings: hooks `o` at (27, 25) and (18, 18), with the `flagpoles` prop under them. The room-checker says the hall can't be crossed without the harpoon.
+  - Up top: the `landingmap` prop (the new world as he's painted it, with his landing sites pinned), the `banners` prop, a turret in the roof, and the lectern (`lectern` prop) with the terms, a log `l` that runs `arrivalTerms`.
+  - The trigger `arrivalIn` on the parade floor.
+- **The Garden Gallery:** the hatch `e` down to the Dome is gone, and the east wall is open at rows 15–18.
+- **The Tower's story** (`story/tower.js`):
+  - The scenes `arrivalIn` (`flags.arrivalSeen`; his address as "THE STEWARD, RECORDED") and `arrivalTerms` (`flags.termsRead`, a journal line the first time).
+  - Shim, following on the lie path, is placed on the parade floor (`enterRoom`).
+- **`endings.js`:** Dominion's card for a hero who read the terms.
+- **`hall-thaw`** (`areas/deck.js`, 520, 69, 40x45, `theme: 'memory'`):
+  - In at rows 15–18 from the Gardens hall's west end, along the top passage: frost under a catwalk, and a block of pods to hop.
+  - Down the shaft at the west end (a catwalk over it in line with the passage), then the catwalks stepping east (rows 23, 27, 31, 35, 39).
+  - Along the pods, with frost on the floor, and out at rows 38–41 into the Helm hall's west end.
+  - Pale crawlers, drifters and a Warden.
+  - The painting (`memory`, `of: 'thaw'`): frost, both rows of pods, POD 2207 open with its lid stood up, the kneeling man with the blanket, and 2207 standing.
+  - The triggers `hallThaw` (top) and `thawPod` (bottom).
+- **The other halls:** the Gardens hall's hatch `e` and the Helm hall's ladder `a` are gone; each has its west end open.
+- **The Deck's story** (`story/deck.js`): `hallThaw` and `thawPod` (`flags.hallThaw`, `flags.thawPod`, a journal line).
+- **Tests:**
+  - The playthroughs go through the Arrival Hall (reading the terms) and the Thaw.
+  - The browser check goes through both rooms. It plays the address with Shim following, the terms, the way out into the Gallery and the missing ladder and hatch; Dominion's card with and without the terms; and the Thaw's two scenes, its journal line, the way out into the Helm hall, and the missing hatch and ladder.
 
 How to build lock 1:
 - Put the two pipe rooms on the grid in free space next to the station (440, 207) and the Spine Foot (480, 185). Rooms join only at their sides, so use a floor hatch or ladder where the shapes don't line up, as the Spine does.

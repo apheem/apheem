@@ -1462,6 +1462,91 @@
       g.fillRect(x1, y - 3, 6, 1);
     },
     // The Observation Dome: glass from wall to wall, the stars, the bow below, and the new world: a pale dot, dark.
+    // The Arrival Hall (the seventh batch of new rooms): the new world as the Steward has painted it for landing day,
+    // from what the Dome shows of it, with the landing sites pinned.
+    landingmap(g, s, rnd) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      const w = 96;
+      const h = 64;
+      g.fillStyle = '#6a5630';
+      g.fillRect(x - 2, y - 2, w + 4, h + 4);
+      g.fillStyle = '#141624';
+      g.fillRect(x, y, w, h);
+      // the world, painted bigger than anyone has seen it: guessed seas and lands
+      const cx = x + w / 2;
+      const cy = y + 30;
+      const r = 24;
+      for (let dy = -r; dy <= r; dy++) {
+        const half = Math.floor(Math.sqrt(r * r - dy * dy));
+        g.fillStyle = dy < -8 ? '#5a6a7a' : '#46566a';
+        g.fillRect(cx - half, cy + dy, half * 2 + 1, 1);
+      }
+      for (let i = 0; i < 7; i++) {
+        const lx = cx - 16 + Math.floor(rnd() * 30);
+        const ly = cy - 14 + Math.floor(rnd() * 26);
+        g.fillStyle = i % 2 ? '#6a7258' : '#7a7a5a';
+        g.fillRect(lx, ly, 4 + Math.floor(rnd() * 7), 2 + Math.floor(rnd() * 4));
+      }
+      // his landing sites: a pin and a flag in his colours at each
+      for (const [px, py] of [[-9, -6], [6, 2], [-2, 10]]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(cx + px, cy + py - 6, 1, 6);
+        g.fillStyle = '#c9a050';
+        g.fillRect(cx + px + 1, cy + py - 6, 4, 3);
+        g.fillStyle = '#e8d4a0';
+        g.fillRect(cx + px, cy + py, 1, 1);
+      }
+      HA.font.draw(g, 'THE NEW WORLD', x + 22, y + h - 9, '#c9a050', { shadow: null });
+    },
+    // The flagpoles: a brass pole up to each hoist ring (the harpoon's hooks, drawn by abilities.js), with his colours
+    // hanging from it.
+    flagpoles(g, s) {
+      for (const [tx, ty] of s.at) {
+        const x = tx * 8 + 3;
+        const top = ty * 8 + 8;
+        g.fillStyle = '#6a5630';
+        g.fillRect(x, top, 2, 42 * 8 - top);
+        g.fillStyle = '#c9a050';
+        g.fillRect(x, top, 1, 42 * 8 - top);
+        g.fillStyle = '#2e2a3e';
+        g.fillRect(x + 2, top + 2, 14, 20);
+        g.fillStyle = '#4a4060';
+        g.fillRect(x + 2, top + 2, 14, 1);
+        g.fillStyle = '#c9a050';
+        g.fillRect(x + 8, top + 7, 2, 9);
+        g.fillRect(x + 6, top + 6, 6, 2);
+      }
+    },
+    // The lectern on the reviewing stand, with the terms on it.
+    lectern(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#3a2a1c';
+      g.fillRect(x + 1, y - 14, 6, 14);
+      g.fillStyle = '#5a4028';
+      g.fillRect(x - 1, y - 16, 10, 3);
+      g.fillStyle = '#e8e0c8';
+      g.fillRect(x, y - 18, 8, 2);
+      g.fillStyle = '#c9a050';
+      g.fillRect(x - 1, y - 13, 10, 1);
+    },
+    // The grandstand's seats: a row of seat backs along the top of each tier ([x0, x1, row]).
+    seats(g, s) {
+      for (const [x0, x1, row] of s.rows) {
+        for (let tx = x0; tx <= x1; tx++) {
+          const x = tx * 8;
+          const y = row * 8;
+          g.fillStyle = '#2e2a3e';
+          g.fillRect(x + 1, y - 7, 6, 5);
+          g.fillStyle = '#4a4060';
+          g.fillRect(x + 1, y - 7, 6, 1);
+          g.fillStyle = '#10121c';
+          g.fillRect(x + 2, y - 2, 1, 2);
+          g.fillRect(x + 5, y - 2, 1, 2);
+        }
+      }
+    },
     domeglass(g, s, rnd, T, room) {
       const W = room.pw;
       const top = 16;
@@ -1655,7 +1740,7 @@
         g.fillRect(x - 3, FLOOR - 6, 2, 6);
         g.fillRect(x + 1, FLOOR - 6, 2, 6);
       };
-      const year = { cryo: 'YEAR 0', dock: 'YEAR 133', gardens: 'YEAR 151', helm: 'YEAR 290' }[s.of];
+      const year = { cryo: 'YEAR 0', dock: 'YEAR 133', gardens: 'YEAR 151', thaw: 'YEAR 270', helm: 'YEAR 290' }[s.of];
       if (s.of === 'cryo') {
         // the pod racks, every pod still shut, and the first crew among them, singing
         for (let x = 20; x < W - 30; x += 24) {
@@ -1746,6 +1831,48 @@
         g.fillRect(44, 41 * 8 - 30, 1, 28);
         HA.font.draw(g, 'LB-1', 34, 41 * 8 - 12, 'rgba(226,240,248,0.25)', { shadow: null });
         figure(196, 0.18);
+      } else if (s.of === 'thaw') {
+        // the Thaw Corridor in year 270 (the seventh batch of new rooms): frost down the walls, the pods along both
+        // levels, one of them open at the foot; by it a man from the walls, kneeling with a blanket, and the one he
+        // came up for, standing
+        for (let i = 0; i < 26; i++) {
+          g.fillStyle = pale(0.06 + rnd() * 0.08);
+          g.fillRect(16 + Math.floor(rnd() * (W - 32)), 16, 1, 20 + Math.floor(rnd() * 60));
+        }
+        const pod = (x, y, open) => {
+          g.fillStyle = pale(0.1);
+          g.fillRect(x + 1, y, 12, 28);
+          g.fillRect(x, y + 1, 14, 26);
+          g.fillStyle = pale(open ? 0.05 : 0.16);
+          g.fillRect(x + 3, y + 3, 8, 18);
+          if (open) {
+            // the lid stood up beside it, and the cold still coming off
+            g.fillStyle = pale(0.18);
+            g.fillRect(x + 15, y - 6, 3, 30);
+            g.fillStyle = pale(0.08);
+            for (let k = 0; k < 6; k++) g.fillRect(x + 2 + Math.floor(rnd() * 10), y - 4 - Math.floor(rnd() * 14), 2, 2);
+          } else {
+            g.fillStyle = 'rgba(30,35,44,0.45)';
+            g.fillRect(x + 5, y + 5, 4, 3);
+            g.fillRect(x + 4, y + 9, 6, 9);
+          }
+        };
+        for (let x = 104; x < W - 40; x += 24) pod(x, 112, false);
+        for (let x = 40; x < W - 40; x += 24) pod(x, 304, x === 184);
+        // the man from the walls, kneeling, the blanket held up; and 2207, standing over him
+        const F = 42 * 8;
+        g.fillStyle = pale(0.18);
+        g.fillRect(224, F - 12, 4, 4);
+        g.fillRect(223, F - 8, 6, 5);
+        g.fillRect(222, F - 3, 9, 3);
+        g.fillStyle = pale(0.12);
+        g.fillRect(214, F - 14, 9, 11);
+        g.fillStyle = pale(0.22);
+        g.fillRect(207, F - 21, 4, 4);
+        g.fillRect(206, F - 16, 6, 9);
+        g.fillRect(206, F - 7, 2, 7);
+        g.fillRect(210, F - 7, 2, 7);
+        HA.font.draw(g, 'POD 2207', 182, 296, 'rgba(226,240,248,0.25)', { shadow: null });
       } else {
         // the Helm: tall windows full of night, his banners, and a man at the top of the dais
         for (let x = 30; x < W - 40; x += 90) {
