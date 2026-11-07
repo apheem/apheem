@@ -1,8 +1,8 @@
 'use strict';
 // The Cargo Labyrinth's story (Phase 3.3): Solder's chalk, the deserter and his pack (choice 6), Chief Engineer
 // Odell in the Cold Store, the Purser's boat (choice 7, the Deserter ending), the Tallyman (choice 8), and
-// Solder's toolbag at the Drain. Back home, the deserter turns out to be Flux, Shim's father. All text is
-// original to Hollow Ark.
+// Solder's toolbag at the Drain, and the Dose Line beside the Muster. Back home, the deserter turns out to be Flux,
+// Shim's father. All text is original to Hollow Ark.
 (function (HA) {
   const S = HA.story;
   const run = (world, name) => S.run(world, name);
@@ -12,11 +12,21 @@
   const COUNT = '#ff8a8a'; // a Warden, counting
   const FREED = '#b8f4ff'; // a Warden, freed
   const NAV = '#b8f4ff';
+  const LOG = '#b8f4ff'; // something read off a wall
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
   const TALLY = 'FIND THE TALLYMAN AT THE TOP OF THE SORTING FLOOR';
 
   Object.assign(S.LOGS, {
+    // The Dose Line, beside the Muster (the tenth batch of new rooms)
+    doseline: {
+      title: 'DOSE LINE · STANDING ORDER',
+      text: 'FROM THE VATS: ONE DOSE A HAND A SHIFT. COUNT THEM OUT. COUNT THE EMPTIES BACK. A FULL BOTTLE AT THE END OF A SHIFT IS A HAND TO BE COLLECTED.',
+    },
+    doserack: {
+      title: "THE SHIFT'S RACK",
+      text: 'A BOTTLE FOR EVERY HAND ON THE SHIFT, AND A NUMBER ON EVERY SLOT. ALL BACK EMPTY, BUT TWO.',
+    },
     muster: {
       title: 'MUSTER · DOSE BOOK',
       text: 'EVERY HAND, EVERY SHIFT. A HAND THAT MISSES A DOSE STARTS TO REMEMBER. A HAND THAT REMEMBERS GOES OVER THE SIDE IN A LIFEBOAT, IF IT CAN FIND ONE.',
@@ -121,6 +131,8 @@
       yield me("A BLOOMSWORN. HE'S SHAKING.");
       yield say('THE DESERTER', "IT DOESN'T STOP. IT JUST GETS QUIETER.");
       yield say('THE DESERTER', "I'M GOING HOME. BEFORE THE NEXT DOSE. BEFORE I FORGET WHERE IT IS.");
+      // The shift's rack in the Dose Line, if the hero looked at it on the way down.
+      if (s.logs.doserack) yield me('ONE OF THE TWO FULL BOTTLES.');
       yield say('THE DESERTER', "THE PACK'S THE STEWARD'S. BLOOMFIRE. IT'LL GET ME THERE THE LONG WAY: THROUGH THE ICE AT THE COLD STORE, AND UP ITS OLD LIFT.");
       yield say('THE DESERTER', "THERE'S A DEAD MAN IN THERE WITH A PACK ON HIS BACK. CREW ISSUE. I COULDN'T GET IT OFF HIM. MY HANDS...");
       yield me("HE'S HOLDING ONE HAND WITH THE OTHER, TO KEEP IT STILL.");
@@ -178,6 +190,29 @@
       world.save();
     },
 
+    // The Dose Line (the tenth batch of new rooms): the pipe down from the vats, and the shift's rack, two bottles
+    // still full: Cotter's, in the chairs next door, and the deserter's, down in the dock.
+    *doseIn(world) {
+      world.state.flags.doseIn = true;
+      S.think(world, 'A PIPE DOWN FROM THE GARDENS. THIS IS WHERE THE DOSES COME FROM.', 60);
+    },
+    *doseRack(world) {
+      const s = world.state;
+      const first = !s.logs.doserack;
+      s.logs.doserack = true;
+      HA.audio.play('tally');
+      const L = S.LOGS.doserack;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      yield me('TWO FULL. TWO OF THEM MISSED THEIR DOSE.');
+      // With the order read, the hero knows what a full bottle means.
+      if (s.logs.doseline) yield me('TWO HANDS TO BE COLLECTED.');
+      S.addStory(world, s.logs.doseline
+        ? "BESIDE THE MUSTER IS THE DOSE LINE, WHERE THE GARDENER'S DOSES COME DOWN AND ARE COUNTED OUT, A BOTTLE A HAND A SHIFT. A FULL BOTTLE AT THE END OF A SHIFT MEANS A HAND TO BE COLLECTED. TWO WERE FULL."
+        : "BESIDE THE MUSTER IS THE DOSE LINE, WHERE THE SOLDIERS' DOSES ARE COUNTED OUT. ON THE SHIFT'S RACK, TWO BOTTLES WERE STILL FULL.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
+    },
     // The Muster's floor: the chairs the Steward's soldiers are dosed in (3.12).
     *muster(world) {
       world.state.flags.musterSeen = true;

@@ -1788,6 +1788,211 @@
         g.fillRect(x + 4, my, 2 + Math.floor(rnd() * 4), 1);
       }
     },
+    // ---- The tenth batch of new rooms ----
+    // The Dose Line's bottling machine: the pipe down from the Gardener's vats, pink at the joints, into the machine
+    // over the gantry, and the nozzles dripping pink into the bottles on its belt.
+    doseline(g, s, rnd) {
+      const x = s.x * 8;
+      const top = s.y0 * 8;
+      const F = s.y * 8;
+      const mTop = F - 40;
+      // the pipe
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, top, 8, mTop - top);
+      g.fillStyle = '#3a3e4a';
+      g.fillRect(x, top, 6, mTop - top);
+      g.fillStyle = '#5a5e6a';
+      g.fillRect(x + 1, top, 1, mTop - top);
+      for (let y = top + 6; y < mTop - 2; y += 14) {
+        g.fillStyle = '#7a3a6a';
+        g.fillRect(x - 1, y, 8, 2);
+        g.fillStyle = '#f27ad8';
+        g.fillRect(x + 6, y + 2, 1, 1 + Math.floor(rnd() * 2));
+      }
+      // the machine
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 22, mTop, 52, 26);
+      g.fillStyle = '#2e323e';
+      g.fillRect(x - 21, mTop + 1, 50, 24);
+      g.fillStyle = '#3e4250';
+      g.fillRect(x - 21, mTop + 1, 50, 2);
+      g.fillStyle = '#1c1e26';
+      g.fillRect(x - 16, mTop + 7, 14, 10);
+      g.fillStyle = '#b04ad0';
+      g.fillRect(x - 14, mTop + 9, 10, 6);
+      g.fillStyle = '#f27ad8';
+      g.fillRect(x - 13, mTop + 10, 3, 2);
+      // the gauge
+      g.fillStyle = '#c8c0a0';
+      g.fillRect(x + 12, mTop + 7, 9, 9);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 16, mTop + 9, 1, 4);
+      // the nozzles, and what drips from them
+      for (let i = 0; i < 5; i++) {
+        const nx = x - 18 + i * 10;
+        g.fillStyle = '#10121c';
+        g.fillRect(nx, mTop + 25, 4, 4);
+        g.fillStyle = '#f27ad8';
+        if (rnd() < 0.6) g.fillRect(nx + 1, mTop + 30 + Math.floor(rnd() * 3), 1, 1);
+      }
+      // the belt under the nozzles, and its bottles
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 24, F - 6, 56, 4);
+      g.fillStyle = '#4a4e5a';
+      g.fillRect(x - 24, F - 6, 56, 1);
+      for (let bx = x - 20; bx < x + 30; bx += 6) {
+        g.fillStyle = '#6a7888';
+        g.fillRect(bx, F - 10, 3, 4);
+        g.fillStyle = rnd() < 0.7 ? '#f27ad8' : '#2a2e3a';
+        g.fillRect(bx, F - 9, 3, 3);
+      }
+    },
+    // The counting room's rack: a slot for every hand on the shift, a number over each, every bottle back empty but
+    // two, still full of pink.
+    doserack(g, s) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const top = s.y0 * 8;
+      const F = s.y * 8 - 6;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0 - 2, top - 2, x1 - x0 + 4, F - top + 4);
+      g.fillStyle = '#22252e';
+      g.fillRect(x0 - 1, top - 1, x1 - x0 + 2, F - top + 2);
+      let n = 0;
+      for (let y = top + 3; y + 7 <= F; y += 9) {
+        g.fillStyle = '#3a3e4a';
+        g.fillRect(x0, y + 7, x1 - x0, 1);
+        for (let x = x0 + 2; x + 4 <= x1; x += 6) {
+          const full = n === 9 || n === 30;
+          g.fillStyle = '#5e6a7a';
+          g.fillRect(x, y + 1, 4, 6);
+          g.fillRect(x + 1, y, 2, 1);
+          g.fillStyle = full ? '#f27ad8' : '#141820';
+          g.fillRect(x + 1, y + 2, 2, 4);
+          // the slot's number, a scratch over it
+          g.fillStyle = 'rgba(232,224,200,0.3)';
+          g.fillRect(x, y - 2, 1 + (n % 3), 1);
+          n++;
+        }
+      }
+    },
+    // The Dose Line's belt floor: rollers along the bottom, bottles the belt dropped, broken glass, and the Bloom
+    // growing out of what spilled.
+    bottlebelt(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const F = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, F - 7, x1 - x0, 5);
+      g.fillStyle = '#4a4e5a';
+      g.fillRect(x0, F - 7, x1 - x0, 1);
+      for (let x = x0 + 2; x < x1; x += 8) {
+        g.fillStyle = '#2a2e3a';
+        g.fillRect(x, F - 5, 3, 3);
+      }
+      for (let i = 0; i < 22; i++) {
+        const bx = x0 + Math.floor(rnd() * (x1 - x0 - 4));
+        if (rnd() < 0.5) {
+          g.fillStyle = '#6a7888';
+          g.fillRect(bx, F - 11, 3, 4);
+          g.fillStyle = rnd() < 0.5 ? '#f27ad8' : '#1c2028';
+          g.fillRect(bx, F - 10, 3, 3);
+        } else {
+          g.fillStyle = 'rgba(184,210,230,0.5)';
+          g.fillRect(bx, F - 8, 1 + Math.floor(rnd() * 2), 1);
+          g.fillStyle = '#b04ad0';
+          g.fillRect(bx + 2, F - 9 - Math.floor(rnd() * 3), 1, 2);
+        }
+      }
+    },
+    // The Intake's wash: hoses hanging from the pipes, their nozzles, and drains in the floor under them.
+    hoses(g, s, rnd) {
+      const top = s.y0 * 8;
+      const F = s.y * 8;
+      for (let x = s.x0 * 8; x <= s.x1 * 8; x += 36) {
+        const len = 30 + Math.floor(rnd() * 20);
+        g.fillStyle = '#10121c';
+        g.fillRect(x - 1, top, 4, len);
+        g.fillStyle = '#3a5a44';
+        g.fillRect(x, top, 2, len);
+        g.fillStyle = '#5a6a5e';
+        g.fillRect(x - 1, top + len, 4, 4);
+        g.fillStyle = 'rgba(184,230,210,0.5)';
+        if (rnd() < 0.6) g.fillRect(x, top + len + 6 + Math.floor(rnd() * 6), 1, 1);
+        // the drain under it
+        g.fillStyle = '#05080a';
+        g.fillRect(x - 4, F - 1, 10, 1);
+        g.fillStyle = '#2a3a30';
+        for (let d = 0; d < 10; d += 2) g.fillRect(x - 4 + d, F - 1, 1, 1);
+      }
+    },
+    // The weighing scale on the wash floor: a plate, a post, and a dial.
+    scale(g, s) {
+      const x = s.x * 8;
+      const F = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, F - 4, 20, 4);
+      g.fillRect(x + 15, F - 26, 4, 22);
+      g.fillStyle = '#5a6a5e';
+      g.fillRect(x, F - 4, 18, 1);
+      g.fillRect(x + 16, F - 25, 2, 21);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 11, F - 34, 12, 10);
+      g.fillStyle = '#d8d8c0';
+      g.fillRect(x + 12, F - 33, 10, 8);
+      g.fillStyle = '#7a3a3a';
+      g.fillRect(x + 16, F - 32, 1, 4);
+      g.fillRect(x + 17, F - 29, 2, 1);
+    },
+    // The gowning hall's rail, and the pale cryo gowns hung on it, ready.
+    gowns(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const y = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, y, x1 - x0, 2);
+      for (let x = x0 + 6; x < x1 - 10; x += 14) {
+        if (rnd() < 0.15) continue;
+        g.fillStyle = '#10121c';
+        g.fillRect(x + 4, y + 2, 1, 3);
+        g.fillStyle = '#a8c0c8';
+        g.fillRect(x, y + 5, 9, 18);
+        g.fillRect(x - 1, y + 6, 11, 4);
+        g.fillStyle = '#7a909a';
+        g.fillRect(x + 4, y + 10, 1, 12);
+        g.fillStyle = '#5a6e78';
+        g.fillRect(x + 2, y + 14, 5, 3);
+      }
+    },
+    // The Intake's bins, on shelves along the hall's back wall: twelve, a cradle number on each, and the taken's own
+    // things in them. Bin 12 is empty.
+    bins(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const F = s.y * 8;
+      const step = (x1 - x0) / 6;
+      const things = ['#6a4a2a', '#a83a44', '#c8a060', '#8a8a6a', '#4a5a7a', '#a87a5a'];
+      for (let i = 0; i < 12; i++) {
+        const row = Math.floor(i / 6);
+        const bx = Math.round(x0 + (i % 6) * step + 4);
+        const by = F - 52 + row * 22;
+        g.fillStyle = '#10121c';
+        g.fillRect(bx - 6, by + 12, step + 2, 2);
+        if (i < 11) {
+          g.fillStyle = things[i % things.length];
+          g.fillRect(bx + 3 + Math.floor(rnd() * 6), by - 2, 8 + Math.floor(rnd() * 6), 4);
+          g.fillStyle = things[(i + 3) % things.length];
+          g.fillRect(bx + 10 + Math.floor(rnd() * 6), by - 1, 5, 3);
+        }
+        g.fillStyle = '#10121c';
+        g.fillRect(bx - 1, by, 32, 12);
+        g.fillStyle = '#2a4a34';
+        g.fillRect(bx, by + 1, 30, 10);
+        g.fillStyle = '#376a46';
+        g.fillRect(bx, by + 1, 30, 1);
+        HA.font.draw(g, String(i + 1), bx + 15, by + 3, 'rgba(232,240,220,0.75)', { align: 'center', shadow: null });
+      }
+    },
     domeglass(g, s, rnd, T, room) {
       const W = room.pw;
       const top = 16;

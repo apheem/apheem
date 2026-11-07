@@ -25,6 +25,12 @@ const gardens = {
     await r.to('terraces');
     await r.do('PT.take("scatter")');
     await r.to('nursery'); // up through the water works (Wick's sit-down) and the Spore Beds; the taken, found
+    // The planters go up to the ceiling now: out of the potting floor's west end into the Intake (the tenth batch of
+    // new rooms), the standing order and the bins, and back into the Nursery along the duct over the planters.
+    await r.to('intake');
+    await r.do('PT.read("intake")');
+    await r.do('PT.read("bins")');
+    await r.do('PT.exit("right", "nursery", 29)');
     await r.to('seal-room');
     await r.boss('seal-room');
     await r.to('nursery'); // the cradles open
@@ -75,9 +81,15 @@ const cargo = {
     await r.do('PT.flip("craneB")');
     await r.to('armory');
     await r.do('PT.take("harpoon")');
+    // The Muster's girder no longer drops into the dosing hall: east along it into the Dose Line (the tenth batch of
+    // new rooms), the standing order and the shift's rack, and back into the hall from the counting room.
+    await r.to('muster');
+    await r.to('dose-line');
+    await r.do('PT.read("doseline")');
+    await r.do('PT.read("doserack")');
+    await r.do('PT.exit("left", "muster", 17)');
     // Cotter in the Muster's chairs: told his mother's name, he fights the dose until the fit breaks; then the choice.
     if (r.route.cotter) {
-      await r.to('muster');
       await r.do('PT.clear()');
       await r.do('PT.talk("cotter")');
       await r.do('PT.fight(() => !!HA.ui.world.state.people.cotter)');

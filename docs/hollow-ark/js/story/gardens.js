@@ -41,6 +41,15 @@
       title: 'GROWING BAY 4 · NOTES',
       text: "POD 0391. WOKEN YEAR 150, TO GROW FOOD WITHOUT LIGHT. THE LAMPS ARE FAILING. YEAR 151: THE NEW STRAIN GROWS IN THE DARK. IT GROWS ON ANYTHING. IT GROWS ON ME NOW. IT DOESN'T HURT. IT'S QUIET.",
     },
+    // The Intake, west of the Nursery (the tenth batch of new rooms)
+    intake: {
+      title: 'INTAKE · STANDING ORDER',
+      text: 'STOCK FROM THE WALLS. HOSE THEM DOWN. WEIGH THEM. GOWN THEM. THEIR THINGS IN THE BINS, UNDER THEIR CRADLE NUMBERS. A FULL DOSE, AND INTO THE CRADLES. H. VALE',
+    },
+    bins: {
+      title: 'THE BINS',
+      text: "TWELVE BINS, A NUMBER ON EACH. BOOTS, A SHAWL, A CARVED WHISTLE, A CHILD'S DRAWING FOLDED SMALL. BIN 12 IS EMPTY.",
+    },
     seeds: {
       title: 'SEED VAULT · YEAR 0',
       text: 'SEALED FOR ARRIVAL: TWELVE THOUSAND KINDS OF SEED, AND THE SOIL TO START THEM. TO BE OPENED UNDER A REAL SKY.',
@@ -210,6 +219,28 @@
       yield { wait: 30 };
       world.travel(world.link);
       yield { fade: 'in', frames: 30 };
+    },
+
+    // The Intake (the tenth batch of new rooms): round from the Nursery's potting floor, where the taken were washed
+    // and gowned for the cradles, and their things put away under their numbers. Bin 12 is Sorrel's, and empty.
+    *intakeIn(world) {
+      world.state.flags.intakeIn = true;
+      S.think(world, 'HOSES. DRAINS IN THE FLOOR. THIS IS WHERE THEY WASHED THEM.', 60);
+    },
+    *intakeBins(world) {
+      const s = world.state;
+      const first = !s.logs.bins;
+      s.logs.bins = true;
+      HA.audio.play('tally');
+      const L = S.LOGS.bins;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      // With the board read, the hero knows the numbers are the cradles'.
+      yield me(s.logs.intake ? 'CRADLE NUMBERS. WHOEVER WAS IN TWELVE TOOK THEIR THINGS BACK.' : 'WHOEVER HAD BIN 12 TOOK THEIR THINGS BACK.');
+      yield me('THE REST ARE CLOSE.');
+      S.addStory(world, "WEST OF THE NURSERY IS THE INTAKE, WHERE THE WARDENS WASHED THE TAKEN AND GOWNED THEM FOR THE CRADLES. THEIR OWN THINGS ARE IN BINS UNDER THEIR NUMBERS. BIN 12 IS EMPTY.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
     },
 
     // 3. The Nursery: in at the potting floor, then the cradles, found at last. The hero sends the hoist down, and
