@@ -5,10 +5,11 @@
 // Rooms here join top to bottom by ladders and floor hatches; the crew's lift runs between the landings it reaches.
 // Map legend beyond the shared one: ^ hot grilles   m Bloomsworn climber   8 steam drone   0 heat slug
 // a the ladder up   e the hatch down   L the crew's lift   T a terminal   M Abel, in his furnace
-// Z the Tower Lift   D the Piston Run's plate, bolted from above (in the Boiler Stair, the burst main's steam)
-// l the last stoker's bunk   V and W the Condenser's valves   h the hatch down to the Condenser's ladder (the
-// Condenser's own a is that ladder, up to the stair above the burst, steamed shut until both valves are). A room's
-// vents (see abilities.js) carry the hero up, its belts carry them along, and its pistons (see hazards.js) strike.
+// Z the Tower Lift   K the Winding House's clutch   D the Piston Run's plate, bolted from above (in the Boiler
+// Stair, the burst main's steam; in the camp, the Winding House's chained door)   l the last stoker's bunk
+// V and W the Condenser's valves   h the hatch down to the Condenser's ladder (the Condenser's own a is that
+// ladder, up to the stair above the burst, steamed shut until both valves are). A room's vents (see abilities.js)
+// carry the hero up, its belts carry them along, and its pistons (see hazards.js) strike.
 (function (HA) {
   HA.rooms.area('spine', { name: 'ENGINE SPINE', theme: 'spine', music: 'spine', mapColor: '#ff8f4a' });
 
@@ -545,8 +546,9 @@
     musicLayers: layers,
     legend: {
       e: down('reactor-throat'),
-      a: Object.assign(up('tower-lift'), { scene: 'campLadder' }),
       L: stop(3, 'spine-foot'),
+      // the way on, east into the Winding House: chained until the crew have had the chain off in the morning
+      D: { type: 'door', id: 'windingDoor', chained: true, open: (s) => !!s.flags.campDone },
     },
     scenery: [
       { kind: 'reactor', x: 20 },
@@ -558,7 +560,11 @@
       { kind: 'shaft', x: 28, y0: 4, y1: 18 },
       { kind: 'scrawl', x: 15, y: 6, text: 'LIFT B GOES DOWN, NOT OUT' },
       { kind: 'scrawl', x: 4, y: 7, text: 'CREW 4 · SLEEP HERE' },
+      { kind: 'stencil', x: 31, y: 11.5, text: 'WINDING' },
+      { kind: 'stencil', x: 31, y: 13, text: 'HOUSE →' },
     ],
+    // at the chain, before the night
+    triggers: [{ x0: 33, x1: 36, when: (s) => !!s.flags.camp && !s.flags.campDone, run: 'windingShut' }],
     onRest: (world) => (world.state.flags.camp && !world.state.flags.lightsOut ? 'lightsOut' : null),
     map: [
       '########################################',
@@ -576,10 +582,10 @@
       '##....................................##',
       '##..==========........................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##.e....S...................L.....a...##',
+      '##.................................DD...',
+      '##.................................DD...',
+      '##.................................DD...',
+      '##.e....S...................L......DD...',
       '########################################',
       '########################################',
       '########################################',
@@ -597,8 +603,8 @@
     abilities: { thruster: true, grapple: true, foam: true, boots: true },
     musicLayers: layers,
     legend: {
-      e: down('crew-camp'),
-      Z: { type: 'lift', to: 'barracks', name: 'the Tower Lift', big: true, scene: 'towerLift', lit: (s) => !!s.flags.verdict },
+      // the car comes down once the clutch is in, back in the Winding House (or for a game that's been up already)
+      Z: { type: 'lift', to: 'barracks', name: 'the Tower Lift', big: true, scene: 'towerLift', lit: (s) => !!s.flags.verdict && (!!s.flags.winding || !!s.flags.towerUp) },
       T: { type: 'log', id: 'sealed', name: 'the security terminal' },
     },
     scenery: [
@@ -624,11 +630,93 @@
       '##....................................##',
       '##....................................##',
       '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##....................................##',
-      '##............Z.........T.........e...##',
+      '##......................................',
+      '##......................................',
+      '##......................................',
+      '##............Z.........T...............',
       '########################################',
+      '########################################',
+      '########################################',
+      '########################################',
+    ],
+  });
+
+  // The Winding House (the sixth batch of new rooms): the engine that hauls the Tower Lift, east of the camp and
+  // the lift's deck, and the way up between them. By the Steward's order its clutch is out, so it runs with nothing
+  // on it and its cranks slam fast. The hero climbs it from the camp's door and throws the clutch in by the way out
+  // onto the deck (story/spine.js); the cranks slow to a steady beat, and the Tower Lift's car comes down.
+  HA.rooms.add({
+    id: 'winding-house',
+    area: 'spine',
+    name: 'THE WINDING HOUSE',
+    gx: 520,
+    gy: -64,
+    abilities: { thruster: true, grapple: true, foam: true, boots: true },
+    musicLayers: layers,
+    legend: {
+      T: { type: 'log', id: 'winding', name: 'the notice' },
+      K: { type: 'log', scene: 'clutch', label: '{up} THROW THE CLUTCH IN', name: 'the clutch', when: (s) => !s.flags.winding },
+    },
+    vents: [{ x0: 34, x1: 37, y0: 4, y1: 29 }],
+    // the engine's cranks: fast with no load on them, steady once the clutch is in (story/spine.js slows them)
+    pistons: [
+      { x: 2, y: 34, len: 16, dir: 'right', period: 120, offset: 0 },
+      { x: 37, y: 31, len: 16, dir: 'left', period: 120, offset: 40 },
+      { x: 37, y: 28, len: 10, dir: 'left', period: 120, offset: 80 },
+      { x: 14, y: 2, len: 6, dir: 'down', period: 120, offset: 20 },
+      { x: 22, y: 2, len: 6, dir: 'down', period: 120, offset: 70 },
+    ],
+    scenery: [
+      { kind: 'pipes', y: 3 },
+      { kind: 'drum', x: 20, y0: 10, y1: 41 },
+      { kind: 'stencil', x: 3, y: 36.5, text: 'WINDING HOUSE' },
+      { kind: 'stencil', x: 3, y: 13.5, text: '← THE DECK' },
+      { kind: 'lever', x: 6, y: 18, flag: 'winding' },
+    ],
+    triggers: [{ x0: 0, x1: 14, y0: 30, when: (s) => !s.flags.windingSeen, run: 'windingIn' }],
+    map: [
+      '########################################',
+      '########################################',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##........======================......##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##......................8.............##',
+      '##....................................##',
+      '##....................................##',
+      '......................................##',
+      '......................................##',
+      '......................................##',
+      '......K...............................##',
+      '##########............................##',
+      '##....................................##',
+      '##....................................##',
+      '##................8...................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##....................................##',
+      '##............................========##',
+      '##....................................##',
+      '##........................0...........##',
+      '##....................=======.........##',
+      '##....................................##',
+      '##....................................##',
+      '##............=======.................##',
+      '##....................................##',
+      '......................................##',
+      '......=======.........................##',
+      '......................................##',
+      '....T...............0.......m.........##',
       '########################################',
       '########################################',
       '########################################',

@@ -36,6 +36,11 @@
       title: 'CONDENSER HALL · MAIN 3',
       text: "IF MAIN 3 BURSTS ACROSS THE STAIR, SHUT IT OFF AT BOTH VALVES: A IS PAST THE SUMP, B IS ON THE COIL TOPS. THEN TAKE THE LADDER BY A, UP THE WELL BESIDE THE MAIN, BACK TO THE STAIR ABOVE IT. SINCE THE STEWARD'S PEOPLE DROVE THE FIRES HOT, IT BURSTS EVERY YEAR. NOBODY COMES DOWN TO SHUT IT.",
     },
+    // The Winding House, between the camp and the Tower Lift (the sixth batch of new rooms)
+    winding: {
+      title: 'WINDING HOUSE · TOWER LIFT',
+      text: "BY THE STEWARD'S ORDER, THE CLUTCH STAYS OUT AND THE CAR STAYS UP. IT COMES DOWN WHEN THE TOWER SENDS DOWN STOKERS, AND GOES BACK UP EMPTY.",
+    },
     abelCount: {
       title: 'THE LAST BUNK',
       text: 'SCRATCHED INTO THE FRAME: A COUNT IN FIVES, THE WAY THE HULLFOLK COUNT DAYS. IT RUNS FOR A YEAR. THEN THE FIVES COME APART, AND IT IS ONLY SCRATCHES, ALL OVER THE FRAME, UNTIL THERE IS NO ROOM LEFT. CUT DEEP AT THE TOP, IN THE FIRST HAND: ABEL.',
@@ -51,6 +56,7 @@
   const crewOf = (s) => HA.clamp(s.mercy + 1, 2, 11) + dosed(s);
   // Each lift up the Spine takes this many hands to build: the Boiler Landing's, the Piston Landing's, the camp's.
   const HANDS = [0, 2, 5, 8];
+  const SLOW = 200; // the Winding House's cranks, once the clutch is in (they run at 120 with nothing on them)
   const WOKEN = ['toller', 'mave', 'pell', 'corra', 'dunn', 'iska', 'rook', 'hale', 'wren'];
   for (const [i, id] of WOKEN.entries()) S.PEOPLE[id] = { name: id.toUpperCase(), sprite: 'woken' + (1 + (i % 4)), away: true };
   for (const id of WOKEN) S.TALK[id] = {};
@@ -450,20 +456,34 @@
       yield { fade: 'in', frames: 30 };
     },
 
-    // The camp ladder, up to the Tower Lift: not before the crew have slept.
-    *campLadder(world) {
+    // The camp's way on: the Winding House's door, chained until the crew have slept (and had the chain off).
+    *windingShut(world) {
+      const g = npcOf(world, 'gasket');
+      if (g) yield say('OLD GASKET', 'NOBODY GOES INTO THE TOWER TIRED. REST FIRST. THAT MEANS YOU.');
+      else yield me('THE CREW ARE STOPPING HERE FOR THE NIGHT. SO AM I.');
+    },
+    // The Winding House: the Tower Lift's engine, running with nothing on it.
+    *windingIn(world) {
+      world.state.flags.windingSeen = true;
+      yield { wait: 20 };
+      yield me("THE TOWER LIFT'S ENGINE. IT'S RUNNING FLAT OUT, WITH NOTHING ON IT.");
+    },
+    // The clutch, by the way out onto the lift's deck: in, and the car comes down for the crew.
+    *clutch(world) {
       const f = world.state.flags;
-      if (f.camp && !f.campDone) {
-        const g = npcOf(world, 'gasket');
-        if (g) yield say('OLD GASKET', 'NOBODY GOES INTO THE TOWER TIRED. REST FIRST. THAT MEANS YOU.');
-        else yield me('THE CREW ARE STOPPING HERE FOR THE NIGHT. SO AM I.');
+      if (f.winding) {
+        yield me("IT'S IN. THE LIFT'S ON ITS WAY DOWN.");
         return;
       }
+      f.winding = true;
       HA.audio.play('clamp');
-      yield { fade: 'out', frames: 20 };
-      world.travel(world.link);
-      yield { wait: 10 };
-      yield { fade: 'in', frames: 20 };
+      world.shake(3);
+      for (const pn of world.pistons) pn.period = SLOW;
+      yield { wait: 40 };
+      HA.audio.play('lift');
+      yield me('THE CRANKS SLOWED. THE CABLE WENT TIGHT, AND A LONG WAY UP, SOMETHING HEAVY STARTED DOWN.');
+      S.addStory(world, "THE TOWER LIFT'S CLUTCH WAS OUT, BY THE STEWARD'S ORDER: THE LIFT ONLY EVER CAME DOWN FOR STOKERS. I THREW IT IN, AND THE CAR CAME DOWN FOR THE CREW.");
+      world.save();
     },
 
     // The Crew Camp: the climbers catch up, by the third lift or the ladders.
@@ -614,10 +634,10 @@
       if (g) g.kneel = false;
       yield { wait: 40 };
       yield { fade: 'in', frames: 40 };
-      yield say(leader(s), "UP. EVERYONE UP. THE TOWER LIFT'S ONE MORE LADDER.");
+      yield say(leader(s), "UP. EVERYONE UP. THE CHAIN'S OFF THE WINDING HOUSE DOOR. THE TOWER LIFT'S UP THROUGH THERE.");
       for (const n of world.npcs) n.state = 'gone';
       world.refreshMusic();
-      S.setLead(world, 'CLIMB TO THE TOWER LIFT WITH THE CREW');
+      S.setLead(world, 'CLIMB THE WINDING HOUSE TO THE TOWER LIFT');
       world.save();
     },
 
@@ -718,6 +738,7 @@
       // The camp, before and after the night; the crew on the Tower Lift's deck in the morning.
       if (id === 'crew-camp' && f.camp && !f.campDone) placeCamp(world);
       if (id === 'tower-lift' && f.campDone && !f.towerUp) placeDeck(world);
+      if (id === 'winding-house' && f.winding) for (const pn of world.pistons) pn.period = SLOW;
       // Home, once the climbers have gone up the Spine: only those who stayed behind the gate are left (and Shim,
       // unless he went into the vents).
       if (id === 'warrens' && f.crewCame) {

@@ -1370,6 +1370,97 @@
       g.fillRect(x + 23, y - 34, 1, 19);
       g.fillRect(x + 3, y - 31, 1, 6);
     },
+    // The Listening Room's feed tower (the sixth batch of new rooms): a tall window, and outside it the Tower's dish,
+    // turned down toward the new world, a pale dot under it.
+    dish(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const y0 = s.y0 * 8;
+      const w = (s.x1 - s.x0 + 1) * 8;
+      const h = (s.y1 - s.y0 + 1) * 8;
+      g.fillStyle = '#6a5630';
+      g.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
+      g.fillStyle = '#03050c';
+      g.fillRect(x0, y0, w, h);
+      for (let i = 0; i < 40; i++) {
+        const r = rnd();
+        g.fillStyle = r < 0.15 ? '#ffffff' : r < 0.5 ? '#8aa0c8' : '#3b4a72';
+        g.fillRect(x0 + Math.floor(rnd() * w), y0 + Math.floor(rnd() * h), 1, 1);
+      }
+      // the world, low in the window: pale, no lights
+      const wx = x0 + Math.floor(w * 0.3);
+      const wy = y0 + h - 12;
+      for (let dy = -3; dy <= 3; dy++) {
+        const half = Math.floor(Math.sqrt(9 - dy * dy));
+        g.fillStyle = dy < 0 ? '#b8c4cc' : '#7c8a96';
+        g.fillRect(wx - half, wy + dy, half * 2 + 1, 1);
+      }
+      // the dish: a bowl on its arm, tipped down toward it, its feed horn out in front on its struts
+      const cx = x0 + Math.floor(w * 0.62);
+      const cy = y0 + Math.floor(h * 0.36);
+      g.fillStyle = '#10121c';
+      g.fillRect(cx + 2, cy - 2, x0 + w - cx - 2, 4);
+      g.save();
+      g.translate(cx, cy);
+      g.rotate(0.55);
+      g.fillStyle = '#3a4258';
+      g.beginPath();
+      g.ellipse(0, 0, 8, 14, 0, -Math.PI / 2, Math.PI / 2);
+      g.fill();
+      g.fillStyle = '#6c7894';
+      g.beginPath();
+      g.ellipse(0, 0, 3, 14, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#a9b6cc';
+      g.fillRect(-1, -14, 2, 4);
+      g.strokeStyle = '#10121c';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(-2, -12);
+      g.lineTo(-13, 0);
+      g.lineTo(-2, 12);
+      g.stroke();
+      g.fillStyle = '#10121c';
+      g.fillRect(-16, -2, 5, 4);
+      g.fillStyle = '#c9a050';
+      g.fillRect(-16, -1, 1, 2);
+      g.restore();
+      // the window's bars
+      g.fillStyle = '#6a5630';
+      g.fillRect(x0 + Math.floor(w / 2) - 1, y0, 2, h);
+      g.fillRect(x0, y0 + Math.floor(h / 2), w, 1);
+      g.fillStyle = 'rgba(184,244,255,0.06)';
+      g.fillRect(x0, y0, w, h);
+    },
+    // The listening watch's tape: forty-one years of it, spilled off the printer in loops along the floor.
+    tape(g, s, rnd) {
+      const y = s.y * 8;
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0 - 4, y - 14, 10, 14);
+      g.fillStyle = '#4a4060';
+      g.fillRect(x0 - 3, y - 13, 8, 12);
+      g.fillStyle = '#e6e2d6';
+      g.fillRect(x0 - 1, y - 15, 4, 2);
+      for (let x = x0 + 6; x < x1; x += 5) {
+        const lift = Math.floor(rnd() * 5) + 2;
+        g.fillStyle = '#d8cfc0';
+        g.fillRect(x, y - lift, 4, 1);
+        g.fillRect(x, y - lift, 1, lift);
+        g.fillRect(x + 3, y - lift, 1, lift);
+        g.fillStyle = '#e6e2d6';
+        g.fillRect(x - 1, y - 1, 6, 1);
+        g.fillStyle = '#8a8494';
+        if (rnd() < 0.7) g.fillRect(x + 1, y - lift + 1, 2, 1);
+      }
+      // a heap of it at the end
+      g.fillStyle = '#d8cfc0';
+      g.fillRect(x1 - 2, y - 5, 10, 5);
+      g.fillStyle = '#e6e2d6';
+      g.fillRect(x1 - 1, y - 6, 8, 2);
+      g.fillStyle = '#8a8494';
+      g.fillRect(x1, y - 3, 6, 1);
+    },
     // The Observation Dome: glass from wall to wall, the stars, the bow below, and the new world: a pale dot, dark.
     domeglass(g, s, rnd, T, room) {
       const W = room.pw;
@@ -1897,6 +1988,9 @@
       if (s.kind === 'guardracks') drawGuardRacks(g, world, s, cam);
       if (s.kind === 'boltboard') drawBoltBoard(g, world, s, cam);
       if (s.kind === 'wellsteam') drawWellSteam(g, world, s, cam);
+      if (s.kind === 'drum') drawDrum(g, world, s, cam);
+      if (s.kind === 'receivers') drawReceivers(g, world, s, cam);
+      if (s.kind === 'listener') drawListener(g, world, s, cam);
     }
     if (world.def.cradles) drawCradles(g, world, world.def.cradles, cam);
     if (world.heroPod) drawPod(g, world, world.heroPod, cam);
@@ -2392,6 +2486,134 @@
     g.fillRect(x + 4, y - 35, 1, 3);
   }
 
+  // The Winding House's drum (the sixth batch of new rooms): the Tower Lift's cable, wound on a drum as tall as
+  // the room, and running up off its top through the roof. Clutch out, it stands still and the cable hangs slack;
+  // clutch in (flags.winding), the windings turn and the cable runs taut.
+  function drawDrum(g, world, s, cam) {
+    const turning = !!world.state.flags.winding;
+    const cx = Math.round(s.x * 8 - cam.x);
+    const top = Math.round(s.y0 * 8 - cam.y);
+    const bottom = Math.round((s.y1 + 1) * 8 - cam.y);
+    if (bottom < -8 || top > HA.VIEW_H + 8 || cx < -40 || cx > HA.VIEW_W + 40) return;
+    const half = 22;
+    // the cable, up off the drum's top and through the roof
+    const roof = Math.round(2 * 8 - cam.y);
+    g.fillStyle = '#10121c';
+    g.fillRect(cx - 2, roof, 4, top - roof);
+    g.fillStyle = turning ? '#c9a050' : '#6a5630';
+    for (let y = roof; y < top; y += 2) {
+      const sway = turning ? 0 : Math.round(Math.sin((y + world.time * 0.4) * 0.05) * 1.5);
+      g.fillRect(cx - 1 + sway, y, 2, 2);
+    }
+    // the body, in shadow at its edges
+    g.fillStyle = '#10121c';
+    g.fillRect(cx - half - 2, top, half * 2 + 4, bottom - top);
+    g.fillStyle = '#2a2e3e';
+    g.fillRect(cx - half, top + 6, half * 2, bottom - top - 12);
+    // the windings: bands of cable round it, sliding while it turns
+    const shift = turning ? Math.floor(world.time / 3) % 6 : 0;
+    for (let y = top + 6 + shift; y < bottom - 6; y += 6) {
+      g.fillStyle = '#6a5630';
+      g.fillRect(cx - half + 2, y, half * 2 - 4, 3);
+      g.fillStyle = '#a8743a';
+      g.fillRect(cx - half + 6, y, half * 2 - 14, 1);
+      g.fillStyle = '#3a2a18';
+      g.fillRect(cx - half + 2, y + 3, half * 2 - 4, 1);
+    }
+    g.fillStyle = 'rgba(7,8,13,0.45)';
+    g.fillRect(cx - half, top + 6, 6, bottom - top - 12);
+    g.fillRect(cx + half - 8, top + 6, 8, bottom - top - 12);
+    // its flanges, riveted
+    for (const fy of [top, bottom - 6]) {
+      g.fillStyle = '#4a5068';
+      g.fillRect(cx - half - 4, fy, half * 2 + 8, 6);
+      g.fillStyle = '#6c7894';
+      g.fillRect(cx - half - 4, fy, half * 2 + 8, 1);
+      g.fillStyle = '#a9b6cc';
+      for (let x = cx - half; x < cx + half; x += 8) g.fillRect(x, fy + 3, 1, 1);
+    }
+  }
+
+  // The Listening Room's receivers: racks along the wall, dials and a scope each, every scope's trace running flat
+  // but for the hiss on it.
+  function drawReceivers(g, world, s, cam) {
+    const y = Math.round(s.y * 8 - cam.y); // the floor
+    const skip = s.skip || [];
+    for (let tx = s.x0; tx + 3 <= s.x1; tx += 4) {
+      if (skip.some(([a, b]) => tx + 3 >= a && tx <= b)) continue;
+      const x = Math.round(tx * 8 - cam.x);
+      if (x < -32 || x > HA.VIEW_W) continue;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y - 48, 30, 48);
+      g.fillStyle = '#2e2a3e';
+      g.fillRect(x + 1, y - 47, 28, 46);
+      // the scope
+      g.fillStyle = '#05140c';
+      g.fillRect(x + 4, y - 43, 22, 12);
+      for (let i = 0; i < 20; i++) {
+        const n = (Math.floor(world.time / 3) * 31 + i * 17 + tx * 7) % 11;
+        g.fillStyle = n === 0 ? '#9af2b0' : '#3fa060';
+        g.fillRect(x + 5 + i, y - 37 + (n === 0 ? -1 : n === 1 ? 1 : 0), 1, 1);
+      }
+      // dials and a row of switches
+      g.fillStyle = '#6c7894';
+      g.fillRect(x + 5, y - 27, 4, 4);
+      g.fillRect(x + 13, y - 27, 4, 4);
+      g.fillRect(x + 21, y - 27, 4, 4);
+      g.fillStyle = '#c9a050';
+      g.fillRect(x + 7, y - 27, 1, 2);
+      g.fillRect(x + 14, y - 26, 2, 1);
+      g.fillRect(x + 23, y - 27, 1, 2);
+      g.fillStyle = '#10121c';
+      for (let i = 0; i < 6; i++) g.fillRect(x + 4 + i * 4, y - 18, 2, 4);
+      g.fillStyle = (Math.floor(world.time / 40) + tx) % 5 ? '#3a2a10' : '#ffb84d';
+      g.fillRect(x + 25, y - 18, 2, 2);
+      g.fillStyle = '#4a4060';
+      g.fillRect(x + 2, y - 8, 26, 1);
+    }
+  }
+
+  // The listener: one of the honour guard, sat at the watch's desk in headphones, writing the same two words.
+  function drawListener(g, world, s, cam) {
+    const spr = HA.art.enemies.guard[0];
+    const x = Math.round(s.x * 8 - cam.x);
+    const y = Math.round(s.y * 8 - cam.y); // the floor
+    if (x < -40 || x > HA.VIEW_W + 40) return;
+    // his stool and him on it, the lower half behind the desk
+    g.save();
+    g.translate(x, y - 6 - spr.h);
+    g.globalAlpha = 0.85;
+    g.drawImage(spr.img, -Math.floor(spr.w / 2), 0);
+    g.globalAlpha = 1;
+    g.fillStyle = 'rgba(7,8,13,0.25)';
+    g.fillRect(-Math.floor(spr.w / 2), 0, spr.w, spr.h);
+    // the headphones
+    g.fillStyle = '#10121c';
+    g.fillRect(-4, -1, 9, 1);
+    g.fillRect(-5, 0, 2, 4);
+    g.fillRect(4, 0, 2, 4);
+    g.fillStyle = '#6c7894';
+    g.fillRect(-5, 1, 1, 2);
+    g.fillRect(5, 1, 1, 2);
+    g.restore();
+    // the desk, and his hand on it, moving along a line and back
+    g.fillStyle = '#10121c';
+    g.fillRect(x - 2, y - 12, 26, 12);
+    g.fillStyle = '#4a3020';
+    g.fillRect(x - 1, y - 11, 24, 3);
+    g.fillStyle = '#3a2418';
+    g.fillRect(x, y - 8, 2, 8);
+    g.fillRect(x + 20, y - 8, 2, 8);
+    g.fillStyle = '#e6e2d6';
+    g.fillRect(x + 4, y - 13, 12, 2);
+    const t = world.time % 90;
+    const hand = t < 60 ? Math.floor(t / 6) : 10 - Math.floor((t - 60) / 3);
+    g.fillStyle = '#c9a050';
+    g.fillRect(x + 5 + hand, y - 15, 2, 2);
+    g.fillStyle = '#10121c';
+    g.fillRect(x + 6 + hand, y - 14, 1, 2);
+  }
+
   // A burst main's steam, wall to wall, where a door would be (the Boiler Stair's Main 3): white billows, rolling.
   // The Condenser's ladder well, while Main 3 is open: its steam rolls down the ladder out of the roof, thinning as
   // it falls. Both valves shut (or the crew come up, in a game saved before the Condenser), it's gone.
@@ -2708,6 +2930,7 @@
 
   function drawDoor(g, world, d, cam) {
     if (d.legend.steam) return drawSteam(g, world, d, cam);
+    if (d.legend.chained) return drawChained(g, world, d, cam);
     if (d.legend.wreck) return drawWreck(g, world, d, cam);
     if (d.legend.crane) return drawStack(g, world, d, cam);
     if (d.legend.cracked) return drawCracked(g, world, d, cam);
@@ -2749,6 +2972,53 @@
       g.fillStyle = (c.ty + Math.floor(world.time / 30)) % 2 ? '#ffb84d' : '#3a2a10';
       g.fillRect(x + 1, y + 3, 6, 2);
     }
+  }
+
+  // The Winding House's door at the Crew Camp (the sixth batch of new rooms): riveted plate, a chain wound twice
+  // across it, and a padlock. The crew have it off in the morning.
+  function drawChained(g, world, d, cam) {
+    const xs = d.cells.map((c) => c.tx);
+    const ys = d.cells.map((c) => c.ty);
+    const x = Math.min(...xs) * 8 - Math.round(cam.x);
+    const y = Math.min(...ys) * 8 - Math.round(cam.y);
+    const w = (Math.max(...xs) - Math.min(...xs) + 1) * 8;
+    const h = (Math.max(...ys) - Math.min(...ys) + 1) * 8;
+    g.fillStyle = '#10121c';
+    g.fillRect(x, y, w, h);
+    g.fillStyle = '#4a5068';
+    g.fillRect(x + 1, y, w - 2, h);
+    g.fillStyle = '#6c7894';
+    g.fillRect(x + 1, y, w - 2, 1);
+    g.fillRect(x + 1, y + Math.floor(h / 2), w - 2, 1);
+    g.fillStyle = '#a9b6cc';
+    for (const ry of [y + 3, y + h - 3]) {
+      g.fillRect(x + 3, ry, 1, 1);
+      g.fillRect(x + w - 4, ry, 1, 1);
+    }
+    // the chain, in links, corner to corner both ways
+    for (let i = 0; i <= 12; i++) {
+      const k = i / 12;
+      for (const [ax, bx] of [[x, x + w], [x + w, x]]) {
+        const lx = Math.round(ax + (bx - ax) * k);
+        const ly = Math.round(y + 4 + (h - 8) * k);
+        g.fillStyle = '#10121c';
+        g.fillRect(lx - 2, ly - 1, 4, 3);
+        g.fillStyle = i % 2 ? '#a9b6cc' : '#6c7894';
+        g.fillRect(lx - 1, ly, 2, 1);
+      }
+    }
+    // the padlock, where they cross
+    const px = x + Math.floor(w / 2);
+    const py = y + Math.floor(h / 2) + 2;
+    g.fillStyle = '#10121c';
+    g.fillRect(px - 4, py - 2, 8, 8);
+    g.fillRect(px - 3, py - 6, 6, 5);
+    g.fillStyle = '#c9a050';
+    g.fillRect(px - 3, py - 1, 6, 6);
+    g.fillStyle = '#4a5068';
+    g.fillRect(px - 1, py - 5, 2, 3);
+    g.fillStyle = '#10121c';
+    g.fillRect(px - 1, py + 1, 2, 2);
   }
 
   // The door the Pruner welded shut on Sorrel (3.13): a plate cut to fit, its seams beaded with the Pruner's welds,

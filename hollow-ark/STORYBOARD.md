@@ -873,7 +873,7 @@ Cody's answers (Oct 30): Mara is the hero's sister, revealed slowly through drea
 - [x] The rest of the audit's story fixes: Shim on every path (4: on the camp's line phone on the truth path, and the morning with his father, lock 3a), the villains set up early (6: "THIS IS IVO MARRANT, STEWARD OF THE ARK" in his broadcast; Hester Vale names herself and makes the Bloom's case in the Vat House; Abel at the end of the Steward's lists, and the hero knows the name in his furnace if they read them), the small payoffs (7: Gasket's brother is Cleat, named at lights-out and in the Homecoming epilogue; the Homecoming epilogue opens the seed vault, gives Dunn's girl her star if Dunn climbed, and returns Odell's boots, with three new pictures: `seeds`, `star`, `odell`)
 - [x] Length: the tram home after the Ballast (5; design and as built below, "The tram home")
 - [x] Length: Wick's longer escort (8; design and as built below, "Wick's longer escort")
-- [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms; fourth batch built: the Condenser and the Guard Room, each with a shortcut back since 0.3.23; fifth batch built: the Mash Floor and the Dock's memory hall (below, "New rooms on the main path")
+- [ ] Length: new rooms on the main path (the Ballast and the Labyrinth first). First batch built: the Watch Gallery and Odell's Test Tank; second batch built: the Muster and the Pump Heads; third batch built: the Stokers' Bunks and the Steward's Rooms; fourth batch built: the Condenser and the Guard Room, each with a shortcut back since 0.3.23; fifth batch built: the Mash Floor and the Dock's memory hall; sixth batch built: the Winding House and the Listening Room, each in place of a ladder (below, "New rooms on the main path")
 - [x] Length: Sorrel (9, with lock 3b; design and as built below, "Sorrel")
 - [x] Length: the other side quests (design below, "The other side quests"). Hasp's boy built (0.3.17), Wick's remedy (0.3.18), Pod 1130 (0.3.19), the new stoker (0.3.20), the last watchman (0.3.21): all six of the brief's side quests, with Sorrel's (0.3.14)
 
@@ -1024,6 +1024,57 @@ Each adds two or three minutes: the Mash Floor on every path, the Dock on the tr
 - **Tests:**
   - The playthroughs go to the Mash Floor, up into the Vat House (a fall in Wick's fight comes back at the Mash Floor's pod), lift the bar, and walk the Dock between the First Night and the Gardens hall.
   - The browser check plays the barred door and the bag, the hatch, the humming and its sour layer, the drain into Wick's fight and shut through it, the bar lifted after; and the Dock's two scenes, the way out into the Gardens hall, its checkpoint, and no ladder up there.
+
+
+**Sixth batch (design, 3.25).** Counted by screens for each minute of the time budget, after the fifth batch the Tower (13 screens for 30 minutes) and the Spine (17 for 35) are the thinnest again. Both their last stretches are a ladder: the camp's ladder up to the Tower Lift, and the Bridge Stair's ladder up into the Helm. Each new room takes the place of one, so each is the way on, not a spur, and neither leaves anything to walk back through.
+
+11. **The Winding House** (Spine, 520, −64; 40x45, two screens tall, east of the Crew Camp and the Tower Lift). The engine that hauls the Tower Lift, running with nothing on it.
+   - **The door:** the camp's ladder goes. At the camp's east end, a door stencilled "WINDING HOUSE" is chained shut (`windingDoor`, open once `flags.campDone`). Before the night, at the chain: Gasket's "NOBODY GOES INTO THE TOWER TIRED. REST FIRST. THAT MEANS YOU." (or the hero's "THE CREW ARE STOPPING HERE FOR THE NIGHT. SO AM I."). In the morning the crew have had the chain off: "UP. EVERYONE UP. THE CHAIN'S OFF THE WINDING HOUSE DOOR. THE TOWER LIFT'S UP THROUGH THERE."
+   - **The room:** the winding drum, as tall as the room, its cable running up through the roof to the Tower. The engine's cranks slam in and out of the walls (pistons), fast, because there's no load on them. Steam vents go up between them. Heat slugs, steam drones, and a Bloomsworn climber.
+   - **The notice** (log `winding`): "WINDING HOUSE · TOWER LIFT. BY THE STEWARD'S ORDER, THE CLUTCH STAYS OUT AND THE CAR STAYS UP. IT COMES DOWN WHEN THE TOWER SENDS DOWN STOKERS, AND GOES BACK UP EMPTY." So this lift is how the stokers came to the fires.
+   - **The clutch:** at the top, by the way out onto the Tower Lift's deck. The hero throws it in (`flags.winding`): the drum takes the load, and the cranks slow to a steady beat. "THE CRANKS SLOWED. THE CABLE WENT TIGHT, AND A LONG WAY UP, SOMETHING HEAVY STARTED DOWN."
+   - **On the deck:** the crew are there, come up behind the hero, and count themselves off as before. The Tower Lift runs once the clutch is in and the verdict is said. Without the clutch: "THE CABLE'S SLACK. THE CLUTCH IS OUT, BACK IN THE WINDING HOUSE."
+   - **Old saves:** a game saved past the camp's night before 0.3.25 finds the chain off; one saved in the Tower finds the clutch in.
+12. **The Listening Room** (Tower, 440, −146; 80x23, west of the Bridge Stair's landing and the Helm). Where the Tower's dish listens to the world below. On the landing, the Steward sends the hero round through it.
+   - **On the landing:** after "COME UP, THEN. I'VE WAITED FORTY-TWO YEARS FOR SOMEONE WORTH TALKING TO.", he adds: "NOT BY THE LADDER. COME THROUGH MY LISTENING ROOM. I WANT YOU TO HEAR WHAT I HEAR." The Helm's hatch is dogged down from above ("DOGGED DOWN FROM ABOVE. HE MEANT IT."), and the landing's west end opens into the room.
+   - **The way through:** in at its east end, low; west along the floor, between racks of receivers with their scopes running flat; up the dish's feed tower at the west end, with the dish outside the windows, pointed down at the pale dot; and back east under the roof to the Helm's back door. Turrets and the honour guard.
+   - **His voice, coming in:** "LISTEN. THAT'S THEM. THAT'S HOW QUIET THEY ARE." The music stops, as in the Dome.
+   - **The standing order** (log `listening`): "LISTENING WATCH · STANDING ORDER, YEAR 290. THE DISH LISTENS TO THE WORLD BELOW, DAY AND NIGHT. LOG WHAT YOU HEAR. LOG THE SILENCE TOO: A SETTLED WORLD THAT KEEPS THIS QUIET IS A WORLD THAT IS WAITING FOR US. I KEPT THIS WATCH ALONE FOR NINETEEN YEARS. NOW YOU KEEP IT. I. MARRANT."
+   - **The listener:** one of the honour guard, at the desk in headphones, writing. He doesn't fight, and he doesn't look up: "HE'S WRITING THE SAME TWO WORDS. HE DIDN'T LOOK UP."
+   - **The tape** (a log, `tape`): the printer's tape, spilled in loops across the floor. "ONE LINE A DAY. DAY 1, YEAR 271: NOTHING HEARD." "THE FIRST NINETEEN YEARS ARE IN ONE HAND. HIS, I THINK. THEN THE GUARD'S, ONE AFTER ANOTHER." "DAY 14,975: NOTHING HEARD." The journal: "…FORTY-ONE YEARS OF TAPE, ONE LINE A DAY: NOTHING HEARD. HE THINKS THE SILENCE IS SOMEONE WAITING."
+   - **Into the Helm:** the speech starts as before. After the hero's "I'VE SEEN THE WORLD FROM HIS DOME. THERE'S NO ONE THERE TO ARRIVE STRONG FOR.", a hero who read the tape thinks: "HIS OWN WATCH HAS WRITTEN IT DOWN EVERY DAY FOR FORTY-ONE YEARS. NOTHING HEARD."
+   - **The hatch** opens once he has spoken (`flags.stewardSeen`), so the stair's ladder is the way down again. A game saved past his speech before 0.3.25 finds it open.
+
+Each adds two or three minutes on every path but the Deserter's. Neither is on the run for the sleds. The playthroughs climb the Winding House and throw the clutch, and go round by the Listening Room. The browser check finds the chain on before the night and off after, plays the notice and the clutch, and finds the Tower Lift dead without it; and finds the ladder dogged, plays the Steward's line, the room's voice, the listener and the tape, goes in by the Helm's back door, hears the payoff, and finds the hatch open after the speech.
+
+**As built (sixth batch, 0.3.25).**
+- **The Crew Camp** (`areas/spine.js`):
+  - The ladder `a` (scene `campLadder`) is gone. The east wall is open at rows 15–18, with the chained door `D` (`windingDoor`, columns 35–36, `chained`, open once `flags.campDone`) in the opening.
+  - Stencilled "WINDING / HOUSE →" over it, on two lines so it clears the crew lift's shaft.
+  - The trigger `windingShut` (columns 33–36, from `camp` until `campDone`) stays clear of Toller's stitch.
+- **The Tower Lift:** its hatch `e` down to the camp is gone, and its east wall is open at rows 15–18, onto the Winding House's deck. The lift `Z` is lit once the verdict is said and the clutch is in (or the hero is already up the Tower, `flags.towerUp`).
+- **`winding-house`** (520, −64, 40x45):
+  - In at rows 38–41 from the camp; out at rows 15–18 onto the Tower Lift's deck, over a ledge (row 19, columns 0–9).
+  - The notice `T` (log `winding`) by the way in. The clutch `K` (a log that runs `clutch`, there until `flags.winding`) at the top, by the way out, with the `lever` prop.
+  - The drum (`drum`, a new live prop in `scenery.js`): the cable slack and swaying with the clutch out, taut and gold and winding with it in.
+  - Five rams, all on a 120-frame beat: two across the floor (rows 34 and 31), one higher (row 28), and two down from the roof (columns 14 and 22). With the clutch in they all slow to 200 frames, at once and on every later visit (`HA.story.enterRoom` in `story/spine.js`).
+  - The climb: catwalks going up east (rows 39, 36, 33, 30) to a steam vent up the east wall (columns 34–37), then west along the top catwalk (row 8) and down onto the deck ledge. Heat slugs, a Bloomsworn climber and two steam drones.
+  - The trigger `windingIn` on the way in, the first time.
+- **The Spine's story** (`story/spine.js`): the scenes `windingShut`, `windingIn` and `clutch` (`flags.winding`, a journal line). The morning's line and lead name the Winding House. The Tower Lift (`towerLift` in `story/tower.js`) won't go up with the clutch out.
+- **The Bridge Stair** (`areas/tower.js`): the landing's west wall is open at rows 5–8, stencilled "← LISTENING WATCH". The hatch `a` runs `helmLadder`, which refuses ("DOGGED DOWN FROM ABOVE. HE MEANT IT.") until `flags.stewardSeen`.
+- **`listening-room`** (440, −146, 80x23, no music):
+  - In at rows 18–21 from the landing, east end; out at rows 5–8 into the Helm's west end.
+  - The floor runs west between racks of receivers (`receivers`, a new live prop: scopes on every fourth column, running flat, with gaps for the pedestals, the listener's desk and the tape). Two pedestals (columns 28–29 and 54–55) to hop.
+  - The listener (`listener`, a guard in headphones at a desk, his hand moving) at column 39; the tape (`tape`, a static prop: printer, loops, a heap) at columns 43–50, read by the log `l` (scene `listenTape`); the standing order `T` (log `listening`) at column 64.
+  - The dish (`dish`, a static prop: the window, stars, the pale world, the bowl and its feed horn) at the west end, where three catwalks climb to the upper floor (row 9). Back east under the roof to the Helm.
+  - Turrets on the upper floor and in the roof; two of the honour guard, one on each floor.
+  - The triggers `listenIn` (on the way in) and `listener` (by his desk).
+- **The Helm:** its west wall is open at rows 15–18. The hatch `e` down to the stair opens once `flags.stewardSeen`.
+- **The Tower's story** (`story/tower.js`): the Steward's new line in `shutterBolt`; the scenes `listenIn`, `listener` and `listenTape` (`flags.tapeRead`, a journal line the first time); the speech's payoff for a hero who read the tape. The crew come in behind the hero "by the Listening Room".
+- **`drawDoor`** draws a `chained` door: a plate, the chain across it, a padlock.
+- **Tests:**
+  - The playthroughs climb the Winding House, throw the clutch, and go round by the Listening Room, reading the tape.
+  - The browser check finds the camp's door chained before the night and open after, hears the morning's line, plays the notice, the clutch and the slowed rams, finds the Tower Lift dead with the clutch out, and finds the Helm's hatch dogged. It plays the Steward's new line, the room's voice with no music, the listener, the tape and the standing order, goes in by the Helm's back door into the speech and its payoff, and takes the two Gasket-lost games in by that door too.
 
 How to build lock 1:
 - Put the two pipe rooms on the grid in free space next to the station (440, 207) and the Spine Foot (480, 185). Rooms join only at their sides, so use a floor hatch or ladder where the shapes don't line up, as the Spine does.

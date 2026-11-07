@@ -14,6 +14,7 @@
   const NAV = '#b8f4ff'; // the Navigator
   const COUNT = '#5fd4e8'; // the Wardens, and the Key
   const STEWARD = '#c9d6e8';
+  const LOG = '#b8f4ff'; // something read off a wall, or a tape
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
   const steward = (text) => say('THE STEWARD', text, STEWARD);
@@ -27,6 +28,11 @@
     standing: {
       title: 'HONOUR GUARD · STANDING ORDERS',
       text: "BETWEEN WATCHES THE GUARD STANDS IN ITS RACKS ON A FULL DOSE. IT WAKES ON THE STEWARD'S WORD, OR ON THE BELL. AT NIGHT THE BULKHEAD IS BOLTED FROM HERE: NOTHING COMES UP FROM THE SPINE AFTER DARK.",
+    },
+    // The Listening Room, between the Bridge Stair's landing and the Helm (the sixth batch of new rooms)
+    listening: {
+      title: 'LISTENING WATCH · STANDING ORDER, YEAR 290',
+      text: 'THE DISH LISTENS TO THE WORLD BELOW, DAY AND NIGHT. LOG WHAT YOU HEAR. LOG THE SILENCE TOO: A SETTLED WORLD THAT KEEPS THIS QUIET IS A WORLD THAT IS WAITING FOR US. I KEPT THIS WATCH ALONE FOR NINETEEN YEARS. NOW YOU KEEP IT. I. MARRANT.',
     },
     daybook: {
       title: "THE STEWARD'S DAYBOOK · YEAR 312",
@@ -101,6 +107,10 @@
       const up = world.def.id === 'tower-lift';
       if (up && !f.verdict) {
         yield me("IT'S THE CREW'S LIFT. I'M NOT GOING UP WITHOUT THEM.");
+        return;
+      }
+      if (up && !f.winding && !f.towerUp) {
+        yield me("THE CABLE'S SLACK. THE CLUTCH IS OUT, BACK IN THE WINDING HOUSE.");
         return;
       }
       if (f.scuttle) return;
@@ -424,13 +434,49 @@
       HA.audio.play('intercom');
       yield { wait: 16 };
       yield steward("COME UP, THEN. I'VE WAITED FORTY-TWO YEARS FOR SOMEONE WORTH TALKING TO.");
+      yield steward('NOT BY THE LADDER. COME THROUGH MY LISTENING ROOM. I WANT YOU TO HEAR WHAT I HEAR.');
+      HA.audio.play('intercom');
       world.save();
     },
 
-    // Up the ladder into the Helm, the crew behind.
+    // The Listening Room (the sixth batch of new rooms): his voice, coming in, over the receivers' hiss.
+    *listenIn(world) {
+      world.state.flags.listenSeen = true;
+      yield { wait: 30 };
+      yield me('RECEIVERS, RACK AFTER RACK, ALL HISSING. THE SCOPES RUN FLAT.');
+      HA.audio.play('intercom');
+      yield { wait: 16 };
+      yield steward("LISTEN. THAT'S THEM. THAT'S HOW QUIET THEY ARE.");
+      HA.audio.play('intercom');
+    },
+    // The listener, at his desk: one of the guard, in headphones, writing.
+    *listener(world) {
+      world.state.flags.listenerSeen = true;
+      yield me("ONE OF HIS GUARD, IN HEADPHONES, WRITING. HE'S WRITING THE SAME TWO WORDS. HE DIDN'T LOOK UP.");
+    },
+    // The tape: forty-one years of the watch, one line a day.
+    *listenTape(world) {
+      const f = world.state.flags;
+      const first = !f.tapeRead;
+      f.tapeRead = true;
+      HA.audio.play('terminal');
+      yield say('THE TAPE', 'ONE LINE A DAY. DAY 1, YEAR 271: NOTHING HEARD. DAY 2: NOTHING HEARD.', LOG);
+      if (first) yield me("THE FIRST NINETEEN YEARS ARE IN ONE HAND. HIS, I THINK. THEN THE GUARD'S, ONE AFTER ANOTHER.");
+      yield say('THE TAPE', 'DAY 14,975: NOTHING HEARD.', LOG);
+      if (!first) return;
+      yield me("THE WORLD IS DARK. I'VE SEEN IT FROM THE DOME. THERE'S NOBODY DOWN THERE TO HEAR.");
+      S.addStory(world, 'THE STEWARD SENT ME UP TO THE HELM THROUGH HIS LISTENING ROOM. FORTY-ONE YEARS OF TAPE, ONE LINE A DAY: NOTHING HEARD. HE THINKS THE SILENCE IS SOMEONE WAITING.');
+    },
+
+    // The ladder up into the Helm: dogged down from above until the Steward has had his say (he sends the hero
+    // round by the Listening Room); the way down again after.
     *helmLadder(world) {
       const f = world.state.flags;
-      if (!f.helmSeen) yield me("THE HELM'S UP THERE. SO IS HE.");
+      if (!f.stewardSeen) {
+        HA.audio.play('clamp');
+        yield me('THE HATCH TO THE HELM. DOGGED DOWN FROM ABOVE. HE MEANT IT.');
+        return;
+      }
       f.helmSeen = true;
       HA.audio.play('clamp');
       yield { fade: 'out', frames: 20 };
@@ -463,7 +509,7 @@
         b.facing = 1;
         yield { wait: 30 };
         yield steward('COME IN. ALL OF YOU. YOU CLIMBED A LONG WAY TO STAND IN MY ROOM.');
-        // the crew come up the ladder behind the hero
+        // the crew come in behind the hero, by the Listening Room
         HA.audio.play('clamp');
         yield { fade: 'out', frames: 20 };
         placeCrew(world, HELM_AT, 19);
@@ -472,6 +518,7 @@
         b.facing = -1;
         yield steward('WE ARE NOT LOST. WE ARE LATE. LATENESS IS FORGIVEN IF YOU ARRIVE STRONG.');
         if (f.domeSeen) yield me("I'VE SEEN THE WORLD FROM HIS DOME. THERE'S NO ONE THERE TO ARRIVE STRONG FOR.");
+        if (f.tapeRead) yield me('HIS OWN WATCH HAS WRITTEN IT DOWN EVERY DAY FOR FORTY-ONE YEARS. NOTHING HEARD.');
         yield steward('I HAVE KEPT FOUR THOUSAND SLEEPERS SAFE ON A SHIP THAT WANTS THEM DEAD.');
         yield steward('YOU HAVE KEPT A VILLAGE. TELL ME AGAIN WHO THE MONSTER IS.');
         yield { wait: 30 };
@@ -832,6 +879,7 @@
   function enterHelm(world) {
     const s = world.state;
     const f = s.flags;
+    f.helmSeen = true;
     if (f.overgrown && !s.ending) {
       // a fall (or a game left) in the Overgrown fight starts it again
       placeCrew(world, HELM_AT, 19);

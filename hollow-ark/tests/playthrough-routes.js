@@ -188,6 +188,11 @@ const spine = {
       if (await r.get('HA.ui.world.state.people.rivet === "unchain"')) await r.boss('reactor-throat', 'HA.ui.world.state.people.rivet === "freed"', { enter: 'PT.goCol(12)' });
       await r.to('crew-camp');
     }
+    // The camp's way on is the Winding House (the sixth batch of new rooms): up through the Tower Lift's engine,
+    // and the clutch in at the top, by the way out onto the lift's deck.
+    await r.to('winding-house');
+    await r.do('PT.read("winding")');
+    await r.do('PT.read("clutch")');
     await r.to('tower-lift'); // the crew's verdict
   },
 };
@@ -214,6 +219,9 @@ const tower = {
     await r.to('observation-dome');
     await r.to('garden-gallery'); // the Gardener
     await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter
+    // The Helm's hatch is dogged down: the Steward sends the hero round by his Listening Room (the sixth batch).
+    await r.to('listening-room');
+    await r.do('PT.read("listenTape")');
     await r.to('helm');
     await r.boss('helm', 'HA.ui.world.state.people.steward');
   },

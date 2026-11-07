@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.24-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.25-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.24-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.25-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,12 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.25: the Winding House and the Listening Room
+
+- **Two new rooms on the main path, one in the Engine Spine and one in the Command Tower.** Each adds a few minutes. Neither one is a dead end: you leave each by a different door from the one you came in by.
+- **The Winding House.** The Crew Camp's ladder up to the Tower Lift is gone. In its place is a chained door marked WINDING HOUSE, and in the morning the chain is off. Inside is the Tower Lift's engine, running flat out with nothing on it. Cranks drive rams across the floor and down from the roof, and you climb past them up the side of the drum. The Steward's order on the wall says the clutch stays out. Throw it in at the top, and the cranks slow and the cable goes tight. The top catwalk leads out onto the Tower Lift's deck. The car comes down to meet you, and the crew are already waiting for it.
+- **The Listening Room.** The Helm's hatch above the Bridge Stair is dogged down from above. The Steward sends you round by his Listening Room instead: racks of receivers, all hissing, and a dish pointed at the world below. One of his guard sits there in headphones, writing. There's a tape, one line a day for forty-one years, and his standing order. Climb the dish's feed tower and go along under the roof to the Helm's back door. If you read the tape, you have one more thing to say to him at the Helm. After his speech the hatch is open again, and it's the short way down.
 
 ## 0.3.24: the Mash Floor and the Dock
 
