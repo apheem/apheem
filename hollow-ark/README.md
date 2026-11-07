@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.29-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.30-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.29-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.30-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,12 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.30: the Relay Hall and the Heat Exchanger
+
+- **Two new rooms on the main path, one in the Tower and one in the Flooded Ballast.** Each adds a few minutes. Each is a loop, like the last two: you go out of a room one way and come back into it another, so neither leaves you walking back the way you came.
+- **The Relay Hall.** The Bridge Stair's lower flight is gone, so from its foot the way up is west, into the hall where the Helm Key's orders go out: racks of relays floor to ceiling, all clicking, and the Steward on the intercom telling his guard you're coming. The plate by the door says who the Key answers to. Go west between the racks, up the cable runs at the far end, and back east along the gallery past the board of lines, where three lamps on the Wardens' line are dark. At the gallery's end is the thaw board, a switch for every pod, all down but one. Out the far side, you're on the Bridge Stair's middle landing, and on up as before.
+- **The Heat Exchanger.** The top of the Drain Shaft has fallen in, so the ledge under the Drain's grate is walled in. Go west off it into the warm room where the heating main gives up its heat to the ballast water. Climb down past the coils to the pool at the bottom, where Solder has been taking his baths: a tin tub, a towel, a cup, and his drawings pinned up over the tub. Up the middle and out east, low, you're back in the shaft on a new ledge, and on to the Pump Heads as before. Look at the drawings before you find Solder, and he'll have something to say about it.
 
 ## 0.3.29: the Dose Line and the Intake
 

@@ -39,6 +39,15 @@
       title: "THE STEWARD'S DAYBOOK · YEAR 312",
       text: 'ASKED THE NAVIGATOR FOR ARRIVAL. NOT YET. IT HAS SAID NOT YET FOR TWENTY YEARS. IT IS GIVING ME TIME, AND I WILL NOT WASTE IT. THE GUARD: TWO HUNDRED HANDS. THE GARDENS WILL GIVE ME FOUR HUNDRED MORE. WHOEVER IS DOWN THERE, WE WILL NOT ARRIVE AS BEGGARS.',
     },
+    // The Relay Hall, west of the Bridge Stair's foot (the eleventh batch of new rooms)
+    relays: {
+      title: 'HELM KEY · RELAY HALL',
+      text: 'EVERY ORDER THE KEY GIVES GOES OUT THROUGH THESE RELAYS: TO THE WARDENS, THE TURRETS, THE GATES, THE LIFTS AND THE THAW. THE KEY ANSWERS TO THE HELM. THE HELM ANSWERS TO NAV.',
+    },
+    thaw: {
+      title: 'CRYO · THAW',
+      text: 'A RELAY FOR EVERY POD, FOUR THOUSAND, ALL SET TO SLEEP. TO BE THROWN BY THE HELM KEY, OR BY NAV.',
+    },
   });
 
   // ---- The crew, up the Tower ----
@@ -494,6 +503,36 @@
       if (!first) return;
       yield me("THE WORLD IS DARK. I'VE SEEN IT FROM THE DOME. THERE'S NOBODY DOWN THERE TO HEAR.");
       S.addStory(world, 'THE STEWARD SENT ME UP TO THE HELM THROUGH HIS LISTENING ROOM. FORTY-ONE YEARS OF TAPE, ONE LINE A DAY: NOTHING HEARD. HE THINKS THE SILENCE IS SOMEONE WAITING.');
+    },
+
+    // The Relay Hall (the eleventh batch of new rooms): the Key's relays, clicking with the Steward's orders as the
+    // hero comes up, and the thaw board, where one relay in four thousand is thrown (the hero's, by NAV) and 0418's
+    // is one switch away.
+    *relayIn(world) {
+      world.state.flags.relayIn = true;
+      yield { wait: 20 };
+      yield me("THEY'RE ALL CLICKING. HE'S GIVING ORDERS RIGHT NOW.");
+      HA.audio.play('intercom');
+      yield { wait: 12 };
+      yield steward('GUARD, THE STAIR. TURRETS, THE STAIR. THE SLEEPER IS COMING UP.');
+      HA.audio.play('intercom');
+    },
+    *relayThaw(world) {
+      const s = world.state;
+      const first = !s.logs.thaw;
+      s.logs.thaw = true;
+      HA.audio.play('terminal');
+      const L = S.LOGS.thaw;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      yield me('ONE THROWN, IN FOUR THOUSAND. 0417. MINE.');
+      yield say('THE TAG', 'THAWED YEAR 312. THROWN BY: NAV.', LOG);
+      // The Dome is on the way up: the hero has heard the Navigator by now.
+      if (s.flags.domeSeen) yield me('NAV. THE NAVIGATOR. THE VOICE IN THE DOME.');
+      yield me("0418. MARA'S. ONE SWITCH, AND THE KEY TO THROW IT.");
+      S.addStory(world, "UNDER THE LISTENING ROOM IS THE HELM KEY'S RELAY HALL. EVERY ORDER THE KEY GIVES GOES OUT FROM THERE, THE THAW TOO: A RELAY FOR EVERY POD. ONE IS THROWN, MINE, AND NOT BY THE KEY: BY NAV. MARA'S IS ONE SWITCH AWAY, AND THE KEY IS AT THE HELM.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
     },
 
     // The ladder up into the Helm: dogged down from above until the Steward has had his say (he sends the hero

@@ -1993,6 +1993,177 @@
         HA.font.draw(g, String(i + 1), bx + 15, by + 3, 'rgba(232,240,220,0.75)', { align: 'center', shadow: null });
       }
     },
+    // ---- The eleventh batch of new rooms ----
+    // The Relay Hall's racks, floor to ceiling: relays in rows, their lamps winking, and the cables off the top of each
+    // rack going up through the ceiling to the Helm.
+    relays(g, s, rnd) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const top = s.y0 * 8;
+      const F = s.y * 8;
+      for (let x = x0; x + 26 <= x1; x += 40) {
+        // the cables, up into the ceiling
+        g.fillStyle = '#10121c';
+        for (let c = 4; c < 24; c += 5) g.fillRect(x + c, top - 8, 2, 10);
+        // the rack
+        g.fillStyle = '#10121c';
+        g.fillRect(x, top + 2, 26, F - top - 2);
+        g.fillStyle = '#262a36';
+        g.fillRect(x + 1, top + 3, 24, F - top - 4);
+        for (let y = top + 6; y + 5 <= F - 4; y += 7) {
+          g.fillStyle = '#3a3e4c';
+          g.fillRect(x + 2, y + 5, 22, 1);
+          for (let rx = x + 3; rx + 4 <= x + 24; rx += 5) {
+            g.fillStyle = '#4a4e5e';
+            g.fillRect(rx, y, 4, 4);
+            const r = rnd();
+            g.fillStyle = r < 0.55 ? '#6ad08a' : r < 0.7 ? '#e8b04a' : '#1a1c24';
+            g.fillRect(rx + 1, y + 1, 1, 1);
+          }
+        }
+      }
+    },
+    // The board of lines on the Relay Hall's gallery: a row of lamps for each line the Key gives orders on, every
+    // lamp lit but three on the Wardens' line, the Bailiff's, the Pruner's and the Tallyman's.
+    keylines(g, s) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const top = s.y0 * 8;
+      const F = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, top, x1 - x0, F - top - 4);
+      g.fillStyle = '#1e2230';
+      g.fillRect(x0 + 1, top + 1, x1 - x0 - 2, F - top - 6);
+      const lines = [['WARDENS', 12, [2, 6, 9]], ['TURRETS', 14, []], ['GATES', 10, []], ['LIFTS', 6, []], ['BELL', 1, []]];
+      lines.forEach(([name, n, dark], i) => {
+        const y = top + 4 + i * 10;
+        HA.font.draw(g, name, x0 + 5, y, 'rgba(232,224,200,0.55)', { shadow: null });
+        for (let k = 0; k < n; k++) {
+          const lx = x0 + 54 + k * 10;
+          g.fillStyle = '#10121c';
+          g.fillRect(lx - 1, y, 7, 7);
+          g.fillStyle = dark.includes(k) ? '#262830' : '#e8c060';
+          g.fillRect(lx, y + 1, 5, 5);
+          if (!dark.includes(k)) {
+            g.fillStyle = '#fff0b0';
+            g.fillRect(lx + 1, y + 2, 2, 2);
+          }
+        }
+      });
+    },
+    // The thaw board, at the east end of the gallery: a switch for every pod, all down, asleep, but one. That one is
+    // thrown, and lit, and a tag hangs off it.
+    thawboard(g, s) {
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      const top = s.y0 * 8;
+      const F = s.y * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, top, x1 - x0, F - top - 4);
+      g.fillStyle = '#1a2232';
+      g.fillRect(x0 + 1, top + 1, x1 - x0 - 2, F - top - 6);
+      HA.font.draw(g, 'CRYO · THAW', x0 + 5, top + 3, 'rgba(184,210,230,0.6)', { shadow: null });
+      const gx = x0 + 5;
+      const gy = top + 13;
+      const cols = Math.floor((x1 - x0 - 10) / 4);
+      const rows = Math.floor((F - 18 - gy) / 5);
+      const thrown = [cols - 9, rows - 1];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const on = c === thrown[0] && r === thrown[1];
+          g.fillStyle = '#2e3a50';
+          g.fillRect(gx + c * 4, gy + r * 5, 3, 4);
+          g.fillStyle = on ? '#f2e29a' : '#4a6a8a';
+          g.fillRect(gx + c * 4 + 1, gy + r * 5 + (on ? 0 : 2), 1, 2);
+        }
+      }
+      // the tag on its string, under the thrown switch
+      const tx = gx + thrown[0] * 4 + 1;
+      const ty = gy + thrown[1] * 5 + 4;
+      g.fillStyle = '#c8c0a0';
+      g.fillRect(tx, ty, 1, 4);
+      g.fillStyle = '#10121c';
+      g.fillRect(tx - 13, ty + 4, 27, 10);
+      g.fillStyle = '#d8d0b0';
+      g.fillRect(tx - 12, ty + 5, 25, 8);
+      HA.font.draw(g, '0417', tx + 1, ty + 5, '#3a2a1a', { align: 'center', shadow: null });
+    },
+    // Solder's bath, by the exchange pool: a tin tub, his towel over the main, a chipped cup, steam off the water, and
+    // his drawings pinned up over the tub.
+    bath(g, s, rnd) {
+      const x = s.x * 8 + 4;
+      const F = s.y * 8;
+      // steam off the pool
+      for (let i = 0; i < 26; i++) {
+        g.fillStyle = 'rgba(220,230,226,' + (0.05 + rnd() * 0.1).toFixed(2) + ')';
+        const sx = s.pool[0] * 8 + Math.floor(rnd() * (s.pool[1] - s.pool[0] + 1) * 8);
+        g.fillRect(sx, F - 28 - Math.floor(rnd() * 30), 3 + Math.floor(rnd() * 6), 2);
+      }
+      // the main along the wall, and the towel over it
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 6, F - 50, 56, 6);
+      g.fillStyle = '#a8743a';
+      g.fillRect(x - 6, F - 49, 56, 3);
+      g.fillStyle = '#d89a5a';
+      g.fillRect(x - 6, F - 49, 56, 1);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 37, F - 51, 11, 17);
+      g.fillStyle = '#8a3a3a';
+      g.fillRect(x + 38, F - 50, 9, 15);
+      g.fillStyle = '#6a2a2a';
+      g.fillRect(x + 38, F - 50, 9, 3);
+      g.fillStyle = '#b05a4a';
+      g.fillRect(x + 38, F - 39, 9, 1);
+      g.fillRect(x + 40, F - 35, 1, 1);
+      g.fillRect(x + 44, F - 35, 1, 1);
+      // the drawings, pinned up under the main
+      const sheets = [[x, F - 40], [x + 13, F - 42], [x + 24, F - 39]];
+      sheets.forEach(([px, py], i) => {
+        g.fillStyle = '#10121c';
+        g.fillRect(px - 1, py - 1, 12, 11);
+        g.fillStyle = '#d8d0b4';
+        g.fillRect(px, py, 10, 9);
+        g.fillStyle = '#7a3a3a';
+        g.fillRect(px + 4, py, 1, 1);
+        g.fillStyle = '#4a5a6a';
+        if (i === 1) {
+          // the tram, with the whole Warrens riding it
+          g.fillRect(px + 1, py + 4, 8, 3);
+          g.fillRect(px + 2, py + 7, 1, 1);
+          g.fillRect(px + 7, py + 7, 1, 1);
+          g.fillStyle = '#8a5a3a';
+          for (let k = 0; k < 4; k++) g.fillRect(px + 2 + k * 2, py + 3, 1, 1);
+        } else {
+          // the dates, crossed out
+          for (let k = 0; k < 4; k++) {
+            g.fillRect(px + 1, py + 1 + k * 2, 6 + (k % 2) * 2, 1);
+            g.fillStyle = '#7a3a3a';
+            g.fillRect(px + 1, py + 1 + k * 2, 8, 1);
+            g.fillStyle = '#4a5a6a';
+          }
+        }
+      });
+      // the tub
+      g.fillStyle = '#10121c';
+      g.fillRect(x - 1, F - 14, 36, 14);
+      g.fillStyle = '#7a8088';
+      g.fillRect(x, F - 13, 34, 11);
+      g.fillStyle = '#a8b0b8';
+      g.fillRect(x - 1, F - 14, 36, 2);
+      g.fillStyle = '#4a5a5e';
+      g.fillRect(x + 3, F - 11, 28, 2);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 2, F - 2, 3, 2);
+      g.fillRect(x + 29, F - 2, 3, 2);
+      // the cup
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 39, F - 7, 7, 7);
+      g.fillStyle = '#c8c0b0';
+      g.fillRect(x + 40, F - 6, 5, 6);
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 44, F - 6, 1, 2);
+      g.fillRect(x + 46, F - 5, 1, 3);
+    },
     domeglass(g, s, rnd, T, room) {
       const W = room.pw;
       const top = 16;

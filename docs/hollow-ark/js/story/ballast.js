@@ -9,6 +9,7 @@
   const npcOf = S.npcOf;
   const VOICE = S.VOICE;
   const NAV = '#b8f4ff';
+  const LOG = '#b8f4ff'; // something read off a wall
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
   const ROOMS = new Set(['silt-tank', 'settling-pools', 'dry-pumps', 'valve-hall', 'long-culvert', 'jammed-hatch']); // where Solder walks with the hero, after the Silt Mother (and down to Sorrel's pumps: sorrel.js)
@@ -25,6 +26,15 @@
     valves: {
       title: 'BALLAST CONTROL · YEAR 312',
       text: 'VALVES 1-9 OPENED ON NAVIGATOR AUTHORITY. NO HUMAN COMMAND RECEIVED.',
+    },
+    // The Heat Exchanger (3.30): its plate, and Solder's drawings over the tub.
+    exchanger: {
+      title: 'HEAT EXCHANGER 2',
+      text: 'KEEPS THE BALLAST FROM FREEZING. DO NOT BATHE IN THE EXCHANGE POOL.',
+    },
+    drawings: {
+      title: "SOLDER'S DRAWINGS",
+      text: "PINNED OVER THE TUB: THE KEEL TRAM, MENDED, WITH THE WHOLE WARRENS RIDING IT UP THE SHIP, GASKET AT THE FRONT. UNDER IT, 'ONE DAY', AND TWENTY YEARS OF DATES CROSSED OUT.",
     },
   });
 
@@ -162,6 +172,27 @@
       S.think(world, "WEDGED SHUT FROM THE OTHER SIDE. SOLDER'S CHALK GOES UP THE WALL.", 220);
     },
 
+    // The Heat Exchanger (3.30): warm air, coming in off the Drain Shaft's ledge.
+    *exchangeIn(world) {
+      world.state.flags.exchangeIn = true;
+      S.think(world, 'WARM. THE FIRST WARM AIR SINCE THE WARRENS.', 40);
+    },
+    // Solder's drawings, over the tub by the exchange pool.
+    *solderDrawings(world) {
+      const s = world.state;
+      const first = !s.logs.drawings;
+      s.logs.drawings = true;
+      HA.audio.play('terminal');
+      const L = S.LOGS.drawings;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      yield me('TWENTY YEARS OF ONE DAY.');
+      yield me('HE CAME DOWN HERE TO MAKE IT TODAY.');
+      S.addStory(world, "OFF THE DRAIN SHAFT IS A HEAT EXCHANGER, WARM, WITH A POOL. SOLDER BATHES IN IT. OVER HIS TUB HE'S PINNED DRAWINGS OF THE KEEL TRAM MENDED, THE WHOLE WARRENS RIDING IT UP THE SHIP, AND TWENTY YEARS OF DATES CROSSED OUT UNDER 'ONE DAY'.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
+    },
+
     // 1. Found: Solder, by Pump 3, with the motor and a leg that won't hold him.
     *found(world) {
       const s = world.state;
@@ -183,6 +214,12 @@
         s.flags.toolbagBack = true;
       }
       yield say('SOLDER', 'HERE. MADE IT FOR THE BATH. DON\'T ASK.');
+      // The Heat Exchanger (3.30): a hero who saw his drawings over the tub says so.
+      if (s.logs.drawings) {
+        yield me("I'VE SEEN THE BATH. AND THE DRAWINGS.");
+        yield say('SOLDER', 'THAT WAS PRIVATE.');
+        yield say('SOLDER', '...ONE DAY IS TODAY, THEN. IF THE LEG HOLDS.');
+      }
       // the Foam Sprayer
       if (!p.weapons.some((w) => w.id === 'foam')) {
         p.weapons.push(HA.weapons.make('foam'));
