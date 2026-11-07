@@ -18,6 +18,7 @@
   const say = (who, text, color) => ({ say: who, text, color });
   const me = (text) => ({ say: '', text, color: VOICE });
   const steward = (text) => say('THE STEWARD', text, STEWARD);
+  const RECORDED = 'THE STEWARD, RECORDED'; // his arrival address, on the Arrival Hall's speakers
   const name = (w) => S.callName(w.state);
   const FLOOR = (ty) => (ty - 1) * 8; // a person stands on map row ty
   const has = (world, id) => world.player.weapons.some((w) => w.id === id);
@@ -218,6 +219,33 @@
         shim.follow = true;
         s.flags.shimFollow = true;
       }
+      world.save();
+    },
+
+    // The Arrival Hall (the seventh batch of new rooms): his arrival address, recorded, on a loop over the speakers.
+    *arrivalIn(world) {
+      world.state.flags.arrivalSeen = true;
+      yield { wait: 30 };
+      HA.audio.play('intercom');
+      yield { wait: 16 };
+      yield say(RECORDED, 'PEOPLE OF THE NEW WORLD. DO NOT BE AFRAID. WE HAVE COME A LONG WAY TO KEEP YOU.', STEWARD);
+      yield say(RECORDED, 'STAND WHERE YOU ARE. YOU WILL ALL BE COUNTED.', STEWARD);
+      HA.audio.play('intercom');
+      yield { wait: 20 };
+      yield me("A HALL FOR LANDING DAY. HE'S HAD THEM DRILLING FOR IT.");
+    },
+    // His terms for the new world, on the lectern on the reviewing stand.
+    *arrivalTerms(world) {
+      const f = world.state.flags;
+      const first = !f.termsRead;
+      f.termsRead = true;
+      HA.audio.play('terminal');
+      yield say('THE TERMS', 'TO BE READ ON ARRIVAL. ONE: THE ARK HAS COME, AND ITS STEWARD GOVERNS.', LOG);
+      yield say('THE TERMS', 'TWO: EVERY PERSON IS TO BE COUNTED. THREE: WHOEVER IS COUNTED IS KEPT.', LOG);
+      yield say('THE TERMS', 'FOUR: WHOEVER HIDES IS NOT.', LOG);
+      if (!first) return;
+      yield me("IT'S HOW THE WARDENS KEEP THE WALLS. HE MEANS TO KEEP A WHOLE WORLD THAT WAY.");
+      S.addStory(world, "THE STEWARD'S ARRIVAL HALL: HIS GUARD DRILLING FOR LANDING DAY, AND HIS TERMS FOR THE NEW WORLD ON THE LECTERN. EVERYONE IS TO BE COUNTED, AND WHOEVER HIDES IS NOT KEPT. IT'S HOW THE WARDENS KEEP THE WALLS.");
       world.save();
     },
 
@@ -832,6 +860,11 @@
           const n = place(world, 'shim', 27, 19, null);
           Object.assign(n, { facing: 1, lantern: true, talkable: () => false });
         }
+      }
+      // The Arrival Hall: Shim, in from the Dome behind the hero, if he's still being lied to.
+      if (id === 'arrival-hall' && f.shimFollow) {
+        const n = place(world, 'shim', 3, 42, null);
+        Object.assign(n, { follow: true, lantern: true, talkable: () => false });
       }
       // The Gallery: the Gardener, until her fate is chosen (and after, if she's spared or passed by); Shim with the
       // hero if he's still being lied to.

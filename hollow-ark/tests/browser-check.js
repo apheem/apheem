@@ -1592,11 +1592,28 @@ async function play(browserType, url, label) {
       press('up');
       out.nav = listen().join(' ');
       out.navSpoke = s.flags.navSpoke;
-      // Up the ladder into the Garden Gallery, Shim behind, and west to the Gardener.
-      HA.debug.goto('observation-dome', 32, 18);
+      // The Dome's ladder went (the seventh batch of new rooms): east into the Arrival Hall, Shim behind, the
+      // Steward's address on the speakers and his terms on the lectern, then west off the reviewing stand into the
+      // Garden Gallery, and west to the Gardener.
+      const ah = (out.arrival = {});
+      ah.noLadder = !w().links.some((l) => l.legend.to === 'garden-gallery');
+      HA.debug.goto('observation-dome', 34, 18);
       HA.debug.step(3);
+      for (let i = 0; i < 200 && w().def.id === 'observation-dome'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(40);
+      ah.room = w().def.id;
+      ah.scene = w().scene && w().scene.name;
+      ah.shim = w().npcs.some((n) => n.id === 'shim' && n.follow);
+      ah.said = listen().join(' | ');
+      HA.debug.goto('arrival-hall', 8, 18);
+      HA.debug.step(3);
+      ah.prompt = w().near && w().near.label;
       press('up');
+      ah.terms = listen().join(' | ');
+      ah.read = !!s.flags.termsRead;
+      for (let i = 0; i < 200 && w().def.id === 'arrival-hall'; i++) HA.debug.step(1, { left: true });
       talkThrough();
+      ah.noHatch = !w().links.some((l) => l.legend.to === 'observation-dome');
       out.gallery = { room: w().def.id, shim: w().npcs.some((n) => n.id === 'shim' && n.follow), gardener: w().npcs.some((n) => n.id === 'gardener') };
       HA.debug.goto('garden-gallery', 52, 18);
       for (let i = 0; i < 300 && !w().scene; i++) HA.debug.step(1, { left: true });
@@ -1799,6 +1816,8 @@ async function play(browserType, url, label) {
     expect(tw.dome.scene === 'domeView' && tw.dome.music === null && /NO LIGHTS/.test(tw.dome.said), `the Dome's view went wrong (${JSON.stringify(tw.dome)})`);
     expect(tw.shimScene === 'shimDome' && /WHERE IS MY MOTHER/.test(tw.shimSaid) && tw.fourB === 'TELL HIM THE TRUTH/KEEP LYING' && tw.lied.knows === false && tw.lied.mercy === -1 && tw.lied.follow, `choice 4b went wrong (${tw.shimScene}, ${tw.fourB}, ${JSON.stringify(tw.lied)})`);
     expect(/YOU ARE STILL HERE/.test(tw.nav) && tw.navSpoke, `the Navigator did not speak in the Dome (${tw.nav})`);
+    const ah = tw.arrival;
+    expect(ah.noLadder && ah.room === 'arrival-hall' && ah.scene === 'arrivalIn' && ah.shim && /YOU WILL ALL BE COUNTED/.test(ah.said) && /LANDING DAY/.test(ah.said) && ah.prompt === '{up} READ THE TERMS' && /ITS STEWARD GOVERNS/.test(ah.terms) && /WHOEVER HIDES IS NOT/.test(ah.terms) && /HOW THE WARDENS KEEP THE WALLS/.test(ah.terms) && ah.read && ah.noHatch, `the Arrival Hall went wrong (${JSON.stringify(ah)})`);
     expect(tw.gallery.room === 'garden-gallery' && tw.gallery.shim && tw.gallery.gardener && tw.gardenerScene === 'gardener', `the Garden Gallery went wrong (${JSON.stringify(tw.gallery)}, ${tw.gardenerScene})`);
     expect(/KEEP WICK'S LANCETS/.test(tw.thorn) && /ASKED VERY GOOD QUESTIONS/.test(tw.toShim) && tw.eleven === 'SPARE HER/MAKE HER TAKE HER OWN DOSE/WALK PAST', `the Gardener's offer or choice 11 went wrong (${tw.thorn}, ${tw.eleven}, ${tw.toShim})`);
     expect(tw.gardener.fate === 'spared' && tw.gardener.mercy === 1 && tw.gardener.shimWith && /BRIDGE STAIR/.test(tw.gardener.lead), `choice 11 did not spare the Gardener (${JSON.stringify(tw.gardener)})`);
@@ -1957,6 +1976,9 @@ async function play(browserType, url, label) {
         home: lines('homecoming', { crew: 9, mercy: 9, wardens: free, people: { solder: 'alive', gasket: 'dead', navigator: 'rest' }, flags: { gasketSky: true } }),
         crash: lines('crash', { people: { gasket: 'dead' } }),
         dominion: lines('dominion', { people: { gasket: 'dead' } }),
+        // the Arrival Hall's terms (the seventh batch of new rooms): a card in Dominion only for a hero who read them
+        terms: lines('dominion', { flags: { termsRead: true } }),
+        noTerms: lines('dominion', { flags: { termsRead: false } }),
         overgrown: lines('overgrown', { crew: 4, people: { solder: 'dead', gasket: 'dead' } }),
         branch: HA.endings.afterSteward(eight),
         closed: HA.endings.closedCard(eight, 'crash').map((l) => (Array.isArray(l) ? l[0] : l)).join(' '),
@@ -1966,6 +1988,7 @@ async function play(browserType, url, label) {
     });
     expect(/OLD GASKET NEVER SAW THE SKY/.test(gone.home) && /I TOLD THEM HE WANTED TO/.test(gone.home) && !/BREATHED OUT/.test(gone.home), `the Homecoming epilogue with Gasket lost went wrong (${gone.home})`);
     expect(/TAMP COUNTED THEM AT LIGHTS-OUT NOW/.test(gone.crash) && /THEY BURIED OLD GASKET/.test(gone.dominion) && /BRINE WALKED OUT OF THE HELM ALIVE/.test(gone.overgrown) && /SHE DIDN'T TALK ABOUT IT/.test(gone.overgrown), `the other epilogues with Gasket lost went wrong (${gone.crash} / ${gone.dominion} / ${gone.overgrown})`);
+    expect(/I KEPT HIS TERMS ON THE LECTERN/.test(gone.terms) && /NOBODY TO READ THEM TO/.test(gone.terms) && !/HIS TERMS/.test(gone.noTerms), `Dominion's card for the Arrival Hall's terms went wrong (${gone.terms} / ${gone.noTerms})`);
     expect(gone.branch === 'crash' && /WITHOUT GASKET'S/.test(gone.closed) && gone.hullfolk === 30 && gone.pics, `losing Gasket did not cost a pair of hands, or a place in the count (${JSON.stringify(gone)})`);
 
     // ---- Hasp's boy (3.15), from a save in the Warrens before the climb: Hasp asks, the tally's line, Cotter in his
@@ -2914,6 +2937,25 @@ async function play(browserType, url, label) {
       dock.toast = w().toastText;
       dock.noLadder = !w().links.some((l) => l.legend.to === 'hall-night');
       dock.story = w().state.journal.story.some((t) => /0112, ASKED WHERE WE WERE/.test(t));
+      // The Thaw's hall (the seventh batch of new rooms): out of the Gardens hall's west end (no hatch down now), the
+      // Navigator's 2207 and Cleat's blanket, and out at the bottom into the Helm hall's west end (no ladder up now).
+      const thaw = (out.thaw = {});
+      thaw.noHatch = !w().links.some((l) => l.legend.to === 'hall-helm');
+      HA.debug.goto('hall-gardens', 4, 18);
+      HA.debug.step(3);
+      walk('left', 200);
+      thaw.room = w().def.id;
+      HA.debug.step(30);
+      thaw.scene = w().scene && w().scene.name;
+      thaw.said = listen().join(' | ');
+      HA.debug.goto('hall-thaw', 30, 41);
+      HA.debug.step(5);
+      thaw.pod = w().scene && w().scene.name;
+      thaw.podSaid = listen().join(' | ');
+      thaw.story = w().state.journal.story.some((t) => /CLEAT CAME UP OUT OF THE WALLS/.test(t));
+      walk('right', 200);
+      thaw.out = w().def.id;
+      thaw.noLadder = !w().links.some((l) => l.legend.to === 'hall-gardens');
       HA.debug.goto('hall-helm', 8, 18);
       HA.debug.step(5);
       out.helm = w().scene && w().scene.name;
@@ -3001,6 +3043,8 @@ async function play(browserType, url, label) {
     const dk = deck.dock;
     expect(dk.room === 'hall-dock' && dk.scene === 'hallDock' && /POD 0112/.test(dk.said) && /I OPENED THE DOOR FOR THEM/.test(dk.said) && dk.cradle === 'dockCradle' && /I WATCHED THAT TOO/.test(dk.cradleSaid), `the Dock's memory hall went wrong (${JSON.stringify(dk)})`);
     expect(dk.out === 'hall-gardens' && dk.gardens === 'hallGardens' && dk.check === 'hall-gardens' && /CHECKPOINT/.test(dk.toast) && dk.noLadder && dk.story, `out of the Dock into the Gardens hall, or its checkpoint, went wrong (${JSON.stringify(dk)})`);
+    const th = deck.thaw;
+    expect(th.noHatch && th.room === 'hall-thaw' && th.scene === 'hallThaw' && /WHERE I WOKE UP/.test(th.said) && /POD 2207/.test(th.said) && /A MAN WITH A BLANKET/.test(th.said) && th.pod === 'thawPod' && /HE TOOK THE BOOTS INSTEAD/.test(th.podSaid) && /CLEAT\. GASKET'S BROTHER/.test(th.podSaid) && /THEY STILL COME UP/.test(th.podSaid) && th.story && th.out === 'hall-helm' && th.noLadder, `the Thaw's memory hall went wrong (${JSON.stringify(th)})`);
     expect(deck.wake === 'wakeLog' && /0112\. LEFT/.test(deck.wakeSaid) && /2207\. RULED/.test(deck.wakeSaid) && /CHOOSE TO STAY/.test(deck.wakeSaid) && /THE WATER WAS A QUESTION/.test(deck.wakeSaid), `the wake log went wrong (${deck.wake}, ${deck.wakeSaid})`);
     expect(/YOU ARE STILL HERE/.test(deck.intro) && /NOT YET/.test(deck.intro) && deck.fight.fighting && deck.fight.music === 'navigator' && deck.fight.check === 'sphere' && deck.fight.nodes === 4, `the Navigator's fight did not start (${deck.intro}, ${JSON.stringify(deck.fight)})`);
     expect(deck.fall.room === 'sphere' && /CHECKPOINT/.test(deck.fall.toast) && deck.fall.scene === 'navIntro' && /NOT YET/.test(deck.again) && !/STILL HERE/.test(deck.again) && deck.refight, `a fall in the Navigator's fight did not come back to its checkpoint (${JSON.stringify(deck.fall)}, ${deck.again}, ${deck.refight})`);

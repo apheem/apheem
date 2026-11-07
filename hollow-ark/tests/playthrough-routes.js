@@ -217,6 +217,10 @@ const tower = {
     await r.do('PT.read("guardBolt")');
     await r.do('PT.link("barracks")');
     await r.to('observation-dome');
+    // The Dome's ladder went: east through the Arrival Hall, up by the flagpoles' rings, and the terms on the
+    // lectern (the seventh batch of new rooms).
+    await r.to('arrival-hall');
+    await r.do('PT.read("arrivalTerms")');
     await r.to('garden-gallery'); // the Gardener
     await r.to('steward-rooms'); // the Bridge Stair is shut above: round through his rooms, out above the shutter
     // The Helm's hatch is dogged down: the Steward sends the hero round by his Listening Room (the sixth batch).
@@ -231,6 +235,8 @@ const tower = {
 const deck = {
   name: 'deck',
   async play(r) {
+    // the memory halls, down through the Thaw (the seventh batch of new rooms) to the Helm hall's hatch
+    await r.to('hall-thaw');
     await r.to('sphere');
     await r.boss('sphere', 'HA.ui.world.state.flags.navTurned');
     await r.to('quiet');

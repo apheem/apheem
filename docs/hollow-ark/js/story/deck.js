@@ -195,6 +195,25 @@
       S.addStory(world, 'THEN THE GARDENS, THE YEAR THE BLOOM CAME. THE CHARTER SAYS THE SHIP IS TAKEN APART ON ARRIVAL, TO LIGHT THE FIRST CITY. THE NAVIGATOR DID NOT WANT TO BE A LAMP. IT LET THE BLOOM GROW.');
       world.save();
     },
+    // The Thaw Corridor, the night it woke the Steward (the seventh batch of new rooms).
+    *hallThaw(world) {
+      world.state.flags.hallThaw = true;
+      yield { wait: 30 };
+      yield me('THE THAW CORRIDOR. WHERE I WOKE UP.');
+      yield nav('YEAR 270. POD 2207. I WOKE HIM COLD, AS I WOKE YOU.');
+      yield nav('THE FAMILIES IN THE WALLS ALWAYS CAME UP FOR THE ONES I WOKE. THIS TIME IT WAS A MAN WITH A BLANKET.');
+      world.save();
+    },
+    *thawPod(world) {
+      world.state.flags.thawPod = true;
+      yield { wait: 20 };
+      yield nav('HE TOOK THE BOOTS INSTEAD.');
+      yield nav('THEN HE ASKED ME THE WAY TO THE HELM. I TOLD HIM.');
+      yield me("CLEAT. GASKET'S BROTHER.");
+      yield nav("THE BOY WHO WATCHED YOU WAKE WAS HIS BROTHER'S GRANDSON. THEY STILL COME UP.");
+      S.addStory(world, 'THEN THE THAW CORRIDOR, YEAR 270, THE NIGHT IT WOKE 2207, IVO MARRANT. CLEAT CAME UP OUT OF THE WALLS WITH A BLANKET FOR HIM, AND MARRANT TOOK HIS BOOTS. THE NAVIGATOR TOLD HIM THE WAY TO THE HELM.');
+      world.save();
+    },
     *hallHelm(world) {
       world.state.flags.hallHelm = true;
       yield { wait: 30 };
