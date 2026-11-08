@@ -525,6 +525,34 @@ async function play(browserType, url, label) {
       bay.scene = w().scene && w().scene.name;
       bay.said = listenAll();
       bay.story = s.journal.story[s.journal.story.length - 1];
+      // The Purge Burners (the thirteenth batch of new rooms, 0.3.32): a slab cuts the bay's east side in two, so the
+      // climb from its floor to the troughs is gone. From 0391's cradle, east along the floor and out low into Bay 4's
+      // burners: the thought, the plate, the locked lever with its lines and journal line, and back west along the fuel
+      // main, out onto the bay's new ledge above the slab.
+      const burn = (out.burn = {});
+      burn.slab = [22, 26, 29, 33, 37].every((x) => w().room.tile(x, 31) !== 0) && [23, 26, 28].every((x) => w().room.tile(x, 30) === 0);
+      HA.debug.goto('dark-bay', 33, 41);
+      for (let i = 0; i < 200 && w().def.id === 'dark-bay'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(20, { right: true });
+      HA.debug.step(160);
+      burn.room = w().def.id;
+      burn.thought = w().barks.map((b) => b.text).join(' ');
+      HA.debug.goto('burners', 5, 18);
+      HA.debug.step(5);
+      burn.plateLabel = w().near && w().near.label;
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      burn.plate = listenAll();
+      HA.debug.goto('burners', 17, 5);
+      HA.debug.step(5);
+      burn.leverLabel = w().near && w().near.label;
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      burn.lever = listenAll();
+      burn.story = s.journal.story[s.journal.story.length - 1];
+      for (let i = 0; i < 300 && w().def.id === 'burners'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(20);
+      burn.out = [w().def.id, Math.round(w().player.x / 8), Math.round((w().player.y + w().player.h) / 8)].join(',');
       HA.debug.goto('dark-bay', 34, 18);
       for (let i = 0; i < 200 && w().def.id === 'dark-bay'; i++) HA.debug.step(1, { right: true });
       HA.debug.step(10);
@@ -599,6 +627,8 @@ async function play(browserType, url, label) {
     expect(mash.barred === 'vatBarred' && /WICK'S BAG/.test(mash.bag) && mash.shut && /CLIMB DOWN/.test(mash.hatch) && /^mash-floor,2[78]$/.test(mash.down), `the barred Vat House door, Wick's bag or the mash hatch went wrong (${JSON.stringify(mash)})`);
     const bay = gd.bay;
     expect(bay.gantry === 11 && bay.room === 'dark-bay' && /NO LIGHTS/.test(bay.thought) && /READ/.test(bay.label) && /GROWS ON ME/.test(bay.notes) && bay.scene === 'motherBed' && /MOTHER BED/.test(bay.said) && /STILL IN THERE/.test(bay.said) && /WOKEN, LIKE ME/.test(bay.said) && /0391/.test(bay.story) && bay.out === 'mash-floor,19', `the Dark Bay went wrong (${JSON.stringify(bay)})`);
+    const pb = gd.burn;
+    expect(pb.slab && pb.room === 'burners' && /ROWS OF THEM, UNDER BAY 4/.test(pb.thought) && /READ/.test(pb.plateLabel) && /BURN IT TO THE DECK/.test(pb.plate) && /PULL THE PURGE LEVER/.test(pb.leverLabel) && /ASKED YEAR 151 · AUTHORITY: NAV · NOT YET/.test(pb.lever) && /WHEN IT WAS ONE BED/.test(pb.lever) && /SAME AS ON MY THAW/.test(pb.lever) && /PURGE BURNERS/.test(pb.story) && /^dark-bay,3\d,29$/.test(pb.out), `the Purge Burners went wrong (${JSON.stringify(pb)})`);
     expect(mash.hum === 'mashHum' && mash.sour === 'mashSour' && mash.layers === 2 && /^vat-house,3[45]$/.test(mash.up) && mash.scene === 'vatHouse' && mash.drainShut, `the Mash Floor, or the vat drain up into Wick's fight, went wrong (${JSON.stringify(mash)})`);
     expect(mash.drainAfter && /LIFT THE BAR/.test(mash.barLabel) && /CAME UP EASY/.test(mash.barSaid) && mash.lifted, `the bar was not lifted from the Vat House's side after Wick (${JSON.stringify(mash)})`);
     expect(gd.scatter && gd.grenade, 'the Scatter Launcher was not picked up, or threw no grenade');
@@ -819,6 +849,30 @@ async function play(browserType, url, label) {
       out.bolt = { shut: !w().doors.find((d) => d.id === 'dockBolt').open };
       at('muster', 32, 18);
       out.bolt.hatch = w().links.some((l) => l.legend.to === 'lifeboat-dock');
+      // Lock 2 (the thirteenth batch of new rooms, 0.3.32): the Muster's ladder comes down onto the dock's landing, which a
+      // bulkhead shuts off from the rest of the upper floor. East out of it into the lock: the thought, the register,
+      // the port with its lines and journal line, and out west, low, into the dock's lower hall by the Purser's boat.
+      const lk = (out.lock = {});
+      at('lifeboat-dock', 34, 18);
+      lk.bulkhead = [3, 10, 18].every((y) => w().room.tile(29, y) !== 0 && w().room.tile(30, y) !== 0);
+      for (let i = 0; i < 200 && w().def.id === 'lifeboat-dock'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(20, { right: true });
+      HA.debug.step(160);
+      lk.room = w().def.id;
+      lk.thought = w().barks.map((b) => b.text).join(' ');
+      lk.registerLabel = at('launch-lock', 5, 18);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      lk.register = hear();
+      lk.portLabel = at('launch-lock', 34, 38);
+      HA.debug.step(1, { up: true });
+      HA.debug.step(1);
+      lk.port = hear();
+      lk.story = s.journal.story[s.journal.story.length - 1];
+      HA.debug.goto('launch-lock', 4, 38);
+      for (let i = 0; i < 200 && w().def.id === 'launch-lock'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(20);
+      lk.out = feet();
       // The Lifeboat Dock: the deserter, shaking. Choice 6: let him fly home.
       at('lifeboat-dock', 3, 18);
       HA.debug.step(80, { right: true });
@@ -838,6 +892,8 @@ async function play(browserType, url, label) {
       HA.debug.step(1, { up: true });
       talkThrough();
       out.boat = w().scene && w().scene.step.choice.options.map((o) => o.label).join('/');
+      // With Lock 2's register read, the hero brings up the eleven boats, and the Purser says why he kept this one.
+      lk.purser = s.journal.talk.some((x) => /WITHOUT A PILOT/.test(x.text)) && s.journal.talk.some((x) => /KEPT THIS ONE BACK, FOR SOMEBODY WHO COULD FLY IT/.test(x.text));
       choose(0);
       // The Cold Store, past the melted ice: Odell, still waiting, and his pack.
       out.ice = (at('hatch-drop', 8, 38), w().doors.find((d) => d.id === 'ice').open);
@@ -997,6 +1053,8 @@ async function play(browserType, url, label) {
     expect(cl.bolt.shut && cl.bolt.hatch && cl.bolt.purser && cl.bolt.open, `the dock's bolt from the Purser's Office, or the Muster's hatch, went wrong (${JSON.stringify(cl.bolt)})`);
     expect(cl.deserter === 'deserter' && /BLOOMFIRE/.test(cl.deserterLose) && cl.fluxFate.flux === 'home' && cl.fluxFate.coldOpen && !cl.fluxFate.thruster && /COLD STORE/.test(cl.fluxFate.lead), `choice 6 went wrong (${JSON.stringify(cl)})`);
     expect(cl.boat === 'STAY/TAKE THE BOAT', `the Purser did not offer the boat (${cl.boat})`);
+    const lk = cl.lock;
+    expect(lk.bulkhead && lk.room === 'launch-lock' && /WHERE THE OTHER ELEVEN WENT/.test(lk.thought) && /READ/.test(lk.registerLabel) && /POD 0112/.test(lk.register) && /OPENED BY: NAV/.test(lk.register) && /BEACONS BACK: NONE/.test(lk.register) && /LOOK OUT OF THE PORT/.test(lk.portLabel) && /A PALE DOT/.test(lk.port) && /NOT ONE PILOT/.test(lk.port) && /FIRST ONE WHO COULD/.test(lk.port) && /LOCK 2/.test(lk.story) && lk.out === 'lifeboat-dock,39' && lk.purser, `Lock 2 went wrong (${JSON.stringify(lk)})`);
     expect(cl.ice && /READ/.test(cl.odellPrompt) && cl.odell.thruster === 'odell' && /TALLYMAN/.test(cl.odell.lead) && cl.odell.music === 'coldStore' && cl.coldLift === 'coolant-hall', `Odell, his pack or the cold lift went wrong (${JSON.stringify(cl)})`);
     expect(cl.tallyIntro === 'tallyIntro' && cl.fight.fighting && cl.fight.music === 'tallyman' && cl.fight.opened && cl.fight.struck === 40 && cl.fight.after === 'tallymanDefeated', `the Tallyman's fight went wrong (${JSON.stringify(cl.fight)})`);
     expect(/CHARGES HOLD 3/.test(cl.tallyLose) && cl.coreLose === 'WHAT IT KNOWS, FOR GOOD' && cl.tally.fate === 'release' && cl.tally.vault && cl.tally.said, `choice 8 went wrong (${JSON.stringify(cl.tally)}, ${cl.coreLose})`);
@@ -1863,6 +1921,8 @@ async function play(browserType, url, label) {
       talkThrough();
       ah.noHatch = !w().links.some((l) => l.legend.to === 'observation-dome');
       out.gallery = { room: w().def.id, shim: w().npcs.some((n) => n.id === 'shim' && n.follow), gardener: w().npcs.some((n) => n.id === 'gardener') };
+      // A hero who tried the purge lever under Bay 4 (the thirteenth batch of new rooms) brings it up with her.
+      s.logs.purgelever = true;
       HA.debug.goto('garden-gallery', 52, 18);
       for (let i = 0; i < 300 && !w().scene; i++) HA.debug.step(1, { left: true });
       out.gardenerScene = w().scene && w().scene.name;
@@ -2095,7 +2155,7 @@ async function play(browserType, url, label) {
     const ah = tw.arrival;
     expect(ah.noLadder && ah.room === 'arrival-hall' && ah.scene === 'arrivalIn' && ah.shim && /YOU WILL ALL BE COUNTED/.test(ah.said) && /LANDING DAY/.test(ah.said) && ah.prompt === '{up} READ THE TERMS' && /ITS STEWARD GOVERNS/.test(ah.terms) && /WHOEVER HIDES IS NOT/.test(ah.terms) && /HOW THE WARDENS KEEP THE WALLS/.test(ah.terms) && ah.read && ah.noHatch, `the Arrival Hall went wrong (${JSON.stringify(ah)})`);
     expect(tw.gallery.room === 'garden-gallery' && tw.gallery.shim && tw.gallery.gardener && tw.gardenerScene === 'gardener', `the Garden Gallery went wrong (${JSON.stringify(tw.gallery)}, ${tw.gardenerScene})`);
-    expect(/KEEP WICK'S LANCETS/.test(tw.thorn) && /ASKED VERY GOOD QUESTIONS/.test(tw.toShim) && tw.eleven === 'SPARE HER/MAKE HER TAKE HER OWN DOSE/WALK PAST', `the Gardener's offer or choice 11 went wrong (${tw.thorn}, ${tw.eleven}, ${tw.toShim})`);
+    expect(/KEEP WICK'S LANCETS/.test(tw.thorn) && /ASKED VERY GOOD QUESTIONS/.test(tw.toShim) && /BURNERS UNDER BAY 4/.test(tw.toShim) && /WOULDN'T LET THEM BURN/.test(tw.toShim) && tw.eleven === 'SPARE HER/MAKE HER TAKE HER OWN DOSE/WALK PAST', `the Gardener's offer or choice 11 went wrong (${tw.thorn}, ${tw.eleven}, ${tw.toShim})`);
     expect(tw.gardener.fate === 'spared' && tw.gardener.mercy === 1 && tw.gardener.shimWith && /BRIDGE STAIR/.test(tw.gardener.lead), `choice 11 did not spare the Gardener (${JSON.stringify(tw.gardener)})`);
     expect(tw.podPrompt === '{up} REST' && tw.helm === 'helm', `the Bridge Stair's pod, or the way round to the Helm, went wrong (${tw.podPrompt}, ${tw.helm})`);
     expect(/DOGGED DOWN FROM ABOVE/.test(tw.dogged.said) && tw.dogged.room === 'bridge-stair', `the Helm's hatch was not dogged down before the speech (${JSON.stringify(tw.dogged)})`);
