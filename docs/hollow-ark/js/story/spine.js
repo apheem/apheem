@@ -31,6 +31,11 @@
       title: 'CREW DECK · YEAR 110',
       text: 'THE CREW DECK CLOSES TODAY. NO MORE SHIFTS: THE NAVIGATOR FLIES THE SHIP. MAINTENANCE FAMILIES TO THE SERVICE WAYS. TAKE WHAT YOU CAN CARRY, AND STRIP THE SPINE LIFTS FOR PARTS. COUNT YOUR CHILDREN.',
     },
+    // The Lift Pit, east of the Spine Foot (the twelfth batch of new rooms)
+    lift1: {
+      title: 'SPINE LIFT 1 · THE LANDING GATE',
+      text: "SCRATCHED INTO THE GATE, DEEP, IN A HAND THAT PRESSED HARD: LIFT 1 · TAKEN DOWN YEAR 110. WE'LL PUT IT BACK WHEN WE COME UP.",
+    },
     heights: {
       title: 'THE DOOR FRAME',
       text: "CHILDREN'S HEIGHTS, MARKED IN PEN UP THE FRAME, A NAME AND A YEAR BY EACH. THE LAST MARKS ARE ALL YEAR 110.",
@@ -253,6 +258,27 @@
       world.toast('SAVED TO THE JOURNAL', 150);
       world.save();
     },
+    // The Lift Pit (the twelfth batch of new rooms): Spine Lift 1's shaft, stripped for parts the year the maintenance
+    // families went into the walls, and the promise they scratched on its gate.
+    *pitIn(world) {
+      world.state.flags.pitIn = true;
+      S.think(world, 'LIFT 1. NOTHING LEFT OF IT BUT THE SHAFT, AND THE STEAM GOING UP IT.', 40);
+    },
+    *lift1Gate(world) {
+      const s = world.state;
+      const first = !s.logs.lift1;
+      s.logs.lift1 = true;
+      HA.audio.play('tally');
+      const L = S.LOGS.lift1;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      yield me('YEAR 110. TWO HUNDRED YEARS AGO.');
+      // The climbers came east on the tram with the hero, or up the pipes behind them (story/tram.js).
+      yield me(s.flags.tramEast ? "THEY'RE COMING UP NOW. RIGHT BEHIND ME, WITH A LIFT." : 'NOBODY CAME UP.');
+      S.addStory(world, "EAST OF THE SPINE FOOT IS LIFT 1'S PIT. THE MAINTENANCE FAMILIES TOOK THE LIFT APART IN YEAR 110, WHEN THEY WENT INTO THE WALLS, AND SCRATCHED ON ITS GATE THAT THEY'D PUT IT BACK WHEN THEY CAME UP.");
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
+    },
     // The Boiler Landing: far below, the keel tram comes in with the climbers, and they build the first lift.
     *crewArrives(world) {
       const s = world.state;
@@ -303,6 +329,11 @@
       if (f.condenser) {
         if (who === 'SOLDER') yield say('SOLDER', "AND SOMEBODY SHUT MAIN 3. THAT STAIR'S NOT BEEN DRY IN YEARS. NICE WORK.");
         else yield say('OLD GASKET', "AND THE STAIR'S DRY. SOLDER ALWAYS SAID SOMEBODY OUGHT TO SHUT MAIN 3.");
+      }
+      // Lift 1's gate, read on the way up (the Lift Pit, the twelfth batch of new rooms): what the families promised.
+      if (s.logs.lift1) {
+        yield me("THERE'S A GATE IN LIFT 1'S PIT. SOMEBODY SCRATCHED ON IT: 'WE'LL PUT IT BACK WHEN WE COME UP.'");
+        yield say(who, "THEN WE'RE ONLY TWO HUNDRED YEARS LATE.");
       }
       lead.state = 'gone';
       HA.audio.play('lift');

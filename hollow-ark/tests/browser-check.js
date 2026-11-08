@@ -1419,15 +1419,38 @@ async function play(browserType, url, label) {
       HA.debug.step(30);
       talkThrough();
       out.foot = { room: w().def.id, area: w().area.name, music: HA.music.playing, lead: s.lead };
-      // The vent at the platform's end carries the hero up; off it to the left, onto the deck by the ladder.
-      HA.debug.goto('spine-foot', 28, 37);
-      for (let i = 0; i < 60; i++) HA.debug.step(1, { right: true });
+      // The Lift Pit (the twelfth batch of new rooms): no vent at the platform's end now. East off it into Lift 1's
+      // pit, the thought, up the pit's steam (the first jet to the jammed counterweight, west along the bracket into
+      // the second, and off it onto the old landing), the scratching on the landing gate, and out west onto the Foot's
+      // top ledge.
+      const pit = (out.pit = {});
+      pit.noVent = !w().room.vents.length;
+      HA.debug.goto('spine-foot', 33, 37);
+      for (let i = 0; i < 200 && w().def.id === 'spine-foot'; i++) HA.debug.step(1, { right: true });
+      HA.debug.step(30, { right: true });
+      HA.debug.step(60);
+      pit.room = w().def.id;
+      pit.thought = w().barks.map((b) => b.text).join(' ');
+      HA.debug.goto('lift-pit', 29, 37);
+      for (let i = 0; i < 20; i++) HA.debug.step(1, { right: true });
       let top = 99;
-      for (let i = 0; i < 200; i++) {
-        HA.debug.step(1, p.vy > -0.6 && i > 40 && p.x > 26 * 8 ? { left: true } : {});
+      for (let i = 0; i < 150; i++) {
+        HA.debug.step(1);
         top = Math.min(top, (p.y + p.h) / 8);
       }
-      out.vent = { top: Math.floor(top), row: Math.round((p.y + p.h) / 8), ground: p.onGround };
+      pit.jet = Math.round(top);
+      for (let i = 0; i < 400 && !(p.onGround && (p.y + p.h) / 8 < 10.5); i++) HA.debug.step(1, { left: true });
+      pit.landing = [Math.round((p.y + p.h) / 8), Math.floor((p.x + p.w / 2) / 8), p.onGround].join(',');
+      HA.debug.goto('lift-pit', 9, 9);
+      HA.debug.step(5);
+      pit.label = w().near && w().near.label;
+      press('up');
+      pit.gate = listen().join(' | ');
+      pit.tramEast = !!s.flags.tramEast;
+      pit.story = s.journal.story[s.journal.story.length - 1];
+      for (let i = 0; i < 200 && w().def.id === 'lift-pit'; i++) HA.debug.step(1, { left: true });
+      HA.debug.step(5);
+      pit.out = [w().def.id, Math.round((p.y + p.h) / 8)].join(',');
       // The Crew Mess (the ninth batch of new rooms): no ladder up from the Foot now. West along the ledge, over its
       // catwalk, onto the mess's balcony (the old crew's mess, the plates still out), the notice, the door frame in the
       // quarters, and out into the foot of the Boiler Stair, which has no hatch down now.
@@ -1460,7 +1483,7 @@ async function play(browserType, url, label) {
       HA.debug.goto('boiler-stair', 18, 8);
       HA.debug.step(30);
       out.arrive = w().scene && w().scene.name;
-      talkThrough();
+      out.arriveSaid = listen().join(' | ');
       HA.debug.step(60);
       out.lift1 = { lifts: s.flags.lifts, link: w().links.some((l) => l.legend.crew), layers: w().def.musicLayers(s) };
       // Down in it to the Foot, where the tram now waits.
@@ -1668,10 +1691,13 @@ async function play(browserType, url, label) {
       return out;
     });
     expect(sp.foot.room === 'spine-foot' && sp.foot.area === 'ENGINE SPINE' && sp.foot.music === 'spine' && /CLIMB THE ENGINE SPINE/.test(sp.foot.lead), `the keel tunnel did not lead to the Spine Foot (${JSON.stringify(sp.foot)})`);
-    expect(sp.vent.top <= 8 && sp.vent.row === 10 && sp.vent.ground, `the Foot's steam vent did not carry the hero up to the deck (${JSON.stringify(sp.vent)})`);
+    const lp = sp.pit;
+    expect(lp.noVent && lp.room === 'lift-pit' && /NOTHING LEFT OF IT BUT THE SHAFT/.test(lp.thought) && lp.jet <= 21 && /^10,\d+,true$/.test(lp.landing) && +lp.landing.split(',')[1] <= 15, `Lift 1's pit, or its steam up to the landing, went wrong (${JSON.stringify(lp)})`);
+    expect(lp.label === '{up} LOOK AT THE SCRATCHING' && /WE'LL PUT IT BACK WHEN WE COME UP/.test(lp.gate) && /TWO HUNDRED YEARS AGO/.test(lp.gate) && (lp.tramEast ? /RIGHT BEHIND ME, WITH A LIFT/ : /NOBODY CAME UP/).test(lp.gate) && /LIFT 1'S PIT/.test(lp.story) && lp.out === 'spine-foot,10', `Lift 1's gate, or the way out onto the Foot's top ledge, went wrong (${JSON.stringify(lp)})`);
     const ms = sp.mess;
     expect(ms.noLadder && ms.room === 'crew-mess' && /PLATES ARE STILL ON THE TABLES/.test(ms.thought) && /READ/.test(ms.label) && /COUNT YOUR CHILDREN/.test(ms.notice) && /DOOR FRAME/.test(ms.frameLabel) && /ALL YEAR 110/.test(ms.frame) && /INTO THE WALLS/.test(ms.frame) && /EVERY NIGHT SINCE/.test(ms.frame) && /DOOR FRAME/.test(ms.story) && ms.out === 'boiler-stair,86' && ms.noHatch, `the Crew Mess went wrong (${JSON.stringify(ms)})`);
     expect(sp.arrive === 'crewArrives' && sp.lift1.lifts === 1 && sp.lift1.link && sp.lift1.layers === 2, `the crew's arrival and first lift went wrong (${sp.arrive}, ${JSON.stringify(sp.lift1)})`);
+    expect(/SCRATCHED ON IT: 'WE'LL PUT IT BACK WHEN WE COME UP\.'/.test(sp.arriveSaid) && /THEN WE'RE ONLY TWO HUNDRED YEARS LATE/.test(sp.arriveSaid), `the crew's answer to Lift 1's gate went wrong (${sp.arriveSaid})`);
     expect(sp.liftTo === 'DOWN TO THE FOOT/STAY' && sp.down.room === 'spine-foot' && sp.down.minder, `the crew's lift did not run down to the Foot (${sp.liftTo}, ${JSON.stringify(sp.down)})`);
     expect(sp.embers && sp.gripping && sp.rammed, `the Spine's heat slugs, climbers or pistons went wrong (${sp.embers}, ${sp.gripping}, ${sp.rammed})`);
     expect(sp.landing2 === 'liftTwo' && sp.lift2 === 2, `the second lift was not built (${sp.landing2}, ${sp.lift2})`);
@@ -3177,6 +3203,26 @@ async function play(browserType, url, label) {
       dock.room = w().def.id;
       dock.scene = w().scene && w().scene.name;
       dock.said = listen().join(' | ');
+      // The Crew Mess hall (the twelfth batch of new rooms): the gallery doesn't drop down the cradles now. East off its
+      // end into year 110: the mess, the Navigator ending the shifts, the notice and the families going into the walls
+      // on the floor below, and back out onto the Dock's floor.
+      const mess = (out.mess = {});
+      mess.shut = [28, 32, 37].every((x) => w().room.tile(x, 19) === 1 && w().room.tile(x, 20) === 1);
+      HA.debug.goto('hall-dock', 34, 18);
+      walk('right', 200);
+      mess.room = w().def.id;
+      mess.scene = w().scene && w().scene.name;
+      mess.said = listen().join(' | ');
+      HA.debug.goto('hall-mess', 12, 41);
+      HA.debug.step(5);
+      mess.order = w().scene && w().scene.name;
+      mess.orderSaid = listen().join(' | ');
+      mess.lift1 = !!w().state.logs.lift1;
+      mess.notice = !!w().state.logs.mess;
+      mess.story = w().state.journal.story[w().state.journal.story.length - 1];
+      walk('left', 200);
+      HA.debug.step(5);
+      mess.out = [w().def.id, Math.round((w().player.y + w().player.h) / 8)].join(',');
       HA.debug.goto('hall-dock', 5, 41);
       HA.debug.step(5);
       dock.cradle = w().scene && w().scene.name;
@@ -3322,6 +3368,9 @@ async function play(browserType, url, label) {
     const dk = deck.dock;
     expect(dk.room === 'hall-dock' && dk.scene === 'hallDock' && /POD 0112/.test(dk.said) && /I OPENED THE DOOR FOR THEM/.test(dk.said) && dk.cradle === 'dockCradle' && /I WATCHED THAT TOO/.test(dk.cradleSaid), `the Dock's memory hall went wrong (${JSON.stringify(dk)})`);
     expect(dk.out === 'hall-gardens' && dk.gardens === 'hallGardens' && dk.check === 'hall-gardens' && /CHECKPOINT/.test(dk.toast) && dk.noLadder && dk.story, `out of the Dock into the Gardens hall, or its checkpoint, went wrong (${JSON.stringify(dk)})`);
+    const mh = deck.mess;
+    expect(mh.shut && mh.room === 'hall-mess' && mh.scene === 'hallMess' && /PLATES STILL WARM/.test(mh.said) && /YEAR 110/.test(mh.said) && /I ENDED THE SHIFTS/.test(mh.said), `the way into the Crew Mess hall went wrong (${JSON.stringify(mh)})`);
+    expect(mh.order === 'messOrder' && /COUNT YOUR CHILDREN, I TOLD THEM/.test(mh.orderSaid) && /I LISTEN FOR IT/.test(mh.orderSaid) && (mh.lift1 ? /TWO HUNDRED YEARS, AND YOU/ : mh.notice ? /I READ THAT NOTICE/ : /AT LIGHTS-OUT/).test(mh.orderSaid) && /THEN THE CREW MESS, YEAR 110/.test(mh.story) && mh.out === 'hall-dock,42', `the families in the Crew Mess hall, or the way back out onto the Dock's floor, went wrong (${JSON.stringify(mh)})`);
     const th = deck.thaw;
     expect(th.noHatch && th.room === 'hall-thaw' && th.scene === 'hallThaw' && /WHERE I WOKE UP/.test(th.said) && /POD 2207/.test(th.said) && /A MAN WITH A BLANKET/.test(th.said) && th.pod === 'thawPod' && /HE TOOK THE BOOTS INSTEAD/.test(th.podSaid) && /CLEAT\. GASKET'S BROTHER/.test(th.podSaid) && /THEY STILL COME UP/.test(th.podSaid) && th.story && th.out === 'hall-helm' && th.noLadder, `the Thaw's memory hall went wrong (${JSON.stringify(th)})`);
     expect(deck.wake === 'wakeLog' && /0112\. LEFT/.test(deck.wakeSaid) && /2207\. RULED/.test(deck.wakeSaid) && /CHOOSE TO STAY/.test(deck.wakeSaid) && /THE WATER WAS A QUESTION/.test(deck.wakeSaid), `the wake log went wrong (${deck.wake}, ${deck.wakeSaid})`);
