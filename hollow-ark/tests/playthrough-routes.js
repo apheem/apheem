@@ -40,11 +40,17 @@ const gardens = {
       await r.do('PT.read("sorrelGlass")');
     }
     // The Vat House's door is barred from inside: down the mash hatch onto the Mash Floor's gantry, round through
-    // the Dark Bay (the grower's notes, 0391's cradle) to the troughs, and up the vat drain.
+    // the Dark Bay (the grower's notes, 0391's cradle) to the troughs, and up the vat drain. The bay's east side is cut
+    // in two (the thirteenth batch of new rooms): from its floor, round through Bay 4's Purge Burners (the plate and
+    // the locked lever) onto the ledge above the slab.
     await r.to('mash-floor');
     await r.to('dark-bay');
     await r.do('PT.read("grower")');
     await r.do('PT.goCol(18)');
+    await r.do('PT.exit("right", "burners", 39)'); // off the bay's floor
+    await r.do('PT.read("purge")');
+    await r.do('PT.read("purgelever")');
+    await r.do('PT.exit("left", "dark-bay", 3)'); // along the fuel main, onto the bay's new ledge
     await r.do('PT.exit("right", "mash-floor", 16)'); // the lower way out, onto the troughs
     await r.to('vat-house');
     await r.boss('vat-house');
@@ -95,8 +101,16 @@ const cargo = {
       await r.do('PT.fight(() => !!HA.ui.world.state.people.cotter)');
       await r.do('PT.settle()');
     }
-    await r.to('lifeboat-dock'); // through the Muster and down its hatch (the office door is bolted): the deserter
+    // Through the Muster and down its hatch (the office door is bolted) onto the dock's landing, which a bulkhead shuts
+    // off from the rest of the dock (the thirteenth batch of new rooms): round through Lock 2 (the register and the
+    // port) into the dock's lower hall, the Purser's offer, and up and west past the deserter.
+    await r.to('lifeboat-dock');
+    await r.to('launch-lock');
+    await r.do('PT.read("launches")');
+    await r.do('PT.read("lockport")');
+    await r.do('PT.exit("left", "lifeboat-dock", 36)');
     await r.do('PT.talk("purser")');
+    await r.do('PT.sweep()'); // up through the hole to the deserter, before the pack decides the way on
     // With Flux's Bloomfire the Yard is in reach at once, and the Cold Store's ice waits for a Breach Charge.
     const bloomfire = (await r.get('HA.ui.world.state.abilities.thruster')) === 'bloomfire';
     // The first of Wick's three things grows under the Cold Store's ice, by Odell.

@@ -50,6 +50,15 @@
       title: 'THE BINS',
       text: "TWELVE BINS, A NUMBER ON EACH. BOOTS, A SHAWL, A CARVED WHISTLE, A CHILD'S DRAWING FOLDED SMALL. BIN 12 IS EMPTY.",
     },
+    // The Purge Burners, under the Mash Floor (the thirteenth batch of new rooms)
+    purge: {
+      title: 'BAY 4 · PURGE BURNERS',
+      text: 'FOR A BLIGHT THAT CANNOT BE CUT OUT. SEAL THE BAY. LIGHT THE BURNERS. BURN IT TO THE DECK. REPLANT FROM THE SEED VAULT.',
+    },
+    purgelever: {
+      title: 'THE PURGE LEVER',
+      text: "IT WON'T MOVE. THE PANEL: PURGE BAY 4 · ASKED YEAR 151 · AUTHORITY: NAV · NOT YET. ITS RED LAMP IS STILL LIT.",
+    },
     seeds: {
       title: 'SEED VAULT · YEAR 0',
       text: 'SEALED FOR ARRIVAL: TWELVE THOUSAND KINDS OF SEED, AND THE SOIL TO START THEM. TO BE OPENED UNDER A REAL SKY.',
@@ -523,6 +532,28 @@
       S.addStory(world, s.logs.grower
         ? 'UNDER THE GARDEN LIFT IS THE DARK BAY, WHERE THE BLOOM BEGAN. IT GREW ON POD 0391, A SLEEPER WOKEN TO GROW FOOD IN THE DARK. THEY ARE STILL THERE, UNDER IT. THE GARDENER CALLS IT THE MOTHER BED.'
         : 'UNDER THE GARDEN LIFT IS THE DARK BAY, WHERE THE BLOOM BEGAN. IN A CRADLE UNDER THE OLDEST OF IT, POD 0391, SOMEONE IS STILL LYING. THE GARDENER CALLS IT THE MOTHER BED.');
+      world.save();
+    },
+    // The Purge Burners (the thirteenth batch of new rooms): Bay 4's burners, round from the Dark Bay's floor, cold
+    // since the Navigator said NOT YET to the purge in year 151, when the Bloom was one bed.
+    *burnIn(world) {
+      world.state.flags.burnIn = true;
+      S.think(world, 'BURNERS. ROWS OF THEM, UNDER BAY 4. ALL COLD.', 150); // after the room's name has gone
+    },
+    *purgeLever(world) {
+      const s = world.state;
+      const first = !s.logs.purgelever;
+      s.logs.purgelever = true;
+      HA.audio.play('clamp');
+      world.shake(1);
+      const L = S.LOGS.purgelever;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      yield me('THEY COULD HAVE BURNED IT OUT IN YEAR 151, WHEN IT WAS ONE BED.');
+      // The opening's thaw card: CRYO POD 0417 · EMERGENCY THAW · AUTHORITY: NAV.
+      yield me('AUTHORITY: NAV. THE SAME AS ON MY THAW.');
+      S.addStory(world, "UNDER THE MASH FLOOR ARE BAY 4'S PURGE BURNERS. IN YEAR 151, WHEN THE BLOOM WAS ONE BED, THE GROWERS ASKED TO BURN IT OUT. THE LEVER IS STILL LOCKED. AUTHORITY: NAV. NOT YET.");
+      world.toast('SAVED TO THE JOURNAL', 150);
       world.save();
     },
     *mashHum(world) {

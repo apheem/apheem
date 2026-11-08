@@ -31,6 +31,15 @@
       title: 'MUSTER · DOSE BOOK',
       text: 'EVERY HAND, EVERY SHIFT. A HAND THAT MISSES A DOSE STARTS TO REMEMBER. A HAND THAT REMEMBERS GOES OVER THE SIDE IN A LIFEBOAT, IF IT CAN FIND ONE.',
     },
+    // Lock 2, east of the Lifeboat Dock (the thirteenth batch of new rooms)
+    launches: {
+      title: 'LOCK 2 · LAUNCHES',
+      text: 'LB-1, YEAR 133: ONE ABOARD, POD 0112. OUTER DOOR OPENED BY: NAV. TEN MORE SINCE YEAR 290: HANDS OF THE GUARD, OFF THEIR DOSE. PILOTS ABOARD: NONE. BEACONS BACK: NONE.',
+    },
+    lockport: {
+      title: 'THE PORT',
+      text: 'THROUGH THE PORT IN THE OUTER DOOR: STARS, AND THE NEW WORLD, A PALE DOT.',
+    },
     charter: {
       title: 'COLONY CHARTER · ARTICLE 9',
       text: 'ON ARRIVAL, ALL SHIP SYSTEMS WILL BE RETIRED WITH THANKS AND BROKEN DOWN FOR THE FIRST CITY.',
@@ -213,6 +222,29 @@
       world.toast('SAVED TO THE JOURNAL', 150);
       world.save();
     },
+    // Lock 2 (the thirteenth batch of new rooms): the airlock the other eleven lifeboats went out by, round from the
+    // dock's landing to its lower hall. None had a pilot, and no beacon came back.
+    *lockIn(world) {
+      world.state.flags.lockIn = true;
+      S.think(world, 'LOCK 2. THIS IS WHERE THE OTHER ELEVEN WENT.', 150); // after the room's name has gone
+    },
+    *lockPort(world) {
+      const s = world.state;
+      const first = !s.logs.lockport;
+      s.logs.lockport = true;
+      HA.audio.play('tink');
+      const L = S.LOGS.lockport;
+      yield { say: L.title, text: L.text, color: LOG };
+      if (!first) return;
+      // With the register read, the hero knows none of them had a pilot.
+      yield me(s.logs.launches ? 'ELEVEN BOATS WENT OUT OF THIS DOOR, AND NOT ONE PILOT.' : 'THE BOATS WENT OUT OF THIS DOOR.');
+      yield me("I COULD PUT ONE DOWN THERE. I'M THE FIRST ONE WHO COULD.");
+      S.addStory(world, s.logs.launches
+        ? 'EAST OF THE LIFEBOAT DOCK IS LOCK 2, WHERE THE OTHER ELEVEN BOATS WENT OUT: POD 0112 IN YEAR 133, THEN TEN HANDS OF THE GUARD, OFF THEIR DOSE. NONE OF THEM COULD FLY, AND NO BEACON CAME BACK. I COULD FLY ONE.'
+        : 'EAST OF THE LIFEBOAT DOCK IS LOCK 2, WHERE THE OTHER ELEVEN BOATS WENT OUT. THROUGH THE PORT IN ITS OUTER DOOR, THE NEW WORLD IS A PALE DOT. I COULD FLY A BOAT THERE.');
+      world.toast('SAVED TO THE JOURNAL', 150);
+      world.save();
+    },
     // The Muster's floor: the chairs the Steward's soldiers are dosed in (3.12).
     *muster(world) {
       world.state.flags.musterSeen = true;
@@ -232,6 +264,11 @@
         yield say('THE PURSER', 'THE STEWARD WANTS YOU GONE. I WANT A QUIET LIFE. THE BOAT WANTS A PILOT. EVERYONE WINS.');
         yield say('THE PURSER', 'LB-7. SHORT RANGE. ENOUGH TO PUT ONE PILOT DOWN ON THAT WORLD OUT THERE. NO ONE ON THIS SHIP CAN FLY IT.');
         yield me("I CAN. I FLEW LANDERS. IT'S WHAT I WAS PACKED TO DO.");
+        // Lock 2's register, next door (the thirteenth batch of new rooms).
+        if (s.logs.launches) {
+          yield me('ELEVEN BOATS WENT OUT OF YOUR LOCK WITHOUT A PILOT.');
+          yield say('THE PURSER', "I SIGNED EVERY ONE OUT. THAT'S WHY I KEPT THIS ONE BACK, FOR SOMEBODY WHO COULD FLY IT.");
+        }
       } else yield say('THE PURSER', 'CHANGED YOUR MIND? THE BOAT HASN\'T.');
       const pick = yield {
         choice: {

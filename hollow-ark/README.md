@@ -12,9 +12,9 @@ One build runs everywhere: in any modern browser, or as a desktop app.
 | --- | --- |
 | Any computer, in a browser | Once merged to `main`: **https://apheem.github.io/apheem/hollow-ark/** in Chrome, Edge, Firefox or Safari. |
 | Any computer, offline | Download the `Hollow-Ark-Browser` artifact (or copy `docs/hollow-ark/`), unzip it and open `index.html`. |
-| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.31-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
+| Windows 10 or 11 (x64 or ARM) | `Hollow-Ark-Windows` artifact: run `Hollow-Ark-0.3.32-windows-setup.exe` (one installer for both chip types). Or unzip the `x64` zip (the `arm64` one on Snapdragon PCs) and run `Hollow Ark.exe`. |
 | macOS on Apple Silicon or Intel | `Hollow-Ark-macOS` artifact: open the `.dmg` and drag Hollow Ark to Applications. One file works on both chip types. |
-| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.31-linux-amd64.deb`. |
+| Linux x64 or ARM64, including Steam Deck desktop mode | `Hollow-Ark-Linux` artifact: make the `.AppImage` executable and run it. On Debian or Ubuntu you can instead run `sudo apt install ./Hollow-Ark-0.3.32-linux-amd64.deb`. |
 
 The desktop artifacts come from the **Hollow Ark** workflow: open the repository's **Actions** tab, pick the latest run, and scroll to **Artifacts** (you need to be signed in to GitHub). Each run also launches every app on its own OS and plays a few seconds before uploading it.
 
@@ -223,6 +223,12 @@ Cody played from a new game to an ending in about 58 minutes. These are the fixe
 - **Every ending says what it was.** The ending's name shows before its epilogue. After the credits, a results card waits for a press: the ending, how many endings you've seen, who reached the new world out of everyone who could have (Hullfolk, sleepers, Mara and you), the Wardens freed, and the final Mercy and Bloom. Then, for any ending but Homecoming, what closed the other way, in the journal's words. Then THIS RUN. None of these can be skipped by mashing or by skipping the scene.
 - **The run for the sleds says where to go.** Gasket says the sleds are in Cryo Bay 4, where you woke; the lead says so; and a bar under the clock shows which way to go in every room of the run. The Cryo Bay's west wall is stencilled CREW SLEDS from the first minute of the game.
 - **Home scenes stay home.** Scenes that wait for your next visit to the Warrens (the raid's outcome, mourning Solder, Flux's homecoming, Shim's name for you) no longer play during the run for the sleds, when the Warrens are empty and the clock is running.
+
+## 0.3.32: Lock 2 and the Purge Burners
+
+- **Two new rooms on the main path, one in the Cargo Labyrinth and one in the Gardens.** Each adds a few minutes. Each is a loop, like the last few: you go out of a room one way and come back into it another, so neither leaves you walking back the way you came.
+- **Lock 2.** The Muster's ladder still comes down into the Lifeboat Dock, but a bulkhead now shuts its landing off from the rest of the dock. Go east into the airlock where the other eleven lifeboats went out: the hoist with its cradle hanging empty, the launch rails, and the round outer door with a port in it. The register by the way in says who took them, and who opened the door for the first. Climb down the hoist's catwalks to the floor, look out of the port, and go out west, low, into the dock's lower hall, where the Purser waits by the last boat. Then up through the hole in the floor and west past the deserter, as before. Read the register first, and you'll have something to ask the Purser.
+- **The Purge Burners.** A slab now cuts the Dark Bay's east side in two, so the climb from its floor to the troughs is gone. Go east off the floor, past 0391's cradle, into the burners under Bay 4: rows of them, cold, the Bloom grown over them. They were for burning a blight out of the bay. Cross the floor, climb to the fuel main at the far end, and come back along it to the purge panel, where the lever is still locked and a red lamp is still lit. Out the far side, you're back in the bay above the slab, and up to the troughs as before. Try the lever, and the Gardener will have an answer for you in the Tower.
 
 ## 0.3.31: the Lift Pit and the Crew Mess's memory
 

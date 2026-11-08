@@ -312,6 +312,11 @@
         S.addStory(world, "THE GARDENER TOLD SHIM ABOUT HIS MOTHER. 'YOUR MOTHER ASKED VERY GOOD QUESTIONS.' ASKED. HE HEARD IT. I SAID NOTHING.");
       }
       yield say('THE GARDENER', "THE STEWARD'S UP THE STAIR. I'M ONLY A GARDENER. I GREW WHAT HE ASKED FOR.");
+      // Bay 4's Purge Burners, under the Mash Floor (the thirteenth batch of new rooms), if the hero tried the lever.
+      if (s.logs.purgelever) {
+        yield me('THERE ARE BURNERS UNDER BAY 4. THEY COULD HAVE BURNED IT OUT IN YEAR 151.');
+        yield say('THE GARDENER', "THE NAVIGATOR SAID NOT YET. I ONLY WATERED WHAT IT WOULDN'T LET THEM BURN.");
+      }
       yield me('THERE ARE DOSES ON HER BENCH. THE SAME AS THE ONE SHE GAVE WICK.');
       const pick = yield {
         choice: {

@@ -1677,7 +1677,7 @@
     },
     // The Dark Bay: Growing Bay 4's lamps failed in year 150, so its walls are almost black.
     darkbay(g, s, rnd, T, room) {
-      g.fillStyle = 'rgba(3,2,6,0.82)';
+      g.fillStyle = `rgba(3,2,6,${s.a || 0.82})`;
       g.fillRect(0, 0, room.pw, room.ph);
     },
     // A row of grow-lamps under the roof, dead: cold tubes, one hanging off its bracket.
@@ -2761,6 +2761,191 @@
       g.fillRect(x0 + 14, y + 33, 3, 3);
       g.fillStyle = '#7ad1a0';
       g.fillRect(x0 + 21, y + 32, 2, 4);
+    },
+
+    // ---- The thirteenth batch of new rooms ----
+    // Lock 2: the hoist frame over the lock with its cradle hanging empty, the launch rails along the floor, and the
+    // round outer door in the east wall, with a port in it and the stars outside.
+    launchlock(g, s, rnd) {
+      const [hx0, hx1, ht] = s.hoist;
+      const top = ht * 8;
+      const F = s.floor * 8;
+      // the hoist: a beam under the roof, its uprights, a trolley, and the cradle on four chains
+      g.fillStyle = '#10121c';
+      g.fillRect(hx0 * 8, top, (hx1 - hx0 + 1) * 8, 6);
+      g.fillStyle = '#4a3a22';
+      g.fillRect(hx0 * 8, top + 1, (hx1 - hx0 + 1) * 8, 3);
+      g.fillStyle = HAZARD[2];
+      for (let x = hx0 * 8; x < (hx1 + 1) * 8; x += 8) g.fillRect(x, top + 4, 4, 1);
+      for (const x of [hx0 * 8 + 2, (hx1 + 1) * 8 - 6]) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, top + 6, 4, 40);
+        g.fillStyle = '#2e2a26';
+        g.fillRect(x + 1, top + 6, 2, 40);
+      }
+      const [cx, cy] = s.cradle;
+      const c0 = cx * 8;
+      const cw = 64;
+      const ccy = cy * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(c0 + 22, top + 6, 20, 6);
+      g.fillStyle = '#2a2a32';
+      for (const dx of [2, 20, 44, 62]) for (let y = top + 12; y < ccy - 6; y += 3) g.fillRect(c0 + dx, y, 1, 2);
+      // the cradle: a saddle for a boat, and no boat in it
+      g.fillStyle = '#10121c';
+      g.fillRect(c0 - 1, ccy - 7, cw + 2, 5);
+      g.fillRect(c0 + 2, ccy - 14, 4, 9);
+      g.fillRect(c0 + cw - 6, ccy - 14, 4, 9);
+      g.fillStyle = '#3a3a44';
+      g.fillRect(c0, ccy - 6, cw, 3);
+      g.fillStyle = HAZARD[2];
+      for (let i = 0; i < cw; i += 6) g.fillRect(c0 + i, ccy - 6, 3, 1);
+      HA.font.draw(g, 'LB-11', c0 + 22, ccy - 3, 'rgba(201,162,39,0.4)', { shadow: null });
+      // the launch rails, from the dock's door to the outer door
+      g.fillStyle = '#10121c';
+      g.fillRect(16, F - 4, (s.door[0] - 2) * 8, 2);
+      g.fillStyle = '#5e5e6a';
+      g.fillRect(16, F - 4, (s.door[0] - 2) * 8, 1);
+      for (let x = 20; x < s.door[0] * 8; x += 12) {
+        g.fillStyle = '#2a2a32';
+        g.fillRect(x, F - 2, 6, 2);
+      }
+      // the outer door: a ring of bolts, the dogs, the port, and stars through it
+      const [dx, dy, dr] = s.door;
+      const ox = dx * 8 + 4;
+      const oy = dy * 8 + 4;
+      const R = dr * 8;
+      g.fillStyle = '#10121c';
+      g.beginPath();
+      g.arc(ox, oy, R + 3, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#3a3e4a';
+      g.beginPath();
+      g.arc(ox, oy, R, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#2a2e38';
+      g.beginPath();
+      g.arc(ox, oy, R - 6, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#6c7080';
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        g.fillRect(Math.round(ox + Math.cos(a) * (R - 3)) - 1, Math.round(oy + Math.sin(a) * (R - 3)) - 1, 2, 2);
+      }
+      g.fillStyle = '#10121c';
+      for (const a of [0.4, 2.0, 3.6, 5.2]) g.fillRect(Math.round(ox + Math.cos(a) * (R - 10)) - 2, Math.round(oy + Math.sin(a) * (R - 10)) - 2, 5, 5);
+      const pr = 9;
+      g.fillStyle = '#10121c';
+      g.beginPath();
+      g.arc(ox, oy, pr + 2, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#020309';
+      g.beginPath();
+      g.arc(ox, oy, pr, 0, Math.PI * 2);
+      g.fill();
+      for (let i = 0; i < 14; i++) {
+        const a = rnd() * Math.PI * 2;
+        const r = rnd() * (pr - 1);
+        g.fillStyle = rnd() < 0.3 ? '#ffffff' : '#8aa0c8';
+        g.fillRect(Math.round(ox + Math.cos(a) * r), Math.round(oy + Math.sin(a) * r), 1, 1);
+      }
+      g.fillStyle = '#c8d4e0';
+      g.fillRect(ox + 3, oy + 2, 2, 2);
+      g.fillStyle = 'rgba(184,210,230,0.18)';
+      g.fillRect(ox - 6, oy - 6, 3, 1);
+      // the cycle lamps over the door, dead
+      for (let i = 0; i < 3; i++) {
+        g.fillStyle = '#10121c';
+        g.fillRect(ox - 13 + i * 10, oy - R - 12, 6, 5);
+        g.fillStyle = '#3a1416';
+        g.fillRect(ox - 12 + i * 10, oy - R - 11, 4, 3);
+      }
+    },
+    // Bay 4's burners: a row of burner heads along the floor, cold, their nozzles furred with the Bloom.
+    burners(g, s, rnd) {
+      const F = s.y * 8;
+      const skip = s.skip || [];
+      for (let c = s.x0; c <= s.x1; c += 3) {
+        if (skip.some(([a, b]) => c >= a - 1 && c <= b + 1)) continue;
+        const x = c * 8;
+        g.fillStyle = '#10121c';
+        g.fillRect(x, F - 6, 10, 6);
+        g.fillRect(x + 3, F - 12, 4, 6);
+        g.fillStyle = '#4a4a56';
+        g.fillRect(x + 1, F - 5, 8, 4);
+        g.fillStyle = '#6c6c78';
+        g.fillRect(x + 4, F - 11, 2, 5);
+        g.fillStyle = '#05060a';
+        g.fillRect(x + 4, F - 12, 2, 1);
+        // the Bloom, grown over the cold nozzle
+        if (rnd() < 0.6) {
+          g.fillStyle = '#5c2479';
+          g.fillRect(x + 2, F - 13, 6, 2);
+          g.fillStyle = '#b04ad0';
+          g.fillRect(x + 3 + Math.floor(rnd() * 3), F - 14, 2, 1);
+        }
+      }
+      // the gas line along the foot of the wall, feeding them
+      g.fillStyle = '#1c1c24';
+      g.fillRect(s.x0 * 8, F - 2, (s.x1 - s.x0 + 1) * 8, 2);
+    },
+    // The fuel main along the roof, with its flanges and valve wheels, and a riser down to the burners' line.
+    fuelmain(g, s, rnd, T, room) {
+      const y = s.y * 8;
+      const x0 = s.x0 * 8;
+      const x1 = (s.x1 + 1) * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(x0, y, x1 - x0, 7);
+      g.fillStyle = '#5a3a1c';
+      g.fillRect(x0, y + 1, x1 - x0, 4);
+      g.fillStyle = '#7a5226';
+      g.fillRect(x0, y + 1, x1 - x0, 1);
+      for (let x = x0 + 30; x < x1 - 8; x += 56) {
+        g.fillStyle = '#10121c';
+        g.fillRect(x, y - 1, 4, 9);
+        if (rnd() < 0.5) {
+          g.fillStyle = '#8a2a2a';
+          g.fillRect(x - 3, y + 7, 10, 1);
+          g.fillRect(x + 1, y + 6, 2, 3);
+        }
+      }
+      const rx = s.riser * 8;
+      g.fillStyle = '#10121c';
+      g.fillRect(rx, y + 7, 6, room.ph - y - 7 - 32);
+      g.fillStyle = '#5a3a1c';
+      g.fillRect(rx + 1, y + 7, 4, room.ph - y - 7 - 32);
+    },
+    // The purge panel at the main's west end: its lever, locked down, a red lamp still lit, and the panel's words.
+    purgepanel(g, s) {
+      const x = s.x * 8;
+      const y = s.y * 8 + 9;
+      g.fillStyle = '#10121c';
+      g.fillRect(x, y, 66, 22);
+      g.fillStyle = '#2a2e38';
+      g.fillRect(x + 1, y + 1, 64, 20);
+      HA.font.draw(g, 'PURGE · BAY 4', x + 4, y + 2, 'rgba(184,210,230,0.7)', { shadow: null });
+      HA.font.draw(g, 'AUTH: NAV', x + 4, y + 12, 'rgba(184,210,230,0.45)', { shadow: null });
+      // the lamp, and its glow
+      const lx = x + 58;
+      const ly = y + 14;
+      const glow = g.createRadialGradient(lx, ly, 0, lx, ly, 16);
+      glow.addColorStop(0, 'rgba(232,67,79,0.5)');
+      glow.addColorStop(1, 'rgba(232,67,79,0)');
+      g.fillStyle = glow;
+      g.fillRect(lx - 16, ly - 16, 32, 32);
+      g.fillStyle = '#10121c';
+      g.fillRect(lx - 3, ly - 3, 6, 6);
+      g.fillStyle = '#e8434f';
+      g.fillRect(lx - 2, ly - 2, 4, 4);
+      g.fillStyle = '#ffb0b4';
+      g.fillRect(lx - 1, ly - 1, 1, 1);
+      // the lever, down, with a lock through it
+      g.fillStyle = '#10121c';
+      g.fillRect(x + 46, y + 4, 5, 15);
+      g.fillStyle = '#6c7080';
+      g.fillRect(x + 47, y + 12, 3, 6);
+      g.fillStyle = '#c9a227';
+      g.fillRect(x + 45, y + 9, 7, 2);
     },
   };
 
